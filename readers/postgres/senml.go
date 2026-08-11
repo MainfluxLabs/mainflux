@@ -5,7 +5,6 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -146,64 +145,43 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 	return messages, nil
 }
 
+// senmlConditions returns the SQL predicates common to every senml read,
+// including the aggregated ones.
+func senmlConditions(pm readers.SenMLPageMetadata) []string {
+	conds := baseConditions(pm.ReadersMetadata, senmlOrder)
+
+	if pm.Name != "" {
+		conds = append(conds, "name = :name")
+	}
+	if pm.Value != 0 {
+		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(pm.Comparator)))
+	}
+	if pm.BoolValue {
+		conds = append(conds, "bool_value = :bool_value")
+	}
+	if pm.StringValue != "" {
+		conds = append(conds, "string_value = :string_value")
+	}
+	if pm.DataValue != "" {
+		conds = append(conds, "data_value = :data_value")
+	}
+
+	return conds
+}
+
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
-	var query map[string]any
-	meta, err := json.Marshal(rpm)
-	if err != nil {
-		return ""
-	}
-	json.Unmarshal(meta, &query)
-
-	condition := ""
-	op := "WHERE"
-
-	for name := range query {
-		switch name {
-		case "subtopic", "publisher", "protocol":
-			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
-			op = "AND"
-		case "name":
-			condition = fmt.Sprintf(`%s %s name = :name`, condition, op)
-			op = "AND"
-		case "v":
-			comparator := readers.ParseValueComparator(query)
-			condition = fmt.Sprintf(`%s %s value %s :value`, condition, op, comparator)
-			op = "AND"
-		case "vb":
-			condition = fmt.Sprintf(`%s %s bool_value = :bool_value`, condition, op)
-			op = "AND"
-		case "vs":
-			condition = fmt.Sprintf(`%s %s string_value = :string_value`, condition, op)
-			op = "AND"
-		case "vd":
-			condition = fmt.Sprintf(`%s %s data_value = :data_value`, condition, op)
-			op = "AND"
-		case "from":
-			condition = fmt.Sprintf(`%s %s time >= :from`, condition, op)
-			op = "AND"
-		case "to":
-			condition = fmt.Sprintf(`%s %s time < :to`, condition, op)
-			op = "AND"
-		}
-	}
-	return condition
+	return dbutil.BuildWhereClause(senmlConditions(rpm)...)
 }
 
 func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {
-	return map[string]any{
-		"limit":        rpm.Limit,
-		"offset":       rpm.Offset,
-		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
-		"name":         rpm.Name,
-		"protocol":     rpm.Protocol,
-		"value":        rpm.Value,
-		"bool_value":   rpm.BoolValue,
-		"string_value": rpm.StringValue,
-		"data_value":   rpm.DataValue,
-		"from":         rpm.From,
-		"to":           rpm.To,
-	}
+	params := baseQueryParams(rpm.ReadersMetadata)
+	params["name"] = rpm.Name
+	params["value"] = rpm.Value
+	params["bool_value"] = rpm.BoolValue
+	params["string_value"] = rpm.StringValue
+	params["data_value"] = rpm.DataValue
+
+	return params
 }
 
 func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Message) error {
