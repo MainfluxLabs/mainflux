@@ -206,8 +206,7 @@ func (req searchJSONMessagesReq) validate() error {
 	}
 
 	for i := range req.jsonPageMetadatas {
-		s := req.jsonPageMetadatas[i]
-		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+		if err := validateSearchParams(req.jsonPageMetadatas[i].ReadersMetadata); err != nil {
 			return err
 		}
 	}
@@ -229,8 +228,7 @@ func (req searchSenMLMessagesReq) validate() error {
 	}
 
 	for i := range req.senmlPageMetadatas {
-		s := req.senmlPageMetadatas[i]
-		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+		if err := validateSearchParams(req.senmlPageMetadatas[i].ReadersMetadata); err != nil {
 			return err
 		}
 
@@ -246,16 +244,16 @@ func (req searchSenMLMessagesReq) validate() error {
 	return nil
 }
 
-func validateSearchParams(limit uint64, dir, aggType, aggInterval string, aggValue uint64) error {
-	if limit > maxLimitSize {
+func validateSearchParams(pm readers.ReadersMetadata) error {
+	if pm.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 
-	if err := validateDir(dir); err != nil {
+	if err := validateDir(pm.Dir); err != nil {
 		return err
 	}
 
-	return validateAggregation(aggType, aggInterval, aggValue)
+	return validateAggregation(pm.AggType, pm.AggInterval, pm.AggValue)
 }
 
 func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
