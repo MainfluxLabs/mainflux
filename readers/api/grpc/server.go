@@ -60,24 +60,45 @@ func (gs *grpcServer) ListSenMLMessages(ctx context.Context, req *protomfx.ListS
 	return res.(*protomfx.ListSenMLMessagesRes), nil
 }
 
+type readersMetadataReq interface {
+	GetOffset() uint64
+	GetLimit() uint64
+	GetSubtopic() string
+	GetPublisher() string
+	GetProtocol() string
+	GetFrom() int64
+	GetTo() int64
+	GetAggInterval() string
+	GetAggValue() uint64
+	GetAggType() string
+	GetAggFields() []string
+	GetDir() string
+}
+
+func decodeReadersMetadata(req readersMetadataReq) domain.ReadersMetadata {
+	return domain.ReadersMetadata{
+		Offset:      req.GetOffset(),
+		Limit:       req.GetLimit(),
+		Subtopic:    req.GetSubtopic(),
+		Publisher:   req.GetPublisher(),
+		Protocol:    req.GetProtocol(),
+		From:        req.GetFrom(),
+		To:          req.GetTo(),
+		AggInterval: req.GetAggInterval(),
+		AggValue:    req.GetAggValue(),
+		AggType:     req.GetAggType(),
+		AggFields:   req.GetAggFields(),
+		Dir:         req.GetDir(),
+	}
+}
+
 func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ListJSONMessagesReq)
 	return listJSONMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.JSONPageMetadata{
-			Offset:      req.GetOffset(),
-			Limit:       req.GetLimit(),
-			Subtopic:    req.GetSubtopic(),
-			Publisher:   req.GetPublisher(),
-			Protocol:    req.GetProtocol(),
-			From:        req.GetFrom(),
-			To:          req.GetTo(),
-			Filter:      req.GetFilter(),
-			AggInterval: req.GetAggInterval(),
-			AggValue:    req.GetAggValue(),
-			AggType:     req.GetAggType(),
-			AggFields:   req.GetAggFields(),
-			Dir:         req.GetDir(),
+			ReadersMetadata: decodeReadersMetadata(req),
+			Filter:          req.GetFilter(),
 		},
 	}, nil
 }
@@ -87,24 +108,13 @@ func decodeListSenMLMessagesRequest(_ context.Context, grpcReq any) (any, error)
 	return listSenMLMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.SenMLPageMetadata{
-			Offset:      req.GetOffset(),
-			Limit:       req.GetLimit(),
-			Subtopic:    req.GetSubtopic(),
-			Publisher:   req.GetPublisher(),
-			Protocol:    req.GetProtocol(),
-			Name:        req.GetName(),
-			Value:       req.GetValue(),
-			Comparator:  req.GetComparator(),
-			BoolValue:   req.GetBoolValue(),
-			StringValue: req.GetStringValue(),
-			DataValue:   req.GetDataValue(),
-			From:        req.GetFrom(),
-			To:          req.GetTo(),
-			AggInterval: req.GetAggInterval(),
-			AggValue:    req.GetAggValue(),
-			AggType:     req.GetAggType(),
-			AggFields:   req.GetAggFields(),
-			Dir:         req.GetDir(),
+			ReadersMetadata: decodeReadersMetadata(req),
+			Name:            req.GetName(),
+			Value:           req.GetValue(),
+			Comparator:      req.GetComparator(),
+			BoolValue:       req.GetBoolValue(),
+			StringValue:     req.GetStringValue(),
+			DataValue:       req.GetDataValue(),
 		},
 	}, nil
 }
