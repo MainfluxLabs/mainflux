@@ -19,13 +19,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const (
-	jsonTable  = "json"
-	jsonOrder  = "created"
-	senmlTable = "senml"
-	senmlOrder = "time"
-)
-
 // queryParams holds parameters for building aggregation SQL queries.
 type queryParams struct {
 	table            string
@@ -81,7 +74,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 			limit:       rpm.Limit,
 			dir:         rpm.Dir,
 		},
-		conditions: jsonConditions(rpm),
+		conditions: baseConditions(rpm.ReadersMetadata, jsonOrder),
 	}
 
 	return as.readAggregatedMessages(ctx, input)
@@ -434,51 +427,6 @@ func buildJSONPath(field string) string {
 		}
 	}
 	return path.String()
-}
-
-func baseConditions(subtopic, publisher, protocol string, from, to int64, timeColumn string) []string {
-	var conds []string
-	if subtopic != "" {
-		conds = append(conds, "subtopic = :subtopic")
-	}
-	if publisher != "" {
-		conds = append(conds, "publisher = :publisher")
-	}
-	if protocol != "" {
-		conds = append(conds, "protocol = :protocol")
-	}
-	if from != 0 {
-		conds = append(conds, fmt.Sprintf("%s >= :from", timeColumn))
-	}
-	if to != 0 {
-		conds = append(conds, fmt.Sprintf("%s < :to", timeColumn))
-	}
-	return conds
-}
-
-func jsonConditions(pm readers.JSONPageMetadata) []string {
-	return baseConditions(pm.Subtopic, pm.Publisher, pm.Protocol, pm.From, pm.To, jsonOrder)
-}
-
-func senmlConditions(pm readers.SenMLPageMetadata) []string {
-	conds := baseConditions(pm.Subtopic, pm.Publisher, pm.Protocol, pm.From, pm.To, senmlOrder)
-
-	if pm.Name != "" {
-		conds = append(conds, "name = :name")
-	}
-	if pm.Value != 0 {
-		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(pm.Comparator)))
-	}
-	if pm.BoolValue {
-		conds = append(conds, "bool_value = :bool_value")
-	}
-	if pm.StringValue != "" {
-		conds = append(conds, "string_value = :string_value")
-	}
-	if pm.DataValue != "" {
-		conds = append(conds, "data_value = :data_value")
-	}
-	return conds
 }
 
 func buildJSONSelect(aggFields []string) string {
