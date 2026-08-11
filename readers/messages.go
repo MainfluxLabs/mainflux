@@ -102,12 +102,3 @@ func ComparatorSymbol(key string) string {
 		return "="
 	}
 }
-
-// ParseValueComparator converts comparison operator keys into mathematical notation.
-func ParseValueComparator(query map[string]any) string {
-	val, ok := query["comparator"]
-	if !ok {
-		return "="
-	}
-	return ComparatorSymbol(val.(string))
-}
