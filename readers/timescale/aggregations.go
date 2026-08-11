@@ -25,13 +25,6 @@ func escapeFieldName(field string) (string, error) {
 	return strings.ReplaceAll(field, "'", "''"), nil
 }
 
-const (
-	jsonTable  = "json"
-	jsonOrder  = "created"
-	senmlTable = "senml"
-	senmlOrder = "time"
-)
-
 type aggregationService struct {
 	db dbutil.Database
 }
@@ -51,7 +44,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		"to":        rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(jsonConditions(rpm)...)
+	condition := dbutil.BuildWhereClause(baseConditions(rpm.ReadersMetadata, jsonOrder)...)
 	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, jsonOrder)
 	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
 	if err != nil {
@@ -285,50 +278,4 @@ func buildJSONPath(field string) (string, error) {
 		}
 	}
 	return path.String(), nil
-}
-
-func jsonConditions(rpm readers.JSONPageMetadata) []string {
-	return baseConditions(rpm.Subtopic, rpm.Publisher, rpm.Protocol, rpm.From, rpm.To, jsonOrder)
-}
-
-func senmlConditions(rpm readers.SenMLPageMetadata) []string {
-	conds := baseConditions(rpm.Subtopic, rpm.Publisher, rpm.Protocol, rpm.From, rpm.To, senmlOrder)
-
-	if rpm.Name != "" {
-		conds = append(conds, "name = :name")
-	}
-	if rpm.Value != 0 {
-		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(rpm.Comparator)))
-	}
-	if rpm.BoolValue {
-		conds = append(conds, "bool_value = :bool_value")
-	}
-	if rpm.StringValue != "" {
-		conds = append(conds, "string_value = :string_value")
-	}
-	if rpm.DataValue != "" {
-		conds = append(conds, "data_value = :data_value")
-	}
-	return conds
-
-}
-
-func baseConditions(subtopic, publisher, protocol string, from, to int64, timeColumn string) []string {
-	var conds []string
-	if subtopic != "" {
-		conds = append(conds, "subtopic = :subtopic")
-	}
-	if publisher != "" {
-		conds = append(conds, "publisher = :publisher")
-	}
-	if protocol != "" {
-		conds = append(conds, "protocol = :protocol")
-	}
-	if from != 0 {
-		conds = append(conds, fmt.Sprintf("%s >= :from", timeColumn))
-	}
-	if to != 0 {
-		conds = append(conds, fmt.Sprintf("%s < :to", timeColumn))
-	}
-	return conds
 }
