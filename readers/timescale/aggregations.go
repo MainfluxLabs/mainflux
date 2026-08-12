@@ -45,7 +45,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		"to":        rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(mfreaders.BaseConditions(rpm.ReadersMetadata, mfreaders.JsonOrder)...)
+	condition := dbutil.BuildWhereClause(mfreaders.BaseConditions(rpm.ReadersParams, mfreaders.JsonOrder)...)
 	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.JsonOrder)
 	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
 	if err != nil {

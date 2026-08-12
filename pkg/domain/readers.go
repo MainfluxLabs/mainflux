@@ -26,8 +26,8 @@ type SenMLMessagesPage struct {
 	MessagesPage
 }
 
-// ReadersMetadata represents the query parameters shared by all message formats.
-type ReadersMetadata struct {
+// ReadersParams represents the query parameters shared by all message formats.
+type ReadersParams struct {
 	Offset      uint64   `json:"offset"`
 	Limit       uint64   `json:"limit"`
 	Subtopic    string   `json:"subtopic,omitempty"`
@@ -44,7 +44,7 @@ type ReadersMetadata struct {
 
 // SenMLPageMetadata represents the parameters used to create database queries.
 type SenMLPageMetadata struct {
-	ReadersMetadata
+	ReadersParams
 	Name        string  `json:"name,omitempty"`
 	Value       float64 `json:"v,omitempty"`
 	Comparator  string  `json:"comparator,omitempty"`
@@ -55,7 +55,7 @@ type SenMLPageMetadata struct {
 
 // JSONPageMetadata represents the parameters used to create database queries.
 type JSONPageMetadata struct {
-	ReadersMetadata
+	ReadersParams
 	Filter string `json:"filter,omitempty"`
 }
 

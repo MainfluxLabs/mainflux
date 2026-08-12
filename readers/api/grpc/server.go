@@ -75,8 +75,8 @@ type readersMetadataReq interface {
 	GetDir() string
 }
 
-func decodeReadersMetadata(req readersMetadataReq) domain.ReadersMetadata {
-	return domain.ReadersMetadata{
+func decodeReadersMetadata(req readersMetadataReq) domain.ReadersParams {
+	return domain.ReadersParams{
 		Offset:      req.GetOffset(),
 		Limit:       req.GetLimit(),
 		Subtopic:    req.GetSubtopic(),
@@ -97,8 +97,8 @@ func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 	return listJSONMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.JSONPageMetadata{
-			ReadersMetadata: decodeReadersMetadata(req),
-			Filter:          req.GetFilter(),
+			ReadersParams: decodeReadersMetadata(req),
+			Filter:        req.GetFilter(),
 		},
 	}, nil
 }
@@ -108,13 +108,13 @@ func decodeListSenMLMessagesRequest(_ context.Context, grpcReq any) (any, error)
 	return listSenMLMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.SenMLPageMetadata{
-			ReadersMetadata: decodeReadersMetadata(req),
-			Name:            req.GetName(),
-			Value:           req.GetValue(),
-			Comparator:      req.GetComparator(),
-			BoolValue:       req.GetBoolValue(),
-			StringValue:     req.GetStringValue(),
-			DataValue:       req.GetDataValue(),
+			ReadersParams: decodeReadersMetadata(req),
+			Name:          req.GetName(),
+			Value:         req.GetValue(),
+			Comparator:    req.GetComparator(),
+			BoolValue:     req.GetBoolValue(),
+			StringValue:   req.GetStringValue(),
+			DataValue:     req.GetDataValue(),
 		},
 	}, nil
 }

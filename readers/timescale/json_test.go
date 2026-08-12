@@ -101,7 +101,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}{
 		"read all json messages": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 			},
@@ -114,7 +114,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 		},
 		"read json messages with protocol": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit:    noLimit,
 					Protocol: httpProt,
 				},

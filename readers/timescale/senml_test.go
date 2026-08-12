@@ -133,7 +133,7 @@ func TestListSenMLMessages(t *testing.T) {
 	}{
 		"read all senml messages": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 			},
@@ -146,7 +146,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with non-existent subtopic": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit:    noLimit,
 					Subtopic: "not-present",
 				},
@@ -159,7 +159,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with subtopic": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit:    noLimit,
 					Subtopic: subtopic,
 				},
@@ -173,7 +173,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with publisher": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit:     noLimit,
 					Publisher: pubID2,
 				},
@@ -187,7 +187,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with protocol": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit:    noLimit,
 					Protocol: httpProt,
 				},
@@ -201,7 +201,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with name": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Name: msgName,
@@ -215,7 +215,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with value": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Value: v,
@@ -229,7 +229,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with value and equal comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Value:      v,
@@ -244,7 +244,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with value and lower-than comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Value:      v + 1,
@@ -259,7 +259,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with value and lower-than-or-equal comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Value:      v + 1,
@@ -274,7 +274,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with value and greater-than comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Value:      v - 1,
@@ -289,7 +289,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with value and greater-than-or-equal comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				Value:      v - 1,
@@ -304,7 +304,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with boolean value": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				BoolValue: vb,
@@ -318,7 +318,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with string value": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				StringValue: vs,
@@ -332,7 +332,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with data value": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 				},
 				DataValue: vd,
@@ -346,7 +346,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with from": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 					From:  messages[20].Time,
 				},
@@ -360,7 +360,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with to": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 					To:    messages[20].Time + 1,
 				},
@@ -374,7 +374,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read senml messages with from/to": {
 			pageMeta: readers.SenMLPageMetadata{
-				ReadersMetadata: readers.ReadersMetadata{
+				ReadersParams: readers.ReadersParams{
 					Limit: noLimit,
 					From:  messages[5].Time,
 					To:    messages[0].Time + 1,

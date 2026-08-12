@@ -283,7 +283,7 @@ func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error
 	req := deleteAllJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			ReadersMetadata: readers.ReadersMetadata{
+			ReadersParams: readers.ReadersParams{
 				Subtopic: subtopic,
 				Protocol: protocol,
 				From:     from,
@@ -321,7 +321,7 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	req := deleteJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			ReadersMetadata: readers.ReadersMetadata{
+			ReadersParams: readers.ReadersParams{
 				Publisher: publisherID,
 				Subtopic:  subtopic,
 				Protocol:  protocol,
@@ -348,7 +348,7 @@ func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, erro
 	req := deleteAllSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			ReadersMetadata: readers.ReadersMetadata{
+			ReadersParams: readers.ReadersParams{
 				From: from,
 				To:   to,
 			},
@@ -384,7 +384,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	req := deleteSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			ReadersMetadata: readers.ReadersMetadata{
+			ReadersParams: readers.ReadersParams{
 				Publisher: publisher,
 				Subtopic:  subtopic,
 				Protocol:  protocol,
@@ -511,53 +511,53 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 }
 
 // buildReadersMetadata reads the query parameters shared by all message formats.
-func buildReadersMetadata(r *http.Request) (readers.ReadersMetadata, error) {
+func buildReadersMetadata(r *http.Request) (readers.ReadersParams, error) {
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
 	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
 	if err != nil {
-		return readers.ReadersMetadata{}, err
+		return readers.ReadersParams{}, err
 	}
 
-	return readers.ReadersMetadata{
+	return readers.ReadersParams{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
 		From:        from,
@@ -576,7 +576,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	return readers.JSONPageMetadata{ReadersMetadata: rm}, nil
+	return readers.JSONPageMetadata{ReadersParams: rm}, nil
 }
 
 func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) {
@@ -616,12 +616,12 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 	}
 
 	return readers.SenMLPageMetadata{
-		ReadersMetadata: rm,
-		Name:            name,
-		Value:           v,
-		Comparator:      comparator,
-		StringValue:     vs,
-		DataValue:       vd,
-		BoolValue:       vb,
+		ReadersParams: rm,
+		Name:          name,
+		Value:         v,
+		Comparator:    comparator,
+		StringValue:   vs,
+		DataValue:     vd,
+		BoolValue:     vb,
 	}, nil
 }

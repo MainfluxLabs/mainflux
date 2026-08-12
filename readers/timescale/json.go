@@ -192,7 +192,7 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 }
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
-	conds := mfreaders.BaseConditions(rpm.ReadersMetadata, mfreaders.JsonOrder)
+	conds := mfreaders.BaseConditions(rpm.ReadersParams, mfreaders.JsonOrder)
 	if rpm.Filter != "" {
 		conds = append(conds, fmt.Sprintf("%s IS NOT NULL", buildPayloadFilterPath(rpm.Filter)))
 	}
@@ -221,5 +221,5 @@ func buildPayloadFilterPath(field string) string {
 }
 
 func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]any {
-	return mfreaders.BaseQueryParams(rpm.ReadersMetadata)
+	return mfreaders.BaseQueryParams(rpm.ReadersParams)
 }

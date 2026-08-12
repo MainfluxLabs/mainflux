@@ -206,7 +206,7 @@ func (req searchJSONMessagesReq) validate() error {
 	}
 
 	for i := range req.jsonPageMetadatas {
-		if err := validateSearchParams(req.jsonPageMetadatas[i].ReadersMetadata); err != nil {
+		if err := validateSearchParams(req.jsonPageMetadatas[i].ReadersParams); err != nil {
 			return err
 		}
 	}
@@ -228,7 +228,7 @@ func (req searchSenMLMessagesReq) validate() error {
 	}
 
 	for i := range req.senmlPageMetadatas {
-		if err := validateSearchParams(req.senmlPageMetadatas[i].ReadersMetadata); err != nil {
+		if err := validateSearchParams(req.senmlPageMetadatas[i].ReadersParams); err != nil {
 			return err
 		}
 
@@ -244,7 +244,7 @@ func (req searchSenMLMessagesReq) validate() error {
 	return nil
 }
 
-func validateSearchParams(pm readers.ReadersMetadata) error {
+func validateSearchParams(pm readers.ReadersParams) error {
 	if pm.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}

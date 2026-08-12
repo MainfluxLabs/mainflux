@@ -43,7 +43,7 @@ type (
 	MessagesPage      = domain.MessagesPage
 	JSONMessagesPage  = domain.JSONMessagesPage
 	SenMLMessagesPage = domain.SenMLMessagesPage
-	ReadersMetadata   = domain.ReadersMetadata
+	ReadersParams     = domain.ReadersParams
 	JSONPageMetadata  = domain.JSONPageMetadata
 	SenMLPageMetadata = domain.SenMLPageMetadata
 )
