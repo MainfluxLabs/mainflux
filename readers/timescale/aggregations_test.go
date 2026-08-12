@@ -6,6 +6,7 @@ package timescale
 import (
 	"testing"
 
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/stretchr/testify/assert"
 )
@@ -261,7 +262,7 @@ func TestBaseConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := baseConditions(readers.ReadersMetadata{
+			result := mfreaders.BaseConditions(readers.ReadersMetadata{
 				Subtopic:  tc.subtopic,
 				Publisher: tc.publisher,
 				Protocol:  tc.protocol,
@@ -282,7 +283,7 @@ func TestJsonConditions(t *testing.T) {
 		},
 	}
 
-	result := baseConditions(pm.ReadersMetadata, jsonOrder)
+	result := mfreaders.BaseConditions(pm.ReadersMetadata, mfreaders.JsonOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
 	assert.Contains(t, result, "publisher = :publisher")
