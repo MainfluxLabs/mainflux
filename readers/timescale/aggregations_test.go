@@ -336,7 +336,7 @@ func TestSenmlConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := senmlConditions(tc.pm)
+			result := mfreaders.SenmlConditions(tc.pm)
 			assert.Contains(t, result, tc.resPart)
 		})
 	}
