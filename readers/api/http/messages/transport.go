@@ -510,8 +510,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
-// buildReadersMetadata reads the query parameters shared by all message formats.
-func buildReadersMetadata(r *http.Request) (readers.ReadersParams, error) {
+// buildReadersParams reads the query parameters shared by all message formats.
+func buildReadersParams(r *http.Request) (readers.ReadersParams, error) {
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
 		return readers.ReadersParams{}, err
@@ -571,7 +571,7 @@ func buildReadersMetadata(r *http.Request) (readers.ReadersParams, error) {
 }
 
 func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
-	rm, err := buildReadersMetadata(r)
+	rm, err := buildReadersParams(r)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
@@ -580,7 +580,7 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 }
 
 func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) {
-	rm, err := buildReadersMetadata(r)
+	rm, err := buildReadersParams(r)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}

@@ -60,7 +60,7 @@ func (gs *grpcServer) ListSenMLMessages(ctx context.Context, req *protomfx.ListS
 	return res.(*protomfx.ListSenMLMessagesRes), nil
 }
 
-type readersMetadataReq interface {
+type readersParamsReq interface {
 	GetOffset() uint64
 	GetLimit() uint64
 	GetSubtopic() string
@@ -75,7 +75,7 @@ type readersMetadataReq interface {
 	GetDir() string
 }
 
-func decodeReadersMetadata(req readersMetadataReq) domain.ReadersParams {
+func decodeReadersParams(req readersParamsReq) domain.ReadersParams {
 	return domain.ReadersParams{
 		Offset:      req.GetOffset(),
 		Limit:       req.GetLimit(),
@@ -97,7 +97,7 @@ func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 	return listJSONMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.JSONPageMetadata{
-			ReadersParams: decodeReadersMetadata(req),
+			ReadersParams: decodeReadersParams(req),
 			Filter:        req.GetFilter(),
 		},
 	}, nil
@@ -108,7 +108,7 @@ func decodeListSenMLMessagesRequest(_ context.Context, grpcReq any) (any, error)
 	return listSenMLMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.SenMLPageMetadata{
-			ReadersParams: decodeReadersMetadata(req),
+			ReadersParams: decodeReadersParams(req),
 			Name:          req.GetName(),
 			Value:         req.GetValue(),
 			Comparator:    req.GetComparator(),
