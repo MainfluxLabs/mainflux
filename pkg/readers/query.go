@@ -14,6 +14,17 @@ const (
 	JsonOrder  = "created"
 	SenmlTable = "senml"
 	SenmlOrder = "time"
+
+	// EqualKey represents the equal comparison operator key.
+	EqualKey = "eq"
+	// LowerThanKey represents the lower-than comparison operator key.
+	LowerThanKey = "lt"
+	// LowerThanEqualKey represents the lower-than-or-equal comparison operator key.
+	LowerThanEqualKey = "le"
+	// GreaterThanKey represents the greater-than-or-equal comparison operator key.
+	GreaterThanKey = "gt"
+	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
+	GreaterThanEqualKey = "ge"
 )
 
 func BaseConditions(pm domain.ReadersParams, timeColumn string) []string {
@@ -46,5 +57,47 @@ func BaseQueryParams(pm domain.ReadersParams) map[string]any {
 		"protocol":  pm.Protocol,
 		"from":      pm.From,
 		"to":        pm.To,
+	}
+}
+
+// senmlConditions returns the SQL predicates common to every senml read,
+// including the aggregated ones.
+func SenmlConditions(pm domain.SenMLPageMetadata) []string {
+	conds := BaseConditions(pm.ReadersParams, SenmlOrder)
+
+	if pm.Name != "" {
+		conds = append(conds, "name = :name")
+	}
+	if pm.Value != 0 {
+		conds = append(conds, fmt.Sprintf("value %s :value", ComparatorSymbol(pm.Comparator)))
+	}
+	if pm.BoolValue {
+		conds = append(conds, "bool_value = :bool_value")
+	}
+	if pm.StringValue != "" {
+		conds = append(conds, "string_value = :string_value")
+	}
+	if pm.DataValue != "" {
+		conds = append(conds, "data_value = :data_value")
+	}
+
+	return conds
+}
+
+// ComparatorSymbol converts a comparison operator key into its SQL symbol.
+func ComparatorSymbol(key string) string {
+	switch key {
+	case EqualKey:
+		return "="
+	case LowerThanKey:
+		return "<"
+	case LowerThanEqualKey:
+		return "<="
+	case GreaterThanKey:
+		return ">"
+	case GreaterThanEqualKey:
+		return ">="
+	default:
+		return "="
 	}
 }
