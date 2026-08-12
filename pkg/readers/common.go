@@ -6,7 +6,7 @@ package readers
 import (
 	"fmt"
 
-	"github.com/MainfluxLabs/mainflux/readers"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	SenmlOrder = "time"
 )
 
-func BaseConditions(pm readers.ReadersMetadata, timeColumn string) []string {
+func BaseConditions(pm domain.ReadersMetadata, timeColumn string) []string {
 	var conds []string
 	if pm.Subtopic != "" {
 		conds = append(conds, "subtopic = :subtopic")
@@ -37,7 +37,7 @@ func BaseConditions(pm readers.ReadersMetadata, timeColumn string) []string {
 	return conds
 }
 
-func BaseQueryParams(pm readers.ReadersMetadata) map[string]any {
+func BaseQueryParams(pm domain.ReadersMetadata) map[string]any {
 	return map[string]any{
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
