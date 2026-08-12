@@ -477,7 +477,7 @@ func TestBaseConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := mfreaders.BaseConditions(readers.ReadersMetadata{
+			result := mfreaders.BaseConditions(readers.ReadersParams{
 				Subtopic:  tc.subtopic,
 				Publisher: tc.publisher,
 				Protocol:  tc.protocol,
@@ -491,14 +491,14 @@ func TestBaseConditions(t *testing.T) {
 
 func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
-		ReadersMetadata: readers.ReadersMetadata{
+		ReadersParams: readers.ReadersParams{
 			Subtopic:  "test",
 			Publisher: "pub1",
 			From:      1000,
 		},
 	}
 
-	result := mfreaders.BaseConditions(pm.ReadersMetadata, mfreaders.JsonOrder)
+	result := mfreaders.BaseConditions(pm.ReadersParams, mfreaders.JsonOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
 	assert.Contains(t, result, "publisher = :publisher")
