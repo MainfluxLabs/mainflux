@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
@@ -191,7 +192,7 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 }
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
-	conds := baseConditions(rpm.ReadersMetadata, jsonOrder)
+	conds := mfreaders.BaseConditions(rpm.ReadersMetadata, mfreaders.JsonOrder)
 	if rpm.Filter != "" {
 		conds = append(conds, fmt.Sprintf("%s IS NOT NULL", buildPayloadFilterPath(rpm.Filter)))
 	}
@@ -220,5 +221,5 @@ func buildPayloadFilterPath(field string) string {
 }
 
 func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]any {
-	return baseQueryParams(rpm.ReadersMetadata)
+	return mfreaders.BaseQueryParams(rpm.ReadersMetadata)
 }
