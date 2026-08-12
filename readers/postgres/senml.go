@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
@@ -148,7 +149,7 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 // senmlConditions returns the SQL predicates common to every senml read,
 // including the aggregated ones.
 func senmlConditions(pm readers.SenMLPageMetadata) []string {
-	conds := baseConditions(pm.ReadersMetadata, senmlOrder)
+	conds := mfreaders.BaseConditions(pm.ReadersMetadata, mfreaders.SenmlOrder)
 
 	if pm.Name != "" {
 		conds = append(conds, "name = :name")
@@ -174,7 +175,7 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
 }
 
 func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {
-	params := baseQueryParams(rpm.ReadersMetadata)
+	params := mfreaders.BaseQueryParams(rpm.ReadersMetadata)
 	params["name"] = rpm.Name
 	params["value"] = rpm.Value
 	params["bool_value"] = rpm.BoolValue
