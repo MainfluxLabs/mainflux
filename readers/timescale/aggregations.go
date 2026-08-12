@@ -100,7 +100,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		"to":           rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(senmlConditions(rpm)...)
+	condition := dbutil.BuildWhereClause(mfreaders.SenmlConditions(rpm)...)
 	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.SenmlOrder)
 	aggFunc := sqlAggFunc(rpm.AggType)
 	if aggFunc == "" {

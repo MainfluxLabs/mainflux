@@ -107,7 +107,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 			limit:       rpm.Limit,
 			dir:         rpm.Dir,
 		},
-		conditions: senmlConditions(rpm),
+		conditions: mfreaders.SenmlConditions(rpm),
 	}
 
 	return as.readAggregatedMessages(ctx, input)

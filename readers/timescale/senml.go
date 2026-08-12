@@ -187,32 +187,8 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 	return messages, nil
 }
 
-// senmlConditions returns the SQL predicates common to every senml read,
-// including the aggregated ones.
-func senmlConditions(rpm readers.SenMLPageMetadata) []string {
-	conds := mfreaders.BaseConditions(rpm.ReadersParams, mfreaders.SenmlOrder)
-
-	if rpm.Name != "" {
-		conds = append(conds, "name = :name")
-	}
-	if rpm.Value != 0 {
-		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(rpm.Comparator)))
-	}
-	if rpm.BoolValue {
-		conds = append(conds, "bool_value = :bool_value")
-	}
-	if rpm.StringValue != "" {
-		conds = append(conds, "string_value = :string_value")
-	}
-	if rpm.DataValue != "" {
-		conds = append(conds, "data_value = :data_value")
-	}
-
-	return conds
-}
-
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
-	return dbutil.BuildWhereClause(senmlConditions(rpm)...)
+	return dbutil.BuildWhereClause(mfreaders.SenmlConditions(rpm)...)
 }
 
 func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {
