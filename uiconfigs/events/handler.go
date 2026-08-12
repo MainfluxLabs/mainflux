@@ -22,11 +22,18 @@ func NewEventHandler(svc uiconfigs.Service) events.EventHandler {
 func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 	switch e := event.Action.(type) {
 	case events.ThingRemoved:
-		return h.svc.RemoveThingConfig(ctx, e.ID)
+		if err := h.svc.RemoveThingConfig(ctx, e.ID); err != nil {
+			return err
+		}
+		return h.svc.MarkReferencesDeleted(ctx, event.OrgID, []string{e.ID})
 	case events.OrgRemoved:
 		return h.svc.RemoveOrgConfig(ctx, e.ID)
 	case events.GroupRemoved:
-		return h.svc.RemoveThingConfigByGroup(ctx, e.ID)
+		if err := h.svc.RemoveThingConfigByGroup(ctx, e.ID); err != nil {
+			return err
+		}
+		// Mark the group's own id deleted alongside its things
+		return h.svc.MarkReferencesDeleted(ctx, event.OrgID, append(e.ThingIDs, e.ID))
 	}
 	return nil
 }

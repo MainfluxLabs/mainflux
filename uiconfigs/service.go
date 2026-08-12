@@ -13,6 +13,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
+const DeletedFlagKey = "deleted"
+const RawIDKey = "id"
+
 type Backup struct {
 	OrgsConfigs   []OrgConfig
 	ThingsConfigs []ThingConfig
@@ -32,6 +35,10 @@ type Service interface {
 
 	// RemoveOrgConfig removes the org config by org id.
 	RemoveOrgConfig(ctx context.Context, orgID string) error
+
+	// MarkReferencesDeleted flags references to the given Thing or Group IDs
+	// in the org's dashboard config.
+	MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error
 
 	// BackupOrgsConfigs retrieves all org configs.
 	BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error)
@@ -143,6 +150,42 @@ func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, org
 
 func (svc *configService) RemoveOrgConfig(ctx context.Context, orgID string) error {
 	return svc.orgConfigs.Remove(ctx, orgID)
+}
+
+func (svc *configService) MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error {
+	if orgID == "" {
+		return nil
+	}
+
+	idSet := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if id == "" {
+			continue
+		}
+		idSet[id] = struct{}{}
+	}
+
+	if len(idSet) == 0 {
+		return nil
+	}
+
+	cfg, err := svc.orgConfigs.RetrieveByOrg(ctx, orgID)
+	if err != nil {
+		return err
+	}
+
+	if len(cfg.Config) == 0 {
+		return nil
+	}
+
+	marked, changed := markReferencesDeleted(map[string]any(cfg.Config), idSet)
+	if !changed {
+		return nil
+	}
+	cfg.Config = Config(marked.(map[string]any))
+
+	_, err = svc.orgConfigs.Update(ctx, cfg)
+	return err
 }
 
 func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error) {
@@ -316,4 +359,54 @@ func (svc *configService) isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+// markReferencesDeleted marks objects containing the given IDs as deleted.
+// Legacy IDs directly in arrays are converted to flagged objects.
+// The second return value indicates whether anything changed.
+func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
+	switch val := v.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(val))
+		changed := false
+		matched := false
+
+		for k, vv := range val {
+			marked, c := markReferencesDeleted(vv, ids)
+			result[k] = marked
+			changed = changed || c
+
+			if s, ok := vv.(string); ok {
+				if _, found := ids[s]; found {
+					matched = true
+				}
+			}
+		}
+
+		if matched {
+			result[DeletedFlagKey] = true
+			changed = true
+		}
+
+		return result, changed
+	case []any:
+		result := make([]any, len(val))
+		changed := false
+		for i, vv := range val {
+			if s, ok := vv.(string); ok {
+				if _, found := ids[s]; found {
+					result[i] = map[string]any{RawIDKey: s, DeletedFlagKey: true}
+					changed = true
+					continue
+				}
+			}
+
+			marked, c := markReferencesDeleted(vv, ids)
+			result[i] = marked
+			changed = changed || c
+		}
+		return result, changed
+	default:
+		return val, false
+	}
 }
