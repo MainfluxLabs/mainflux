@@ -197,9 +197,20 @@ func (tr thingsRepository) Remove(ctx context.Context, thingID string, fi filest
 
 	q := `DELETE FROM things_files WHERE thing_id = :thing_id AND file_class = :file_class AND file_format = :file_format AND file_name = :file_name`
 
-	if _, err := tr.db.NamedExecContext(ctx, q, dbFile); err != nil {
+	res, err := tr.db.NamedExecContext(ctx, q, dbFile)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if cnt == 0 {
+		return dbutil.ErrNotFound
+	}
+
 	return nil
 }
 
