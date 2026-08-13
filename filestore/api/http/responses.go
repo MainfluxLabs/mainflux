@@ -70,22 +70,6 @@ func (res listFilesRes) Empty() bool {
 	return false
 }
 
-type viewFileRes struct {
-	file []byte
-}
-
-func (res viewFileRes) Code() int {
-	return http.StatusOK
-}
-
-func (res viewFileRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res viewFileRes) Empty() bool {
-	return false
-}
-
 type streamFileRes struct {
 	reader io.ReadCloser
 	name   string
