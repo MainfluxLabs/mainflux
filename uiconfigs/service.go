@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -142,6 +143,9 @@ func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, org
 
 	updated, err := svc.orgConfigs.Update(ctx, orgConfig)
 	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return svc.orgConfigs.Save(ctx, orgConfig)
+		}
 		return OrgConfig{}, err
 	}
 
@@ -185,6 +189,9 @@ func (svc *configService) MarkReferencesDeleted(ctx context.Context, orgID strin
 	cfg.Config = Config(marked.(map[string]any))
 
 	_, err = svc.orgConfigs.Update(ctx, cfg)
+	if errors.Contains(err, dbutil.ErrNotFound) {
+		return nil
+	}
 	return err
 }
 

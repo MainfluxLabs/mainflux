@@ -33,7 +33,7 @@ func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 			return err
 		}
 		// Mark the group's own id deleted alongside its things
-		return h.svc.MarkReferencesDeleted(ctx, event.OrgID, append(e.ThingIDs, e.ID))
+		return h.svc.MarkReferencesDeleted(ctx, event.OrgID, append([]string{e.ID}, e.ThingIDs...))
 	}
 	return nil
 }
