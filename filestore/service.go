@@ -30,8 +30,8 @@ type Service interface {
 	SaveFile(ctx context.Context, file io.Reader, key string, fi FileInfo) error
 	// UpdateFile updates file from filestore
 	UpdateFile(ctx context.Context, key string, fi FileInfo) error
-	// ViewFile views file from filestore
-	ViewFile(ctx context.Context, key string, fi FileInfo) ([]byte, error)
+	// ViewFile streams file from filestore. Caller must Close.
+	ViewFile(ctx context.Context, key string, fi FileInfo) (io.ReadCloser, error)
 	// ListFiles retrieves files from filestore by thing
 	ListFiles(ctx context.Context, key string, fi FileInfo, pm PageMetadata) (FileThingsPage, error)
 	// RemoveFile removes file from filestore
@@ -206,7 +206,7 @@ func (fs *filestoreService) RemoveFiles(ctx context.Context, thingID string) err
 	return nil
 }
 
-func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo) ([]byte, error) {
+func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo) (io.ReadCloser, error) {
 	thID, err := fs.identify(ctx, key)
 	if err != nil {
 		return nil, err
@@ -222,9 +222,8 @@ func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInf
 	if err != nil {
 		return nil, fs.translateGetErr(objKey, err)
 	}
-	defer rc.Close()
 
-	return io.ReadAll(rc)
+	return rc, nil
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {

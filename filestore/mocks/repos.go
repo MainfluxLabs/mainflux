@@ -70,7 +70,11 @@ func (r *ThingsRepository) RetrieveByThing(_ context.Context, _ string, _ filest
 func (r *ThingsRepository) Remove(_ context.Context, thingID string, fi filestore.FileInfo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	delete(r.byKey, thingKey(thingID, fi))
+	k := thingKey(thingID, fi)
+	if _, ok := r.byKey[k]; !ok {
+		return dbutil.ErrNotFound
+	}
+	delete(r.byKey, k)
 	return nil
 }
 
