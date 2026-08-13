@@ -14,11 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
-const (
-	DeletedFlagKey = "deleted"
-	RawIDKey       = "id"
-)
-
 type Backup struct {
 	OrgsConfigs   []OrgConfig
 	ThingsConfigs []ThingConfig
@@ -39,8 +34,8 @@ type Service interface {
 	// RemoveOrgConfig removes the org config by org id.
 	RemoveOrgConfig(ctx context.Context, orgID string) error
 
-	// MarkReferencesDeleted flags references to the given Thing or Group IDs
-	// in the org's dashboard config.
+	// MarkReferencesDeleted replaces references to the given Thing or Group IDs with an
+	// empty string, in place, wherever they appear in the org's dashboard config.
 	MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error
 
 	// BackupOrgsConfigs retrieves all org configs.
@@ -370,31 +365,27 @@ func (svc *configService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-// markReferencesDeleted marks objects containing the given IDs as deleted.
-// Legacy IDs directly in arrays are converted to flagged objects.
-// The second return value indicates whether anything changed.
+// markReferencesDeleted replaces any string value matching one of the given IDs - whether
+// it's a value inside a map or an element of an array - with an empty string in place. The
+// second return value indicates whether anything changed.
 func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
 	switch val := v.(type) {
 	case map[string]any:
 		result := make(map[string]any, len(val))
 		changed := false
-		matched := false
 
 		for k, vv := range val {
+			if s, ok := vv.(string); ok {
+				if _, found := ids[s]; found {
+					result[k] = ""
+					changed = true
+					continue
+				}
+			}
+
 			marked, c := markReferencesDeleted(vv, ids)
 			result[k] = marked
 			changed = changed || c
-
-			if s, ok := vv.(string); ok {
-				if _, found := ids[s]; found {
-					matched = true
-				}
-			}
-		}
-
-		if matched {
-			result[DeletedFlagKey] = true
-			changed = true
 		}
 
 		return result, changed
@@ -404,7 +395,7 @@ func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
 		for i, vv := range val {
 			if s, ok := vv.(string); ok {
 				if _, found := ids[s]; found {
-					result[i] = map[string]any{RawIDKey: s, DeletedFlagKey: true}
+					result[i] = ""
 					changed = true
 					continue
 				}
