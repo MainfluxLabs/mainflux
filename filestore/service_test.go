@@ -236,7 +236,11 @@ func TestViewFile(t *testing.T) {
 	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("payload"), thingKey, fi))
 
-	data, err := svc.ViewFile(context.Background(), thingKey, fi)
+	rc, err := svc.ViewFile(context.Background(), thingKey, fi)
+	require.Nil(t, err)
+	defer rc.Close()
+
+	data, err := io.ReadAll(rc)
 	require.Nil(t, err)
 	assert.Equal(t, []byte("payload"), data)
 }
@@ -250,7 +254,11 @@ func TestViewFile_ChecksumMismatch(t *testing.T) {
 	// Corrupt bytes on disk; index still has checksum of original.
 	require.Nil(t, os.WriteFile(filepath.Join(base, "things", thingID, fi.Name), []byte("tampered"), 0o644))
 
-	_, err := svc.ViewFile(context.Background(), thingKey, fi)
+	rc, err := svc.ViewFile(context.Background(), thingKey, fi)
+	require.Nil(t, err)
+	defer rc.Close()
+
+	_, err = io.ReadAll(rc)
 	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
 }
 

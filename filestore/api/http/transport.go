@@ -414,36 +414,28 @@ func encodeViewFileResponse(logger logger.Logger) kithttp.EncodeResponseFunc {
 	return func(_ context.Context, w http.ResponseWriter, response any) error {
 		w.Header().Set("Content-Type", octetStreamContentType)
 
-		switch fr := response.(type) {
-		case viewFileRes:
-			for k, v := range fr.Headers() {
-				w.Header().Set(k, v)
-			}
-			w.WriteHeader(fr.Code())
-			if fr.Empty() {
-				return nil
-			}
-			_, err := w.Write(fr.file)
-			return err
-		case streamFileRes:
-			for k, v := range fr.Headers() {
-				w.Header().Set(k, v)
-			}
-			w.WriteHeader(fr.Code())
-			defer fr.reader.Close()
-			if _, err := io.Copy(w, fr.reader); err != nil {
-				// The 200 status and headers are already on the wire, so the
-				// response cannot be switched to an error code. Log the failure
-				// (e.g. a checksum mismatch surfaced by the store at EOF) and
-				// abort the connection so the client observes a truncated
-				// transfer rather than a clean, falsely-successful download.
-				logger.Error(fmt.Sprintf("streaming file %q failed mid-transfer: %s", fr.name, err))
-				panic(http.ErrAbortHandler)
-			}
-			return nil
-		default:
+		fr, ok := response.(streamFileRes)
+		if !ok {
 			return fmt.Errorf("unsupported view response type: %T", response)
 		}
+
+		for k, v := range fr.Headers() {
+			w.Header().Set(k, v)
+		}
+		w.WriteHeader(fr.Code())
+		defer fr.reader.Close()
+
+		if _, err := io.Copy(w, fr.reader); err != nil {
+			// The 200 status and headers are already on the wire, so the
+			// response cannot be switched to an error code. Log the failure
+			// (e.g. a checksum mismatch surfaced by the store at EOF) and
+			// abort the connection so the client observes a truncated
+			// transfer rather than a clean, falsely-successful download.
+			logger.Error(fmt.Sprintf("streaming file %q failed mid-transfer: %s", fr.name, err))
+			panic(http.ErrAbortHandler)
+		}
+
+		return nil
 	}
 }
 
@@ -475,6 +467,15 @@ func getFileInfoParams(r *http.Request) (fileInfoParams, error) {
 	if err != nil {
 		return fileInfoParams{}, mapUploadErr(err)
 	}
+
+	// f is handed to the caller only on success, where the endpoint closes it.
+	// Every error path below has to release it here instead.
+	ok := false
+	defer func() {
+		if !ok {
+			f.Close()
+		}
+	}()
 
 	class, format, err := parseFileName(h.Filename)
 	if err != nil {
@@ -518,6 +519,8 @@ func getFileInfoParams(r *http.Request) (fileInfoParams, error) {
 		},
 		file: f,
 	}
+
+	ok = true
 
 	return res, nil
 }
@@ -605,6 +608,12 @@ func mimeMatches(class, format, mime string) bool {
 	case binariesClass, pointcloudsClass, bimClass:
 		return true
 	case imagesClass:
+		// SVG is an XML document, not a binary image format, so
+		// http.DetectContentType never reports image/* for it: an XML prolog
+		// sniffs as text/xml and a bare <svg> root as text/plain.
+		if format == svgFormat {
+			return strings.HasPrefix(mime, "text/") || strings.HasPrefix(mime, "image/")
+		}
 		return strings.HasPrefix(mime, "image/")
 	case documentsClass:
 		switch format {
