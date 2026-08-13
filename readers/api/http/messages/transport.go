@@ -283,7 +283,7 @@ func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error
 	req := deleteAllJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Subtopic: subtopic,
 				Protocol: protocol,
 				From:     from,
@@ -321,7 +321,7 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	req := deleteJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Publisher: publisherID,
 				Subtopic:  subtopic,
 				Protocol:  protocol,
@@ -348,7 +348,7 @@ func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, erro
 	req := deleteAllSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				From: from,
 				To:   to,
 			},
@@ -384,7 +384,7 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	req := deleteSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Publisher: publisher,
 				Subtopic:  subtopic,
 				Protocol:  protocol,
@@ -510,54 +510,54 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
-// buildReadersParams reads the query parameters shared by all message formats.
-func buildReadersParams(r *http.Request) (readers.ReadersParams, error) {
+// buildMessagesPageMetadata reads the query parameters shared by all message formats.
+func buildMessagesPageMetadata(r *http.Request) (readers.MessagesPageMetadata, error) {
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
 	if err != nil {
-		return readers.ReadersParams{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
-	return readers.ReadersParams{
+	return readers.MessagesPageMetadata{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
 		From:        from,
@@ -571,16 +571,16 @@ func buildReadersParams(r *http.Request) (readers.ReadersParams, error) {
 }
 
 func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
-	rm, err := buildReadersParams(r)
+	rm, err := buildMessagesPageMetadata(r)
 	if err != nil {
 		return readers.JSONPageMetadata{}, err
 	}
 
-	return readers.JSONPageMetadata{ReadersParams: rm}, nil
+	return readers.JSONPageMetadata{MessagesPageMetadata: rm}, nil
 }
 
 func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) {
-	rm, err := buildReadersParams(r)
+	rm, err := buildMessagesPageMetadata(r)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -616,12 +616,12 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 	}
 
 	return readers.SenMLPageMetadata{
-		ReadersParams: rm,
-		Name:          name,
-		Value:         v,
-		Comparator:    comparator,
-		StringValue:   vs,
-		DataValue:     vd,
-		BoolValue:     vb,
+		MessagesPageMetadata: rm,
+		Name:                 name,
+		Value:                v,
+		Comparator:           comparator,
+		StringValue:          vs,
+		DataValue:            vd,
+		BoolValue:            vb,
 	}, nil
 }

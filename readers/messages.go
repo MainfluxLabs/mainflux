@@ -11,16 +11,7 @@ import (
 )
 
 const (
-	// EqualKey represents the equal comparison operator key.
-	EqualKey = "eq"
-	// LowerThanKey represents the lower-than comparison operator key.
-	LowerThanKey = "lt"
-	// LowerThanEqualKey represents the lower-than-or-equal comparison operator key.
-	LowerThanEqualKey = "le"
-	// GreaterThanKey represents the greater-than-or-equal comparison operator key.
-	GreaterThanKey = "gt"
-	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
-	GreaterThanEqualKey = "ge"
+
 	// AggregationMin represents the minimum aggregation key.
 	AggregationMin = "min"
 	// AggregationMax represents the maximum aggregation key.
@@ -39,13 +30,13 @@ const (
 
 // Domain type aliases
 type (
-	Message           = domain.Message
-	MessagesPage      = domain.MessagesPage
-	JSONMessagesPage  = domain.JSONMessagesPage
-	SenMLMessagesPage = domain.SenMLMessagesPage
-	ReadersParams     = domain.ReadersParams
-	JSONPageMetadata  = domain.JSONPageMetadata
-	SenMLPageMetadata = domain.SenMLPageMetadata
+	Message              = domain.Message
+	MessagesPage         = domain.MessagesPage
+	JSONMessagesPage     = domain.JSONMessagesPage
+	SenMLMessagesPage    = domain.SenMLMessagesPage
+	MessagesPageMetadata = domain.MessagesPageMetadata
+	JSONPageMetadata     = domain.JSONPageMetadata
+	SenMLPageMetadata    = domain.SenMLPageMetadata
 )
 
 // ErrReadMessages indicates failure occurred while reading messages from database.
@@ -83,22 +74,4 @@ type SenMLMessageRepository interface {
 
 	// RemoveByThing deletes the senml messages related to a certain thing, identified by a given thing ID.
 	RemoveByThing(ctx context.Context, thingID string) error
-}
-
-// ComparatorSymbol converts a comparison operator key into its SQL symbol.
-func ComparatorSymbol(key string) string {
-	switch key {
-	case EqualKey:
-		return "="
-	case LowerThanKey:
-		return "<"
-	case LowerThanEqualKey:
-		return "<="
-	case GreaterThanKey:
-		return ">"
-	case GreaterThanEqualKey:
-		return ">="
-	default:
-		return "="
-	}
 }

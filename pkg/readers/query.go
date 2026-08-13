@@ -27,7 +27,7 @@ const (
 	GreaterThanEqualKey = "ge"
 )
 
-func BaseConditions(pm domain.ReadersParams, timeColumn string) []string {
+func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string {
 	var conds []string
 	if pm.Subtopic != "" {
 		conds = append(conds, "subtopic = :subtopic")
@@ -48,7 +48,7 @@ func BaseConditions(pm domain.ReadersParams, timeColumn string) []string {
 	return conds
 }
 
-func BaseQueryParams(pm domain.ReadersParams) map[string]any {
+func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 	return map[string]any{
 		"limit":     pm.Limit,
 		"offset":    pm.Offset,
@@ -63,7 +63,7 @@ func BaseQueryParams(pm domain.ReadersParams) map[string]any {
 // senmlConditions returns the SQL predicates common to every senml read,
 // including the aggregated ones.
 func SenmlConditions(pm domain.SenMLPageMetadata) []string {
-	conds := BaseConditions(pm.ReadersParams, SenmlOrder)
+	conds := BaseConditions(pm.MessagesPageMetadata, SenmlOrder)
 
 	if pm.Name != "" {
 		conds = append(conds, "name = :name")

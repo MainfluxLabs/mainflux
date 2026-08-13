@@ -75,7 +75,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 			limit:       rpm.Limit,
 			dir:         rpm.Dir,
 		},
-		conditions: mfreaders.BaseConditions(rpm.ReadersParams, mfreaders.JsonOrder),
+		conditions: mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JsonOrder),
 	}
 
 	return as.readAggregatedMessages(ctx, input)

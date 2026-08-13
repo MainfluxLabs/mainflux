@@ -192,7 +192,7 @@ func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
 }
 
 func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {
-	params := mfreaders.BaseQueryParams(rpm.ReadersParams)
+	params := mfreaders.BaseQueryParams(rpm.MessagesPageMetadata)
 	params["name"] = rpm.Name
 	params["value"] = rpm.Value
 	params["bool_value"] = rpm.BoolValue

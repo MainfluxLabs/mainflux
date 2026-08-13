@@ -106,7 +106,7 @@ func TestListJSONMessages(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit: noLimit,
 				},
 			},
@@ -119,7 +119,7 @@ func TestListJSONMessages(t *testing.T) {
 		},
 		"read messages with protocol": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:    noLimit,
 					Protocol: httpProt,
 				},
@@ -177,7 +177,7 @@ func TestJSONAggregation(t *testing.T) {
 	}{
 		"max aggregation": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
 					Publisher:   pubID,
 					AggType:     maxAgg,
@@ -189,7 +189,7 @@ func TestJSONAggregation(t *testing.T) {
 		},
 		"avg aggregation": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
 					Publisher:   pubID,
 					AggType:     avgAgg,
@@ -201,7 +201,7 @@ func TestJSONAggregation(t *testing.T) {
 		},
 		"count aggregation": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
 					Publisher:   pubID,
 					AggType:     countAgg,
@@ -213,7 +213,7 @@ func TestJSONAggregation(t *testing.T) {
 		},
 		"nested field aggregation": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
 					Publisher:   pubID,
 					AggType:     maxAgg,
@@ -309,7 +309,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 	}{
 		"delete JSON messages with publisher id1": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Publisher: id1,
 					From:      0,
 					To:        int64(created + int64(msgsNum)),
@@ -320,7 +320,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		},
 		"delete JSON messages with publisher id2": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Publisher: id2,
 					From:      0,
 					To:        int64(created + int64(msgsNum)),
@@ -331,7 +331,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		},
 		"delete JSON messages with protocol": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Publisher: id2,
 					Protocol:  httpProt,
 					From:      0,
@@ -343,7 +343,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		},
 		"delete JSON messages with subtopic": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Publisher: id1,
 					Subtopic:  subtopic,
 					From:      0,
@@ -355,7 +355,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		},
 		"delete JSON messages with time range": {
 			pageMeta: readers.JSONPageMetadata{
-				ReadersParams: readers.ReadersParams{
+				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Publisher: id1,
 					From:      int64(created + fromIndex),
 					To:        int64(created + toIndex + 1),
@@ -368,7 +368,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 	for desc, tc := range cases {
 		_ = reader.Remove(context.Background(), readers.JSONPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Publisher: id1,
 				From:      0,
 				To:        int64(created + int64(msgsNum)),
@@ -376,7 +376,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		})
 
 		_ = reader.Remove(context.Background(), readers.JSONPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Publisher: id2,
 				From:      0,
 				To:        int64(created + int64(msgsNum)),
@@ -389,7 +389,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		}
 
 		beforePage, err := reader.Retrieve(context.Background(), readers.JSONPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Publisher: tc.pageMeta.Publisher,
 				Subtopic:  tc.pageMeta.Subtopic,
 				Protocol:  tc.pageMeta.Protocol,
@@ -405,7 +405,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.Retrieve(context.Background(), readers.JSONPageMetadata{
-			ReadersParams: readers.ReadersParams{
+			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Publisher: tc.pageMeta.Publisher,
 				Subtopic:  tc.pageMeta.Subtopic,
 				Protocol:  tc.pageMeta.Protocol,

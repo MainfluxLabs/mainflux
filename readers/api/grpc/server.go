@@ -60,7 +60,7 @@ func (gs *grpcServer) ListSenMLMessages(ctx context.Context, req *protomfx.ListS
 	return res.(*protomfx.ListSenMLMessagesRes), nil
 }
 
-type readersParamsReq interface {
+type messagesPageMetadataReq interface {
 	GetOffset() uint64
 	GetLimit() uint64
 	GetSubtopic() string
@@ -75,8 +75,8 @@ type readersParamsReq interface {
 	GetDir() string
 }
 
-func decodeReadersParams(req readersParamsReq) domain.ReadersParams {
-	return domain.ReadersParams{
+func decodeMessagesPageMetadata(req messagesPageMetadataReq) domain.MessagesPageMetadata {
+	return domain.MessagesPageMetadata{
 		Offset:      req.GetOffset(),
 		Limit:       req.GetLimit(),
 		Subtopic:    req.GetSubtopic(),
@@ -97,8 +97,8 @@ func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 	return listJSONMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.JSONPageMetadata{
-			ReadersParams: decodeReadersParams(req),
-			Filter:        req.GetFilter(),
+			MessagesPageMetadata: decodeMessagesPageMetadata(req),
+			Filter:               req.GetFilter(),
 		},
 	}, nil
 }
@@ -108,13 +108,13 @@ func decodeListSenMLMessagesRequest(_ context.Context, grpcReq any) (any, error)
 	return listSenMLMessagesReq{
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.SenMLPageMetadata{
-			ReadersParams: decodeReadersParams(req),
-			Name:          req.GetName(),
-			Value:         req.GetValue(),
-			Comparator:    req.GetComparator(),
-			BoolValue:     req.GetBoolValue(),
-			StringValue:   req.GetStringValue(),
-			DataValue:     req.GetDataValue(),
+			MessagesPageMetadata: decodeMessagesPageMetadata(req),
+			Name:                 req.GetName(),
+			Value:                req.GetValue(),
+			Comparator:           req.GetComparator(),
+			BoolValue:            req.GetBoolValue(),
+			StringValue:          req.GetStringValue(),
+			DataValue:            req.GetDataValue(),
 		},
 	}, nil
 }
