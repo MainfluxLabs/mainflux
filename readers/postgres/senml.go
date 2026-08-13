@@ -147,7 +147,7 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 }
 
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
-	return dbutil.BuildWhereClause(mfreaders.SenmlConditions(rpm)...)
+	return dbutil.BuildWhereClause(mfreaders.SenMLConditions(rpm)...)
 }
 
 func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {

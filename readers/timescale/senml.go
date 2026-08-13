@@ -56,7 +56,7 @@ func (sr *senmlRepository) RemoveByThing(ctx context.Context, thingID string) er
 
 func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMetadata) error {
 	condition := sr.fmtCondition(rpm)
-	q := fmt.Sprintf("DELETE FROM %s %s", mfreaders.SenmlTable, condition)
+	q := fmt.Sprintf("DELETE FROM %s %s", mfreaders.SenMLTable, condition)
 	params := map[string]any{
 		"subtopic":     rpm.Subtopic,
 		"publisher":    rpm.Publisher,
@@ -141,7 +141,7 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 	page.Messages = messages
 
 	condition := sr.fmtCondition(rpm)
-	q := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, mfreaders.SenmlTable, condition)
+	q := fmt.Sprintf(`SELECT COUNT(*) FROM %s %s;`, mfreaders.SenMLTable, condition)
 	total, err := dbutil.Total(ctx, sr.db, q, params)
 	if err != nil {
 		return page, err
@@ -156,7 +156,7 @@ func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPa
 	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := sr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT subtopic, publisher, protocol, name, unit, value, string_value, bool_value, data_value, sum, time, update_time FROM %s %s ORDER BY time %s %s;`, mfreaders.SenmlTable, condition, dq, olq)
+	q := fmt.Sprintf(`SELECT subtopic, publisher, protocol, name, unit, value, string_value, bool_value, data_value, sum, time, update_time FROM %s %s ORDER BY time %s %s;`, mfreaders.SenMLTable, condition, dq, olq)
 	rows, err := sr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
@@ -188,7 +188,7 @@ func (sr *senmlRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, err
 }
 
 func (sr *senmlRepository) fmtCondition(rpm readers.SenMLPageMetadata) string {
-	return dbutil.BuildWhereClause(mfreaders.SenmlConditions(rpm)...)
+	return dbutil.BuildWhereClause(mfreaders.SenMLConditions(rpm)...)
 }
 
 func (sr *senmlRepository) buildQueryParams(rpm readers.SenMLPageMetadata) map[string]any {

@@ -45,8 +45,8 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		"to":        rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JsonOrder)...)
-	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.JsonOrder)
+	condition := dbutil.BuildWhereClause(mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder)...)
+	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.JSONOrder)
 	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
 	if err != nil {
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
@@ -79,9 +79,9 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
           GROUP BY bucket
           HAVING %s
           ORDER BY bucket %s) agg %s;`,
-		selectFields, bucket, aggExpr, mfreaders.JsonOrder, mfreaders.JsonTable, condition, having, dir, olq)
+		selectFields, bucket, aggExpr, mfreaders.JSONOrder, mfreaders.JSONTable, condition, having, dir, olq)
 
-	return as.executeAggQuery(ctx, query, params, mfreaders.JsonTable)
+	return as.executeAggQuery(ctx, query, params, mfreaders.JSONTable)
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
@@ -100,8 +100,8 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		"to":           rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(mfreaders.SenmlConditions(rpm)...)
-	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.SenmlOrder)
+	condition := dbutil.BuildWhereClause(mfreaders.SenMLConditions(rpm)...)
+	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.SenMLOrder)
 	aggFunc := sqlAggFunc(rpm.AggType)
 	if aggFunc == "" {
 		return []readers.Message{}, 0, nil
@@ -121,9 +121,9 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
           GROUP BY %s
           HAVING MAX(value) IS NOT NULL
           ORDER BY %s %s %s;`,
-		aggFunc, mfreaders.SenmlTable, condition, bucket, bucket, dir, olq)
+		aggFunc, mfreaders.SenMLTable, condition, bucket, bucket, dir, olq)
 
-	return as.executeAggQuery(ctx, query, params, mfreaders.SenmlTable)
+	return as.executeAggQuery(ctx, query, params, mfreaders.SenMLTable)
 }
 
 func (as *aggregationService) executeAggQuery(ctx context.Context, query string, params map[string]any, table string) ([]readers.Message, uint64, error) {
@@ -158,7 +158,7 @@ func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, u
 	total := uint64(0)
 
 	switch table {
-	case mfreaders.SenmlTable:
+	case mfreaders.SenMLTable:
 		for rows.Next() {
 			row := aggSenMLRow{}
 			if err := rows.StructScan(&row); err != nil {

@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	JsonTable  = "json"
-	JsonOrder  = "created"
-	SenmlTable = "senml"
-	SenmlOrder = "time"
+	JSONTable  = "json"
+	JSONOrder  = "created"
+	SenMLTable = "senml"
+	SenMLOrder = "time"
 
 	// EqualKey represents the equal comparison operator key.
 	EqualKey = "eq"
@@ -62,8 +62,8 @@ func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 
 // senmlConditions returns the SQL predicates common to every senml read,
 // including the aggregated ones.
-func SenmlConditions(pm domain.SenMLPageMetadata) []string {
-	conds := BaseConditions(pm.MessagesPageMetadata, SenmlOrder)
+func SenMLConditions(pm domain.SenMLPageMetadata) []string {
+	conds := BaseConditions(pm.MessagesPageMetadata, SenMLOrder)
 
 	if pm.Name != "" {
 		conds = append(conds, "name = :name")

@@ -283,7 +283,7 @@ func TestJsonConditions(t *testing.T) {
 		},
 	}
 
-	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JsonOrder)
+	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JSONOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
 	assert.Contains(t, result, "publisher = :publisher")
@@ -336,7 +336,7 @@ func TestSenmlConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := mfreaders.SenmlConditions(tc.pm)
+			result := mfreaders.SenMLConditions(tc.pm)
 			assert.Contains(t, result, tc.resPart)
 		})
 	}
