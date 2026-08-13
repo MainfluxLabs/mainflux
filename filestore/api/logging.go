@@ -55,7 +55,7 @@ func (lm *loggingMiddleware) UpdateFile(ctx context.Context, key string, fi file
 	return lm.svc.UpdateFile(ctx, key, fi)
 }
 
-func (lm *loggingMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo) (data []byte, err error) {
+func (lm *loggingMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo) (rc io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_file took %s to complete", time.Since(begin))
 		if err != nil {

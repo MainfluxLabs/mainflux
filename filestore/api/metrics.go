@@ -51,7 +51,7 @@ func (ms *metricsMiddleware) UpdateFile(ctx context.Context, key string, fi file
 	return ms.svc.UpdateFile(ctx, key, fi)
 }
 
-func (ms *metricsMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo) (data []byte, err error) {
+func (ms *metricsMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo) (io.ReadCloser, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_file").Add(1)
 		ms.latency.With("method", "view_file").Observe(time.Since(begin).Seconds())
