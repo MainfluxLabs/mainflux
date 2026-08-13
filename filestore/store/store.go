@@ -31,9 +31,6 @@ type FileStore interface {
 	// Delete removes key.
 	Delete(ctx context.Context, key string) error
 
-	// DeleteAll removes each key in parallel.
-	DeleteAll(ctx context.Context, keys []string) error
-
 	// DeletePrefix removes all objects whose key begins with prefix.
 	DeletePrefix(ctx context.Context, prefix string) error
 }

@@ -7,14 +7,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
-	"fmt"
 	"hash"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 type local struct {
@@ -68,40 +65,6 @@ func (l *local) Delete(_ context.Context, key string) error {
 	}
 
 	return nil
-}
-
-func (l *local) DeleteAll(ctx context.Context, keys []string) error {
-	if len(keys) == 0 {
-		return nil
-	}
-
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 8)
-	errCh := make(chan error, len(keys))
-
-	for _, k := range keys {
-		wg.Add(1)
-		sem <- struct{}{}
-
-		go func(key string) {
-			defer wg.Done()
-			defer func() { <-sem }()
-
-			if err := l.Delete(ctx, key); err != nil {
-				errCh <- fmt.Errorf("key %s: %w", key, err)
-			}
-		}(k)
-	}
-	wg.Wait()
-
-	close(errCh)
-
-	var errs []error
-	for e := range errCh {
-		errs = append(errs, e)
-	}
-
-	return errors.Join(errs...)
 }
 
 func (l *local) DeletePrefix(_ context.Context, prefix string) error {

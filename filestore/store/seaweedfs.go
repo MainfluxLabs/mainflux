@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"path"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -147,36 +146,6 @@ func (s *seaweedFS) Delete(ctx context.Context, key string) error {
 	}
 
 	return fmt.Errorf("%w: delete status %d", ErrBackend, resp.StatusCode)
-}
-
-func (s *seaweedFS) DeleteAll(ctx context.Context, keys []string) error {
-	if len(keys) == 0 {
-		return nil
-	}
-
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 8)
-	errCh := make(chan error, len(keys))
-	for _, k := range keys {
-		wg.Add(1)
-		sem <- struct{}{}
-		go func(key string) {
-			defer wg.Done()
-			defer func() { <-sem }()
-			if err := s.Delete(ctx, key); err != nil {
-				errCh <- fmt.Errorf("key %s: %w", key, err)
-			}
-		}(k)
-	}
-
-	wg.Wait()
-	close(errCh)
-	var errs []error
-	for e := range errCh {
-		errs = append(errs, e)
-	}
-
-	return errors.Join(errs...)
 }
 
 func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {

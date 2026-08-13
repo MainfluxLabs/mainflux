@@ -178,49 +178,6 @@ func TestLocalDelete(t *testing.T) {
 	assert.True(t, os.IsNotExist(err), "file should be gone")
 }
 
-func TestLocalDeleteAll(t *testing.T) {
-	s, base := newLocal(t)
-	keys := []string{}
-	for i := 0; i < 50; i++ {
-		k := fmt.Sprintf("groups/g/f%d.bin", i)
-		_, err := s.Put(context.Background(), k, strings.NewReader("x"))
-		require.Nil(t, err, fmt.Sprintf("put %d failed: %s", i, err))
-		keys = append(keys, k)
-	}
-
-	cases := []struct {
-		desc string
-		keys []string
-		err  error
-	}{
-		{
-			desc: "delete empty slice",
-			keys: []string{},
-			err:  nil,
-		},
-		{
-			desc: "delete many keys in parallel",
-			keys: keys,
-			err:  nil,
-		},
-		{
-			desc: "delete mix of existing and missing",
-			keys: []string{"groups/x/a", "groups/x/b"},
-			err:  nil,
-		},
-	}
-
-	for _, tc := range cases {
-		err := s.DeleteAll(context.Background(), tc.keys)
-		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
-	}
-
-	for _, k := range keys {
-		_, err := os.Stat(filepath.Join(base, k))
-		assert.True(t, os.IsNotExist(err), fmt.Sprintf("%s should be gone", k))
-	}
-}
-
 func TestLocalDeletePrefix(t *testing.T) {
 	s, base := newLocal(t)
 	for _, k := range []string{

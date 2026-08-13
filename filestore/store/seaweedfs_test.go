@@ -228,46 +228,6 @@ func TestSeaweedDelete(t *testing.T) {
 	assert.False(t, exists, "file should be gone from filer")
 }
 
-func TestSeaweedDeleteAll(t *testing.T) {
-	s, f, srv := newSeaweed(t)
-	defer srv.Close()
-
-	keys := []string{}
-	for i := 0; i < 20; i++ {
-		k := fmt.Sprintf("groups/g/f%d.bin", i)
-		_, err := s.Put(context.Background(), k, strings.NewReader("x"))
-		require.Nil(t, err, fmt.Sprintf("put %d failed: %s", i, err))
-		keys = append(keys, k)
-	}
-
-	cases := []struct {
-		desc string
-		keys []string
-		err  error
-	}{
-		{
-			desc: "delete empty slice",
-			keys: []string{},
-			err:  nil,
-		},
-		{
-			desc: "delete many in parallel",
-			keys: keys,
-			err:  nil,
-		},
-	}
-
-	for _, tc := range cases {
-		err := s.DeleteAll(context.Background(), tc.keys)
-		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
-	}
-
-	for _, k := range keys {
-		_, exists := f.files[swPrefix+"/"+k]
-		assert.False(t, exists, fmt.Sprintf("%s should be gone", k))
-	}
-}
-
 func TestSeaweedDeletePrefix(t *testing.T) {
 	s, f, srv := newSeaweed(t)
 	defer srv.Close()
