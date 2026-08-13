@@ -83,16 +83,12 @@ func viewFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		f, err := svc.ViewFile(ctx, req.key.Value, fi)
+		rc, err := svc.ViewFile(ctx, req.key.Value, fi)
 		if err != nil {
 			return nil, err
 		}
 
-		res := viewFileRes{
-			file: f,
-		}
-
-		return res, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -121,10 +117,13 @@ func removeFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 func saveGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(saveGroupFileReq)
+		if req.file != nil {
+			defer req.file.Close()
+		}
+
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		defer req.file.Close()
 
 		err := svc.SaveGroupFile(ctx, req.file, req.token, req.groupID, req.fileInfo)
 		if err != nil {
