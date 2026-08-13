@@ -14,8 +14,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
-const DeletedFlagKey = "deleted"
-const RawIDKey = "id"
+const (
+	DeletedFlagKey = "deleted"
+	RawIDKey       = "id"
+)
 
 type Backup struct {
 	OrgsConfigs   []OrgConfig
