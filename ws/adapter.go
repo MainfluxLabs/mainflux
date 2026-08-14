@@ -39,15 +39,22 @@ type Service interface {
 	SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
+// PubSub specifies the minimal publish/subscribe capability the WS adapter needs.
+type PubSub interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+	messaging.Subscriber
+}
+
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things domain.ThingsClient
-	pubsub nats.PubSub
+	pubsub PubSub
 }
 
 // New instantiates the WS adapter implementation
-func New(things domain.ThingsClient, pubsub nats.PubSub) Service {
+func New(things domain.ThingsClient, pubsub PubSub) Service {
 	return &adapterService{
 		things: things,
 		pubsub: pubsub,

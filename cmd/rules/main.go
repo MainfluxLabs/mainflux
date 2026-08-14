@@ -303,7 +303,7 @@ func subscribeToThingsES(ctx context.Context, svc rules.Service, cfg config, log
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, rc domain.ReadersClient, nps nats.Publisher, logger logger.Logger, scriptsEnabled bool) rules.Service {
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, rc domain.ReadersClient, nps rules.Publisher, logger logger.Logger, scriptsEnabled bool) rules.Service {
 	database := dbutil.NewDatabase(db)
 
 	rulesRepo := postgres.NewRuleRepository(database)

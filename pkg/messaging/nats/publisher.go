@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
@@ -25,27 +24,13 @@ const (
 	commandsSuffix = "commands"
 )
 
-// Publisher extends the base messaging.Publisher with alarm, command, notification and webhook publishing capabilities.
-type Publisher interface {
-	messaging.Publisher
-	messaging.AlarmPublisher
-	messaging.CommandPublisher
-	messaging.NotificationPublisher
-	messaging.WebhookPublisher
-
-	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
-	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
-}
-
-var _ Publisher = (*publisher)(nil)
-
 type publisher struct {
 	conn *broker.Conn
 	js   broker.JetStreamContext
 }
 
 // NewPublisher returns NATS message Publisher.
-func NewPublisher(url string) (Publisher, error) {
+func NewPublisher(url string) (*publisher, error) {
 	conn, js, err := connect(url)
 	if err != nil {
 		return nil, err
@@ -121,12 +106,12 @@ func (pub *publisher) PublishByFlags(msg protomfx.Message, pc *domain.ProfileCon
 	}
 
 	if pc.WriteEnabled {
-		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+		if err := pub.publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), &msg); err != nil {
 			return err
 		}
 	}
 	if pc.RuleEnabled {
-		if err := pub.Publish(SubjectRules, msg); err != nil {
+		if err := pub.publish(SubjectRules, &msg); err != nil {
 			return err
 		}
 	}

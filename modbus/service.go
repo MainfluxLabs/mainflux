@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	gbmodbus "github.com/goburrow/modbus"
@@ -78,11 +77,16 @@ type Service interface {
 	LoadAndScheduleTasks(ctx context.Context) error
 }
 
+// Publisher specifies the minimal publishing capability the modbus service needs.
+type Publisher interface {
+	messaging.MessageDispatcher
+}
+
 type clientsService struct {
 	things     domain.ThingsClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
-	publisher  nats.Publisher
+	publisher  Publisher
 	logger     logger.Logger
 	scheduler  *cron.ScheduleManager
 	limiters   map[string]*rate.Limiter
@@ -117,7 +121,7 @@ type Block struct {
 	Length uint16
 }
 
-func New(things domain.ThingsClient, pub nats.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
 		things:     things,
 		publisher:  pub,

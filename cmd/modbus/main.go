@@ -270,7 +270,7 @@ func subscribeToThingsES(ctx context.Context, svc modbus.Service, cfg config, lo
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts domain.ThingsClient, pub nats.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) modbus.Service {
+func newService(ts domain.ThingsClient, pub modbus.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) modbus.Service {
 	database := dbutil.NewDatabase(db)
 	clientsRepo := postgres.NewClientRepository(database)
 	clientsRepo = tracing.ClientRepositoryMiddleware(dbTracer, clientsRepo)

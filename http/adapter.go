@@ -28,15 +28,21 @@ type Service interface {
 	SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
+// Publisher specifies the minimal publishing capability the HTTP adapter needs.
+type Publisher interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+}
+
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	publisher nats.Publisher
+	publisher Publisher
 	things    domain.ThingsClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(publisher nats.Publisher, things domain.ThingsClient) Service {
+func New(publisher Publisher, things domain.ThingsClient) Service {
 	return &adapterService{
 		publisher: publisher,
 		things:    things,
