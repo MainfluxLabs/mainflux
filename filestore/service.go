@@ -122,31 +122,48 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 		return err
 	}
 
-	switch _, err := fs.thingsRepo.Retrieve(ctx, thID, fi); {
-	case err == nil:
-		return dbutil.ErrConflict
-	case !errors.Contains(err, dbutil.ErrNotFound):
+	fi.Checksum = ""
+	if err := fs.thingsRepo.Save(ctx, thID, grID, fi); err != nil {
 		return err
 	}
 
 	objKey := thingFileKey(thID, fi.Name)
 	checksum, err := fs.store.Put(ctx, objKey, file)
 	if err != nil {
+		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
+			return fs.thingsRepo.Remove(ctx, thID, fi)
+		})
 		return err
 	}
 
 	fi.Checksum = checksum
 
-	if err = fs.thingsRepo.Save(ctx, thID, grID, fi); err != nil {
-		if !errors.Contains(err, dbutil.ErrConflict) {
-			if delErr := fs.store.Delete(ctx, objKey); delErr != nil {
-				fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", objKey, delErr))
-			}
-		}
+	if err := fs.thingsRepo.UpdateChecksum(ctx, thID, fi); err != nil {
+		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
+			return fs.thingsRepo.Remove(ctx, thID, fi)
+		})
 		return err
 	}
 
 	return nil
+}
+
+// releaseFile rolls back a reserved row and any bytes written under objKey, so
+// a failed upload leaves neither a row pointing at a missing or unverifiable
+// object nor an orphaned object with no row. Cleanup runs on a cancellation-free
+// context: the most common way an upload fails is the client disconnecting
+// mid-stream, and inheriting that cancellation would strand the reservation and
+// permanently block re-uploading the same name.
+func (fs *filestoreService) releaseFile(ctx context.Context, objKey string, removeRow func(context.Context) error) {
+	ctx = context.WithoutCancel(ctx)
+
+	if err := removeRow(ctx); err != nil {
+		fs.logger.Error(fmt.Sprintf("failed to release reserved file row after upload error: key=%s err=%s", objKey, err))
+	}
+
+	if err := fs.store.Delete(ctx, objKey); err != nil {
+		fs.logger.Error(fmt.Sprintf("orphaned object after upload error: key=%s err=%s", objKey, err))
+	}
 }
 
 func (fs *filestoreService) UpdateFile(ctx context.Context, key string, fi FileInfo) error {
@@ -231,26 +248,28 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 		return err
 	}
 
-	switch _, err := fs.groupsRepo.Retrieve(ctx, groupID, fi); {
-	case err == nil:
-		return dbutil.ErrConflict
-	case !errors.Contains(err, dbutil.ErrNotFound):
+	// See SaveFile: the row is reserved first so concurrent uploads of the same
+	// name cannot corrupt each other's object.
+	fi.Checksum = ""
+	if err := fs.groupsRepo.Save(ctx, groupID, fi); err != nil {
 		return err
 	}
 
-	checksum, err := fs.store.Put(ctx, groupFileKey(groupID, fi.Name), file)
+	objKey := groupFileKey(groupID, fi.Name)
+	checksum, err := fs.store.Put(ctx, objKey, file)
 	if err != nil {
+		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
+			return fs.groupsRepo.Remove(ctx, groupID, fi)
+		})
 		return err
 	}
+
 	fi.Checksum = checksum
 
-	if err := fs.groupsRepo.Save(ctx, groupID, fi); err != nil {
-		if !errors.Contains(err, dbutil.ErrConflict) {
-			key := groupFileKey(groupID, fi.Name)
-			if delErr := fs.store.Delete(ctx, key); delErr != nil {
-				fs.logger.Error(fmt.Sprintf("orphaned object after failed DB save: key=%s err=%s", key, delErr))
-			}
-		}
+	if err := fs.groupsRepo.UpdateChecksum(ctx, groupID, fi); err != nil {
+		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
+			return fs.groupsRepo.Remove(ctx, groupID, fi)
+		})
 		return err
 	}
 

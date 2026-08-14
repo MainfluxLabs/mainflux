@@ -86,6 +86,32 @@ func (tr thingsRepository) Update(ctx context.Context, thingID string, fi filest
 	return nil
 }
 
+func (tr thingsRepository) UpdateChecksum(ctx context.Context, thingID string, fi filestore.FileInfo) error {
+	q := `UPDATE things_files SET checksum = :checksum
+          WHERE thing_id = :thing_id AND file_name = :file_name AND file_class = :file_class AND file_format = :file_format`
+
+	dbFile, err := toDBThingFile(thingID, fi)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	res, err := tr.db.NamedExecContext(ctx, q, dbFile)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	if cnt == 0 {
+		return dbutil.ErrNotFound
+	}
+
+	return nil
+}
+
 func (tr thingsRepository) Retrieve(ctx context.Context, thingID string, fi filestore.FileInfo) (filestore.FileInfo, error) {
 	q := `SELECT file_name, file_class, file_format, metadata, checksum FROM things_files
 		WHERE thing_id = $1 AND file_class = $2 AND file_format = $3 AND file_name = $4`

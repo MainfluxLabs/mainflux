@@ -37,8 +37,26 @@ func thingKey(thingID string, fi filestore.FileInfo) string {
 func (r *ThingsRepository) Save(_ context.Context, thingID, groupID string, fi filestore.FileInfo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.byKey[thingKey(thingID, fi)] = fi
+	k := thingKey(thingID, fi)
+	// Mirrors the primary key on (thing_id, file_name, file_class, file_format).
+	if _, ok := r.byKey[k]; ok {
+		return dbutil.ErrConflict
+	}
+	r.byKey[k] = fi
 	r.group[thingID] = groupID
+	return nil
+}
+
+func (r *ThingsRepository) UpdateChecksum(_ context.Context, thingID string, fi filestore.FileInfo) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	k := thingKey(thingID, fi)
+	got, ok := r.byKey[k]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+	got.Checksum = fi.Checksum
+	r.byKey[k] = got
 	return nil
 }
 
@@ -134,7 +152,25 @@ func (r *GroupsRepository) Save(_ context.Context, groupID string, fi filestore.
 	if r.FailOn != "" && fi.Name == r.FailOn {
 		return dbutil.ErrCreateEntity
 	}
-	r.byKey[groupKey(groupID, fi)] = fi
+	k := groupKey(groupID, fi)
+	// Mirrors the primary key on (group_id, file_name, file_class, file_format).
+	if _, ok := r.byKey[k]; ok {
+		return dbutil.ErrConflict
+	}
+	r.byKey[k] = fi
+	return nil
+}
+
+func (r *GroupsRepository) UpdateChecksum(_ context.Context, groupID string, fi filestore.FileInfo) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	k := groupKey(groupID, fi)
+	got, ok := r.byKey[k]
+	if !ok {
+		return dbutil.ErrNotFound
+	}
+	got.Checksum = fi.Checksum
+	r.byKey[k] = got
 	return nil
 }
 
