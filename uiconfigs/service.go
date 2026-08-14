@@ -34,8 +34,9 @@ type Service interface {
 	// RemoveOrgConfig removes the org config by org id.
 	RemoveOrgConfig(ctx context.Context, orgID string) error
 
-	// MarkReferencesDeleted replaces references to the given Thing or Group IDs with an
-	// empty string, in place, wherever they appear in the org's dashboard config.
+	// MarkReferencesDeleted clears references to the given Thing or Group IDs wherever they
+	// appear in the org's dashboard config: a reference inside an object is blanked to an
+	// empty string in place, while a bare reference in an array is removed from it entirely.
 	MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error
 
 	// BackupOrgsConfigs retrieves all org configs.
@@ -365,9 +366,12 @@ func (svc *configService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-// markReferencesDeleted replaces any string value matching one of the given IDs - whether
-// it's a value inside a map or an element of an array - with an empty string in place. The
-// second return value indicates whether anything changed.
+// markReferencesDeleted clears references to the given IDs wherever they appear in v: a
+// map value matching one of the IDs is replaced in place with an empty string (the
+// surrounding object is still meaningful and kept), while an array element matching one of
+// the IDs is dropped from the array entirely (a bare ID with nothing else attached to it has
+// nothing left worth keeping once removed). The second return value indicates whether
+// anything changed.
 func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
 	switch val := v.(type) {
 	case map[string]any:
@@ -390,19 +394,18 @@ func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
 
 		return result, changed
 	case []any:
-		result := make([]any, len(val))
+		result := make([]any, 0, len(val))
 		changed := false
-		for i, vv := range val {
+		for _, vv := range val {
 			if s, ok := vv.(string); ok {
 				if _, found := ids[s]; found {
-					result[i] = ""
 					changed = true
 					continue
 				}
 			}
 
 			marked, c := markReferencesDeleted(vv, ids)
-			result[i] = marked
+			result = append(result, marked)
 			changed = changed || c
 		}
 		return result, changed
