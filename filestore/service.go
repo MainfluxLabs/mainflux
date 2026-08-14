@@ -212,15 +212,11 @@ func (fs *filestoreService) RemoveFile(ctx context.Context, key string, fi FileI
 }
 
 func (fs *filestoreService) RemoveFiles(ctx context.Context, thingID string) error {
-	if err := fs.thingsRepo.RemoveByThing(ctx, thingID); err != nil {
-		return err
-	}
-
 	if err := fs.store.DeletePrefix(ctx, thingFileDirKey(thingID)); err != nil {
 		return err
 	}
 
-	return nil
+	return fs.thingsRepo.RemoveByThing(ctx, thingID)
 }
 
 func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo) (io.ReadCloser, error) {
@@ -315,20 +311,12 @@ func (fs *filestoreService) RemoveGroupFile(ctx context.Context, token, groupID 
 }
 
 func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID string) error {
-	if err := fs.groupsRepo.RemoveByGroup(ctx, groupID); err != nil {
-		return err
-	}
-
-	if err := fs.store.DeletePrefix(ctx, filepath.Join(groupsPath, groupID)); err != nil {
-		return err
-	}
-
 	thingIDs, err := fs.thingsRepo.RetrieveThingIDsByGroup(ctx, groupID)
 	if err != nil {
 		return err
 	}
 
-	if err := fs.thingsRepo.RemoveByGroup(ctx, groupID); err != nil {
+	if err := fs.store.DeletePrefix(ctx, filepath.Join(groupsPath, groupID)); err != nil {
 		return err
 	}
 
@@ -353,7 +341,15 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 	for e := range errCh {
 		errs = append(errs, e)
 	}
-	return stderrors.Join(errs...)
+	if err := stderrors.Join(errs...); err != nil {
+		return err
+	}
+
+	if err := fs.groupsRepo.RemoveByGroup(ctx, groupID); err != nil {
+		return err
+	}
+
+	return fs.thingsRepo.RemoveByGroup(ctx, groupID)
 }
 
 func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) (io.ReadCloser, error) {
