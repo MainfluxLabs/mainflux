@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -16,6 +15,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 // ErrBackend is returned for any non-2xx response from the object store.
@@ -96,7 +97,7 @@ func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, e
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("%w: put status %d", ErrBackend, resp.StatusCode)
+		return "", errors.Wrap(ErrBackend, fmt.Errorf("put status %d", resp.StatusCode))
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
@@ -118,7 +119,7 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 		if resp.StatusCode == http.StatusNotFound {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("%w: get status %d", ErrBackend, resp.StatusCode)
+		return nil, errors.Wrap(ErrBackend, fmt.Errorf("get status %d", resp.StatusCode))
 	}
 
 	if expectedChecksum == "" {
@@ -145,7 +146,7 @@ func (s *seaweedFS) Delete(ctx context.Context, key string) error {
 		return nil
 	}
 
-	return fmt.Errorf("%w: delete status %d", ErrBackend, resp.StatusCode)
+	return errors.Wrap(ErrBackend, fmt.Errorf("delete status %d", resp.StatusCode))
 }
 
 func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
@@ -174,5 +175,5 @@ func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
 		return nil
 	}
 
-	return fmt.Errorf("%w: delete prefix status %d", ErrBackend, resp.StatusCode)
+	return errors.Wrap(ErrBackend, fmt.Errorf("delete prefix status %d", resp.StatusCode))
 }

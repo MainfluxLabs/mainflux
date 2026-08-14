@@ -6,7 +6,6 @@ package filestore_test
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -99,7 +99,7 @@ func TestSaveGroupFile_DuplicatePreservesExisting(t *testing.T) {
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("original"), token, groupID, fi))
 
 	err := svc.SaveGroupFile(context.Background(), strings.NewReader("different"), token, groupID, fi)
-	assert.True(t, errors.Is(err, dbutil.ErrConflict), "expected conflict, got %v", err)
+	assert.True(t, errors.Contains(err, dbutil.ErrConflict), "expected conflict, got %v", err)
 
 	assert.Equal(t, 1, grRepo.Len())
 
@@ -159,7 +159,20 @@ func TestViewGroupFile_ChecksumMismatch(t *testing.T) {
 	defer rc.Close()
 
 	_, err = io.ReadAll(rc)
-	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
+	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
+}
+
+func TestViewGroupFile_MissingObject(t *testing.T) {
+	svc, _, _, base := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
+
+	require.Nil(t, os.Remove(filepath.Join(base, "groups", groupID, fi.Name)))
+
+	_, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	require.NotNil(t, err)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), "expected not-found, got %v", err)
 }
 
 func TestRemoveAllFilesByGroup(t *testing.T) {
@@ -223,7 +236,7 @@ func TestSaveFile_DuplicatePreservesExisting(t *testing.T) {
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("original"), thingKey, fi))
 
 	err := svc.SaveFile(context.Background(), strings.NewReader("different"), thingKey, fi)
-	assert.True(t, errors.Is(err, dbutil.ErrConflict), "expected conflict, got %v", err)
+	assert.True(t, errors.Contains(err, dbutil.ErrConflict), "expected conflict, got %v", err)
 
 	data, statErr := os.ReadFile(filepath.Join(base, "things", thingID, fi.Name))
 	require.Nil(t, statErr)
@@ -259,7 +272,7 @@ func TestViewFile_ChecksumMismatch(t *testing.T) {
 	defer rc.Close()
 
 	_, err = io.ReadAll(rc)
-	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
+	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
 }
 
 func TestRemoveFile(t *testing.T) {
@@ -304,5 +317,5 @@ func TestChecksumMismatchPropagates(t *testing.T) {
 	defer rc.Close()
 
 	_, err = io.ReadAll(rc)
-	assert.True(t, errors.Is(err, store.ErrChecksumMismatch))
+	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch))
 }

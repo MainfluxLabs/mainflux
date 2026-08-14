@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/filestore/store"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -123,7 +123,7 @@ func TestLocalGet(t *testing.T) {
 	for _, tc := range cases {
 		rc, err := s.Get(context.Background(), tc.key, tc.checksum)
 		if tc.err != nil {
-			assert.True(t, errors.Is(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 			continue
 		}
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
@@ -144,7 +144,7 @@ func TestLocalGetChecksumMismatch(t *testing.T) {
 	defer rc.Close()
 
 	_, err = io.ReadAll(rc)
-	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), fmt.Sprintf("expected ErrChecksumMismatch got %s", err))
+	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), fmt.Sprintf("expected ErrChecksumMismatch got %s", err))
 }
 
 func TestLocalDelete(t *testing.T) {

@@ -407,7 +407,7 @@ func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey str
 // storage/DB inconsistency, so it is logged before being flattened for the
 // caller.
 func (fs *filestoreService) translateGetErr(key string, err error) error {
-	if stderrors.Is(err, store.ErrNotFound) {
+	if errors.Contains(err, store.ErrNotFound) {
 		fs.logger.Warn(fmt.Sprintf("file index row exists but object is missing: key=%s", key))
 		return errors.Wrap(dbutil.ErrNotFound, err)
 	}

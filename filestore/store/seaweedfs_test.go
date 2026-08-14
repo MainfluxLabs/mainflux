@@ -6,7 +6,6 @@ package store_test
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/filestore/store"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -192,7 +192,7 @@ func TestSeaweedGetChecksumMismatch(t *testing.T) {
 	defer rc.Close()
 
 	_, err = io.ReadAll(rc)
-	assert.True(t, errors.Is(err, store.ErrChecksumMismatch), fmt.Sprintf("expected ErrChecksumMismatch got %s", err))
+	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), fmt.Sprintf("expected ErrChecksumMismatch got %s", err))
 }
 
 func TestSeaweedDelete(t *testing.T) {

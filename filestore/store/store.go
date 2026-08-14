@@ -5,8 +5,9 @@ package store
 
 import (
 	"context"
-	"errors"
 	"io"
+
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 // ErrChecksumMismatch is returned when a retrieved file's SHA256 does not match the expected value.
