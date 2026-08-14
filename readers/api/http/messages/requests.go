@@ -6,6 +6,7 @@ package messages
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
 
@@ -32,11 +33,11 @@ func (req listSenMLMessagesReq) validate() error {
 	}
 
 	if req.pageMeta.Comparator != "" &&
-		req.pageMeta.Comparator != readers.EqualKey &&
-		req.pageMeta.Comparator != readers.LowerThanKey &&
-		req.pageMeta.Comparator != readers.LowerThanEqualKey &&
-		req.pageMeta.Comparator != readers.GreaterThanKey &&
-		req.pageMeta.Comparator != readers.GreaterThanEqualKey {
+		req.pageMeta.Comparator != mfreaders.EqualKey &&
+		req.pageMeta.Comparator != mfreaders.LowerThanKey &&
+		req.pageMeta.Comparator != mfreaders.LowerThanEqualKey &&
+		req.pageMeta.Comparator != mfreaders.GreaterThanKey &&
+		req.pageMeta.Comparator != mfreaders.GreaterThanEqualKey {
 		return apiutil.ErrInvalidComparator
 	}
 
@@ -206,8 +207,7 @@ func (req searchJSONMessagesReq) validate() error {
 	}
 
 	for i := range req.jsonPageMetadatas {
-		s := req.jsonPageMetadatas[i]
-		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+		if err := validateSearchParams(req.jsonPageMetadatas[i].MessagesPageMetadata); err != nil {
 			return err
 		}
 	}
@@ -229,33 +229,32 @@ func (req searchSenMLMessagesReq) validate() error {
 	}
 
 	for i := range req.senmlPageMetadatas {
-		s := req.senmlPageMetadatas[i]
-		if err := validateSearchParams(s.Limit, s.Dir, s.AggType, s.AggInterval, s.AggValue); err != nil {
+		if err := validateSearchParams(req.senmlPageMetadatas[i].MessagesPageMetadata); err != nil {
 			return err
 		}
 
 		if req.senmlPageMetadatas[i].Comparator != "" &&
-			req.senmlPageMetadatas[i].Comparator != readers.EqualKey &&
-			req.senmlPageMetadatas[i].Comparator != readers.LowerThanKey &&
-			req.senmlPageMetadatas[i].Comparator != readers.LowerThanEqualKey &&
-			req.senmlPageMetadatas[i].Comparator != readers.GreaterThanKey &&
-			req.senmlPageMetadatas[i].Comparator != readers.GreaterThanEqualKey {
+			req.senmlPageMetadatas[i].Comparator != mfreaders.EqualKey &&
+			req.senmlPageMetadatas[i].Comparator != mfreaders.LowerThanKey &&
+			req.senmlPageMetadatas[i].Comparator != mfreaders.LowerThanEqualKey &&
+			req.senmlPageMetadatas[i].Comparator != mfreaders.GreaterThanKey &&
+			req.senmlPageMetadatas[i].Comparator != mfreaders.GreaterThanEqualKey {
 			return apiutil.ErrInvalidComparator
 		}
 	}
 	return nil
 }
 
-func validateSearchParams(limit uint64, dir, aggType, aggInterval string, aggValue uint64) error {
-	if limit > maxLimitSize {
+func validateSearchParams(pm readers.MessagesPageMetadata) error {
+	if pm.Limit > maxLimitSize {
 		return apiutil.ErrLimitSize
 	}
 
-	if err := validateDir(dir); err != nil {
+	if err := validateDir(pm.Dir); err != nil {
 		return err
 	}
 
-	return validateAggregation(aggType, aggInterval, aggValue)
+	return validateAggregation(pm.AggType, pm.AggInterval, pm.AggValue)
 }
 
 func validateAggregation(aggType, aggInterval string, aggValue uint64) error {

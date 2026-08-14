@@ -6,6 +6,7 @@ package postgres
 import (
 	"testing"
 
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/stretchr/testify/assert"
 )
@@ -136,8 +137,8 @@ func TestBuildTimeIntervals(t *testing.T) {
 		{
 			desc: "with limit",
 			qp: queryParams{
-				table:       senmlTable,
-				timeColumn:  senmlOrder,
+				table:       mfreaders.SenMLTable,
+				timeColumn:  mfreaders.SenMLOrder,
 				aggValue:    1,
 				aggInterval: "hour",
 				limit:       100,
@@ -148,8 +149,8 @@ func TestBuildTimeIntervals(t *testing.T) {
 		{
 			desc: "without limit",
 			qp: queryParams{
-				table:       senmlTable,
-				timeColumn:  senmlOrder,
+				table:       mfreaders.SenMLTable,
+				timeColumn:  mfreaders.SenMLOrder,
 				aggValue:    1,
 				aggInterval: "hour",
 				limit:       0,
@@ -160,8 +161,8 @@ func TestBuildTimeIntervals(t *testing.T) {
 		{
 			desc: "with condition",
 			qp: queryParams{
-				table:       senmlTable,
-				timeColumn:  senmlOrder,
+				table:       mfreaders.SenMLTable,
+				timeColumn:  mfreaders.SenMLOrder,
 				condition:   "WHERE publisher = :publisher",
 				aggValue:    1,
 				aggInterval: "hour",
@@ -270,7 +271,7 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 			desc: "senml max",
 			fn:   sqlAggFunc("MAX"),
 			qp: queryParams{
-				table: senmlTable,
+				table: mfreaders.SenMLTable,
 			},
 			resPart: "ia.agg_value as value",
 		},
@@ -278,7 +279,7 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 			desc: "senml sum",
 			fn:   sqlAggFunc("SUM"),
 			qp: queryParams{
-				table: senmlTable,
+				table: mfreaders.SenMLTable,
 			},
 			resPart: "ia.agg_value as value",
 		},
@@ -286,7 +287,7 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 			desc: "json table",
 			fn:   sqlAggFunc("MAX"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{"temperature"},
 			},
 			resPart: "jsonb_build_object",
@@ -295,7 +296,7 @@ func TestSqlAggFuncSelectedFields(t *testing.T) {
 			desc: "json table empty fields",
 			fn:   sqlAggFunc("MAX"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{},
 			},
 			resPart: "CAST('{}' AS jsonb)",
@@ -330,7 +331,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "senml max",
 			fn:   sqlAggFunc("MAX"),
 			qp: queryParams{
-				table:     senmlTable,
+				table:     mfreaders.SenMLTable,
 				aggFields: []string{"value"},
 			},
 			resPart: "MAX(m.value) as agg_value",
@@ -339,7 +340,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "senml min",
 			fn:   sqlAggFunc("MIN"),
 			qp: queryParams{
-				table:     senmlTable,
+				table:     mfreaders.SenMLTable,
 				aggFields: []string{"value"},
 			},
 			resPart: "MIN(m.value) as agg_value",
@@ -348,7 +349,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "senml avg",
 			fn:   sqlAggFunc("AVG"),
 			qp: queryParams{
-				table:     senmlTable,
+				table:     mfreaders.SenMLTable,
 				aggFields: []string{"value"},
 			},
 			resPart: "AVG(m.value) as agg_value",
@@ -357,7 +358,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "senml count",
 			fn:   sqlAggFunc("COUNT"),
 			qp: queryParams{
-				table:     senmlTable,
+				table:     mfreaders.SenMLTable,
 				aggFields: []string{"value"},
 			},
 			resPart: "COUNT(m.value) as agg_value",
@@ -366,7 +367,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "senml sum",
 			fn:   sqlAggFunc("SUM"),
 			qp: queryParams{
-				table:     senmlTable,
+				table:     mfreaders.SenMLTable,
 				aggFields: []string{"value"},
 			},
 			resPart: "SUM(m.value) as agg_value",
@@ -375,7 +376,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "json max",
 			fn:   sqlAggFunc("MAX"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{"temperature"},
 			},
 			resPart: "MAX(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
@@ -384,7 +385,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "json min",
 			fn:   sqlAggFunc("MIN"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{"temperature"},
 			},
 			resPart: "MIN(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
@@ -393,7 +394,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "json avg",
 			fn:   sqlAggFunc("AVG"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{"temperature"},
 			},
 			resPart: "AVG(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
@@ -402,7 +403,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "json count",
 			fn:   sqlAggFunc("COUNT"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{"temperature"},
 			},
 			resPart: "COUNT(m.payload->>'temperature') as agg_value_0",
@@ -411,7 +412,7 @@ func TestSqlAggFuncAggregateExpr(t *testing.T) {
 			desc: "json sum",
 			fn:   sqlAggFunc("SUM"),
 			qp: queryParams{
-				table:     jsonTable,
+				table:     mfreaders.JSONTable,
 				aggFields: []string{"temperature"},
 			},
 			resPart: "SUM(CAST(m.payload->>'temperature' as FLOAT)) as agg_value_0",
@@ -476,7 +477,13 @@ func TestBaseConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := baseConditions(tc.subtopic, tc.publisher, tc.protocol, tc.from, tc.to, tc.timeColumn)
+			result := mfreaders.BaseConditions(readers.MessagesPageMetadata{
+				Subtopic:  tc.subtopic,
+				Publisher: tc.publisher,
+				Protocol:  tc.protocol,
+				From:      tc.from,
+				To:        tc.to,
+			}, tc.timeColumn)
 			assert.Equal(t, tc.res, result)
 		})
 	}
@@ -484,12 +491,14 @@ func TestBaseConditions(t *testing.T) {
 
 func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
-		Subtopic:  "test",
-		Publisher: "pub1",
-		From:      1000,
+		MessagesPageMetadata: readers.MessagesPageMetadata{
+			Subtopic:  "test",
+			Publisher: "pub1",
+			From:      1000,
+		},
 	}
 
-	result := jsonConditions(pm)
+	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JSONOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
 	assert.Contains(t, result, "publisher = :publisher")
@@ -542,7 +551,7 @@ func TestSenmlConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := senmlConditions(tc.pm)
+			result := mfreaders.SenMLConditions(tc.pm)
 			assert.Contains(t, result, tc.resPart)
 		})
 	}
@@ -550,8 +559,8 @@ func TestSenmlConditions(t *testing.T) {
 
 func TestBuildAggQuery(t *testing.T) {
 	qp := queryParams{
-		table:            senmlTable,
-		timeColumn:       senmlOrder,
+		table:            mfreaders.SenMLTable,
+		timeColumn:       mfreaders.SenMLOrder,
 		aggValue:         1,
 		aggInterval:      "hour",
 		aggFields:        []string{"value"},
@@ -572,8 +581,8 @@ func TestBuildAggQuery(t *testing.T) {
 
 func TestBuildAggCountQuery(t *testing.T) {
 	qp := queryParams{
-		table:            senmlTable,
-		timeColumn:       senmlOrder,
+		table:            mfreaders.SenMLTable,
+		timeColumn:       mfreaders.SenMLOrder,
 		aggValue:         1,
 		aggInterval:      "hour",
 		aggFields:        []string{"value"},

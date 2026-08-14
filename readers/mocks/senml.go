@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 )
@@ -173,15 +174,15 @@ func (repo *senmlRepositoryMock) checkSenMLValueFilters(senmlMsg senml.Message, 
 		}
 
 		switch comparator.(string) {
-		case readers.LowerThanKey:
+		case mfreaders.LowerThanKey:
 			return *senmlMsg.Value < rpm.Value
-		case readers.LowerThanEqualKey:
+		case mfreaders.LowerThanEqualKey:
 			return *senmlMsg.Value <= rpm.Value
-		case readers.GreaterThanKey:
+		case mfreaders.GreaterThanKey:
 			return *senmlMsg.Value > rpm.Value
-		case readers.GreaterThanEqualKey:
+		case mfreaders.GreaterThanEqualKey:
 			return *senmlMsg.Value >= rpm.Value
-		case readers.EqualKey:
+		case mfreaders.EqualKey:
 			return *senmlMsg.Value == rpm.Value
 		default:
 			return *senmlMsg.Value == rpm.Value

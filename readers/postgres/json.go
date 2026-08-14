@@ -5,12 +5,12 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
@@ -115,34 +115,12 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 }
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
-	var query map[string]any
-	meta, err := json.Marshal(rpm)
-	if err != nil {
-		return ""
+	conds := mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder)
+	if rpm.Filter != "" {
+		conds = append(conds, fmt.Sprintf("%s IS NOT NULL", buildPayloadFilterPath(rpm.Filter)))
 	}
-	json.Unmarshal(meta, &query)
 
-	condition := ""
-	op := "WHERE"
-
-	for name := range query {
-		switch name {
-		case "subtopic", "publisher", "protocol":
-			condition = fmt.Sprintf(`%s %s %s = :%s`, condition, op, name, name)
-			op = "AND"
-		case "from":
-			condition = fmt.Sprintf(`%s %s created >= :from`, condition, op)
-			op = "AND"
-		case "to":
-			condition = fmt.Sprintf(`%s %s created < :to`, condition, op)
-			op = "AND"
-		case "filter":
-			filterPath := buildPayloadFilterPath(rpm.Filter)
-			condition = fmt.Sprintf(`%s %s %s IS NOT NULL`, condition, op, filterPath)
-			op = "AND"
-		}
-	}
-	return condition
+	return dbutil.BuildWhereClause(conds...)
 }
 
 func buildPayloadFilterPath(field string) string {
@@ -156,9 +134,9 @@ func buildPayloadFilterPath(field string) string {
 
 	for i, part := range parts {
 		if i == len(parts)-1 {
-			path.WriteString(fmt.Sprintf("->>'%s'", part))
+			fmt.Fprintf(&path, "->>'%s'", part)
 		} else {
-			path.WriteString(fmt.Sprintf("->'%s'", part))
+			fmt.Fprintf(&path, "->'%s'", part)
 		}
 	}
 
@@ -166,16 +144,7 @@ func buildPayloadFilterPath(field string) string {
 }
 
 func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]any {
-	return map[string]any{
-		"limit":     rpm.Limit,
-		"offset":    rpm.Offset,
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"filter":    rpm.Filter,
-		"from":      rpm.From,
-		"to":        rpm.To,
-	}
+	return mfreaders.BaseQueryParams(rpm.MessagesPageMetadata)
 }
 
 func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {

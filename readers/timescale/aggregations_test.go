@@ -6,6 +6,7 @@ package timescale
 import (
 	"testing"
 
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/stretchr/testify/assert"
 )
@@ -261,7 +262,13 @@ func TestBaseConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := baseConditions(tc.subtopic, tc.publisher, tc.protocol, tc.from, tc.to, tc.timeColumn)
+			result := mfreaders.BaseConditions(readers.MessagesPageMetadata{
+				Subtopic:  tc.subtopic,
+				Publisher: tc.publisher,
+				Protocol:  tc.protocol,
+				From:      tc.from,
+				To:        tc.to,
+			}, tc.timeColumn)
 			assert.Equal(t, tc.res, result)
 		})
 	}
@@ -269,12 +276,14 @@ func TestBaseConditions(t *testing.T) {
 
 func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
-		Subtopic:  "test",
-		Publisher: "pub1",
-		From:      1000,
+		MessagesPageMetadata: readers.MessagesPageMetadata{
+			Subtopic:  "test",
+			Publisher: "pub1",
+			From:      1000,
+		},
 	}
 
-	result := jsonConditions(pm)
+	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JSONOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
 	assert.Contains(t, result, "publisher = :publisher")
@@ -327,7 +336,7 @@ func TestSenmlConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := senmlConditions(tc.pm)
+			result := mfreaders.SenMLConditions(tc.pm)
 			assert.Contains(t, result, tc.resPart)
 		})
 	}
