@@ -84,9 +84,9 @@ func (lm *loggingMiddleware) RemoveOrgConfig(ctx context.Context, orgID string) 
 	return lm.svc.RemoveOrgConfig(ctx, orgID)
 }
 
-func (lm *loggingMiddleware) MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) (err error) {
+func (lm *loggingMiddleware) RemoveIDsFromConfigs(ctx context.Context, orgID string, ids []string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method mark_references_deleted for org %v, ids %v took %s to complete", orgID, ids, time.Since(begin))
+		message := fmt.Sprintf("Method remove_ids_from_configs for org %v, ids %v took %s to complete", orgID, ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -94,7 +94,7 @@ func (lm *loggingMiddleware) MarkReferencesDeleted(ctx context.Context, orgID st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.MarkReferencesDeleted(ctx, orgID, ids)
+	return lm.svc.RemoveIDsFromConfigs(ctx, orgID, ids)
 }
 
 func (lm *loggingMiddleware) BackupOrgsConfigs(ctx context.Context, token string) (response uiconfigs.OrgConfigBackup, err error) {

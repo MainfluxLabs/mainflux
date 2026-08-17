@@ -69,13 +69,13 @@ func (ms *metricsMiddleware) RemoveOrgConfig(ctx context.Context, orgID string) 
 	return ms.svc.RemoveOrgConfig(ctx, orgID)
 }
 
-func (ms *metricsMiddleware) MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error {
+func (ms *metricsMiddleware) RemoveIDsFromConfigs(ctx context.Context, orgID string, ids []string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "mark_references_deleted").Add(1)
-		ms.latency.With("method", "mark_references_deleted").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_ids_from_configs").Add(1)
+		ms.latency.With("method", "remove_ids_from_configs").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.MarkReferencesDeleted(ctx, orgID, ids)
+	return ms.svc.RemoveIDsFromConfigs(ctx, orgID, ids)
 }
 
 func (ms *metricsMiddleware) BackupOrgsConfigs(ctx context.Context, token string) (uiconfigs.OrgConfigBackup, error) {

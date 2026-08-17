@@ -34,10 +34,10 @@ type Service interface {
 	// RemoveOrgConfig removes the org config by org id.
 	RemoveOrgConfig(ctx context.Context, orgID string) error
 
-	// MarkReferencesDeleted clears references to the given Thing or Group IDs wherever they
-	// appear in the org's dashboard config: a reference inside an object is blanked to an
+	// RemoveIDsFromConfigs clears references to the given Thing or Group IDs wherever they
+	// appear in the org config: a reference inside an object is blanked to an
 	// empty string in place, while a bare reference in an array is removed from it entirely.
-	MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error
+	RemoveIDsFromConfigs(ctx context.Context, orgID string, ids []string) error
 
 	// BackupOrgsConfigs retrieves all org configs.
 	BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error)
@@ -154,7 +154,7 @@ func (svc *configService) RemoveOrgConfig(ctx context.Context, orgID string) err
 	return svc.orgConfigs.Remove(ctx, orgID)
 }
 
-func (svc *configService) MarkReferencesDeleted(ctx context.Context, orgID string, ids []string) error {
+func (svc *configService) RemoveIDsFromConfigs(ctx context.Context, orgID string, ids []string) error {
 	if orgID == "" {
 		return nil
 	}
@@ -180,7 +180,7 @@ func (svc *configService) MarkReferencesDeleted(ctx context.Context, orgID strin
 		return nil
 	}
 
-	marked, changed := markReferencesDeleted(map[string]any(cfg.Config), idSet)
+	marked, changed := removeIDsFromConfigs(map[string]any(cfg.Config), idSet)
 	if !changed {
 		return nil
 	}
@@ -366,13 +366,13 @@ func (svc *configService) isAdmin(ctx context.Context, token string) error {
 	return nil
 }
 
-// markReferencesDeleted clears references to the given IDs wherever they appear in v: a
+// removeIDsFromConfigs clears references to the given IDs wherever they appear in v: a
 // map value matching one of the IDs is replaced in place with an empty string (the
 // surrounding object is still meaningful and kept), while an array element matching one of
 // the IDs is dropped from the array entirely (a bare ID with nothing else attached to it has
 // nothing left worth keeping once removed). The second return value indicates whether
 // anything changed.
-func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
+func removeIDsFromConfigs(v any, ids map[string]struct{}) (any, bool) {
 	switch val := v.(type) {
 	case map[string]any:
 		result := make(map[string]any, len(val))
@@ -387,7 +387,7 @@ func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
 				}
 			}
 
-			marked, c := markReferencesDeleted(vv, ids)
+			marked, c := removeIDsFromConfigs(vv, ids)
 			result[k] = marked
 			changed = changed || c
 		}
@@ -404,7 +404,7 @@ func markReferencesDeleted(v any, ids map[string]struct{}) (any, bool) {
 				}
 			}
 
-			marked, c := markReferencesDeleted(vv, ids)
+			marked, c := removeIDsFromConfigs(vv, ids)
 			result = append(result, marked)
 			changed = changed || c
 		}
