@@ -69,13 +69,22 @@ func (ms *metricsMiddleware) RemoveOrgConfig(ctx context.Context, orgID string) 
 	return ms.svc.RemoveOrgConfig(ctx, orgID)
 }
 
-func (ms *metricsMiddleware) RemoveIDsFromConfigs(ctx context.Context, orgID string, ids []string) error {
+func (ms *metricsMiddleware) RemoveGroupFromConfigs(ctx context.Context, orgID, groupID string, thingIDs []string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "remove_ids_from_configs").Add(1)
-		ms.latency.With("method", "remove_ids_from_configs").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "remove_group_from_configs").Add(1)
+		ms.latency.With("method", "remove_group_from_configs").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RemoveIDsFromConfigs(ctx, orgID, ids)
+	return ms.svc.RemoveGroupFromConfigs(ctx, orgID, groupID, thingIDs)
+}
+
+func (ms *metricsMiddleware) RemoveThingsFromConfigs(ctx context.Context, orgID string, thingIDs []string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_things_from_configs").Add(1)
+		ms.latency.With("method", "remove_things_from_configs").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveThingsFromConfigs(ctx, orgID, thingIDs)
 }
 
 func (ms *metricsMiddleware) BackupOrgsConfigs(ctx context.Context, token string) (uiconfigs.OrgConfigBackup, error) {

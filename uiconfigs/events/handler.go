@@ -25,15 +25,14 @@ func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 		if err := h.svc.RemoveThingConfig(ctx, e.ID); err != nil {
 			return err
 		}
-		return h.svc.RemoveIDsFromConfigs(ctx, event.OrgID, []string{e.ID})
+		return h.svc.RemoveThingsFromConfigs(ctx, event.OrgID, []string{e.ID})
 	case events.OrgRemoved:
 		return h.svc.RemoveOrgConfig(ctx, e.ID)
 	case events.GroupRemoved:
 		if err := h.svc.RemoveThingConfigByGroup(ctx, e.ID); err != nil {
 			return err
 		}
-		// Remove references to the group's own id alongside its things
-		return h.svc.RemoveIDsFromConfigs(ctx, event.OrgID, append([]string{e.ID}, e.ThingIDs...))
+		return h.svc.RemoveGroupFromConfigs(ctx, event.OrgID, e.ID, e.ThingIDs)
 	}
 	return nil
 }
