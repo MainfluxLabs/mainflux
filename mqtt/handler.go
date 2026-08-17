@@ -253,7 +253,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		return nil
 	}
 
-	return h.publisher.PublishByFlags(msg, pc.ProfileConfig)
+	return h.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {

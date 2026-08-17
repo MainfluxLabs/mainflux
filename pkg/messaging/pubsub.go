@@ -97,8 +97,8 @@ type PubSub interface {
 
 // MessageDispatcher routes a message to every subject enabled by a profile's dispatcher flags.
 type MessageDispatcher interface {
-	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
-	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
+	// Dispatch publishes msg to every subject enabled by the dispatcher flags in pc.
+	Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 
 // AlarmPublisher specifies the alarm publishing API.

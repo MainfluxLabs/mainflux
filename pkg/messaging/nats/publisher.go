@@ -99,8 +99,8 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// PublishByFlags publishes msg to every subject enabled by pc's dispatcher flags.
-func (pub *publisher) PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error {
+// Dispatch publishes msg to every subject enabled by pc's dispatcher flags.
+func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
 	}

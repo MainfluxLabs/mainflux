@@ -488,5 +488,5 @@ func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.
 		return err
 	}
 
-	return as.publisher.PublishByFlags(msg, pc.ProfileConfig)
+	return as.publisher.Dispatch(msg, pc.ProfileConfig)
 }

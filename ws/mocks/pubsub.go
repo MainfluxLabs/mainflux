@@ -47,7 +47,7 @@ func (pubsub *mockPubSub) PublishCommand(string, protomfx.Command) error {
 	return nil
 }
 
-func (pubsub *mockPubSub) PublishByFlags(protomfx.Message, *domain.ProfileConfig) error {
+func (pubsub *mockPubSub) Dispatch(protomfx.Message, *domain.ProfileConfig) error {
 	if pubsub.fail {
 		return messaging.ErrPublishMessage
 	}

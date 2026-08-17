@@ -27,6 +27,6 @@ func (pub mockPublisher) PublishCommand(_ string, cmd protomfx.Command) error {
 	return nil
 }
 
-func (pub mockPublisher) PublishByFlags(_ protomfx.Message, _ *domain.ProfileConfig) error {
+func (pub mockPublisher) Dispatch(_ protomfx.Message, _ *domain.ProfileConfig) error {
 	return nil
 }

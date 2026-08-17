@@ -723,7 +723,7 @@ func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, 
 		return err
 	}
 
-	return cs.publisher.PublishByFlags(msg, pc.ProfileConfig)
+	return cs.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (cs *clientsService) getLimiter(key string) *rate.Limiter {
