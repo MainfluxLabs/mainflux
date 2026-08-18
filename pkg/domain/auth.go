@@ -30,11 +30,13 @@ const (
 	RoleAdmin = "admin"
 )
 
-// Key type constants.
+// Key type constants. New types must be appended, never inserted: the numeric
+// value is encoded in the "type" claim of every token already in circulation.
 const (
 	LoginKey uint32 = iota
 	RecoveryKey
 	APIKey
+	RefreshKey
 )
 
 // Identity contains ID and Email.
@@ -130,6 +132,14 @@ func (k Key) Expired() bool {
 	return k.ExpiresAt.UTC().Before(time.Now().UTC())
 }
 
+// TokenPair holds a short-lived access token and the long-lived refresh token
+// used to mint replacements for it without re-entering credentials.
+type TokenPair struct {
+	AccessToken  string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
+	ExpiresAt    time.Time `json:"expires_at"`
+}
+
 // KeysPage contains page metadata and list of keys.
 type KeysPage struct {
 	Total uint64
@@ -139,6 +149,9 @@ type KeysPage struct {
 type AuthClient interface {
 	// Issue issues a token for the given id, email and key type.
 	Issue(ctx context.Context, id, email string, keyType uint32) (string, error)
+
+	// Refresh exchanges a valid refresh token for a new access token.
+	Refresh(ctx context.Context, refreshToken string) (string, error)
 
 	// Identify validates the token and returns the identity.
 	Identify(ctx context.Context, token string) (Identity, error)
