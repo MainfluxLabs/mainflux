@@ -59,7 +59,8 @@ const (
 	defServerCert      = ""
 	defServerKey       = ""
 	defJaegerURL       = ""
-	defLoginDuration   = "10h"
+	defLoginDuration   = "1h"
+	defRefreshDuration = "168h"
 	defInviteDuration  = "168h"
 	defAdminEmail      = ""
 	defTimeout         = "1s"
@@ -101,6 +102,7 @@ const (
 	envServerKey       = "MF_AUTH_SERVER_KEY"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envRefreshDuration = "MF_AUTH_REFRESH_TOKEN_DURATION"
 	envInviteDuration  = "MF_INVITE_DURATION"
 	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
 	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
@@ -125,23 +127,24 @@ const (
 )
 
 type config struct {
-	logLevel       string
-	dbConfig       postgres.Config
-	httpConfig     servers.Config
-	grpcConfig     servers.Config
-	thingsConfig   clients.Config
-	usersConfig    clients.Config
-	emailConfig    email.Config
-	secret         string
-	jaegerURL      string
-	loginDuration  time.Duration
-	inviteDuration time.Duration
-	timeout        time.Duration
-	adminEmail     string
-	host           string
-	esURL          string
-	esStreamMaxLen int64
-	esBufferSize   int
+	logLevel        string
+	dbConfig        postgres.Config
+	httpConfig      servers.Config
+	grpcConfig      servers.Config
+	thingsConfig    clients.Config
+	usersConfig     clients.Config
+	emailConfig     email.Config
+	secret          string
+	jaegerURL       string
+	loginDuration   time.Duration
+	refreshDuration time.Duration
+	inviteDuration  time.Duration
+	timeout         time.Duration
+	adminEmail      string
+	host            string
+	esURL           string
+	esStreamMaxLen  int64
+	esBufferSize    int
 }
 
 func main() {
@@ -294,6 +297,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
+	refreshDuration, err := time.ParseDuration(mainflux.Env(envRefreshDuration, defRefreshDuration))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -310,23 +318,24 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:       dbConfig,
-		httpConfig:     httpConfig,
-		grpcConfig:     grpcConfig,
-		thingsConfig:   thingsConfig,
-		usersConfig:    usersConfig,
-		emailConfig:    emailConfig,
-		secret:         mainflux.Env(envSecret, defSecret),
-		jaegerURL:      mainflux.Env(envJaegerURL, defJaegerURL),
-		loginDuration:  loginDuration,
-		inviteDuration: inviteDuration,
-		timeout:        timeout,
-		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
-		host:           mainflux.Env(envHost, defHost),
-		esURL:          mainflux.Env(envESURL, defESURL),
-		esStreamMaxLen: esStreamMaxLen,
-		esBufferSize:   esBufferSize,
+		logLevel:        mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:        dbConfig,
+		httpConfig:      httpConfig,
+		grpcConfig:      grpcConfig,
+		thingsConfig:    thingsConfig,
+		usersConfig:     usersConfig,
+		emailConfig:     emailConfig,
+		secret:          mainflux.Env(envSecret, defSecret),
+		jaegerURL:       mainflux.Env(envJaegerURL, defJaegerURL),
+		loginDuration:   loginDuration,
+		refreshDuration: refreshDuration,
+		inviteDuration:  inviteDuration,
+		timeout:         timeout,
+		adminEmail:      mainflux.Env(envAdminEmail, defAdminEmail),
+		host:            mainflux.Env(envHost, defHost),
+		esURL:           mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:  esStreamMaxLen,
+		esBufferSize:    esBufferSize,
 	}
 
 }
@@ -382,7 +391,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 		}, []string{"method"}),
 	)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.refreshDuration, cfg.inviteDuration)
 	svc = rediscache.NewEventStoreMiddleware(svc, pub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
