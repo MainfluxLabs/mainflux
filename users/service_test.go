@@ -223,7 +223,8 @@ func TestLogin(t *testing.T) {
 func TestViewUser(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), user)
+	tokenPair, err := svc.Login(context.Background(), user)
+	token := tokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -262,10 +263,12 @@ func TestViewUser(t *testing.T) {
 func TestViewProfile(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), user)
+	tokenPair, err := svc.Login(context.Background(), user)
+	token := tokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	adminTokenPair, err := svc.Login(context.Background(), admin)
+	adminToken := adminTokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -300,10 +303,12 @@ func TestViewProfile(t *testing.T) {
 func TestListUsers(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), admin)
+	tokenPair, err := svc.Login(context.Background(), admin)
+	token := tokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	unauthUserToken, err := svc.Login(context.Background(), unauthUser)
+	unauthUserTokenPair, err := svc.Login(context.Background(), unauthUser)
+	unauthUserToken := unauthUserTokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	page, err := svc.ListUsers(context.Background(), token, users.PageMetadata{})
@@ -399,7 +404,8 @@ func TestListUsers(t *testing.T) {
 func TestUpdateUser(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), registerUser)
+	tokenPair, err := svc.Login(context.Background(), registerUser)
+	token := tokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	registerUser.Metadata = map[string]any{"meta": "test"}
@@ -446,8 +452,10 @@ func TestGenerateResetToken(t *testing.T) {
 
 func TestChangePassword(t *testing.T) {
 	svc := newService()
-	userToken, _ := svc.Login(context.Background(), registerUser)
-	adminToken, _ := svc.Login(context.Background(), admin)
+	userTokenPair, _ := svc.Login(context.Background(), registerUser)
+	userToken := userTokenPair.AccessToken
+	adminTokenPair, _ := svc.Login(context.Background(), admin)
+	adminToken := adminTokenPair.AccessToken
 
 	cases := map[string]struct {
 		token       string
@@ -495,7 +503,8 @@ func TestResetPassword(t *testing.T) {
 
 func TestSendPasswordReset(t *testing.T) {
 	svc := newService()
-	token, _ := svc.Login(context.Background(), registerUser)
+	tokenPair, _ := svc.Login(context.Background(), registerUser)
+	token := tokenPair.AccessToken
 
 	cases := map[string]struct {
 		token string
@@ -514,10 +523,12 @@ func TestSendPasswordReset(t *testing.T) {
 
 func TestCreatePlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenAdminPair, err := svc.Login(context.Background(), admin)
+	tokenAdmin := tokenAdminPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	tokenUser, err := svc.Login(context.Background(), user)
+	tokenUserPair, err := svc.Login(context.Background(), user)
+	tokenUser := tokenUserPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	existingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "existingUser@example.com", auth.OrgInvite{})
@@ -541,10 +552,12 @@ func TestCreatePlatformInvite(t *testing.T) {
 
 func TestRevokePlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenAdminPair, err := svc.Login(context.Background(), admin)
+	tokenAdmin := tokenAdminPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	tokenUser, err := svc.Login(context.Background(), user)
+	tokenUserPair, err := svc.Login(context.Background(), user)
+	tokenUser := tokenUserPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
@@ -573,7 +586,8 @@ func TestRevokePlatformInvite(t *testing.T) {
 
 func TestViewPlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenAdminPair, err := svc.Login(context.Background(), admin)
+	tokenAdmin := tokenAdminPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
@@ -595,10 +609,12 @@ func TestViewPlatformInvite(t *testing.T) {
 
 func TestListPlatformInvites(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenAdminPair, err := svc.Login(context.Background(), admin)
+	tokenAdmin := tokenAdminPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	tokenUser, err := svc.Login(context.Background(), user)
+	tokenUserPair, err := svc.Login(context.Background(), user)
+	tokenUser := tokenUserPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	n := uint64(10)
@@ -629,7 +645,8 @@ func TestListPlatformInvites(t *testing.T) {
 
 func TestValidatePlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenAdminPair, err := svc.Login(context.Background(), admin)
+	tokenAdmin := tokenAdminPair.AccessToken
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
@@ -770,7 +787,7 @@ func TestOAuthCallback(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+		redirectURL, _, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
 			Provider: tc.provider,
 			Code:     tc.code,
 			Verifier: tc.verifier,
