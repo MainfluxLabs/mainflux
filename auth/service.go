@@ -41,6 +41,7 @@ var (
 	errRevoke         = errors.New("failed to remove key")
 	errRetrieve       = errors.New("failed to retrieve key data")
 	errIdentify       = errors.New("failed to validate token")
+	errRefresh        = errors.New("failed to refresh login key")
 	errUnknownSubject = errors.New("unknown subject")
 )
 
@@ -91,36 +92,38 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	orgs           OrgRepository
-	users          domain.UsersClient
-	things         domain.ThingsClient
-	keys           KeyRepository
-	roles          RolesRepository
-	memberships    OrgMembershipsRepository
-	invites        OrgInvitesRepository
-	email          Emailer
-	idProvider     uuid.IDProvider
-	tokenizer      Tokenizer
-	loginDuration  time.Duration
-	inviteDuration time.Duration
+	orgs            OrgRepository
+	users           domain.UsersClient
+	things          domain.ThingsClient
+	keys            KeyRepository
+	roles           RolesRepository
+	memberships     OrgMembershipsRepository
+	invites         OrgInvitesRepository
+	email           Emailer
+	idProvider      uuid.IDProvider
+	tokenizer       Tokenizer
+	loginDuration   time.Duration
+	refreshDuration time.Duration
+	inviteDuration  time.Duration
 }
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys KeyRepository, roles RolesRepository,
-	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
+	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, refreshDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
-		tokenizer:      tokenizer,
-		things:         tc,
-		orgs:           orgs,
-		users:          uc,
-		keys:           keys,
-		roles:          roles,
-		memberships:    memberships,
-		invites:        invites,
-		email:          emailer,
-		idProvider:     idp,
-		loginDuration:  loginDuration,
-		inviteDuration: inviteDuration,
+		tokenizer:       tokenizer,
+		things:          tc,
+		orgs:            orgs,
+		users:           uc,
+		keys:            keys,
+		roles:           roles,
+		memberships:     memberships,
+		invites:         invites,
+		email:           emailer,
+		idProvider:      idp,
+		loginDuration:   loginDuration,
+		refreshDuration: refreshDuration,
+		inviteDuration:  inviteDuration,
 	}
 }
 
