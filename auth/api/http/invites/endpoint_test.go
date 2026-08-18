@@ -44,8 +44,9 @@ const (
 	responseDecline = "decline"
 	invalidResponse = "wrong"
 
-	loginDuration  = 30 * time.Minute
-	inviteDuration = 7 * 24 * time.Hour
+	loginDuration   = 30 * time.Minute
+	refreshDuration = 24 * time.Hour
+	inviteDuration  = 7 * 24 * time.Hour
 )
 
 var (
@@ -108,7 +109,7 @@ func newService() auth.Service {
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	emailerMock := mocks.NewEmailer()
 
-	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, invitesRepo, emailerMock, idProvider, t, loginDuration, inviteDuration)
+	return auth.New(orgsRepo, tc, uc, nil, rolesRepo, membsRepo, invitesRepo, emailerMock, idProvider, t, loginDuration, refreshDuration, inviteDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {
