@@ -23,6 +23,11 @@ import (
 // Concrete status + URL are logged by the caller, never surfaced.
 var ErrBackend = errors.New("object store error")
 
+const (
+	httpScheme  = "http"
+	httpsScheme = "https"
+)
+
 type seaweedFS struct {
 	baseURL *url.URL
 	prefix  string
@@ -40,7 +45,7 @@ func NewSeaweedFS(rawURL, prefix string, timeout time.Duration) (FileStore, erro
 		return nil, fmt.Errorf("parse seaweedfs url: %w", err)
 	}
 
-	if u.Scheme != "http" && u.Scheme != "https" {
+	if u.Scheme != httpScheme && u.Scheme != httpsScheme {
 		return nil, fmt.Errorf("invalid seaweedfs url scheme %q: want http or https", u.Scheme)
 	}
 
