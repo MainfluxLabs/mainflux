@@ -80,6 +80,7 @@ service UsersService {
 
 service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
+    rpc Refresh(Token) returns (Token) {}
     rpc Identify(Token) returns (UserIdentity) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc GetOwnerIDByOrg(OrgID) returns (OwnerID) {}
