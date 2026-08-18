@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -52,12 +53,30 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 	return domain.Identity{}, errors.ErrAuthentication
 }
 
+// RefreshPrefix marks a mock refresh token. Access tokens in this mock are
+// bare emails, so the prefix keeps the two distinguishable and, in particular,
+// keeps Identify rejecting refresh tokens the way the real service does.
+const RefreshPrefix = "refresh:"
+
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
 	if u, ok := svc.usersByEmail[email]; ok {
 		switch keyType {
+		case auth.RefreshKey:
+			return RefreshPrefix + u.Email, nil
 		default:
 			return u.Email, nil
 		}
+	}
+	return "", errors.ErrAuthentication
+}
+
+func (svc authServiceMock) Refresh(_ context.Context, refreshToken string) (string, error) {
+	email, ok := strings.CutPrefix(refreshToken, RefreshPrefix)
+	if !ok {
+		return "", errors.ErrAuthentication
+	}
+	if u, ok := svc.usersByEmail[email]; ok {
+		return u.Email, nil
 	}
 	return "", errors.ErrAuthentication
 }

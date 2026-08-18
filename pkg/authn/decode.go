@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
@@ -30,6 +31,28 @@ func EmailFromToken(token string) string {
 		return ""
 	}
 	return claims.Subject
+}
+
+// ExpiresAtFromToken extracts the expiry from a JWT token without verifying the
+// signature. Returns the zero time if the token is malformed or has no "exp"
+// claim. Callers must treat the result as advisory only — it is meant for
+// clients scheduling a refresh, never for authorization decisions.
+func ExpiresAtFromToken(token string) time.Time {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return time.Time{}
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return time.Time{}
+	}
+	var claims struct {
+		ExpiresAt int64 `json:"exp"`
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil || claims.ExpiresAt == 0 {
+		return time.Time{}
+	}
+	return time.Unix(claims.ExpiresAt, 0).UTC()
 }
 
 // Used as a key under which a domain.Identity type is stored in a Context.
