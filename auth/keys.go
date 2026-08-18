@@ -30,9 +30,10 @@ var KeyOrderFields = map[string]string{
 
 // Domain type aliases
 type (
-	Key      = domain.Key
-	Identity = domain.Identity
-	KeysPage = domain.KeysPage
+	Key       = domain.Key
+	Identity  = domain.Identity
+	KeysPage  = domain.KeysPage
+	TokenPair = domain.TokenPair
 )
 
 // Key type constants (aliases for domain).
@@ -40,6 +41,7 @@ const (
 	LoginKey    = domain.LoginKey
 	RecoveryKey = domain.RecoveryKey
 	APIKey      = domain.APIKey
+	RefreshKey  = domain.RefreshKey
 )
 
 // Keys specifies an API that must be fullfiled by the domain service
@@ -47,6 +49,10 @@ const (
 type Keys interface {
 	// Issue issues a new Key, returning its token value alongside.
 	Issue(ctx context.Context, token string, key Key) (Key, string, error)
+
+	// Refresh exchanges a valid refresh key for a freshly minted login key,
+	// letting clients extend a session without re-sending credentials.
+	Refresh(ctx context.Context, refreshToken string) (Key, string, error)
 
 	// Revoke removes the Key with the provided id that is
 	// issued by the user identified by the provided key.
@@ -85,9 +91,38 @@ func (svc service) Issue(ctx context.Context, token string, key Key) (Key, strin
 		return svc.userKey(ctx, token, key)
 	case RecoveryKey:
 		return svc.tmpKey(recoveryDuration, key)
+	case RefreshKey:
+		return svc.tmpKey(svc.refreshDuration, key)
 	default:
 		return svc.tmpKey(svc.loginDuration, key)
 	}
+}
+
+// Refresh mints a new login key from a valid refresh key. The refresh key
+// itself is deliberately not re-issued: since refresh keys are stateless and
+// therefore not revocable, sliding the expiry on every call would let a leaked
+// key renew itself indefinitely. A session is capped at refreshDuration from
+// the original login.
+func (svc service) Refresh(ctx context.Context, refreshToken string) (Key, string, error) {
+	key, err := svc.tokenizer.Parse(refreshToken)
+	if err != nil {
+		return Key{}, "", errors.Wrap(errRefresh, err)
+	}
+
+	// Only a refresh key may be exchanged; an access token must not be able to
+	// extend its own lifetime.
+	if key.Type != RefreshKey || key.IssuerID == "" {
+		return Key{}, "", errors.Wrap(errRefresh, errors.ErrAuthentication)
+	}
+
+	access := Key{
+		Type:     LoginKey,
+		IssuerID: key.IssuerID,
+		Subject:  key.Subject,
+		IssuedAt: getTimestamp(),
+	}
+
+	return svc.tmpKey(svc.loginDuration, access)
 }
 
 func (svc service) Revoke(ctx context.Context, token, id string) error {
