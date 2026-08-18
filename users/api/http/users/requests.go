@@ -29,6 +29,18 @@ func (req userReq) validate() error {
 	return req.user.Validate(userPasswordRegex)
 }
 
+type refreshReq struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (req refreshReq) validate() error {
+	if req.RefreshToken == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	return nil
+}
+
 type selfRegisterUserReq struct {
 	User         users.User `json:"user"`
 	RedirectPath string     `json:"redirect_path"`
