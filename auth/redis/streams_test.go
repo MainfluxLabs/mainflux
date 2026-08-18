@@ -34,8 +34,9 @@ const (
 	description = "description"
 	name        = "name"
 
-	loginDuration  = 30 * time.Minute
-	inviteDuration = 7 * 24 * time.Hour
+	loginDuration   = 30 * time.Minute
+	refreshDuration = 24 * time.Hour
+	inviteDuration  = 7 * 24 * time.Hour
 )
 
 var (
@@ -75,7 +76,7 @@ func newService() auth.Service {
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	t := jwt.New(secret)
 
-	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, inviteDuration)
+	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, refreshDuration, inviteDuration)
 }
 
 func TestCreateOrg(t *testing.T) {
