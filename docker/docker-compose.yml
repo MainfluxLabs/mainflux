@@ -20,7 +20,7 @@ volumes:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-seaweedfs-master-volume:
-  mainfluxlabs-seaweedfs-volume-volume:
+  mainfluxlabs-seaweedfs-volume:
   mainfluxlabs-seaweedfs-filer-volume:
   mainfluxlabs-webhooks-db-volume:
   mainfluxlabs-smtp-notifier-db-volume:
@@ -575,7 +575,7 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-seaweedfs-volume-volume:/data
+      - mainfluxlabs-seaweedfs-volume:/data
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
       interval: 5s
