@@ -80,6 +80,10 @@ const (
 	defOffset              = 0
 	defLimit               = 10
 	maxFileNameLen         = 255
+	textPrefix             = "text/"
+	imagePrefix            = "image/"
+	applicationPrefix      = "application/"
+	applicationPDFPrefix   = "application/pdf"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints. maxUploadBytes bounds
@@ -612,17 +616,17 @@ func mimeMatches(class, format, mime string) bool {
 		// http.DetectContentType never reports image/* for it: an XML prolog
 		// sniffs as text/xml and a bare <svg> root as text/plain.
 		if format == svgFormat {
-			return strings.HasPrefix(mime, "text/") || strings.HasPrefix(mime, "image/")
+			return strings.HasPrefix(mime, textPrefix) || strings.HasPrefix(mime, imagePrefix)
 		}
-		return strings.HasPrefix(mime, "image/")
+		return strings.HasPrefix(mime, imagePrefix)
 	case documentsClass:
 		switch format {
 		case pdfFormat:
-			return strings.HasPrefix(mime, "application/pdf")
+			return strings.HasPrefix(mime, applicationPDFPrefix)
 		case csvFormat, txtFormat:
-			return strings.HasPrefix(mime, "text/")
+			return strings.HasPrefix(mime, textPrefix)
 		}
-		return strings.HasPrefix(mime, "application/") || strings.HasPrefix(mime, "text/")
+		return strings.HasPrefix(mime, applicationPrefix) || strings.HasPrefix(mime, textPrefix)
 	}
 	return true
 }
