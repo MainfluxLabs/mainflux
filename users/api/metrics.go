@@ -76,13 +76,22 @@ func (ms *metricsMiddleware) Register(ctx context.Context, token string, user us
 	return ms.svc.Register(ctx, token, user)
 }
 
-func (ms *metricsMiddleware) Login(ctx context.Context, user users.User) (string, error) {
+func (ms *metricsMiddleware) Login(ctx context.Context, user users.User) (domain.TokenPair, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "login").Add(1)
 		ms.latency.With("method", "login").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.Login(ctx, user)
+}
+
+func (ms *metricsMiddleware) Refresh(ctx context.Context, refreshToken string) (domain.TokenPair, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "refresh").Add(1)
+		ms.latency.With("method", "refresh").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Refresh(ctx, refreshToken)
 }
 
 func (ms *metricsMiddleware) OAuthLogin(provider string) (data users.OAuthLoginData, err error) {
@@ -94,7 +103,7 @@ func (ms *metricsMiddleware) OAuthLogin(provider string) (data users.OAuthLoginD
 	return ms.svc.OAuthLogin(provider)
 }
 
-func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (string, error) {
+func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (string, domain.TokenPair, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "oauth_callback").Add(1)
 		ms.latency.With("method", "oauth_callback").Observe(time.Since(begin).Seconds())

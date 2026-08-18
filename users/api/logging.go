@@ -99,7 +99,7 @@ func (lm *loggingMiddleware) Register(ctx context.Context, token string, user us
 	return lm.svc.Register(ctx, token, user)
 }
 
-func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token string, err error) {
+func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (tokens domain.TokenPair, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method login for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
@@ -110,6 +110,20 @@ func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token 
 	}(time.Now())
 
 	return lm.svc.Login(ctx, user)
+}
+
+func (lm *loggingMiddleware) Refresh(ctx context.Context, refreshToken string) (tokens domain.TokenPair, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(refreshToken)
+		message := fmt.Sprintf("Method refresh for user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Refresh(ctx, refreshToken)
 }
 
 func (lm *loggingMiddleware) OAuthLogin(provider string) (data users.OAuthLoginData, err error) {
@@ -125,7 +139,7 @@ func (lm *loggingMiddleware) OAuthLogin(provider string) (data users.OAuthLoginD
 	return lm.svc.OAuthLogin(provider)
 }
 
-func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (token string, err error) {
+func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (redirectURL string, tokens domain.TokenPair, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method oauth_callback for provider %s took %s to complete", data.Provider, time.Since(begin))
 		if err != nil {
