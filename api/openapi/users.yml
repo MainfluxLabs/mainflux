@@ -320,7 +320,10 @@ paths:
   /tokens:
     post:
       summary: User authentication
-      description: Generates an access token when provided with proper credentials.
+      description: |
+        Generates a short-lived access token together with the long-lived refresh
+        token used to renew it, when provided with proper credentials. The refresh
+        token is also set as an HttpOnly cookie scoped to /tokens.
       tags:
         - users
       requestBody:
@@ -352,6 +355,56 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServiceError'
+
+  /tokens/refresh:
+    post:
+      summary: Access token renewal
+      description: |
+        Exchanges a valid refresh token for a new access token, letting a session
+        outlive the access token without re-sending credentials. The refresh token
+        may be supplied in the request body or via the refresh_token cookie; the
+        body takes precedence.
+
+        The refresh token is returned unchanged and its expiry is not extended, so
+        a session ends at the refresh token's original lifetime, after which the
+        user must authenticate again.
+      tags:
+        - users
+      requestBody:
+        $ref: "#/components/requestBodies/RefreshReq"
+      responses:
+        '200':
+          description: Access token renewed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: |
+            Failed due to a missing, malformed, or expired refresh token, or one
+            that is not a refresh token. Clients should re-authenticate.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
+  /tokens/logout:
+    post:
+      summary: Clear the refresh cookie
+      description: |
+        Clears the refresh_token cookie. Refresh tokens are stateless and are not
+        stored server-side, so this ends the browser's session only: an
+        already-issued refresh token stays valid until it expires.
+      tags:
+        - users
+      responses:
+        '204':
+          description: Refresh cookie cleared.
+        '500':
+          $ref: '#/components/responses/ServiceError'
+
   /password/reset-request:
     post:
       summary: User password reset request
@@ -508,7 +561,17 @@ components:
         token:
           type: string
           format: jwt
-          description: Generated access token.
+          description: Short-lived access token, sent as a bearer token on subsequent requests.
+        refresh_token:
+          type: string
+          format: jwt
+          description: |
+            Long-lived token accepted only at /tokens/refresh. It is rejected as
+            credentials everywhere else.
+        expires_at:
+          type: string
+          format: date-time
+          description: Expiry of the access token, so clients can refresh ahead of time.
       required:
         - token
     UserReqObj:
@@ -859,6 +922,20 @@ components:
         enum: [google, github]
       required: true
   requestBodies:
+    RefreshReq:
+      description: |
+        JSON-formatted document carrying the refresh token. May be omitted when
+        the refresh_token cookie is present.
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              refresh_token:
+                type: string
+                format: jwt
+                description: The refresh token issued at login.
     UserCreateReq:
       description: JSON-formatted document describing the new user to be registered
       required: true

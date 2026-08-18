@@ -1023,8 +1023,13 @@ components:
             properties:
               type:
                 type: integer
+                enum: [0, 1, 2, 3]
                 example: 0
-                description: API key type. Keys of different type are processed differently.
+                description: |
+                  Key type. Keys of different type are processed differently:
+                  0 = login (short-lived access key), 1 = recovery, 2 = API key,
+                  3 = refresh (long-lived, accepted only by the token refresh
+                  endpoint and rejected as credentials everywhere else).
               duration:
                 type: number
                 format: integer
