@@ -193,12 +193,43 @@ func loginEndpoint(svc users.Service) endpoint.Endpoint {
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		token, err := svc.Login(ctx, req.user)
+		tokens, err := svc.Login(ctx, req.user)
 		if err != nil {
 			return nil, err
 		}
 
-		return tokenRes{token}, nil
+		return tokenRes{
+			Token:        tokens.AccessToken,
+			RefreshToken: tokens.RefreshToken,
+			ExpiresAt:    tokens.ExpiresAt,
+			created:      true,
+		}, nil
+	}
+}
+
+func refreshEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(refreshReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		tokens, err := svc.Refresh(ctx, req.RefreshToken)
+		if err != nil {
+			return nil, err
+		}
+
+		return tokenRes{
+			Token:        tokens.AccessToken,
+			RefreshToken: tokens.RefreshToken,
+			ExpiresAt:    tokens.ExpiresAt,
+		}, nil
+	}
+}
+
+func logoutEndpoint() endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		return logoutRes{}, nil
 	}
 }
 
@@ -231,7 +262,7 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		redirectURL, err := svc.OAuthCallback(ctx, users.OAuthCallbackData{
+		redirectURL, tokens, err := svc.OAuthCallback(ctx, users.OAuthCallbackData{
 			Provider:     req.provider,
 			Code:         req.code,
 			Verifier:     req.verifier,
@@ -242,7 +273,7 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return redirectURLRes{redirectURL}, nil
+		return oauthCallbackRes{RedirectURL: redirectURL, RefreshToken: tokens.RefreshToken}, nil
 	}
 }
 
