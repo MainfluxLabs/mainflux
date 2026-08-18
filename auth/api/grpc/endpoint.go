@@ -34,6 +34,22 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func refreshEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(refreshReq)
+		if err := req.validate(); err != nil {
+			return issueRes{}, err
+		}
+
+		_, secret, err := svc.Refresh(ctx, req.refreshToken)
+		if err != nil {
+			return issueRes{}, err
+		}
+
+		return issueRes{secret}, nil
+	}
+}
+
 func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(identityReq)
