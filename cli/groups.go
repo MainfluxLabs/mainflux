@@ -32,7 +32,7 @@ var cmdGroups = []cobra.Command{
 				logError(err)
 				return
 			}
-			id, err := sdk.CreateGroup(group, args[1], args[2])
+			id, err := sdk.CreateGroup(group, args[1], ResolveToken(args[2]))
 			if err != nil {
 				logError(err)
 				return
@@ -59,14 +59,14 @@ var cmdGroups = []cobra.Command{
 					Offset: uint64(Offset),
 					Limit:  uint64(Limit),
 				}
-				gp, err := sdk.ListGroups(meta, args[1])
+				gp, err := sdk.ListGroups(meta, ResolveToken(args[1]))
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(gp)
 			case "group-id":
-				g, err := sdk.GetGroup(args[1], args[2])
+				g, err := sdk.GetGroup(args[1], ResolveToken(args[2]))
 				if err != nil {
 					logError(err)
 					return
@@ -102,7 +102,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			if err := sdk.DeleteGroup(args[0], args[1]); err != nil {
+			if err := sdk.DeleteGroup(args[0], ResolveToken(args[1])); err != nil {
 				logError(err)
 				return
 			}
@@ -123,7 +123,7 @@ var cmdGroups = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.UpdateGroup(group, args[1], args[2]); err != nil {
+			if err := sdk.UpdateGroup(group, args[1], ResolveToken(args[2])); err != nil {
 				logError(err)
 				return
 			}
@@ -146,7 +146,7 @@ var cmdGroups = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 
-			up, err := sdk.ListThingsByGroup(args[0], meta, args[1])
+			up, err := sdk.ListThingsByGroup(args[0], meta, ResolveToken(args[1]))
 			if err != nil {
 				logError(err)
 				return
@@ -163,7 +163,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.GetGroupByThing(args[0], args[1])
+			up, err := sdk.GetGroupByThing(args[0], ResolveToken(args[1]))
 			if err != nil {
 				logError(err)
 				return
@@ -186,7 +186,7 @@ var cmdGroups = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 
-			up, err := sdk.ListProfilesByGroup(args[0], meta, args[1])
+			up, err := sdk.ListProfilesByGroup(args[0], meta, ResolveToken(args[1]))
 			if err != nil {
 				logError(err)
 				return
@@ -203,7 +203,7 @@ var cmdGroups = []cobra.Command{
 				logUsage(cmd.Use)
 				return
 			}
-			up, err := sdk.GetGroupByProfile(args[0], args[1])
+			up, err := sdk.GetGroupByProfile(args[0], ResolveToken(args[1]))
 			if err != nil {
 				logError(err)
 				return

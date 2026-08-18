@@ -45,7 +45,7 @@ var cmdReadJSON = &cobra.Command{
 		pm := buildJSONPageMetadata()
 		switch len(args) {
 		case 1:
-			m, err := sdk.ListJSONMessages(pm, args[0], things.ThingKey{})
+			m, err := sdk.ListJSONMessages(pm, ResolveToken(args[0]), things.ThingKey{})
 			if err != nil {
 				logError(err)
 				return
@@ -54,7 +54,7 @@ var cmdReadJSON = &cobra.Command{
 			logJSON(m)
 		case 3:
 			key := things.ThingKey{Type: args[0], Value: args[1]}
-			m, err := sdk.ListJSONMessages(pm, args[2], key)
+			m, err := sdk.ListJSONMessages(pm, ResolveToken(args[2]), key)
 			if err != nil {
 				logError(err)
 				return
@@ -76,7 +76,7 @@ var cmdReadSenML = &cobra.Command{
 		pm := buildSenMLPageMetadata()
 		switch len(args) {
 		case 1:
-			m, err := sdk.ListSenMLMessages(pm, args[0], things.ThingKey{})
+			m, err := sdk.ListSenMLMessages(pm, ResolveToken(args[0]), things.ThingKey{})
 			if err != nil {
 				logError(err)
 				return
@@ -85,7 +85,7 @@ var cmdReadSenML = &cobra.Command{
 			logJSON(m)
 		case 3:
 			key := things.ThingKey{Type: args[0], Value: args[1]}
-			m, err := sdk.ListSenMLMessages(pm, args[2], key)
+			m, err := sdk.ListSenMLMessages(pm, ResolveToken(args[2]), key)
 			if err != nil {
 				logError(err)
 				return
@@ -111,7 +111,7 @@ var cmdDeleteMessages = []cobra.Command{
 			}
 
 			pm := buildJSONPageMetadata()
-			if err := sdk.DeleteJSONMessages(args[0], args[1], pm); err != nil {
+			if err := sdk.DeleteJSONMessages(args[0], ResolveToken(args[1]), pm); err != nil {
 				logError(err)
 				return
 			}
@@ -130,7 +130,7 @@ var cmdDeleteMessages = []cobra.Command{
 			}
 
 			pm := buildSenMLPageMetadata()
-			if err := sdk.DeleteSenMLMessages(args[0], args[1], pm); err != nil {
+			if err := sdk.DeleteSenMLMessages(args[0], ResolveToken(args[1]), pm); err != nil {
 				logError(err)
 				return
 			}
@@ -149,7 +149,7 @@ var cmdDeleteMessages = []cobra.Command{
 			}
 
 			pm := buildJSONPageMetadata()
-			if err := sdk.DeleteAllJSONMessages(args[0], pm); err != nil {
+			if err := sdk.DeleteAllJSONMessages(ResolveToken(args[0]), pm); err != nil {
 				logError(err)
 				return
 			}
@@ -168,7 +168,7 @@ var cmdDeleteMessages = []cobra.Command{
 			}
 
 			pm := buildSenMLPageMetadata()
-			if err := sdk.DeleteAllSenMLMessages(args[0], pm); err != nil {
+			if err := sdk.DeleteAllSenMLMessages(ResolveToken(args[0]), pm); err != nil {
 				logError(err)
 				return
 			}
@@ -190,7 +190,7 @@ var cmdExportMessages = []cobra.Command{
 			}
 
 			pm := buildJSONPageMetadata()
-			data, err := sdk.ExportJSONMessages(args[0], pm, ConvertFormat, TimeFormat)
+			data, err := sdk.ExportJSONMessages(ResolveToken(args[0]), pm, ConvertFormat, TimeFormat)
 			if err != nil {
 				logError(err)
 				return
@@ -210,7 +210,7 @@ var cmdExportMessages = []cobra.Command{
 			}
 
 			pm := buildSenMLPageMetadata()
-			data, err := sdk.ExportSenMLMessages(args[0], pm, ConvertFormat, TimeFormat)
+			data, err := sdk.ExportSenMLMessages(ResolveToken(args[0]), pm, ConvertFormat, TimeFormat)
 			if err != nil {
 				logError(err)
 				return
@@ -231,7 +231,7 @@ var cmdBackup = &cobra.Command{
 			return
 		}
 
-		data, err := sdk.BackupMessages(args[0])
+		data, err := sdk.BackupMessages(ResolveToken(args[0]))
 		if err != nil {
 			logError(err)
 			return
@@ -257,7 +257,7 @@ var cmdRestore = &cobra.Command{
 			return
 		}
 
-		if err := sdk.RestoreMessages(args[1], data); err != nil {
+		if err := sdk.RestoreMessages(ResolveToken(args[1]), data); err != nil {
 			logError(err)
 			return
 		}

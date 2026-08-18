@@ -22,7 +22,7 @@ var cmdGroupMemberships = []cobra.Command{
 				logError(err)
 				return
 			}
-			err := sdk.CreateGroupMemberships(memberships, args[1], args[2])
+			err := sdk.CreateGroupMemberships(memberships, args[1], ResolveToken(args[2]))
 			if err != nil {
 				logError(err)
 				return
@@ -45,7 +45,7 @@ var cmdGroupMemberships = []cobra.Command{
 				Limit:  uint64(Limit),
 			}
 
-			up, err := sdk.ListGroupMemberships(args[0], meta, args[1])
+			up, err := sdk.ListGroupMemberships(args[0], meta, ResolveToken(args[1]))
 			if err != nil {
 				logError(err)
 				return
@@ -69,7 +69,7 @@ var cmdGroupMemberships = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateGroupMemberships(memberships, args[1], args[2]); err != nil {
+			if err := sdk.UpdateGroupMemberships(memberships, args[1], ResolveToken(args[2])); err != nil {
 				logError(err)
 				return
 			}
@@ -91,7 +91,7 @@ var cmdGroupMemberships = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.RemoveGroupMemberships(ids, args[1], args[2]); err != nil {
+			if err := sdk.RemoveGroupMemberships(ids, args[1], ResolveToken(args[2])); err != nil {
 				logError(err)
 				return
 			}

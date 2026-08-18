@@ -27,7 +27,7 @@ var cmdProfiles = []cobra.Command{
 				return
 			}
 
-			id, err := sdk.CreateProfile(profile, args[1], args[2])
+			id, err := sdk.CreateProfile(profile, args[1], ResolveToken(args[2]))
 			if err != nil {
 				logError(err)
 				return
@@ -63,7 +63,7 @@ var cmdProfiles = []cobra.Command{
 
 			switch args[0] {
 			case "all":
-				l, err := sdk.ListProfiles(pageMetadata, args[1])
+				l, err := sdk.ListProfiles(pageMetadata, ResolveToken(args[1]))
 				if err != nil {
 					logError(err)
 					return
@@ -72,7 +72,7 @@ var cmdProfiles = []cobra.Command{
 				logJSON(l)
 				return
 			case "by-thing":
-				pbt, err := sdk.GetProfileByThing(args[1], args[2])
+				pbt, err := sdk.GetProfileByThing(args[1], ResolveToken(args[2]))
 				if err != nil {
 					logError(err)
 					return
@@ -81,7 +81,7 @@ var cmdProfiles = []cobra.Command{
 				logJSON(pbt)
 				return
 			case "by-id":
-				c, err := sdk.GetProfile(args[1], args[2])
+				c, err := sdk.GetProfile(args[1], ResolveToken(args[2]))
 				if err != nil {
 					logError(err)
 					return
@@ -111,7 +111,7 @@ var cmdProfiles = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateProfile(profile, args[1], args[2]); err != nil {
+			if err := sdk.UpdateProfile(profile, args[1], ResolveToken(args[2])); err != nil {
 				logError(err)
 				return
 			}
@@ -129,7 +129,7 @@ var cmdProfiles = []cobra.Command{
 				return
 			}
 
-			if err := sdk.DeleteProfile(args[0], args[1]); err != nil {
+			if err := sdk.DeleteProfile(args[0], ResolveToken(args[1])); err != nil {
 				logError(err)
 				return
 			}
