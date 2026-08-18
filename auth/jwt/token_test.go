@@ -67,6 +67,11 @@ func TestParse(t *testing.T) {
 	expToken, err := tokenizer.Issue(expKey)
 	require.Nil(t, err, fmt.Sprintf("issuing expired key expected to succeed: %s", err))
 
+	refreshKey := key()
+	refreshKey.Type = auth.RefreshKey
+	refreshToken, err := tokenizer.Issue(refreshKey)
+	require.Nil(t, err, fmt.Sprintf("issuing refresh key expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		key   auth.Key
@@ -96,6 +101,12 @@ func TestParse(t *testing.T) {
 			key:   apiKey,
 			token: apiToken,
 			err:   auth.ErrAPIKeyExpired,
+		},
+		{
+			desc:  "parse refresh key",
+			key:   refreshKey,
+			token: refreshToken,
+			err:   nil,
 		},
 	}
 
