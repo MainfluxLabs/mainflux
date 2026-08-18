@@ -5,10 +5,12 @@ package sdk_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -87,7 +89,8 @@ func newUserServer(svc users.Service) *httptest.Server {
 
 	sdkUser := sdk.User{Email: registerUser, Password: validPass}
 
-	token, err := svc.Login(context.Background(), admin)
+	tokenPair, err := svc.Login(context.Background(), admin)
+	token := tokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)
@@ -226,37 +229,183 @@ func TestCreateToken(t *testing.T) {
 	mainfluxSDK := sdk.NewSDK(sdkConf)
 	sdkUser := sdk.User{Email: userEmail, Password: validPass}
 
-	token, err := svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
+	tokenPair, err := svc.Login(context.Background(), users.User{Email: sdkUser.Email, Password: sdkUser.Password})
+	token := tokenPair.AccessToken
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	cases := []struct {
-		desc  string
-		user  sdk.User
-		token string
-		err   error
+		desc    string
+		user    sdk.User
+		access  string
+		refresh string
+		err     error
 	}{
 		{
-			desc:  "create token for user",
-			user:  sdkUser,
-			token: token,
-			err:   nil,
+			desc:    "create token for user",
+			user:    sdkUser,
+			access:  token,
+			refresh: tokenPair.RefreshToken,
+			err:     nil,
 		},
 		{
-			desc:  "create token for non existing user",
-			user:  sdk.User{Email: registerUser, Password: "password"},
-			token: "",
-			err:   createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
+			desc:   "create token for non existing user",
+			user:   sdk.User{Email: registerUser, Password: "password"},
+			access: "",
+			err:    createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 		},
 		{
-			desc:  "create user with empty email",
-			user:  sdk.User{Email: "", Password: "password"},
-			token: "",
-			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
+			desc:   "create user with empty email",
+			user:   sdk.User{Email: "", Password: "password"},
+			access: "",
+			err:    createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 	}
 	for _, tc := range cases {
-		token, err := mainfluxSDK.CreateToken(tc.user)
+		tokens, err := mainfluxSDK.CreateToken(tc.user)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
-		assert.Equal(t, tc.token, token, fmt.Sprintf("%s: expected response: %s, got:  %s", tc.desc, token, tc.token))
+		assert.Equal(t, tc.access, tokens.AccessToken, fmt.Sprintf("%s: expected access token %s, got %s", tc.desc, tc.access, tokens.AccessToken))
+		assert.Equal(t, tc.refresh, tokens.RefreshToken, fmt.Sprintf("%s: expected refresh token %s, got %s", tc.desc, tc.refresh, tokens.RefreshToken))
 	}
+}
+
+func TestRefreshToken(t *testing.T) {
+	svc := newUserService()
+	ts := newUserServer(svc)
+	defer ts.Close()
+
+	mainfluxSDK := sdk.NewSDK(sdk.Config{
+		UsersURL:        ts.URL,
+		MsgContentType:  contentType,
+		TLSVerification: false,
+	})
+
+	tokenPair, err := mainfluxSDK.CreateToken(sdk.User{Email: userEmail, Password: validPass})
+	require.Nil(t, err, fmt.Sprintf("unexpected error creating token: %s", err))
+
+	cases := []struct {
+		desc    string
+		refresh string
+		access  string
+		err     error
+	}{
+		{
+			desc:    "refresh with valid refresh token",
+			refresh: tokenPair.RefreshToken,
+			access:  tokenPair.AccessToken,
+			err:     nil,
+		},
+		{
+			desc:    "refresh with an access token",
+			refresh: tokenPair.AccessToken,
+			access:  "",
+			err:     createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+		},
+		{
+			desc:    "refresh with empty token",
+			refresh: "",
+			access:  "",
+			err:     createError(sdk.ErrFailedFetch, http.StatusUnauthorized),
+		},
+	}
+
+	for _, tc := range cases {
+		tokens, err := mainfluxSDK.RefreshToken(tc.refresh)
+		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected error %s, got %s", tc.desc, tc.err, err))
+		assert.Equal(t, tc.access, tokens.AccessToken, fmt.Sprintf("%s: expected access token %s, got %s", tc.desc, tc.access, tokens.AccessToken))
+	}
+}
+
+// TestAutoRefresh drives the retry path in sendRequest with a stub that rejects
+// the first authenticated call, standing in for an access token that expired
+// mid-session.
+func TestAutoRefresh(t *testing.T) {
+	const (
+		staleAccess = "stale-access"
+		freshAccess = "fresh-access"
+		refresh     = "refresh-token"
+	)
+
+	var (
+		mu           sync.Mutex
+		refreshCalls int
+		authHeaders  []string
+	)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/tokens" {
+			w.Header().Set("Content-Type", contentType)
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(map[string]string{"token": staleAccess, "refresh_token": refresh})
+			return
+		}
+
+		if r.URL.Path == "/tokens/refresh" {
+			mu.Lock()
+			refreshCalls++
+			mu.Unlock()
+			w.Header().Set("Content-Type", contentType)
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"token": freshAccess, "refresh_token": refresh})
+			return
+		}
+
+		auth := r.Header.Get("Authorization")
+		mu.Lock()
+		authHeaders = append(authHeaders, auth)
+		mu.Unlock()
+
+		// Only the renewed token is accepted, so the first attempt must 401.
+		if auth != "Bearer "+freshAccess {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{"total": 0, "users": []any{}})
+	}))
+	defer ts.Close()
+
+	mainfluxSDK := sdk.NewSDK(sdk.Config{
+		UsersURL:        ts.URL,
+		MsgContentType:  contentType,
+		TLSVerification: false,
+		AutoRefresh:     true,
+	})
+
+	tokens, err := mainfluxSDK.CreateToken(sdk.User{Email: userEmail, Password: validPass})
+	require.Nil(t, err, fmt.Sprintf("unexpected error creating token: %s", err))
+	require.Equal(t, staleAccess, tokens.AccessToken, "expected the stub's access token")
+
+	_, err = mainfluxSDK.ListUsers(sdk.PageMetadata{}, tokens.AccessToken)
+	assert.Nil(t, err, fmt.Sprintf("expected the retried request to succeed: %s", err))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, 1, refreshCalls, "expected exactly one refresh")
+	assert.Equal(t, []string{"Bearer " + staleAccess, "Bearer " + freshAccess}, authHeaders,
+		"expected the stale token first, then the refreshed one")
+}
+
+// TestAutoRefreshDisabled confirms the retry stays opt-in: without AutoRefresh a
+// 401 surfaces to the caller untouched.
+func TestAutoRefreshDisabled(t *testing.T) {
+	var refreshCalls int
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/tokens/refresh" {
+			refreshCalls++
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer ts.Close()
+
+	mainfluxSDK := sdk.NewSDK(sdk.Config{
+		UsersURL:        ts.URL,
+		MsgContentType:  contentType,
+		TLSVerification: false,
+	})
+
+	_, err := mainfluxSDK.ListUsers(sdk.PageMetadata{}, "some-token")
+	assert.NotNil(t, err, "expected the 401 to reach the caller")
+	assert.Equal(t, 0, refreshCalls, "expected no refresh attempt when AutoRefresh is off")
 }
