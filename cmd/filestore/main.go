@@ -67,18 +67,13 @@ const (
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
-	envFilesPath         = "MF_FILESTORE_FILES_PATH"
-	defBackend           = "local"
-	envBackend           = "MF_FILESTORE_BACKEND"
-	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
-	defSeaweedURL        = "http://localhost:8888"
-	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
-	defSeaweedPrefix     = "filestore"
-	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
-	defSeaweedTimeout    = "30s"
-	envMaxUploadMB       = "MF_FILESTORE_MAX_UPLOAD_MB"
-	defMaxUploadMB       = "1024"
-	maxAllowedUploadMB   = 1 << 20
+
+	defBackend         = "local"
+	defSeaweedURL      = "http://localhost:8888"
+	defSeaweedPrefix   = "filestore"
+	defSeaweedTimeout  = "30s"
+	defMaxUploadMB     = "1024"
+	maxAllowedUploadMB = 1 << 20
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -101,6 +96,12 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
+	envMaxUploadMB       = "MF_FILESTORE_MAX_UPLOAD_MB"
+	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
+	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
+	envBackend           = "MF_FILESTORE_BACKEND"
+	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
+	envFilesPath         = "MF_FILESTORE_FILES_PATH"
 )
 
 type config struct {
