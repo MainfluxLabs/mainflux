@@ -98,7 +98,7 @@ func (r *GroupsRepository) RemoveByGroup(_ context.Context, groupID string) erro
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for k := range r.byKey {
-		if len(k) > len(groupID) && k[:len(groupID)+1] == groupID+"|" {
+		if len(k) > len(groupID) && k[:len(groupID)+1] == groupID+"/" {
 			delete(r.byKey, k)
 		}
 	}
