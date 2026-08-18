@@ -14,7 +14,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -131,11 +130,18 @@ const (
 	subjectWebhooks = "webhooks"
 )
 
+// Publisher specifies the minimal publishing capability the rules service needs.
+type Publisher interface {
+	messaging.AlarmPublisher
+	messaging.NotificationPublisher
+	messaging.WebhookPublisher
+}
+
 type rulesService struct {
 	rules          Repository
 	things         domain.ThingsClient
 	readers        domain.ReadersClient
-	pub            nats.Publisher
+	pub            Publisher
 	idProvider     uuid.IDProvider
 	logger         logger.Logger
 	scriptsEnabled bool
@@ -144,7 +150,7 @@ type rulesService struct {
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules Repository, things domain.ThingsClient, readers domain.ReadersClient, pub nats.Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
+func New(rules Repository, things domain.ThingsClient, readers domain.ReadersClient, pub Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
 	return &rulesService{
 		rules:          rules,
 		things:         things,

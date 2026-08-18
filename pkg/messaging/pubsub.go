@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -94,16 +95,16 @@ type PubSub interface {
 	Subscriber
 }
 
+// MessageDispatcher routes a message to every subject enabled by a profile's dispatcher flags.
+type MessageDispatcher interface {
+	// Dispatch publishes msg to every subject enabled by the dispatcher flags in pc.
+	Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error
+}
+
 // AlarmPublisher specifies the alarm publishing API.
 type AlarmPublisher interface {
 	// PublishAlarm publishes an alarm to the message broker.
 	PublishAlarm(subject string, alarm protomfx.Alarm) error
-}
-
-// CommandPublisher specifies the command publishing API.
-type CommandPublisher interface {
-	// PublishCommand publishes a command to the message broker.
-	PublishCommand(subject string, cmd protomfx.Command) error
 }
 
 // AlarmHandler represents protomfx.Alarm handler for AlarmSubscriber.
@@ -122,6 +123,12 @@ type AlarmSubscriber interface {
 
 	// UnsubscribeAlarms unsubscribes from the alarm stream.
 	UnsubscribeAlarms(id string) error
+}
+
+// CommandPublisher specifies the command publishing API.
+type CommandPublisher interface {
+	// PublishCommand publishes a command to the message broker.
+	PublishCommand(subject string, cmd protomfx.Command) error
 }
 
 // CommandHandler represents protomfx.Command handler for CommandSubscriber.

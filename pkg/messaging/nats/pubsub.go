@@ -10,7 +10,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	broker "github.com/nats-io/nats.go"
@@ -45,24 +44,6 @@ const (
 	SubjectRules = "rules"
 )
 
-// PubSub extends messaging.PubSub with alarm/command/notification/webhook publishing and subscribing.
-type PubSub interface {
-	messaging.PubSub
-	messaging.AlarmPublisher
-	messaging.AlarmSubscriber
-	messaging.CommandPublisher
-	messaging.CommandSubscriber
-	messaging.NotificationPublisher
-	messaging.NotificationSubscriber
-	messaging.WebhookPublisher
-	messaging.WebhookSubscriber
-
-	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
-	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
-}
-
-var _ PubSub = (*pubsub)(nil)
-
 type subscription struct {
 	*broker.Subscription
 	cancel func() error
@@ -83,7 +64,7 @@ type pubsub struct {
 // from ordinary subscribe. For more information, please take a look
 // here: https://docs.nats.io/developing-with-nats/receiving/queues.
 // If the queue is empty, Subscribe will be used.
-func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (*pubsub, error) {
 	conn, js, err := connect(url)
 	if err != nil {
 		return nil, err

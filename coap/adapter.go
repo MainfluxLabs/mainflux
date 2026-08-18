@@ -36,16 +36,23 @@ type Service interface {
 	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
+// PubSub specifies the minimal publish/subscribe capability the CoAP adapter needs.
+type PubSub interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+	messaging.Subscriber
+}
+
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things  domain.ThingsClient
-	pubsub  nats.PubSub
+	pubsub  PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(things domain.ThingsClient, pubsub nats.PubSub) Service {
+func New(things domain.ThingsClient, pubsub PubSub) Service {
 	as := &adapterService{
 		things:  things,
 		pubsub:  pubsub,
@@ -65,7 +72,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return err
 	}
 
-	return svc.pubsub.PublishByFlags(msg, pc.ProfileConfig)
+	return svc.pubsub.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {

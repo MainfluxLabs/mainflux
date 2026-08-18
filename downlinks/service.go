@@ -15,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"golang.org/x/time/rate"
@@ -81,12 +80,17 @@ type Service interface {
 	Restore(ctx context.Context, token string, downlinks []Downlink) error
 }
 
+// Publisher specifies the minimal publishing capability the downlinks service needs.
+type Publisher interface {
+	messaging.MessageDispatcher
+}
+
 type downlinksService struct {
 	things     domain.ThingsClient
 	auth       domain.AuthClient
 	downlinks  DownlinkRepository
 	idProvider uuid.IDProvider
-	publisher  nats.Publisher
+	publisher  Publisher
 	logger     logger.Logger
 	scheduler  *cron.ScheduleManager
 	limiters   map[string]*rate.Limiter
@@ -113,7 +117,7 @@ var (
 
 var _ Service = (*downlinksService)(nil)
 
-func New(things domain.ThingsClient, auth domain.AuthClient, pub nats.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, auth domain.AuthClient, pub Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
 		things:     things,
 		auth:       auth,
@@ -438,7 +442,7 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 		return err
 	}
 
-	return ds.publisher.PublishByFlags(msg, config)
+	return ds.publisher.Dispatch(msg, config)
 }
 
 func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {

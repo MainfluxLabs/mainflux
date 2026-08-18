@@ -12,7 +12,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	jsontransformer "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 )
@@ -43,15 +42,20 @@ type Service interface {
 	PublishJSONMessagesFromJSON(ctx context.Context, key string, records []map[string]any) error
 }
 
+// Publisher specifies the minimal publishing capability the converters service needs.
+type Publisher interface {
+	messaging.MessageDispatcher
+}
+
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
-	publisher nats.Publisher
+	publisher Publisher
 	things    domain.ThingsClient
 }
 
 // New instantiates the HTTP adapter implementation.
-func New(pub nats.Publisher, things domain.ThingsClient) Service {
+func New(pub Publisher, things domain.ThingsClient) Service {
 	return &adapterService{
 		publisher: pub,
 		things:    things,
@@ -484,5 +488,5 @@ func (as *adapterService) publish(ctx context.Context, key string, msg protomfx.
 		return err
 	}
 
-	return as.publisher.PublishByFlags(msg, pc.ProfileConfig)
+	return as.publisher.Dispatch(msg, pc.ProfileConfig)
 }
