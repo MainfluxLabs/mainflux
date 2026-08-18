@@ -41,6 +41,13 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 	return "", errors.ErrAuthentication
 }
 
+func (svc authServiceMock) Refresh(_ context.Context, refreshToken string) (string, error) {
+	if id, ok := svc.users[refreshToken]; ok {
+		return id, nil
+	}
+	return "", errors.ErrAuthentication
+}
+
 func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) error {
 	if ar.Token != "token" {
 		return errors.ErrAuthorization
