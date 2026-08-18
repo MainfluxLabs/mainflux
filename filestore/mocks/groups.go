@@ -27,7 +27,7 @@ func NewGroupsRepository() *GroupsRepository {
 }
 
 func groupKey(groupID string, fi filestore.FileInfo) string {
-	return groupID + "|" + fi.Class + "|" + fi.Format + "|" + fi.Name
+	return groupID + "/" + fi.Class + "/" + fi.Format + "/" + fi.Name
 }
 
 func (r *GroupsRepository) Save(_ context.Context, groupID string, fi filestore.FileInfo) error {
