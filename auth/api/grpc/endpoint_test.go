@@ -27,17 +27,18 @@ import (
 )
 
 const (
-	port           = 8081
-	secret         = "secret"
-	email          = "test@example.com"
-	id             = "testID"
-	orgID          = "orgID"
-	adminID        = "adminID"
-	adminEmail     = "admin@example.com"
-	viewerID       = "viewerID"
-	viewerEmail    = "viewer@example.com"
-	loginDuration  = 30 * time.Minute
-	inviteDuration = 7 * 24 * time.Hour
+	port            = 8081
+	secret          = "secret"
+	email           = "test@example.com"
+	id              = "testID"
+	orgID           = "orgID"
+	adminID         = "adminID"
+	adminEmail      = "admin@example.com"
+	viewerID        = "viewerID"
+	viewerEmail     = "viewer@example.com"
+	loginDuration   = 30 * time.Minute
+	refreshDuration = 24 * time.Hour
+	inviteDuration  = 7 * 24 * time.Hour
 )
 
 var (
@@ -52,7 +53,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, nil, nil, repo, roles, membersMock, nil, nil, idProvider, t, loginDuration, inviteDuration)
+	return auth.New(nil, nil, nil, repo, roles, membersMock, nil, nil, idProvider, t, loginDuration, refreshDuration, inviteDuration)
 }
 
 func startGRPCServer(svc auth.Service, port int) {
@@ -92,6 +93,14 @@ func TestIssue(t *testing.T) {
 			code:  codes.OK,
 		},
 		{
+			desc:  "issue refresh key",
+			id:    id,
+			email: email,
+			kind:  auth.RefreshKey,
+			err:   nil,
+			code:  codes.OK,
+		},
+		{
 			desc:  "issue API key unauthenticated",
 			id:    id,
 			email: email,
@@ -122,6 +131,56 @@ func TestIssue(t *testing.T) {
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
+	}
+}
+
+func TestRefresh(t *testing.T) {
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	_, refreshToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RefreshKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("issuing refresh key expected to succeed: %s", err))
+
+	_, loginToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("issuing login key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc  string
+		token string
+		code  codes.Code
+	}{
+		{
+			desc:  "refresh with valid refresh token",
+			token: refreshToken,
+			code:  codes.OK,
+		},
+		{
+			desc:  "refresh with an access token",
+			token: loginToken,
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "refresh with invalid token",
+			token: "invalid",
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "refresh with empty token",
+			token: "",
+			code:  codes.Unauthenticated,
+		},
+	}
+
+	for _, tc := range cases {
+		access, err := client.Refresh(context.Background(), tc.token)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
+
+		if tc.code == codes.OK {
+			assert.NotEmpty(t, access, fmt.Sprintf("%s: expected a new access token", tc.desc))
+		}
 	}
 }
 
