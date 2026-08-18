@@ -39,6 +39,15 @@ func (ms *metricsMiddleware) Issue(ctx context.Context, token string, key auth.K
 	return ms.svc.Issue(ctx, token, key)
 }
 
+func (ms *metricsMiddleware) Refresh(ctx context.Context, refreshToken string) (auth.Key, string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "refresh_key").Add(1)
+		ms.latency.With("method", "refresh_key").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Refresh(ctx, refreshToken)
+}
+
 func (ms *metricsMiddleware) Revoke(ctx context.Context, token, id string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "revoke_key").Add(1)
