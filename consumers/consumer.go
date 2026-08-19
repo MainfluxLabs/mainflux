@@ -40,17 +40,17 @@ func Messages(id string, sub messaging.Subscriber, c MessageConsumer, subjects .
 
 // Alarms subscribes the given AlarmConsumer to alarms.
 func Alarms(id string, sub messaging.AlarmSubscriber, c AlarmConsumer) error {
-	return sub.SubscribeAlarms(id, alarmHandler{c})
+	return sub.SubscribeAlarms(id, c.ConsumeAlarm)
 }
 
 // Notifications subscribes the given NotificationConsumer to the given subject.
 func Notifications(id string, sub messaging.NotificationSubscriber, c NotificationConsumer, subject string) error {
-	return sub.SubscribeNotifications(id, subject, notificationHandler{c})
+	return sub.SubscribeNotifications(id, subject, c.ConsumeNotification)
 }
 
 // Webhooks subscribes the given WebhookConsumer to webhook forwarding.
 func Webhooks(id string, sub messaging.WebhookSubscriber, c WebhookConsumer) error {
-	return sub.SubscribeWebhooks(id, webhookHandler{c})
+	return sub.SubscribeWebhooks(id, c.ConsumeWebhook)
 }
 
 type messageHandler struct{ c MessageConsumer }
@@ -60,27 +60,3 @@ func (h messageHandler) Handle(subject string, msg protomfx.Message) error {
 }
 
 func (h messageHandler) Cancel() error { return nil }
-
-type alarmHandler struct{ c AlarmConsumer }
-
-func (h alarmHandler) Handle(subject string, alarm protomfx.Alarm) error {
-	return h.c.ConsumeAlarm(subject, alarm)
-}
-
-func (h alarmHandler) Cancel() error { return nil }
-
-type notificationHandler struct{ c NotificationConsumer }
-
-func (h notificationHandler) Handle(subject string, notification protomfx.Notification) error {
-	return h.c.ConsumeNotification(subject, notification)
-}
-
-func (h notificationHandler) Cancel() error { return nil }
-
-type webhookHandler struct{ c WebhookConsumer }
-
-func (h webhookHandler) Handle(subject string, webhook protomfx.Webhook) error {
-	return h.c.ConsumeWebhook(subject, webhook)
-}
-
-func (h webhookHandler) Cancel() error { return nil }

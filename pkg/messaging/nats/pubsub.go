@@ -84,24 +84,7 @@ func NewPubSub(url, queue string, logger log.Logger) (*pubsub, error) {
 }
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	if s, ok := ps.subscriptions[topic]; ok {
-		if _, ok := s[id]; ok {
-			if err := ps.unsubscribe(id, topic); err != nil {
-				return err
-			}
-		}
-	}
-	return ps.subscribe(id, topic, ps.natsHandler(handler), handler.Cancel)
+	return ps.subscribeTyped(id, topic, messageTypedHandler{handler}, handler.Cancel)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
@@ -144,15 +127,41 @@ func (ps *pubsub) unsubscribe(id, topic string) error {
 	return nil
 }
 
-// subscribe registers a NATS subscription for the given id and topic.
-// Must be called with ps.mu held.
-func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn func() error) error {
+// subscribeTyped validates id/topic, resubscribes h if id is already subscribed to
+// topic, and registers the NATS subscription. Shared entry point for every typed
+// stream (message, alarm, command, notification, webhook). cancelFn is nil for
+// every stream except Message — alarms/commands/notifications/webhooks subscribe
+// once at service startup and have nothing to release; subscription.cancel is
+// already nil-checked in unsubscribe, so nil here is the correct, ordinary value,
+// not a special case.
+func (ps *pubsub) subscribeTyped(id, topic string, h typedHandler, cancelFn func() error) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+	if topic == "" {
+		return messaging.ErrEmptyTopic
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	if s, ok := ps.subscriptions[topic]; ok {
+		if _, ok := s[id]; ok {
+			if err := ps.unsubscribe(id, topic); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Re-lookup: unsubscribe above may have deleted ps.subscriptions[topic]
+	// entirely if id was its last subscriber.
 	s, ok := ps.subscriptions[topic]
 	if !ok {
 		s = make(map[string]subscription)
 		ps.subscriptions[topic] = s
 	}
 
+	nh := ps.natsGenericHandler(h)
 	var (
 		sub *broker.Subscription
 		err error
@@ -173,180 +182,95 @@ func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn fun
 }
 
 func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.subscribe(id, SubjectAlarms, ps.natsAlarmHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeAlarms(id string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, SubjectAlarms)
+	return ps.subscribeTyped(id, SubjectAlarms, alarmTypedHandler{handler}, nil)
 }
 
 func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	if s, ok := ps.subscriptions[topic]; ok {
-		if _, ok := s[id]; ok {
-			if err := ps.unsubscribe(id, topic); err != nil {
-				return err
-			}
-		}
-	}
-	return ps.subscribe(id, topic, ps.natsCommandHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeCommands(id, topic string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, topic)
-}
-
-func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var alarm protomfx.Alarm
-		if err := proto.Unmarshal(m.Data, &alarm); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received alarm: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, alarm); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle alarm: %s", err))
-		}
-	}
-}
-
-func (ps *pubsub) natsCommandHandler(h messaging.CommandHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var cmd protomfx.Command
-		if err := proto.Unmarshal(m.Data, &cmd); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received command: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, cmd); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle command: %s", err))
-		}
-	}
+	return ps.subscribeTyped(id, topic, commandTypedHandler{handler}, nil)
 }
 
 func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	if s, ok := ps.subscriptions[topic]; ok {
-		if _, ok := s[id]; ok {
-			if err := ps.unsubscribe(id, topic); err != nil {
-				return err
-			}
-		}
-	}
-	return ps.subscribe(id, topic, ps.natsNotificationHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeNotifications(id, topic string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, topic)
+	return ps.subscribeTyped(id, topic, notificationTypedHandler{handler}, nil)
 }
 
 func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.subscribe(id, SubjectWebhooks, ps.natsWebhookHandler(handler), handler.Cancel)
+	return ps.subscribeTyped(id, SubjectWebhooks, webhookTypedHandler{handler}, nil)
 }
 
-func (ps *pubsub) UnsubscribeWebhooks(id string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, SubjectWebhooks)
+// typedHandler adapts a concrete messaging.*Handler into the shape natsGenericHandler
+// needs: allocate the right proto type to unmarshal into, then dispatch to the real handler.
+type typedHandler interface {
+	new() proto.Message
+	handle(subject string, msg proto.Message) error
 }
 
-func (ps *pubsub) natsNotificationHandler(h messaging.NotificationHandler) broker.MsgHandler {
+// natsGenericHandler unmarshals the NATS payload into a fresh value from h.new(), then
+// dispatches it via h.handle. Shared by every typed stream (message, alarm, command,
+// notification, webhook) so the unmarshal+dispatch loop exists in exactly one place.
+func (ps *pubsub) natsGenericHandler(h typedHandler) broker.MsgHandler {
 	return func(m *broker.Msg) {
-		var notification protomfx.Notification
-		if err := proto.Unmarshal(m.Data, &notification); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received notification: %s", err))
+		msg := h.new()
+		if err := proto.Unmarshal(m.Data, msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received %T: %s", msg, err))
 			return
 		}
-		if err := h.Handle(m.Subject, notification); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle notification: %s", err))
+		if err := h.handle(m.Subject, msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle %T: %s", msg, err))
 		}
 	}
 }
 
-func (ps *pubsub) natsWebhookHandler(h messaging.WebhookHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var webhook protomfx.Webhook
-		if err := proto.Unmarshal(m.Data, &webhook); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received webhook: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, webhook); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle webhook: %s", err))
-		}
+type messageTypedHandler struct{ h messaging.MessageHandler }
+
+func (t messageTypedHandler) new() proto.Message { return &protomfx.Message{} }
+func (t messageTypedHandler) handle(subject string, msg proto.Message) error {
+	v, ok := msg.(*protomfx.Message)
+	if !ok {
+		return fmt.Errorf("nats: unexpected message type %T for message subject", msg)
 	}
+	return t.h.Handle(subject, *v)
 }
 
-func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var msg protomfx.Message
-		if err := proto.Unmarshal(m.Data, &msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
-		}
+type alarmTypedHandler struct{ h messaging.AlarmHandler }
+
+func (t alarmTypedHandler) new() proto.Message { return &protomfx.Alarm{} }
+func (t alarmTypedHandler) handle(subject string, msg proto.Message) error {
+	v, ok := msg.(*protomfx.Alarm)
+	if !ok {
+		return fmt.Errorf("nats: unexpected message type %T for alarm subject", msg)
 	}
+	return t.h(subject, *v)
+}
+
+type commandTypedHandler struct{ h messaging.CommandHandler }
+
+func (t commandTypedHandler) new() proto.Message { return &protomfx.Command{} }
+func (t commandTypedHandler) handle(subject string, msg proto.Message) error {
+	v, ok := msg.(*protomfx.Command)
+	if !ok {
+		return fmt.Errorf("nats: unexpected message type %T for command subject", msg)
+	}
+	return t.h(subject, *v)
+}
+
+type notificationTypedHandler struct{ h messaging.NotificationHandler }
+
+func (t notificationTypedHandler) new() proto.Message { return &protomfx.Notification{} }
+func (t notificationTypedHandler) handle(subject string, msg proto.Message) error {
+	v, ok := msg.(*protomfx.Notification)
+	if !ok {
+		return fmt.Errorf("nats: unexpected message type %T for notification subject", msg)
+	}
+	return t.h(subject, *v)
+}
+
+type webhookTypedHandler struct{ h messaging.WebhookHandler }
+
+func (t webhookTypedHandler) new() proto.Message { return &protomfx.Webhook{} }
+func (t webhookTypedHandler) handle(subject string, msg proto.Message) error {
+	v, ok := msg.(*protomfx.Webhook)
+	if !ok {
+		return fmt.Errorf("nats: unexpected message type %T for webhook subject", msg)
+	}
+	return t.h(subject, *v)
 }
