@@ -39,8 +39,7 @@ func (req issueReq) validate() error {
 	}
 	if req.keyType != auth.LoginKey &&
 		req.keyType != auth.APIKey &&
-		req.keyType != auth.RecoveryKey &&
-		req.keyType != auth.RefreshKey {
+		req.keyType != auth.RecoveryKey {
 		return apiutil.ErrInvalidAuthKey
 	}
 
@@ -48,11 +47,11 @@ func (req issueReq) validate() error {
 }
 
 type refreshReq struct {
-	refreshToken string
+	token string
 }
 
 func (req refreshReq) validate() error {
-	if req.refreshToken == "" {
+	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 

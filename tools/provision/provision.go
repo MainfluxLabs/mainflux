@@ -90,7 +90,7 @@ func Provision(conf Config) {
 	var err error
 
 	// Login user
-	tokens, err := s.CreateToken(user)
+	token, err := s.CreateToken(user)
 	if err != nil {
 		log.Fatalf("Unable to login user: %s", err.Error())
 		return
@@ -135,7 +135,7 @@ func Provision(conf Config) {
 		gID = profiles[i].GroupID
 	}
 
-	profiles, err = s.CreateProfiles(profiles, gID, tokens.AccessToken)
+	profiles, err = s.CreateProfiles(profiles, gID, token)
 	if err != nil {
 		log.Fatalf("Failed to create the profiles: %s", err.Error())
 	}
@@ -144,7 +144,7 @@ func Provision(conf Config) {
 		cIDs = append(cIDs, c.ID)
 	}
 
-	things, err = s.CreateThings(things, cIDs[0], tokens.AccessToken)
+	things, err = s.CreateThings(things, cIDs[0], token)
 	if err != nil {
 		log.Fatalf("Failed to create the things: %s", err.Error())
 	}

@@ -22,7 +22,7 @@ var cmdWebhooks = []cobra.Command{
 				logError(err)
 				return
 			}
-			whs, err := sdk.CreateWebhooks(webhooks, args[1], ResolveToken(args[2]))
+			whs, err := sdk.CreateWebhooks(webhooks, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -44,21 +44,21 @@ var cmdWebhooks = []cobra.Command{
 
 			switch args[0] {
 			case "by-group":
-				l, err := sdk.ListWebhooksByGroup(args[1], ResolveToken(args[2]))
+				l, err := sdk.ListWebhooksByGroup(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(l)
 			case "by-thing":
-				l, err := sdk.ListWebhooksByThing(args[1], ResolveToken(args[2]))
+				l, err := sdk.ListWebhooksByThing(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
 				}
 				logJSON(l)
 			case "by-id":
-				w, err := sdk.GetWebhook(args[1], ResolveToken(args[2]))
+				w, err := sdk.GetWebhook(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -86,7 +86,7 @@ var cmdWebhooks = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateWebhook(wh, args[1], ResolveToken(args[2])); err != nil {
+			if err := sdk.UpdateWebhook(wh, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -108,7 +108,7 @@ var cmdWebhooks = []cobra.Command{
 				logError(err)
 				return
 			}
-			if err := sdk.DeleteWebhooks(ids, ResolveToken(args[1])); err != nil {
+			if err := sdk.DeleteWebhooks(ids, args[1]); err != nil {
 				logError(err)
 				return
 			}

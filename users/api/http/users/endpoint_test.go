@@ -19,7 +19,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -116,14 +115,6 @@ type selfRegisterReq struct {
 type passwordResetReq struct {
 	Email        string `json:"email,omitempty"`
 	RedirectPath string `json:"redirect_path,omitempty"`
-}
-
-// tokenPairRes mirrors the login/refresh response body, field order included,
-// so expectations compare byte-for-byte against what the handler encodes.
-type tokenPairRes struct {
-	Token        string    `json:"token,omitempty"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
 }
 
 type testRequest struct {
@@ -342,11 +333,9 @@ func TestLogin(t *testing.T) {
 		Password: validPass,
 	})
 
-	token, err := auth.Issue(context.Background(), user.ID, user.Email, domain.LoginKey)
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
-	refresh, err := auth.Issue(context.Background(), user.ID, user.Email, domain.RefreshKey)
-	require.Nil(t, err, fmt.Sprintf("issue refresh token for user got unexpected error: %s", err))
-	tokenData := toJSON(tokenPairRes{Token: token, RefreshToken: refresh})
+	tokenData := toJSON(map[string]string{"token": token})
 
 	cases := []struct {
 		desc        string
@@ -392,69 +381,38 @@ func TestRefresh(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	access, err := auth.Issue(context.Background(), user.ID, user.Email, domain.LoginKey)
-	require.Nil(t, err, fmt.Sprintf("issue access token got unexpected error: %s", err))
-	refresh, err := auth.Issue(context.Background(), user.ID, user.Email, domain.RefreshKey)
-	require.Nil(t, err, fmt.Sprintf("issue refresh token got unexpected error: %s", err))
-
-	refreshed := toJSON(tokenPairRes{Token: access, RefreshToken: refresh})
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
+	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
+	tokenData := toJSON(map[string]string{"token": token})
 
 	cases := []struct {
 		desc   string
-		body   string
-		cookie string
+		token  string
 		status int
 		res    string
 	}{
-		{"refresh with valid refresh token in body", toJSON(map[string]string{"refresh_token": refresh}), "", http.StatusOK, refreshed},
-		{"refresh with valid refresh token in cookie", "{}", refresh, http.StatusOK, refreshed},
-		{"body takes precedence over cookie", toJSON(map[string]string{"refresh_token": refresh}), "bogus", http.StatusOK, refreshed},
-		{"refresh with an access token", toJSON(map[string]string{"refresh_token": access}), "", http.StatusUnauthorized, unauthRes},
-		{"refresh with unknown token", toJSON(map[string]string{"refresh_token": "wrong"}), "", http.StatusUnauthorized, unauthRes},
-		{"refresh with no token at all", "{}", "", http.StatusUnauthorized, missingTokRes},
+		{"refresh with a valid token", token, http.StatusCreated, tokenData},
+		{"refresh with an invalid token", "invalid", http.StatusUnauthorized, unauthRes},
+		{"refresh without a token", "", http.StatusUnauthorized, missingTokRes},
 	}
 
 	for _, tc := range cases {
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/tokens/refresh", ts.URL), strings.NewReader(tc.body))
-		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		req.Header.Set("Content-Type", contentType)
-		if tc.cookie != "" {
-			req.AddCookie(&http.Cookie{Name: "refresh_token", Value: tc.cookie})
+		req := testRequest{
+			client:      client,
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/tokens/refresh", ts.URL),
+			contentType: contentType,
+			token:       tc.token,
 		}
-
-		res, err := client.Do(req)
+		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		body, err := io.ReadAll(res.Body)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		got := strings.Trim(string(body), "\n")
+		data := strings.Trim(string(body), "\n")
 
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.Equal(t, tc.res, got, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, got))
+		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
 	}
-}
-
-// TestRefreshTokenIsNotAnAccessToken is the security contract for the whole
-// feature: the long-lived refresh token must be useless as credentials against
-// any ordinary endpoint, otherwise it is just a login token with a longer life.
-func TestRefreshTokenIsNotAnAccessToken(t *testing.T) {
-	svc := newService()
-	ts := newServer(svc)
-	defer ts.Close()
-
-	auth := mocks.NewAuthService(admin.ID, usersList, nil)
-	refresh, err := auth.Issue(context.Background(), admin.ID, admin.Email, domain.RefreshKey)
-	require.Nil(t, err, fmt.Sprintf("issue refresh token got unexpected error: %s", err))
-
-	req := testRequest{
-		client: ts.Client(),
-		method: http.MethodGet,
-		url:    fmt.Sprintf("%s/users/profile", ts.URL),
-		token:  refresh,
-	}
-	res, err := req.make()
-	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
-
-	assert.Equal(t, http.StatusUnauthorized, res.StatusCode, fmt.Sprintf("expected refresh token to be rejected as credentials, got %d", res.StatusCode))
 }
 
 func TestUser(t *testing.T) {
@@ -502,8 +460,7 @@ func TestListUsers(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	tokenPair, err := svc.Login(context.Background(), admin)
-	token := tokenPair.AccessToken
+	token, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
@@ -695,8 +652,7 @@ func TestSearchUsers(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	tokenPair, err := svc.Login(context.Background(), admin)
-	token := tokenPair.AccessToken
+	token, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
@@ -855,8 +811,7 @@ func TestUpdateUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	tokenPair, err := svc.Login(context.Background(), user)
-	token := tokenPair.AccessToken
+	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	data := toJSON(metadata)

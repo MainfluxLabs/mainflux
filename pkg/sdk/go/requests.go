@@ -9,11 +9,6 @@ type UserPasswordReq struct {
 	Password    string `json:"password,omitempty"`
 }
 
-// refreshReq carries the refresh token exchanged for a new access token.
-type refreshReq struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
 // deleteProfilesReq contains IDs of profiles to be deleted
 type deleteProfilesReq struct {
 	ProfileIDs []string `json:"profile_ids"`

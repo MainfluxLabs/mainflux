@@ -215,7 +215,7 @@ func encodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 
 func decodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.Token)
-	return refreshReq{refreshToken: req.GetValue()}, nil
+	return refreshReq{token: req.GetValue()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {

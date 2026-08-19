@@ -28,7 +28,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			id, err := sdk.CreateThing(thing, args[1], ResolveToken(args[2]))
+			id, err := sdk.CreateThing(thing, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -63,7 +63,7 @@ var cmdThings = []cobra.Command{
 
 			switch args[0] {
 			case "all":
-				l, err := sdk.ListThings(pageMetadata, ResolveToken(args[1]))
+				l, err := sdk.ListThings(pageMetadata, args[1])
 				if err != nil {
 					logError(err)
 					return
@@ -72,7 +72,7 @@ var cmdThings = []cobra.Command{
 				logJSON(l)
 				return
 			case "by-profile":
-				tip, err := sdk.ListThingsByProfile(args[1], pageMetadata, ResolveToken(args[2]))
+				tip, err := sdk.ListThingsByProfile(args[1], pageMetadata, args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -81,7 +81,7 @@ var cmdThings = []cobra.Command{
 				logJSON(tip)
 				return
 			case "by-id":
-				t, err := sdk.GetThing(args[1], ResolveToken(args[2]))
+				t, err := sdk.GetThing(args[1], args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -124,7 +124,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			if err := sdk.DeleteThing(args[0], ResolveToken(args[1])); err != nil {
+			if err := sdk.DeleteThing(args[0], args[1]); err != nil {
 				logError(err)
 				return
 			}
@@ -167,7 +167,7 @@ var cmdThings = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateThing(thing, args[1], ResolveToken(args[2])); err != nil {
+			if err := sdk.UpdateThing(thing, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

@@ -34,9 +34,10 @@ const (
 	description = "description"
 	name        = "name"
 
-	loginDuration   = 30 * time.Minute
-	refreshDuration = 24 * time.Hour
-	inviteDuration  = 7 * 24 * time.Hour
+	loginDuration = 30 * time.Minute
+
+	maxSessionAge  = 168 * time.Hour
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -76,7 +77,7 @@ func newService() auth.Service {
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	t := jwt.New(secret)
 
-	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, refreshDuration, inviteDuration)
+	return auth.New(orgRepo, tc, uc, keyRepo, mocks.NewSessionRepository(), roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, maxSessionAge, inviteDuration)
 }
 
 func TestCreateOrg(t *testing.T) {
@@ -102,9 +103,7 @@ func TestCreateOrg(t *testing.T) {
 			token: ownerToken,
 			err:   nil,
 			event: map[string]any{
-				"id":           "123e4567-e89b-12d3-a456-000000000001",
 				"operation":    events.OrgCreate,
-				"evt_org_id":   "123e4567-e89b-12d3-a456-000000000001",
 				"evt_group_id": "",
 			},
 		},
@@ -119,8 +118,15 @@ func TestCreateOrg(t *testing.T) {
 
 	lastID := "0"
 	for _, oc := range cases {
-		_, err := svc.CreateOrg(context.Background(), oc.token, oc.org)
+		created, err := svc.CreateOrg(context.Background(), oc.token, oc.org)
 		assert.True(t, errors.Contains(err, oc.err), fmt.Sprintf("%s: expected %s got %s\n", oc.desc, oc.err, err))
+
+		// The id is taken from the created org rather than hardcoded: it comes
+		// from a counter shared with everything else that draws an id first.
+		if oc.event != nil {
+			oc.event["id"] = created.ID
+			oc.event["evt_org_id"] = created.ID
+		}
 
 		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
 			Streams: []string{events.AuthStream, lastID},

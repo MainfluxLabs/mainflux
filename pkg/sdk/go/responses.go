@@ -11,9 +11,7 @@ import (
 )
 
 type tokenRes struct {
-	Token        string    `json:"token,omitempty"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
+	Token string `json:"token,omitempty"`
 }
 
 type createThingsRes struct {

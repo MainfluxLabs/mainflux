@@ -33,20 +33,6 @@ func main() {
 		Use: "mainfluxlabs-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
-
-			// Resume the saved session so commands keep working past the access
-			// token's expiry, and write back each rotation so the next
-			// invocation starts from a fresh token.
-			if tokens, err := cli.LoadSession(); err == nil {
-				sdkConf.Session = tokens
-			}
-			sdkConf.AutoRefresh = true
-			sdkConf.OnTokenRefresh = func(tokens sdk.TokenPair) {
-				if err := cli.SaveSession(tokens); err != nil {
-					log.Printf("failed to save refreshed session: %s", err)
-				}
-			}
-
 			s := sdk.NewSDK(sdkConf)
 			cli.SetSDK(s)
 		},
@@ -66,7 +52,6 @@ func main() {
 	provisionCmd := cli.NewProvisionCmd()
 	certsCmd := cli.NewCertsCmd()
 	keysCmd := cli.NewKeysCmd()
-	sessionCmd := cli.NewSessionCmd()
 
 	// Root Commands
 	rootCmd.AddCommand(healthCmd)
@@ -82,7 +67,6 @@ func main() {
 	rootCmd.AddCommand(provisionCmd)
 	rootCmd.AddCommand(certsCmd)
 	rootCmd.AddCommand(keysCmd)
-	rootCmd.AddCommand(sessionCmd)
 
 	// Root Flags
 	rootCmd.PersistentFlags().StringVarP(

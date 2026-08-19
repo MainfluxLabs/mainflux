@@ -6,7 +6,6 @@ package users
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
@@ -60,19 +59,11 @@ func (res createUserRes) Empty() bool {
 }
 
 type tokenRes struct {
-	Token        string    `json:"token,omitempty"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
-
-	// created distinguishes a fresh login (201) from a token refresh (200).
-	created bool
+	Token string `json:"token,omitempty"`
 }
 
 func (res tokenRes) Code() int {
-	if res.created {
-		return http.StatusCreated
-	}
-	return http.StatusOK
+	return http.StatusCreated
 }
 
 func (res tokenRes) Headers() map[string]string {
@@ -82,21 +73,6 @@ func (res tokenRes) Headers() map[string]string {
 func (res tokenRes) Empty() bool {
 	return res.Token == ""
 }
-
-// oauthCallbackRes carries the refresh token alongside the redirect so the
-// encoder can place it in an HttpOnly cookie rather than the URL fragment.
-type oauthCallbackRes struct {
-	RedirectURL  string
-	RefreshToken string
-}
-
-type logoutRes struct{}
-
-func (res logoutRes) Code() int { return http.StatusNoContent }
-
-func (res logoutRes) Headers() map[string]string { return map[string]string{} }
-
-func (res logoutRes) Empty() bool { return true }
 
 type redirectURLRes struct {
 	RedirectURL string `json:"url,omitempty"`

@@ -139,12 +139,10 @@ func TestCreatePlatformInvite(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdminPair, err := svc.Login(context.Background(), admin)
-	tokenAdmin := tokenAdminPair.AccessToken
+	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	tokenRegularPair, err := svc.Login(context.Background(), user)
-	tokenRegular := tokenRegularPair.AccessToken
+	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	cases := []struct {
@@ -236,8 +234,7 @@ func TestViewPlatformInvite(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdminPair, err := svc.Login(context.Background(), admin)
-	tokenAdmin := tokenAdminPair.AccessToken
+	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
@@ -281,12 +278,10 @@ func TestListPlatformInvites(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdminPair, err := svc.Login(context.Background(), admin)
-	tokenAdmin := tokenAdminPair.AccessToken
+	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	tokenRegularPair, err := svc.Login(context.Background(), user)
-	tokenRegular := tokenRegularPair.AccessToken
+	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
@@ -344,12 +339,10 @@ func TestRevokePlatformInvite(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdminPair, err := svc.Login(context.Background(), admin)
-	tokenAdmin := tokenAdminPair.AccessToken
+	tokenAdmin, err := svc.Login(context.Background(), admin)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	tokenRegularPair, err := svc.Login(context.Background(), user)
-	tokenRegular := tokenRegularPair.AccessToken
+	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})

@@ -6,11 +6,9 @@ package users
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -36,11 +34,6 @@ const (
 	verifierKey     = "verifier"
 	inviteIDKey     = "invite_id"
 	redirectPathKey = "redirect_path"
-	refreshTokenKey = "refresh_token"
-
-	// tokensPath scopes the refresh cookie so it is only ever sent to the token
-	// endpoints, keeping it off every other request the browser makes.
-	tokensPath = "/tokens"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -157,21 +150,14 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 	mux.Post("/tokens", kithttp.NewServer(
 		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
 		decodeCredentials,
-		encodeTokenResponse,
+		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/tokens/refresh", kithttp.NewServer(
 		kitot.TraceServer(tracer, "refresh")(refreshEndpoint(svc)),
 		decodeRefresh,
-		encodeTokenResponse,
-		opts...,
-	))
-
-	mux.Post("/tokens/logout", kithttp.NewServer(
-		kitot.TraceServer(tracer, "logout")(logoutEndpoint()),
-		decodeLogout,
-		encodeLogoutResponse,
+		encodeResponse,
 		opts...,
 	))
 
@@ -342,25 +328,7 @@ func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeRefresh(_ context.Context, r *http.Request) (any, error) {
-	var req refreshReq
-
-	if strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) && r.Body != nil {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-	}
-
-	if req.RefreshToken == "" {
-		if c, err := r.Cookie(refreshTokenKey); err == nil {
-			req.RefreshToken = c.Value
-		}
-	}
-
-	return req, nil
-}
-
-func decodeLogout(_ context.Context, r *http.Request) (any, error) {
-	return nil, nil
+	return refreshReq{token: apiutil.ExtractBearerToken(r)}, nil
 }
 
 func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {
@@ -516,57 +484,6 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 	return json.NewEncoder(w).Encode(response)
 }
 
-// setRefreshCookie scopes the refresh token to the token endpoints and marks it
-// HttpOnly so browser JavaScript cannot read it. The cookie lifetime is derived
-// from the token's own expiry, keeping the two from drifting apart.
-func setRefreshCookie(w http.ResponseWriter, refreshToken string) {
-	maxAge := int(time.Until(authn.ExpiresAtFromToken(refreshToken)).Seconds())
-	if maxAge < 0 {
-		maxAge = 0
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     refreshTokenKey,
-		Value:    refreshToken,
-		Path:     tokensPath,
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
-func clearRefreshCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     refreshTokenKey,
-		Path:     tokensPath,
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
-// encodeTokenResponse mirrors encodeResponse but additionally hands the refresh
-// token back as a cookie, so browsers and API clients can each use whichever
-// carrier suits them.
-func encodeTokenResponse(ctx context.Context, w http.ResponseWriter, response any) error {
-	if res, ok := response.(tokenRes); ok && res.RefreshToken != "" {
-		setRefreshCookie(w, res.RefreshToken)
-	}
-
-	return encodeResponse(ctx, w, response)
-}
-
-// encodeLogoutResponse clears the refresh cookie. Refresh tokens are stateless,
-// so this ends the browser's session only — an already-issued refresh token
-// stays valid until it expires.
-func encodeLogoutResponse(ctx context.Context, w http.ResponseWriter, response any) error {
-	clearRefreshCookie(w)
-
-	return encodeResponse(ctx, w, response)
-}
-
 func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	res := response.(oauthLoginRes)
 
@@ -626,11 +543,7 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 		})
 	}
 
-	res := response.(oauthCallbackRes)
-	if res.RefreshToken != "" {
-		setRefreshCookie(w, res.RefreshToken)
-	}
-
+	res := response.(redirectURLRes)
 	w.Header().Set("Location", res.RedirectURL)
 	w.WriteHeader(http.StatusFound)
 	return nil

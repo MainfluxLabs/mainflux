@@ -39,13 +39,31 @@ func (ms *metricsMiddleware) Issue(ctx context.Context, token string, key auth.K
 	return ms.svc.Issue(ctx, token, key)
 }
 
-func (ms *metricsMiddleware) Refresh(ctx context.Context, refreshToken string) (auth.Key, string, error) {
+func (ms *metricsMiddleware) Refresh(ctx context.Context, token string) (auth.Key, string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "refresh_key").Add(1)
 		ms.latency.With("method", "refresh_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Refresh(ctx, refreshToken)
+	return ms.svc.Refresh(ctx, token)
+}
+
+func (ms *metricsMiddleware) Logout(ctx context.Context, token string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "logout").Add(1)
+		ms.latency.With("method", "logout").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Logout(ctx, token)
+}
+
+func (ms *metricsMiddleware) LogoutAll(ctx context.Context, token string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "logout_all").Add(1)
+		ms.latency.With("method", "logout_all").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.LogoutAll(ctx, token)
 }
 
 func (ms *metricsMiddleware) Revoke(ctx context.Context, token, id string) error {

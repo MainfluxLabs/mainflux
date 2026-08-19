@@ -24,7 +24,7 @@ var cmdOrgMemberships = []cobra.Command{
 				return
 			}
 
-			if err := sdk.CreateOrgMemberships(memberships, args[1], ResolveToken(args[2])); err != nil {
+			if err := sdk.CreateOrgMemberships(memberships, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -50,7 +50,7 @@ var cmdOrgMemberships = []cobra.Command{
 			}
 
 			if args[0] == "all" {
-				mbs, err := sdk.ListOrgMemberships(args[1], meta, ResolveToken(args[2]))
+				mbs, err := sdk.ListOrgMemberships(args[1], meta, args[2])
 				if err != nil {
 					logError(err)
 					return
@@ -59,7 +59,7 @@ var cmdOrgMemberships = []cobra.Command{
 				return
 			}
 
-			mb, err := sdk.GetOrgMembership(args[0], args[1], ResolveToken(args[2]))
+			mb, err := sdk.GetOrgMembership(args[0], args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -83,7 +83,7 @@ var cmdOrgMemberships = []cobra.Command{
 				return
 			}
 
-			if err := sdk.UpdateOrgMemberships(memberships, args[1], ResolveToken(args[2])); err != nil {
+			if err := sdk.UpdateOrgMemberships(memberships, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}
@@ -107,7 +107,7 @@ var cmdOrgMemberships = []cobra.Command{
 				return
 			}
 
-			if err := sdk.RemoveOrgMemberships(ids, args[1], ResolveToken(args[2])); err != nil {
+			if err := sdk.RemoveOrgMemberships(ids, args[1], args[2]); err != nil {
 				logError(err)
 				return
 			}

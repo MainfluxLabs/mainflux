@@ -44,9 +44,10 @@ const (
 	invalid           = "invalid"
 	n                 = 10
 
-	loginDuration   = 30 * time.Minute
-	refreshDuration = 24 * time.Hour
-	inviteDuration  = 7 * 24 * time.Hour
+	loginDuration = 30 * time.Minute
+
+	maxSessionAge  = 168 * time.Hour
+	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
@@ -83,7 +84,40 @@ func newService() auth.Service {
 	tc := thmocks.NewThingsServiceClient(nil, nil, createGroups())
 	t := jwt.New(secret)
 
-	return auth.New(orgRepo, tc, uc, keyRepo, roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, refreshDuration, inviteDuration)
+	return auth.New(orgRepo, tc, uc, keyRepo, mocks.NewSessionRepository(), roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, maxSessionAge, inviteDuration)
+}
+
+// newServiceWithMaxSessionAge builds a service whose sessions are capped
+// sooner than the default, so the hard cap can be reached in a test.
+func newServiceWithMaxSessionAge(maxAge time.Duration) auth.Service {
+	membsRepo := mocks.NewOrgMembershipsRepository()
+
+	return auth.New(mocks.NewOrgRepository(membsRepo), thmocks.NewThingsServiceClient(nil, nil, createGroups()),
+		mocks.NewUsersService(usersByIDs, usersByEmails), mocks.NewKeyRepository(), mocks.NewSessionRepository(),
+		mocks.NewRolesRepository(), membsRepo, mocks.NewInvitesRepository(), mocks.NewEmailer(),
+		uuid.NewMock(), jwt.New(secret), loginDuration, maxAge, inviteDuration)
+}
+
+// A session cannot be extended past its maximum age, however recently the
+// token itself was rotated.
+func TestRefreshSessionMaxAge(t *testing.T) {
+	svc := newServiceWithMaxSessionAge(time.Minute)
+
+	// The token is still well within loginDuration, but the session it belongs
+	// to started long enough ago to be past the cap.
+	issuedAt := time.Now().Add(-10 * time.Minute)
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: issuedAt, IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, err = svc.Identify(context.Background(), secret)
+	require.Nil(t, err, fmt.Sprintf("the token itself expected to still be valid: %s", err))
+
+	_, _, err = svc.Refresh(context.Background(), secret)
+	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))
+
+	// Hitting the cap ends the session rather than leaving it half alive.
+	_, err = svc.Identify(context.Background(), secret)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the capped session to be revoked, got %s", err))
 }
 
 func createGroups() map[string]things.Group {
@@ -177,6 +211,160 @@ func TestIssue(t *testing.T) {
 	for _, tc := range cases {
 		_, _, err := svc.Issue(context.Background(), tc.token, tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRefresh(t *testing.T) {
+	svc := newService()
+
+	loginKey := auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email}
+	_, loginSecret, err := svc.Issue(context.Background(), "", loginKey)
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, apiSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	_, recoverySecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+	}{
+		{
+			desc:  "refresh a valid login key",
+			token: loginSecret,
+			err:   nil,
+		},
+		{
+			desc:  "refresh an API key",
+			token: apiSecret,
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "refresh a recovery key",
+			token: recoverySecret,
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "refresh an invalid token",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "refresh an empty token",
+			token: "",
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		_, _, err := svc.Refresh(context.Background(), tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+// Rotation replaces the token but keeps the session: the successor identifies
+// the same user, and the token it replaced stops working immediately.
+func TestRefreshRotatesToken(t *testing.T) {
+	svc := newService()
+
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	key, rotated, err := svc.Refresh(context.Background(), secret)
+	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
+	assert.Equal(t, id, key.IssuerID, fmt.Sprintf("expected issuer %s got %s", id, key.IssuerID))
+	assert.Equal(t, email, key.Subject, fmt.Sprintf("expected subject %s got %s", email, key.Subject))
+	assert.Equal(t, auth.LoginKey, key.Type, fmt.Sprintf("expected a login key, got type %d", key.Type))
+	assert.NotEqual(t, secret, rotated, "expected rotation to mint a different token")
+
+	identity, err := svc.Identify(context.Background(), rotated)
+	assert.Nil(t, err, fmt.Sprintf("Identifying rotated key expected to succeed: %s", err))
+	assert.Equal(t, id, identity.ID, fmt.Sprintf("expected id %s got %s", id, identity.ID))
+
+	// The superseded token is dead everywhere, not just at the refresh endpoint.
+	_, err = svc.Identify(context.Background(), secret)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the rotated-away token to be rejected, got %s", err))
+}
+
+// Replaying an already rotated token means two parties hold it, so the whole
+// session dies -- including the token the legitimate user is currently on.
+func TestRefreshReuseKillsSession(t *testing.T) {
+	svc := newService()
+
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, rotated, err := svc.Refresh(context.Background(), secret)
+	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
+
+	// Replay the token that was already exchanged.
+	_, _, err = svc.Refresh(context.Background(), secret)
+	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
+
+	// The live token is collateral: the session is gone, forcing a fresh login.
+	_, err = svc.Identify(context.Background(), rotated)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the live token to be killed with its family, got %s", err))
+
+	// Its row is revoked too, so the killed session cannot be renewed either.
+	_, _, err = svc.Refresh(context.Background(), rotated)
+	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
+}
+
+// A reuse kill is scoped to one login lineage, so a second browser survives.
+func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
+	svc := newService()
+
+	_, first, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, _, err = svc.Refresh(context.Background(), first)
+	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
+
+	_, _, err = svc.Refresh(context.Background(), first)
+	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
+
+	// The other login is a separate family and must be untouched.
+	_, err = svc.Identify(context.Background(), second)
+	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive: %s", err))
+}
+
+func TestLogout(t *testing.T) {
+	svc := newService()
+
+	_, first, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.Logout(context.Background(), first)
+	assert.Nil(t, err, fmt.Sprintf("Logout expected to succeed: %s", err))
+
+	_, err = svc.Identify(context.Background(), first)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the logged out token to be rejected, got %s", err))
+
+	_, err = svc.Identify(context.Background(), second)
+	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive logout: %s", err))
+}
+
+func TestLogoutAll(t *testing.T) {
+	svc := newService()
+
+	_, first, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.LogoutAll(context.Background(), first)
+	assert.Nil(t, err, fmt.Sprintf("LogoutAll expected to succeed: %s", err))
+
+	for _, token := range []string{first, second} {
+		_, err = svc.Identify(context.Background(), token)
+		assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected every session to be ended, got %s", err))
 	}
 }
 
@@ -309,9 +497,6 @@ func TestIdentify(t *testing.T) {
 	_, invalidSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: 22, IssuedAt: time.Now()})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, refreshSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RefreshKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	assert.Nil(t, err, fmt.Sprintf("Issuing refresh key expected to succeed: %s", err))
-
 	cases := []struct {
 		desc string
 		key  string
@@ -354,14 +539,6 @@ func TestIdentify(t *testing.T) {
 			idt:  auth.Identity{},
 			err:  errors.ErrAuthentication,
 		},
-		{
-			// A refresh key must never authenticate a request: it is long-lived
-			// precisely because it is only accepted at the refresh endpoint.
-			desc: "identify refresh key",
-			key:  refreshSecret,
-			idt:  auth.Identity{},
-			err:  errors.ErrAuthentication,
-		},
 	}
 
 	for _, tc := range cases {
@@ -369,101 +546,6 @@ func TestIdentify(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.idt, idt))
 	}
-}
-
-func TestRefresh(t *testing.T) {
-	svc := newService()
-
-	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-
-	_, refreshSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RefreshKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	require.Nil(t, err, fmt.Sprintf("Issuing refresh key expected to succeed: %s", err))
-
-	_, recoverySecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	require.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
-
-	// A refresh key whose own lifetime has run out: the session is over and the
-	// user must authenticate again.
-	expiredKey := auth.Key{Type: auth.RefreshKey, IssuerID: id, Subject: email, IssuedAt: time.Now().Add(-2 * time.Hour)}
-	expiredKey.ExpiresAt = expiredKey.IssuedAt.Add(time.Hour)
-	expiredSecret, err := jwt.New(secret).Issue(expiredKey)
-	require.Nil(t, err, fmt.Sprintf("Issuing expired refresh key expected to succeed: %s", err))
-
-	cases := []struct {
-		desc  string
-		token string
-		err   error
-	}{
-		{
-			desc:  "refresh with valid refresh key",
-			token: refreshSecret,
-			err:   nil,
-		},
-		{
-			desc:  "refresh with login key",
-			token: loginSecret,
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "refresh with recovery key",
-			token: recoverySecret,
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "refresh with expired refresh key",
-			token: expiredSecret,
-			err:   auth.ErrKeyExpired,
-		},
-		{
-			desc:  "refresh with invalid token",
-			token: "invalid",
-			err:   errors.ErrAuthentication,
-		},
-		{
-			desc:  "refresh with empty token",
-			token: "",
-			err:   errors.ErrAuthentication,
-		},
-	}
-
-	for _, tc := range cases {
-		key, secret, err := svc.Refresh(context.Background(), tc.token)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-
-		if tc.err != nil {
-			assert.Empty(t, secret, fmt.Sprintf("%s expected no token to be issued\n", tc.desc))
-			continue
-		}
-
-		// The refreshed credential must be a login key carrying the original
-		// identity, so it works everywhere the first access token did.
-		assert.Equal(t, auth.LoginKey, key.Type, fmt.Sprintf("%s expected a login key\n", tc.desc))
-		assert.Equal(t, id, key.IssuerID, fmt.Sprintf("%s expected the original issuer\n", tc.desc))
-		assert.Equal(t, email, key.Subject, fmt.Sprintf("%s expected the original subject\n", tc.desc))
-
-		idt, err := svc.Identify(context.Background(), secret)
-		assert.Nil(t, err, fmt.Sprintf("%s refreshed token expected to identify: %s\n", tc.desc, err))
-		assert.Equal(t, auth.Identity{ID: id, Email: email}, idt, fmt.Sprintf("%s unexpected identity\n", tc.desc))
-	}
-}
-
-// TestRefreshDoesNotExtendRefreshKey pins the deliberate choice not to slide the
-// session: because refresh keys are stateless and cannot be revoked, renewing
-// them on every call would let a leaked key live forever.
-func TestRefreshDoesNotExtendRefreshKey(t *testing.T) {
-	svc := newService()
-
-	refreshKey, refreshSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RefreshKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
-	require.Nil(t, err, fmt.Sprintf("Issuing refresh key expected to succeed: %s", err))
-
-	accessKey, _, err := svc.Refresh(context.Background(), refreshSecret)
-	require.Nil(t, err, fmt.Sprintf("Refresh expected to succeed: %s", err))
-
-	assert.True(t, accessKey.ExpiresAt.Before(refreshKey.ExpiresAt),
-		"the refreshed access key must expire before the refresh key that minted it")
-	assert.Equal(t, refreshKey.IssuedAt.Add(refreshDuration).Unix(), refreshKey.ExpiresAt.Unix(),
-		"the refresh key lifetime must come from the configured refresh duration")
 }
 
 func TestAuthorize(t *testing.T) {

@@ -70,7 +70,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			things, err = sdk.CreateThings(things, args[1], ResolveToken(args[2]))
+			things, err = sdk.CreateThings(things, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -95,7 +95,7 @@ var cmdProvision = []cobra.Command{
 				return
 			}
 
-			profiles, err = sdk.CreateProfiles(profiles, args[1], ResolveToken(args[2]))
+			profiles, err = sdk.CreateProfiles(profiles, args[1], args[2])
 			if err != nil {
 				logError(err)
 				return
@@ -139,7 +139,7 @@ var cmdProvision = []cobra.Command{
 			}
 
 			// Create test Organization
-			orgID, err := sdk.CreateOrg(mfxsdk.Org{Name: namesgenerator.GetRandomName(0)}, ut.AccessToken)
+			orgID, err := sdk.CreateOrg(mfxsdk.Org{Name: namesgenerator.GetRandomName(0)}, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -149,13 +149,13 @@ var cmdProvision = []cobra.Command{
 				Name: "gr",
 			}
 
-			grID, err := sdk.CreateGroup(g, orgID, ut.AccessToken)
+			grID, err := sdk.CreateGroup(g, orgID, ut)
 			if err != nil {
 				logError(err)
 				return
 			}
 
-			gr, err := sdk.GetGroup(grID, ut.AccessToken)
+			gr, err := sdk.GetGroup(grID, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -172,7 +172,7 @@ var cmdProvision = []cobra.Command{
 
 				profiles = append(profiles, c)
 			}
-			profiles, err = sdk.CreateProfiles(profiles, grID, ut.AccessToken)
+			profiles, err = sdk.CreateProfiles(profiles, grID, ut)
 			if err != nil {
 				logError(err)
 				return
@@ -188,7 +188,7 @@ var cmdProvision = []cobra.Command{
 
 				things = append(things, t)
 			}
-			things, err = sdk.CreateThings(things, profiles[0].ID, ut.AccessToken)
+			things, err = sdk.CreateThings(things, profiles[0].ID, ut)
 			if err != nil {
 				logError(err)
 				return

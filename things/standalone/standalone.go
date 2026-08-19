@@ -35,8 +35,12 @@ func (repo singleUserRepo) Issue(ctx context.Context, id, email string, keyType 
 	return repo.token, nil
 }
 
-func (repo singleUserRepo) Refresh(ctx context.Context, refreshToken string) (string, error) {
-	return "", errUnsupported
+func (repo singleUserRepo) Refresh(ctx context.Context, token string) (string, error) {
+	if repo.token != token {
+		return "", errors.ErrAuthentication
+	}
+
+	return repo.token, nil
 }
 
 func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.Identity, error) {

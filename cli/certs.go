@@ -22,7 +22,7 @@ func NewCertsCmd() *cobra.Command {
 
 			thingID := args[0]
 
-			c, err := sdk.IssueCert(thingID, int(keySize), keyType, ttl, ResolveToken(args[1]))
+			c, err := sdk.IssueCert(thingID, int(keySize), keyType, ttl, args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -45,7 +45,7 @@ func NewCertsCmd() *cobra.Command {
 				return
 			}
 
-			c, err := sdk.ViewCert(args[0], ResolveToken(args[1]))
+			c, err := sdk.ViewCert(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -65,7 +65,7 @@ func NewCertsCmd() *cobra.Command {
 				return
 			}
 
-			if err := sdk.RevokeCert(args[0], ResolveToken(args[1])); err != nil {
+			if err := sdk.RevokeCert(args[0], args[1]); err != nil {
 				logError(err)
 				return
 			}
@@ -84,7 +84,7 @@ func NewCertsCmd() *cobra.Command {
 				return
 			}
 
-			c, err := sdk.RenewCert(args[0], ResolveToken(args[1]))
+			c, err := sdk.RenewCert(args[0], args[1])
 			if err != nil {
 				logError(err)
 				return
@@ -104,7 +104,7 @@ func NewCertsCmd() *cobra.Command {
 				return
 			}
 
-			cp, err := sdk.ListSerials(args[0], uint64(Offset), uint64(Limit), ResolveToken(args[1]))
+			cp, err := sdk.ListSerials(args[0], uint64(Offset), uint64(Limit), args[1])
 			if err != nil {
 				logError(err)
 				return

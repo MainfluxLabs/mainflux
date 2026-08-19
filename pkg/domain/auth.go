@@ -30,13 +30,11 @@ const (
 	RoleAdmin = "admin"
 )
 
-// Key type constants. New types must be appended, never inserted: the numeric
-// value is encoded in the "type" claim of every token already in circulation.
+// Key type constants.
 const (
 	LoginKey uint32 = iota
 	RecoveryKey
 	APIKey
-	RefreshKey
 )
 
 // Identity contains ID and Email.
@@ -132,12 +130,23 @@ func (k Key) Expired() bool {
 	return k.ExpiresAt.UTC().Before(time.Now().UTC())
 }
 
-// TokenPair holds a short-lived access token and the long-lived refresh token
-// used to mint replacements for it without re-entering credentials.
-type TokenPair struct {
-	AccessToken  string    `json:"token"`
-	RefreshToken string    `json:"refresh_token"`
-	ExpiresAt    time.Time `json:"expires_at"`
+// Session records one issued login token. A token is identified by its JTI;
+// the session it belongs to is identified by FamilyID, which is set once at
+// login and carried forward unchanged through every rotation. Revoking a JTI
+// kills that one token, not the session: normal rotation revokes the old JTI
+// at the same moment it mints a successor in the same family.
+type Session struct {
+	JTI            string
+	UserID         string
+	FamilyID       string
+	SessionStartAt time.Time
+	RevokedAt      time.Time
+}
+
+// Revoked reports whether this particular token has been marked dead, whether
+// by rotation, by logout, or by a family-wide reuse kill.
+func (s Session) Revoked() bool {
+	return !s.RevokedAt.IsZero()
 }
 
 // KeysPage contains page metadata and list of keys.
@@ -150,8 +159,8 @@ type AuthClient interface {
 	// Issue issues a token for the given id, email and key type.
 	Issue(ctx context.Context, id, email string, keyType uint32) (string, error)
 
-	// Refresh exchanges a valid refresh token for a new access token.
-	Refresh(ctx context.Context, refreshToken string) (string, error)
+	// Refresh issues a new token to the owner of the provided still-valid one.
+	Refresh(ctx context.Context, token string) (string, error)
 
 	// Identify validates the token and returns the identity.
 	Identify(ctx context.Context, token string) (Identity, error)

@@ -228,12 +228,8 @@ type SDK interface {
 	// ListUsers returns list of users.
 	ListUsers(pm PageMetadata, token string) (UsersPage, error)
 
-	// CreateToken receives credentials and returns a user access token
-	// alongside the refresh token used to renew it.
-	CreateToken(user User) (TokenPair, error)
-
-	// RefreshToken exchanges a refresh token for a new access token.
-	RefreshToken(refreshToken string) (TokenPair, error)
+	// CreateToken receives credentials and returns user token.
+	CreateToken(user User) (string, error)
 
 	// RegisterUser registers mainflux user.
 	RegisterUser(user User) (string, error)
@@ -491,10 +487,6 @@ type mfSDK struct {
 
 	msgContentType ContentType
 	client         *http.Client
-
-	autoRefresh    bool
-	session        *session
-	onTokenRefresh func(TokenPair)
 }
 
 // Config contains sdk configuration parameters.
@@ -509,21 +501,6 @@ type Config struct {
 
 	MsgContentType  ContentType
 	TLSVerification bool
-
-	// AutoRefresh makes the SDK renew an expired access token on the caller's
-	// behalf: CreateToken caches the token pair it receives, and any request
-	// rejected with 401 while carrying that cached access token is retried once
-	// with a freshly refreshed one. It tracks a single session at a time — see
-	// the session type for details.
-	AutoRefresh bool
-
-	// Session seeds the cached token pair, letting a caller that persisted a
-	// pair from an earlier run resume auto-refresh without logging in again.
-	Session TokenPair
-
-	// OnTokenRefresh, when set, is called with the new pair each time the SDK
-	// refreshes an access token, so callers can persist the rotation.
-	OnTokenRefresh func(TokenPair)
 }
 
 // NewSDK returns new mainflux SDK instance.
@@ -545,10 +522,6 @@ func NewSDK(conf Config) SDK {
 				},
 			},
 		},
-
-		autoRefresh:    conf.AutoRefresh,
-		session:        &session{tokens: conf.Session},
-		onTokenRefresh: conf.OnTokenRefresh,
 	}
 }
 
@@ -561,63 +534,7 @@ func (sdk mfSDK) sendRequest(req *http.Request, token, contentType string) (*htt
 		req.Header.Add("Content-Type", contentType)
 	}
 
-	resp, err := sdk.client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusUnauthorized {
-		return resp, err
-	}
-
-	retried, ok := sdk.retryWithRefreshedToken(req, token)
-	if !ok {
-		return resp, nil
-	}
-
-	// The refreshed attempt supersedes the 401; drain it so the connection can
-	// be reused.
-	resp.Body.Close()
-
-	return retried, nil
-}
-
-// retryWithRefreshedToken replays a request that came back 401, once, using a
-// renewed access token. It only fires when auto-refresh is on and the rejected
-// request carried the access token this SDK has cached — otherwise the caller
-// is managing tokens itself and the 401 is theirs to handle.
-func (sdk mfSDK) retryWithRefreshedToken(req *http.Request, token string) (*http.Response, bool) {
-	if !sdk.autoRefresh || token == "" || req.GetBody == nil && req.Body != nil {
-		return nil, false
-	}
-
-	cached := sdk.session.get()
-	if cached.RefreshToken == "" || cached.AccessToken != token {
-		return nil, false
-	}
-
-	tokens, err := sdk.RefreshToken(cached.RefreshToken)
-	if err != nil {
-		return nil, false
-	}
-
-	access, rotated := sdk.session.renewed(token, tokens)
-	if rotated && sdk.onTokenRefresh != nil {
-		sdk.onTokenRefresh(tokens)
-	}
-
-	retry := req.Clone(req.Context())
-	if req.GetBody != nil {
-		body, err := req.GetBody()
-		if err != nil {
-			return nil, false
-		}
-		retry.Body = body
-	}
-	retry.Header.Set("Authorization", apiutil.BearerPrefix+access)
-
-	resp, err := sdk.client.Do(retry)
-	if err != nil {
-		return nil, false
-	}
-
-	return resp, true
+	return sdk.client.Do(req)
 }
 
 func (sdk mfSDK) sendThingRequest(req *http.Request, key domain.ThingKey, contentType string) (*http.Response, error) {

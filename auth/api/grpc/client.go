@@ -148,11 +148,11 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 	return ir.value, nil
 }
 
-func (client grpcClient) Refresh(ctx context.Context, refreshToken string) (string, error) {
+func (client grpcClient) Refresh(ctx context.Context, token string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.refresh(ctx, refreshReq{refreshToken: refreshToken})
+	res, err := client.refresh(ctx, refreshReq{token: token})
 	if err != nil {
 		return "", err
 	}
@@ -163,7 +163,7 @@ func (client grpcClient) Refresh(ctx context.Context, refreshToken string) (stri
 
 func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(refreshReq)
-	return &protomfx.Token{Value: req.refreshToken}, nil
+	return &protomfx.Token{Value: req.token}, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {

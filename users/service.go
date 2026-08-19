@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
-	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -84,20 +83,19 @@ type Service interface {
 	RegisterAdmin(ctx context.Context, user User) error
 
 	// Login authenticates the user given its credentials. Successful
-	// authentication generates a new access token alongside the refresh token
-	// used to renew it. Failed invocations are identified by the non-nil error
-	// values in the response.
-	Login(ctx context.Context, user User) (domain.TokenPair, error)
+	// authentication generates new access token. Failed invocations are
+	// identified by the non-nil error values in the response.
+	Login(ctx context.Context, user User) (string, error)
 
-	// Refresh exchanges a valid refresh token for a new access token, letting
-	// a session outlive the access token without re-sending credentials.
-	Refresh(ctx context.Context, refreshToken string) (domain.TokenPair, error)
+	// Refresh issues a new access token to the bearer of a still-valid one,
+	// extending the session without re-sending credentials.
+	Refresh(ctx context.Context, token string) (string, error)
 
 	// OAuthLogin returns the URL to initiate OAuth login.
 	OAuthLogin(provider string) (data OAuthLoginData, err error)
 
 	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
-	OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, domain.TokenPair, error)
+	OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -423,36 +421,30 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 	return uid, nil
 }
 
-func (svc usersService) Login(ctx context.Context, user User) (domain.TokenPair, error) {
+func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	dbUser, err := svc.users.RetrieveByEmail(ctx, user.Email)
 	if err != nil {
-		return domain.TokenPair{}, errors.Wrap(errors.ErrAuthentication, err)
+		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 	if dbUser.Password == "" {
-		return domain.TokenPair{}, errors.ErrAuthentication
+		return "", errors.ErrAuthentication
 	}
 	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
-		return domain.TokenPair{}, errors.Wrap(errors.ErrAuthentication, err)
+		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
-
-	return svc.issuePair(ctx, dbUser.ID, dbUser.Email)
+	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
 }
 
-func (svc usersService) Refresh(ctx context.Context, refreshToken string) (domain.TokenPair, error) {
-	access, err := svc.auth.Refresh(ctx, refreshToken)
+// Refresh exchanges a still-valid access token for a new one with a fresh
+// expiry. The old token is not invalidated -- access tokens are stateless and
+// remain usable until they expire on their own.
+func (svc usersService) Refresh(ctx context.Context, token string) (string, error) {
+	t, err := svc.auth.Refresh(ctx, token)
 	if err != nil {
-		return domain.TokenPair{}, errors.Wrap(errors.ErrAuthentication, err)
+		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	// The refresh token is echoed back unchanged: it is stateless and therefore
-	// not revocable, so sliding its expiry on every call would let a leaked
-	// token renew itself forever. Sessions are capped at the refresh token's
-	// original lifetime.
-	return domain.TokenPair{
-		AccessToken:  access,
-		RefreshToken: refreshToken,
-		ExpiresAt:    authn.ExpiresAtFromToken(access),
-	}, nil
+	return t, nil
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
@@ -475,7 +467,7 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 	return data, nil
 }
 
-func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, domain.TokenPair, error) {
+func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
 	var email, providerUserID string
 	var err error
 
@@ -485,27 +477,25 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 	case GitHubProvider:
 		email, providerUserID, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
 	default:
-		return "", domain.TokenPair{}, apiutil.ErrInvalidProvider
+		return "", apiutil.ErrInvalidProvider
 	}
 
 	if err != nil {
-		return "", domain.TokenPair{}, err
+		return "", err
 	}
 
 	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID, data.InviteID, data.RedirectPath)
 	if err != nil {
-		return "", domain.TokenPair{}, err
+		return "", err
 	}
 
-	tokens, err := svc.issuePair(ctx, user.ID, user.Email)
+	token, err := svc.issue(ctx, user.ID, user.Email, domain.LoginKey)
 	if err != nil {
-		return "", domain.TokenPair{}, err
+		return "", err
 	}
 
-	// Only the short-lived access token goes in the fragment; the refresh token
-	// is handed back via an HttpOnly cookie so it never lands in browser history.
-	redirectURL := fmt.Sprintf("%s#token=%s", svc.urls.RedirectLoginURL, tokens.AccessToken)
-	return redirectURL, tokens, nil
+	redirectURL := fmt.Sprintf("%s#token=%s", svc.urls.RedirectLoginURL, token)
+	return redirectURL, nil
 }
 
 func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier string) (string, string, error) {
@@ -941,26 +931,6 @@ func (svc usersService) issue(ctx context.Context, id, email string, keyType uin
 		return "", errors.Wrap(dbutil.ErrNotFound, err)
 	}
 	return key, nil
-}
-
-// issuePair mints the short-lived access token together with the long-lived
-// refresh token used to renew it.
-func (svc usersService) issuePair(ctx context.Context, id, email string) (domain.TokenPair, error) {
-	access, err := svc.issue(ctx, id, email, domain.LoginKey)
-	if err != nil {
-		return domain.TokenPair{}, err
-	}
-
-	refresh, err := svc.issue(ctx, id, email, domain.RefreshKey)
-	if err != nil {
-		return domain.TokenPair{}, err
-	}
-
-	return domain.TokenPair{
-		AccessToken:  access,
-		RefreshToken: refresh,
-		ExpiresAt:    authn.ExpiresAtFromToken(access),
-	}, nil
 }
 
 type userIdentity struct {
