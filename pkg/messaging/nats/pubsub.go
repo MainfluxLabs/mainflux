@@ -127,13 +127,7 @@ func (ps *pubsub) unsubscribe(id, topic string) error {
 	return nil
 }
 
-// subscribeTyped validates id/topic, resubscribes h if id is already subscribed to
-// topic, and registers the NATS subscription. Shared entry point for every typed
-// stream (message, alarm, command, notification, webhook). cancelFn is nil for
-// every stream except Message — alarms/commands/notifications/webhooks subscribe
-// once at service startup and have nothing to release; subscription.cancel is
-// already nil-checked in unsubscribe, so nil here is the correct, ordinary value,
-// not a special case.
+// subscribeTyped is the shared Subscribe entry point for every typed stream.
 func (ps *pubsub) subscribeTyped(id, topic string, h typedHandler, cancelFn func() error) error {
 	if id == "" {
 		return messaging.ErrEmptyID
@@ -153,8 +147,6 @@ func (ps *pubsub) subscribeTyped(id, topic string, h typedHandler, cancelFn func
 		}
 	}
 
-	// Re-lookup: unsubscribe above may have deleted ps.subscriptions[topic]
-	// entirely if id was its last subscriber.
 	s, ok := ps.subscriptions[topic]
 	if !ok {
 		s = make(map[string]subscription)
@@ -197,16 +189,12 @@ func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler)
 	return ps.subscribeTyped(id, SubjectWebhooks, webhookTypedHandler{handler}, nil)
 }
 
-// typedHandler adapts a concrete messaging.*Handler into the shape natsGenericHandler
-// needs: allocate the right proto type to unmarshal into, then dispatch to the real handler.
+// typedHandler adapts a concrete messaging.*Handler for natsGenericHandler.
 type typedHandler interface {
 	new() proto.Message
 	handle(subject string, msg proto.Message) error
 }
 
-// natsGenericHandler unmarshals the NATS payload into a fresh value from h.new(), then
-// dispatches it via h.handle. Shared by every typed stream (message, alarm, command,
-// notification, webhook) so the unmarshal+dispatch loop exists in exactly one place.
 func (ps *pubsub) natsGenericHandler(h typedHandler) broker.MsgHandler {
 	return func(m *broker.Msg) {
 		msg := h.new()
