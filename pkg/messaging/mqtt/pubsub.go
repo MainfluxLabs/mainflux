@@ -5,6 +5,7 @@ package mqtt
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -19,6 +20,9 @@ const (
 	username = "mainflux-mqtt"
 	qos      = 2
 )
+
+// ErrConnect indicates that connection to the MQTT broker failed.
+var ErrConnect = errors.New("failed to connect to MQTT broker")
 
 var _ messaging.PubSub = (*pubsub)(nil)
 
@@ -159,7 +163,7 @@ func newClient(address, id string, timeout time.Duration) (mqtt.Client, error) {
 
 	ok := token.WaitTimeout(timeout)
 	if !ok {
-		return nil, messaging.ErrConnect
+		return nil, ErrConnect
 	}
 
 	if token.Error() != nil {

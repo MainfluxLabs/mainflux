@@ -5,6 +5,7 @@ package messaging
 
 import (
 	"encoding/json"
+	"errors"
 	"hash/fnv"
 	"time"
 
@@ -13,6 +14,14 @@ import (
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
+
+const (
+	SenMLContentType = "application/senml+json"
+	JSONContentType  = "application/json"
+)
+
+// ErrInvalidContentType indicates an invalid Content-Type
+var ErrInvalidContentType = errors.New("invalid content type")
 
 func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 	msg.Publisher = pc.PublisherID

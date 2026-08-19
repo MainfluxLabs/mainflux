@@ -104,7 +104,7 @@ func newClient(address, id string, timeout time.Duration) (mqtt.Client, error) {
 
 	ok := token.WaitTimeout(timeout)
 	if !ok {
-		return nil, messaging.ErrConnect
+		return nil, mqtt_pubsub.ErrConnect
 	}
 
 	if token.Error() != nil {

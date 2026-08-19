@@ -32,6 +32,12 @@ type Publisher interface {
 	Close() error
 }
 
+// PubSub represents aggregation interface for publisher and subscriber.
+type PubSub interface {
+	Publisher
+	Subscriber
+}
+
 // MessageDispatcher routes a message to every subject enabled by a profile's dispatcher flags.
 type MessageDispatcher interface {
 	// Dispatch publishes msg to every subject enabled by the dispatcher flags in pc.
