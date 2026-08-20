@@ -218,7 +218,7 @@ func (ps *pubsub) subscribeWithCancel(id, topic string, newFn func() proto.Messa
 		ps.subscriptions[topic] = s
 	}
 
-	nh := ps.natsGenericHandler(newFn, handleFn)
+	nh := ps.natsHandler(newFn, handleFn)
 	var (
 		sub *broker.Subscription
 		err error
@@ -238,9 +238,9 @@ func (ps *pubsub) subscribeWithCancel(id, topic string, newFn func() proto.Messa
 	return nil
 }
 
-// natsGenericHandler wraps newFn/handleFn into the broker's raw message callback:
+// natsHandler wraps newFn/handleFn into the broker's raw message callback:
 // it allocates the concrete proto.Message, unmarshals into it, then dispatches.
-func (ps *pubsub) natsGenericHandler(newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error) broker.MsgHandler {
+func (ps *pubsub) natsHandler(newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error) broker.MsgHandler {
 	return func(m *broker.Msg) {
 		msg := newFn()
 		if err := proto.Unmarshal(m.Data, msg); err != nil {
