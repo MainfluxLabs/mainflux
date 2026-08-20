@@ -84,7 +84,15 @@ func NewPubSub(url, queue string, logger log.Logger) (*pubsub, error) {
 }
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
-	return ps.subscribeTyped(id, topic, messageTypedHandler{handler}, handler.Cancel)
+	newFn := func() proto.Message { return &protomfx.Message{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Message)
+		if !ok {
+			return fmt.Errorf("nats: unexpected message type %T for message subject", msg)
+		}
+		return handler.Handle(subject, *v)
+	}
+	return ps.subscribeTyped(id, topic, newFn, handleFn, handler.Cancel)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
@@ -99,6 +107,54 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	defer ps.mu.Unlock()
 
 	return ps.unsubscribe(id, topic)
+}
+
+func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
+	newFn := func() proto.Message { return &protomfx.Alarm{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Alarm)
+		if !ok {
+			return fmt.Errorf("nats: unexpected message type %T for alarm subject", msg)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribeTyped(id, SubjectAlarms, newFn, handleFn, nil)
+}
+
+func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
+	newFn := func() proto.Message { return &protomfx.Command{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Command)
+		if !ok {
+			return fmt.Errorf("nats: unexpected message type %T for command subject", msg)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribeTyped(id, topic, newFn, handleFn, nil)
+}
+
+func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
+	newFn := func() proto.Message { return &protomfx.Notification{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Notification)
+		if !ok {
+			return fmt.Errorf("nats: unexpected message type %T for notification subject", msg)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribeTyped(id, topic, newFn, handleFn, nil)
+}
+
+func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
+	newFn := func() proto.Message { return &protomfx.Webhook{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Webhook)
+		if !ok {
+			return fmt.Errorf("nats: unexpected message type %T for webhook subject", msg)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribeTyped(id, SubjectWebhooks, newFn, handleFn, nil)
 }
 
 // unsubscribe removes the subscription for the given id and topic.
@@ -128,7 +184,9 @@ func (ps *pubsub) unsubscribe(id, topic string) error {
 }
 
 // subscribeTyped is the shared Subscribe entry point for every typed stream.
-func (ps *pubsub) subscribeTyped(id, topic string, h typedHandler, cancelFn func() error) error {
+// newFn allocates the concrete proto.Message to unmarshal into, and handleFn
+// dispatches the unmarshaled message to the caller's typed handler.
+func (ps *pubsub) subscribeTyped(id, topic string, newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error, cancelFn func() error) error {
 	if id == "" {
 		return messaging.ErrEmptyID
 	}
@@ -153,7 +211,7 @@ func (ps *pubsub) subscribeTyped(id, topic string, h typedHandler, cancelFn func
 		ps.subscriptions[topic] = s
 	}
 
-	nh := ps.natsGenericHandler(h)
+	nh := ps.natsGenericHandler(newFn, handleFn)
 	var (
 		sub *broker.Subscription
 		err error
@@ -173,92 +231,17 @@ func (ps *pubsub) subscribeTyped(id, topic string, h typedHandler, cancelFn func
 	return nil
 }
 
-func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
-	return ps.subscribeTyped(id, SubjectAlarms, alarmTypedHandler{handler}, nil)
-}
-
-func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
-	return ps.subscribeTyped(id, topic, commandTypedHandler{handler}, nil)
-}
-
-func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
-	return ps.subscribeTyped(id, topic, notificationTypedHandler{handler}, nil)
-}
-
-func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
-	return ps.subscribeTyped(id, SubjectWebhooks, webhookTypedHandler{handler}, nil)
-}
-
-// typedHandler adapts a concrete messaging.*Handler for natsGenericHandler.
-type typedHandler interface {
-	new() proto.Message
-	handle(subject string, msg proto.Message) error
-}
-
-func (ps *pubsub) natsGenericHandler(h typedHandler) broker.MsgHandler {
+// natsGenericHandler wraps newFn/handleFn into the broker's raw message callback:
+// it allocates the concrete proto.Message, unmarshals into it, then dispatches.
+func (ps *pubsub) natsGenericHandler(newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error) broker.MsgHandler {
 	return func(m *broker.Msg) {
-		msg := h.new()
+		msg := newFn()
 		if err := proto.Unmarshal(m.Data, msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received %T: %s", msg, err))
 			return
 		}
-		if err := h.handle(m.Subject, msg); err != nil {
+		if err := handleFn(m.Subject, msg); err != nil {
 			ps.logger.Warn(fmt.Sprintf("Failed to handle %T: %s", msg, err))
 		}
 	}
-}
-
-type messageTypedHandler struct{ h messaging.MessageHandler }
-
-func (t messageTypedHandler) new() proto.Message { return &protomfx.Message{} }
-func (t messageTypedHandler) handle(subject string, msg proto.Message) error {
-	v, ok := msg.(*protomfx.Message)
-	if !ok {
-		return fmt.Errorf("nats: unexpected message type %T for message subject", msg)
-	}
-	return t.h.Handle(subject, *v)
-}
-
-type alarmTypedHandler struct{ h messaging.AlarmHandler }
-
-func (t alarmTypedHandler) new() proto.Message { return &protomfx.Alarm{} }
-func (t alarmTypedHandler) handle(subject string, msg proto.Message) error {
-	v, ok := msg.(*protomfx.Alarm)
-	if !ok {
-		return fmt.Errorf("nats: unexpected message type %T for alarm subject", msg)
-	}
-	return t.h(subject, *v)
-}
-
-type commandTypedHandler struct{ h messaging.CommandHandler }
-
-func (t commandTypedHandler) new() proto.Message { return &protomfx.Command{} }
-func (t commandTypedHandler) handle(subject string, msg proto.Message) error {
-	v, ok := msg.(*protomfx.Command)
-	if !ok {
-		return fmt.Errorf("nats: unexpected message type %T for command subject", msg)
-	}
-	return t.h(subject, *v)
-}
-
-type notificationTypedHandler struct{ h messaging.NotificationHandler }
-
-func (t notificationTypedHandler) new() proto.Message { return &protomfx.Notification{} }
-func (t notificationTypedHandler) handle(subject string, msg proto.Message) error {
-	v, ok := msg.(*protomfx.Notification)
-	if !ok {
-		return fmt.Errorf("nats: unexpected message type %T for notification subject", msg)
-	}
-	return t.h(subject, *v)
-}
-
-type webhookTypedHandler struct{ h messaging.WebhookHandler }
-
-func (t webhookTypedHandler) new() proto.Message { return &protomfx.Webhook{} }
-func (t webhookTypedHandler) handle(subject string, msg proto.Message) error {
-	v, ok := msg.(*protomfx.Webhook)
-	if !ok {
-		return fmt.Errorf("nats: unexpected message type %T for webhook subject", msg)
-	}
-	return t.h(subject, *v)
 }

@@ -31,7 +31,7 @@ type WebhookConsumer interface {
 // Messages subscribes the given MessageConsumer to the given subjects.
 func Messages(id string, sub messaging.Subscriber, c MessageConsumer, subjects ...string) error {
 	for _, subject := range subjects {
-		if err := sub.Subscribe(id, subject, messageHandler{c}); err != nil {
+		if err := sub.Subscribe(id, subject, messageHandlerFunc(c.ConsumeMessage)); err != nil {
 			return err
 		}
 	}
@@ -53,10 +53,11 @@ func Webhooks(id string, sub messaging.WebhookSubscriber, c WebhookConsumer) err
 	return sub.SubscribeWebhooks(id, c.ConsumeWebhook)
 }
 
-type messageHandler struct{ c MessageConsumer }
+// messageHandlerFunc adapts a ConsumeMessage-shaped function to messaging.MessageHandler.
+type messageHandlerFunc func(subject string, msg protomfx.Message) error
 
-func (h messageHandler) Handle(subject string, msg protomfx.Message) error {
-	return h.c.ConsumeMessage(subject, msg)
+func (f messageHandlerFunc) Handle(subject string, msg protomfx.Message) error {
+	return f(subject, msg)
 }
 
-func (h messageHandler) Cancel() error { return nil }
+func (messageHandlerFunc) Cancel() error { return nil }
