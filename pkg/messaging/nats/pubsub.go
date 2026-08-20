@@ -92,7 +92,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		}
 		return handler.Handle(subject, *v)
 	}
-	return ps.subscribe(id, topic, newFn, handleFn, handler.Cancel)
+	return ps.subscribeWithCancel(id, topic, newFn, handleFn, handler.Cancel)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
@@ -118,7 +118,7 @@ func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) err
 		}
 		return handler(subject, *v)
 	}
-	return ps.subscribe(id, SubjectAlarms, newFn, handleFn, nil)
+	return ps.subscribe(id, SubjectAlarms, newFn, handleFn)
 }
 
 func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
@@ -130,7 +130,7 @@ func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandH
 		}
 		return handler(subject, *v)
 	}
-	return ps.subscribe(id, topic, newFn, handleFn, nil)
+	return ps.subscribe(id, topic, newFn, handleFn)
 }
 
 func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
@@ -142,7 +142,7 @@ func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.Not
 		}
 		return handler(subject, *v)
 	}
-	return ps.subscribe(id, topic, newFn, handleFn, nil)
+	return ps.subscribe(id, topic, newFn, handleFn)
 }
 
 func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
@@ -154,7 +154,7 @@ func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler)
 		}
 		return handler(subject, *v)
 	}
-	return ps.subscribe(id, SubjectWebhooks, newFn, handleFn, nil)
+	return ps.subscribe(id, SubjectWebhooks, newFn, handleFn)
 }
 
 // unsubscribe removes the subscription for the given id and topic.
@@ -183,10 +183,17 @@ func (ps *pubsub) unsubscribe(id, topic string) error {
 	return nil
 }
 
-// subscribe is the shared Subscribe entry point for every typed stream.
-// newFn allocates the concrete proto.Message to unmarshal into, and handleFn
-// dispatches the unmarshaled message to the caller's typed handler.
-func (ps *pubsub) subscribe(id, topic string, newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error, cancelFn func() error) error {
+// subscribe is the shared Subscribe entry point for typed streams whose
+// handler doesn't need cleanup on unsubscribe.
+func (ps *pubsub) subscribe(id, topic string, newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error) error {
+	return ps.subscribeWithCancel(id, topic, newFn, handleFn, nil)
+}
+
+// subscribeWithCancel is the shared Subscribe entry point for every typed
+// stream. newFn allocates the concrete proto.Message to unmarshal into,
+// handleFn dispatches the unmarshaled message to the caller's typed handler,
+// and cancelFn, if set, runs on unsubscribe.
+func (ps *pubsub) subscribeWithCancel(id, topic string, newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error, cancelFn func() error) error {
 	if id == "" {
 		return messaging.ErrEmptyID
 	}
