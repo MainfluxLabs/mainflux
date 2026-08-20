@@ -21,8 +21,6 @@ type sessionRepo struct {
 	db dbutil.Database
 }
 
-// NewSessionRepository instantiates a PostgreSQL implementation of the session
-// repository.
 func NewSessionRepository(db dbutil.Database) auth.SessionRepository {
 	return &sessionRepo{
 		db: db,
@@ -60,23 +58,18 @@ func (sr sessionRepo) Retrieve(ctx context.Context, jti string) (auth.Session, e
 	return toSession(dbs), nil
 }
 
-// Revoke is a no-op on a row that is already revoked: the first revocation
-// timestamp is the one that matters for reuse detection.
 func (sr sessionRepo) Revoke(ctx context.Context, jti string, at time.Time) error {
 	q := `UPDATE sessions SET revoked_at = :revoked_at WHERE jti = :jti AND revoked_at IS NULL`
-
 	return sr.revoke(ctx, q, dbSession{JTI: jti, RevokedAt: sql.NullTime{Time: at, Valid: true}})
 }
 
 func (sr sessionRepo) RevokeFamily(ctx context.Context, familyID string, at time.Time) error {
 	q := `UPDATE sessions SET revoked_at = :revoked_at WHERE family_id = :family_id AND revoked_at IS NULL`
-
 	return sr.revoke(ctx, q, dbSession{FamilyID: familyID, RevokedAt: sql.NullTime{Time: at, Valid: true}})
 }
 
 func (sr sessionRepo) RevokeByUser(ctx context.Context, userID string, at time.Time) error {
 	q := `UPDATE sessions SET revoked_at = :revoked_at WHERE user_id = :user_id AND revoked_at IS NULL`
-
 	return sr.revoke(ctx, q, dbSession{UserID: userID, RevokedAt: sql.NullTime{Time: at, Valid: true}})
 }
 
