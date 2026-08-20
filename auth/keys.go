@@ -53,10 +53,6 @@ type Keys interface {
 	// Issue issues a new Key, returning its token value alongside.
 	Issue(ctx context.Context, token string, key Key) (Key, string, error)
 
-	// Refresh issues a new login Key to the owner of the provided one,
-	// extending the session without re-sending credentials.
-	Refresh(ctx context.Context, token string) (Key, string, error)
-
 	// Revoke removes the Key with the provided id that is
 	// issued by the user identified by the provided key.
 	Revoke(ctx context.Context, token, id string) error
@@ -144,34 +140,34 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 // token, which is treated as theft: the entire session is revoked, and the
 // legitimate user has to log in again. Because each login gets its own family,
 // that kill is scoped to the compromised session only.
-func (svc service) Refresh(ctx context.Context, token string) (Key, string, error) {
+func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err != nil {
-		return Key{}, "", errors.Wrap(errRefresh, err)
+		return "", errors.Wrap(errRefresh, err)
 	}
 	if key.Type != LoginKey || key.IssuerID == "" || key.ID == "" {
-		return Key{}, "", errors.Wrap(errRefresh, errors.ErrAuthentication)
+		return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
 	}
 
 	session, err := svc.sessions.Retrieve(ctx, key.ID)
 	if err != nil {
-		return Key{}, "", errors.Wrap(errRefresh, errors.ErrAuthentication)
+		return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
 	}
 
 	if session.Revoked() {
 		// A superseded token came back. Whoever holds it should not, so the
 		// whole lineage descending from that login is killed.
 		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
-			return Key{}, "", errors.Wrap(errRefresh, err)
+			return "", errors.Wrap(errRefresh, err)
 		}
-		return Key{}, "", errors.Wrap(errRefresh, ErrSessionReuse)
+		return "", errors.Wrap(errRefresh, ErrSessionReuse)
 	}
 
 	if getTimestamp().After(session.SessionStartAt.Add(svc.maxSessionAge)) {
 		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
-			return Key{}, "", errors.Wrap(errRefresh, err)
+			return "", errors.Wrap(errRefresh, err)
 		}
-		return Key{}, "", errors.Wrap(errRefresh, ErrSessionExpired)
+		return "", errors.Wrap(errRefresh, ErrSessionExpired)
 	}
 
 	svc.purgeDeadSessions(ctx)
@@ -187,16 +183,16 @@ func (svc service) Refresh(ctx context.Context, token string) (Key, string, erro
 	// revoke fails the worst case is a second live token in the family, which
 	// a later rotation collapses, whereas the reverse order could leave the
 	// session with no usable token at all.
-	issued, secret, err := svc.issueSessionKey(ctx, next, session.FamilyID, session.SessionStartAt)
+	_, secret, err := svc.issueSessionKey(ctx, next, session.FamilyID, session.SessionStartAt)
 	if err != nil {
-		return Key{}, "", errors.Wrap(errRefresh, err)
+		return "", errors.Wrap(errRefresh, err)
 	}
 
 	if err := svc.sessions.Revoke(ctx, session.JTI, getTimestamp()); err != nil {
-		return Key{}, "", errors.Wrap(errRefresh, err)
+		return "", errors.Wrap(errRefresh, err)
 	}
 
-	return issued, secret, nil
+	return secret, nil
 }
 
 // Logout ends the session the token belongs to, leaving the user's other

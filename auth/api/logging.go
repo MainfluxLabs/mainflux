@@ -27,7 +27,7 @@ func LoggingMiddleware(svc auth.Service, logger log.Logger) auth.Service {
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm *loggingMiddleware) Refresh(ctx context.Context, token string) (key auth.Key, _ string, err error) {
+func (lm *loggingMiddleware) Refresh(ctx context.Context, token string) (_ string, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method refresh by user %s took %s to complete", email, time.Since(begin))

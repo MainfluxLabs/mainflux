@@ -112,7 +112,7 @@ func TestRefreshSessionMaxAge(t *testing.T) {
 	_, err = svc.Identify(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("the token itself expected to still be valid: %s", err))
 
-	_, _, err = svc.Refresh(context.Background(), secret)
+	_, err = svc.Refresh(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))
 
 	// Hitting the cap ends the session rather than leaving it half alive.
@@ -260,7 +260,7 @@ func TestRefresh(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, _, err := svc.Refresh(context.Background(), tc.token)
+		_, err := svc.Refresh(context.Background(), tc.token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -273,16 +273,16 @@ func TestRefreshRotatesToken(t *testing.T) {
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	key, rotated, err := svc.Refresh(context.Background(), secret)
+	rotated, err := svc.Refresh(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
-	assert.Equal(t, id, key.IssuerID, fmt.Sprintf("expected issuer %s got %s", id, key.IssuerID))
-	assert.Equal(t, email, key.Subject, fmt.Sprintf("expected subject %s got %s", email, key.Subject))
-	assert.Equal(t, auth.LoginKey, key.Type, fmt.Sprintf("expected a login key, got type %d", key.Type))
 	assert.NotEqual(t, secret, rotated, "expected rotation to mint a different token")
 
+	// The successor stands in for the same user: Identify is the only thing
+	// that reads the key, so it is what the assertion goes through.
 	identity, err := svc.Identify(context.Background(), rotated)
 	assert.Nil(t, err, fmt.Sprintf("Identifying rotated key expected to succeed: %s", err))
 	assert.Equal(t, id, identity.ID, fmt.Sprintf("expected id %s got %s", id, identity.ID))
+	assert.Equal(t, email, identity.Email, fmt.Sprintf("expected email %s got %s", email, identity.Email))
 
 	// The superseded token is dead everywhere, not just at the refresh endpoint.
 	_, err = svc.Identify(context.Background(), secret)
@@ -297,11 +297,11 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, rotated, err := svc.Refresh(context.Background(), secret)
+	rotated, err := svc.Refresh(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 
 	// Replay the token that was already exchanged.
-	_, _, err = svc.Refresh(context.Background(), secret)
+	_, err = svc.Refresh(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
 	// The live token is collateral: the session is gone, forcing a fresh login.
@@ -309,7 +309,7 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the live token to be killed with its family, got %s", err))
 
 	// Its row is revoked too, so the killed session cannot be renewed either.
-	_, _, err = svc.Refresh(context.Background(), rotated)
+	_, err = svc.Refresh(context.Background(), rotated)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
 }
 
@@ -322,10 +322,10 @@ func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
 	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, _, err = svc.Refresh(context.Background(), first)
+	_, err = svc.Refresh(context.Background(), first)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 
-	_, _, err = svc.Refresh(context.Background(), first)
+	_, err = svc.Refresh(context.Background(), first)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
 	// The other login is a separate family and must be untouched.

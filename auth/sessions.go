@@ -10,11 +10,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// Session is a domain type alias.
 type Session = domain.Session
 
-// SessionRepository specifies the persistence API for login sessions.
-//
 // A row is written for every login token that is issued, and is never deleted
 // on revocation: the revoked row is what lets Refresh tell a replayed token
 // apart from an unknown one. Rows are removed only once they are old enough
@@ -43,12 +40,11 @@ type SessionRepository interface {
 	RemoveExpired(ctx context.Context, before time.Time) error
 }
 
-// Sessions specifies the session management API exposed by the service.
 type Sessions interface {
 	// Refresh rotates a login token: the presented token is revoked and a
 	// replacement is issued into the same session. Replaying an already
 	// rotated token is treated as theft and kills the whole session.
-	Refresh(ctx context.Context, token string) (Key, string, error)
+	Refresh(ctx context.Context, token string) (string, error)
 
 	// Logout ends the session the provided token belongs to, leaving the
 	// user's other sessions untouched.
