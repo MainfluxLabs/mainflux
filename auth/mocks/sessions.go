@@ -50,21 +50,19 @@ func (srm *sessionRepositoryMock) Retrieve(ctx context.Context, jti string) (aut
 	return session, nil
 }
 
-func (srm *sessionRepositoryMock) Revoke(ctx context.Context, jti string, at time.Time) error {
+func (srm *sessionRepositoryMock) RevokeIfLive(ctx context.Context, jti string, at time.Time) (auth.Session, bool, error) {
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
 
 	session, ok := srm.sessions[jti]
-	if !ok {
-		return dbutil.ErrNotFound
-	}
-	if session.Revoked() {
-		return nil
+	if !ok || session.Revoked() {
+		return auth.Session{}, false, nil
 	}
 
 	session.RevokedAt = at
 	srm.sessions[jti] = session
-	return nil
+
+	return session, true, nil
 }
 
 func (srm *sessionRepositoryMock) RevokeFamily(ctx context.Context, familyID string, at time.Time) error {
