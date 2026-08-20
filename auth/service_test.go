@@ -6,6 +6,7 @@ package auth_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -333,6 +334,42 @@ func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive: %s", err))
 }
 
+// Two refreshes racing on the same token must not both succeed: only one may
+// rotate it, or the family would be left with two usable tokens and the reuse
+// that reveals a theft would go unnoticed.
+func TestRefreshConcurrentRotationYieldsOneWinner(t *testing.T) {
+	svc := newService()
+
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	const racers = 8
+	var wg sync.WaitGroup
+	results := make([]error, racers)
+	tokens := make([]string, racers)
+
+	wg.Add(racers)
+	for i := 0; i < racers; i++ {
+		go func(i int) {
+			defer wg.Done()
+			tokens[i], results[i] = svc.Refresh(context.Background(), secret)
+		}(i)
+	}
+	wg.Wait()
+
+	winners := 0
+	for i, err := range results {
+		if err == nil {
+			winners++
+			assert.NotEmpty(t, tokens[i], "a winning rotation must return a token")
+			continue
+		}
+		assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("losers must be reported as reuse, got %s", err))
+	}
+
+	assert.Equal(t, 1, winners, fmt.Sprintf("expected exactly one rotation to win, got %d", winners))
+}
+
 func TestLogout(t *testing.T) {
 	svc := newService()
 
@@ -494,8 +531,10 @@ func TestIdentify(t *testing.T) {
 	_, expSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: exp1})
 	assert.Nil(t, err, fmt.Sprintf("Issuing expired login key expected to succeed: %s", err))
 
-	_, invalidSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: 22, IssuedAt: time.Now()})
-	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	// Issue refuses unknown key types, so this one is signed directly to check
+	// that Identify still rejects a well-formed token of a type it does not know.
+	invalidSecret, err := jwt.New(secret).Issue(auth.Key{Type: 22, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Signing a key of an unknown type expected to succeed: %s", err))
 
 	cases := []struct {
 		desc string

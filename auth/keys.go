@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -93,7 +94,7 @@ func (svc service) Issue(ctx context.Context, token string, key Key) (Key, strin
 	case LoginKey:
 		return svc.loginKey(ctx, key)
 	default:
-		return svc.tmpKey(svc.loginDuration, key)
+		return Key{}, "", apiutil.ErrInvalidAuthKey
 	}
 }
 
@@ -149,17 +150,20 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
 	}
 
-	session, err := svc.sessions.Retrieve(ctx, key.ID)
+	session, won, err := svc.sessions.RevokeIfLive(ctx, key.ID, getTimestamp())
 	if err != nil {
-		return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
+		return "", errors.Wrap(errRefresh, err)
 	}
 
-	if session.Revoked() {
-		// A superseded token came back. Whoever holds it should not, so the
-		// whole lineage descending from that login is killed.
-		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
+	if !won {
+		revoked, err := svc.sessions.Retrieve(ctx, key.ID)
+		if err != nil {
+			return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
+		}
+		if err := svc.sessions.RevokeFamily(ctx, revoked.FamilyID, getTimestamp()); err != nil {
 			return "", errors.Wrap(errRefresh, err)
 		}
+
 		return "", errors.Wrap(errRefresh, ErrSessionReuse)
 	}
 
@@ -167,6 +171,7 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
 			return "", errors.Wrap(errRefresh, err)
 		}
+
 		return "", errors.Wrap(errRefresh, ErrSessionExpired)
 	}
 
@@ -179,16 +184,8 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		IssuedAt: getTimestamp(),
 	}
 
-	// The successor is written before the predecessor is revoked: if the
-	// revoke fails the worst case is a second live token in the family, which
-	// a later rotation collapses, whereas the reverse order could leave the
-	// session with no usable token at all.
 	_, secret, err := svc.issueSessionKey(ctx, next, session.FamilyID, session.SessionStartAt)
 	if err != nil {
-		return "", errors.Wrap(errRefresh, err)
-	}
-
-	if err := svc.sessions.Revoke(ctx, session.JTI, getTimestamp()); err != nil {
 		return "", errors.Wrap(errRefresh, err)
 	}
 
