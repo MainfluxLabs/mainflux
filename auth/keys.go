@@ -243,7 +243,6 @@ func (svc service) purgeDeadSessions(ctx context.Context) {
 		return
 	}
 
-	//nolint:errcheck // best-effort cleanup
 	svc.sessions.RemoveExpired(ctx, now.Add(-svc.maxSessionAge))
 }
 
