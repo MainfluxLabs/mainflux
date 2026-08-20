@@ -16,6 +16,7 @@ import (
 type Backup struct {
 	OrgsConfigs   []OrgConfig
 	ThingsConfigs []ThingConfig
+	GroupsConfigs []GroupConfig
 }
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -54,16 +55,32 @@ type Service interface {
 	// BackupThingsConfigs retrieves all thing configs.
 	BackupThingsConfigs(ctx context.Context, token string) (ThingConfigBackup, error)
 
-	// Backup retrieves all org and thing configs.
+	// ViewGroupConfig retrieves the group config for the authenticated user and group.
+	ViewGroupConfig(ctx context.Context, token, groupID string) (GroupConfig, error)
+
+	// ListGroupsConfigs retrieves all group configs.
+	ListGroupsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupConfigPage, error)
+
+	// UpdateGroupConfig updates an existing group config for the authenticated user.
+	UpdateGroupConfig(ctx context.Context, token string, groupConfig GroupConfig) (GroupConfig, error)
+
+	// RemoveGroupConfig removes the group config by group id.
+	RemoveGroupConfig(ctx context.Context, groupID string) error
+
+	// BackupGroupsConfigs retrieves all group configs.
+	BackupGroupsConfigs(ctx context.Context, token string) (GroupConfigBackup, error)
+
+	// Backup retrieves all org, thing and group configs.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds all orgs and things configs from a backup.
+	// Restore adds all orgs, things and groups configs from a backup.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
 type configService struct {
 	orgConfigs   OrgConfigRepository
 	thingConfigs ThingConfigRepository
+	groupConfigs GroupConfigRepository
 	things       domain.ThingsClient
 	auth         domain.AuthClient
 	idProvider   uuid.IDProvider
@@ -72,10 +89,11 @@ type configService struct {
 
 var _ Service = (*configService)(nil)
 
-func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, things domain.ThingsClient, auth domain.AuthClient, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(orgConfigs OrgConfigRepository, thingConfigs ThingConfigRepository, groupConfigs GroupConfigRepository, things domain.ThingsClient, auth domain.AuthClient, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &configService{
 		orgConfigs:   orgConfigs,
 		thingConfigs: thingConfigs,
+		groupConfigs: groupConfigs,
 		things:       things,
 		auth:         auth,
 		idProvider:   idp,
@@ -269,6 +287,94 @@ func (svc *configService) BackupThingsConfigs(ctx context.Context, token string)
 	}, nil
 }
 
+func (svc *configService) ViewGroupConfig(ctx context.Context, token, groupID string) (GroupConfig, error) {
+	_, err := svc.auth.Identify(ctx, token)
+	if err != nil {
+		return GroupConfig{}, err
+	}
+
+	if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
+		return GroupConfig{}, errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	return svc.groupConfigs.RetrieveByGroup(ctx, groupID)
+}
+
+func (svc *configService) ListGroupsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupConfigPage, error) {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return svc.groupConfigs.RetrieveAll(ctx, pm)
+	}
+
+	if _, err := svc.auth.Identify(ctx, token); err != nil {
+		return GroupConfigPage{}, err
+	}
+
+	all, err := svc.groupConfigs.RetrieveAll(ctx, pm)
+	if err != nil {
+		return GroupConfigPage{}, err
+	}
+
+	groupsConfigs := make([]GroupConfig, 0, len(all.GroupsConfigs))
+	for _, g := range all.GroupsConfigs {
+		if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: g.GroupID, Action: domain.GroupViewer}); err == nil {
+			groupsConfigs = append(groupsConfigs, g)
+		}
+	}
+
+	return GroupConfigPage{
+		Total:         uint64(len(groupsConfigs)),
+		GroupsConfigs: groupsConfigs,
+	}, nil
+}
+
+func (svc *configService) UpdateGroupConfig(ctx context.Context, token string, groupConfig GroupConfig) (GroupConfig, error) {
+	_, err := svc.auth.Identify(ctx, token)
+	if err != nil {
+		return GroupConfig{}, err
+	}
+
+	if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupConfig.GroupID, Action: domain.GroupEditor}); err != nil {
+		return GroupConfig{}, errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	updated, err := svc.groupConfigs.Update(ctx, groupConfig)
+	if err != nil {
+		return GroupConfig{}, err
+	}
+
+	return updated, nil
+}
+
+func (svc *configService) RemoveGroupConfig(ctx context.Context, groupID string) error {
+	return svc.groupConfigs.Remove(ctx, groupID)
+}
+
+func (svc *configService) BackupGroupsConfigs(ctx context.Context, token string) (GroupConfigBackup, error) {
+	if err := svc.isAdmin(ctx, token); err == nil {
+		return svc.groupConfigs.BackupAll(ctx)
+	}
+
+	if _, err := svc.auth.Identify(ctx, token); err != nil {
+		return GroupConfigBackup{}, err
+	}
+
+	all, err := svc.groupConfigs.BackupAll(ctx)
+	if err != nil {
+		return GroupConfigBackup{}, err
+	}
+
+	groupsConfigs := make([]GroupConfig, 0, len(all.GroupsConfigs))
+	for _, g := range all.GroupsConfigs {
+		if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: g.GroupID, Action: domain.GroupViewer}); err == nil {
+			groupsConfigs = append(groupsConfigs, g)
+		}
+	}
+
+	return GroupConfigBackup{
+		GroupsConfigs: groupsConfigs,
+	}, nil
+}
+
 func (svc *configService) Backup(ctx context.Context, token string) (Backup, error) {
 	orgs, err := svc.BackupOrgsConfigs(ctx, token)
 	if err != nil {
@@ -280,9 +386,15 @@ func (svc *configService) Backup(ctx context.Context, token string) (Backup, err
 		return Backup{}, err
 	}
 
+	groups, err := svc.BackupGroupsConfigs(ctx, token)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	return Backup{
 		OrgsConfigs:   orgs.OrgsConfigs,
 		ThingsConfigs: things.ThingsConfigs,
+		GroupsConfigs: groups.GroupsConfigs,
 	}, nil
 }
 
@@ -295,6 +407,12 @@ func (svc *configService) Restore(ctx context.Context, token string, backup Back
 
 	for _, thingConfig := range backup.ThingsConfigs {
 		if _, err := svc.thingConfigs.Save(ctx, thingConfig); err != nil {
+			return err
+		}
+	}
+
+	for _, groupConfig := range backup.GroupsConfigs {
+		if _, err := svc.groupConfigs.Save(ctx, groupConfig); err != nil {
 			return err
 		}
 	}
