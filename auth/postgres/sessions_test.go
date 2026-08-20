@@ -21,7 +21,6 @@ func newSessionRepo() auth.SessionRepository {
 	return postgres.NewSessionRepository(dbutil.NewDatabase(db))
 }
 
-// newSession builds a live session row for a fresh user and family.
 func newSession(t *testing.T) auth.Session {
 	jti, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -38,7 +37,6 @@ func newSession(t *testing.T) auth.Session {
 	}
 }
 
-// rotate adds a successor into an existing session, the way Refresh does.
 func rotate(t *testing.T, s auth.Session) auth.Session {
 	jti, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
@@ -70,26 +68,29 @@ func TestSessionSaveAndRetrieve(t *testing.T) {
 	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected not found, got %s", err))
 }
 
-func TestSessionRevoke(t *testing.T) {
+func TestSessionRevokeIfLive(t *testing.T) {
 	repo := newSessionRepo()
 	session := newSession(t)
 	require.Nil(t, repo.Save(context.Background(), session), "saving session expected to succeed")
 
 	revokedAt := time.Now().UTC().Round(time.Millisecond)
-	require.Nil(t, repo.Revoke(context.Background(), session.JTI, revokedAt), "revoking session expected to succeed")
+	won, ok, err := repo.RevokeIfLive(context.Background(), session.JTI, revokedAt)
+	require.Nil(t, err, fmt.Sprintf("revoking session expected to succeed: %s", err))
+	assert.True(t, ok, "expected to win the revoke on a live session")
+	assert.Equal(t, session.FamilyID, won.FamilyID, "expected the row to be returned so the caller can reach its family")
+	assert.True(t, won.Revoked(), "expected the returned row to carry the revocation")
+
+	_, ok, err = repo.RevokeIfLive(context.Background(), session.JTI, revokedAt.Add(time.Hour))
+	require.Nil(t, err, fmt.Sprintf("second revoke expected to return cleanly: %s", err))
+	assert.False(t, ok, "expected the second revoke to lose")
 
 	retrieved, err := repo.Retrieve(context.Background(), session.JTI)
 	require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
-	assert.True(t, retrieved.Revoked(), "expected the session to be revoked")
+	assert.True(t, revokedAt.Equal(retrieved.RevokedAt), "expected the original revocation time to be kept")
 
-	// The first revocation timestamp is the one reuse detection reasons about,
-	// so a second revoke must not move it.
-	first := retrieved.RevokedAt
-	require.Nil(t, repo.Revoke(context.Background(), session.JTI, revokedAt.Add(time.Hour)), "re-revoking expected to succeed")
-
-	retrieved, err = repo.Retrieve(context.Background(), session.JTI)
-	require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
-	assert.True(t, first.Equal(retrieved.RevokedAt), "expected the original revocation time to be kept")
+	_, ok, err = repo.RevokeIfLive(context.Background(), "00000000-0000-0000-0000-000000000000", revokedAt)
+	require.Nil(t, err, fmt.Sprintf("revoking an unknown jti expected to return cleanly: %s", err))
+	assert.False(t, ok, "expected an unknown jti to lose")
 }
 
 func TestSessionRevokeFamily(t *testing.T) {
@@ -112,7 +113,6 @@ func TestSessionRevokeFamily(t *testing.T) {
 		assert.True(t, retrieved.Revoked(), "expected every token in the family to be revoked")
 	}
 
-	// A different login is a different family and must survive.
 	retrieved, err := repo.Retrieve(context.Background(), other.JTI)
 	require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
 	assert.False(t, retrieved.Revoked(), "expected another family to be untouched")

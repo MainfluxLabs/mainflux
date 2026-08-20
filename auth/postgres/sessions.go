@@ -58,9 +58,22 @@ func (sr sessionRepo) Retrieve(ctx context.Context, jti string) (auth.Session, e
 	return toSession(dbs), nil
 }
 
-func (sr sessionRepo) Revoke(ctx context.Context, jti string, at time.Time) error {
-	q := `UPDATE sessions SET revoked_at = :revoked_at WHERE jti = :jti AND revoked_at IS NULL`
-	return sr.revoke(ctx, q, dbSession{JTI: jti, RevokedAt: sql.NullTime{Time: at, Valid: true}})
+func (sr sessionRepo) RevokeIfLive(ctx context.Context, jti string, at time.Time) (auth.Session, bool, error) {
+	q := `UPDATE sessions SET revoked_at = $1
+	      WHERE jti = $2 AND revoked_at IS NULL
+	      RETURNING jti, user_id, family_id, session_start_at, revoked_at`
+
+	dbs := dbSession{}
+	if err := sr.db.QueryRowxContext(ctx, q, at, jti).StructScan(&dbs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return auth.Session{}, false, nil
+		}
+
+		return auth.Session{}, false, errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	return toSession(dbs), true, nil
 }
 
 func (sr sessionRepo) RevokeFamily(ctx context.Context, familyID string, at time.Time) error {
