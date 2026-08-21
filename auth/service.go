@@ -172,9 +172,8 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
 	case LoginKey:
 		// Login tokens are revocable, so a valid signature is not enough: the
-		// session row has the last word. This runs on every authenticated
-		// request, which is what makes logout and reuse kills take effect
-		// immediately rather than at the token's natural expiry.
+		// session row has the last word. Checking it on every authenticated
+		// request is what makes logout and reuse kills take effect at once.
 		if key.ID == "" {
 			return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
 		}

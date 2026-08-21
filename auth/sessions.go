@@ -23,12 +23,10 @@ type SessionRepository interface {
 	// Retrieve returns the session token identified by the provided JTI.
 	Retrieve(ctx context.Context, jti string) (Session, error)
 
-	// RevokeIfLive marks a single session token dead, but only if it was
-	// still live. It reports the row as it was found and whether the caller
-	// was the one that revoked it, so that rotation can decide the race
-	// against a concurrent refresh in one atomic step rather than reading
-	// and then writing.
-	RevokeIfLive(ctx context.Context, jti string, at time.Time) (Session, bool, error)
+	// Rotate replaces one session token with its successor. It revokes the
+	// presented token, but only if it was still live, and inserts the
+	// successor into the same family and session.
+	Rotate(ctx context.Context, jti, nextJTI string, at time.Time) (Session, bool, error)
 
 	// RevokeFamily marks every token descending from one login dead. Used by
 	// reuse detection and by logging out a single session.

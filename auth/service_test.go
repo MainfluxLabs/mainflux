@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -116,7 +117,6 @@ func TestRefreshSessionMaxAge(t *testing.T) {
 	_, err = svc.Refresh(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))
 
-	// Hitting the cap ends the session rather than leaving it half alive.
 	_, err = svc.Identify(context.Background(), secret)
 	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the capped session to be revoked, got %s", err))
 }
@@ -152,9 +152,20 @@ func TestIssue(t *testing.T) {
 			key: auth.Key{
 				Type:     auth.LoginKey,
 				IssuedAt: time.Now(),
+				IssuerID: id,
+				Subject:  email,
 			},
 			token: secret,
 			err:   nil,
+		},
+		{
+			desc: "issue login key with no issuer",
+			key: auth.Key{
+				Type:     auth.LoginKey,
+				IssuedAt: time.Now(),
+			},
+			token: secret,
+			err:   apiutil.ErrInvalidAPIKey,
 		},
 		{
 			desc: "issue login key with no time",
@@ -266,8 +277,6 @@ func TestRefresh(t *testing.T) {
 	}
 }
 
-// Rotation replaces the token but keeps the session: the successor identifies
-// the same user, and the token it replaced stops working immediately.
 func TestRefreshRotatesToken(t *testing.T) {
 	svc := newService()
 
@@ -278,14 +287,11 @@ func TestRefreshRotatesToken(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 	assert.NotEqual(t, secret, rotated, "expected rotation to mint a different token")
 
-	// The successor stands in for the same user: Identify is the only thing
-	// that reads the key, so it is what the assertion goes through.
 	identity, err := svc.Identify(context.Background(), rotated)
 	assert.Nil(t, err, fmt.Sprintf("Identifying rotated key expected to succeed: %s", err))
 	assert.Equal(t, id, identity.ID, fmt.Sprintf("expected id %s got %s", id, identity.ID))
 	assert.Equal(t, email, identity.Email, fmt.Sprintf("expected email %s got %s", email, identity.Email))
 
-	// The superseded token is dead everywhere, not just at the refresh endpoint.
 	_, err = svc.Identify(context.Background(), secret)
 	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the rotated-away token to be rejected, got %s", err))
 }
@@ -301,15 +307,12 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	rotated, err := svc.Refresh(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 
-	// Replay the token that was already exchanged.
 	_, err = svc.Refresh(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
-	// The live token is collateral: the session is gone, forcing a fresh login.
 	_, err = svc.Identify(context.Background(), rotated)
 	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the live token to be killed with its family, got %s", err))
 
-	// Its row is revoked too, so the killed session cannot be renewed either.
 	_, err = svc.Refresh(context.Background(), rotated)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
 }
@@ -329,14 +332,12 @@ func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
 	_, err = svc.Refresh(context.Background(), first)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
-	// The other login is a separate family and must be untouched.
 	_, err = svc.Identify(context.Background(), second)
 	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive: %s", err))
 }
 
-// Two refreshes racing on the same token must not both succeed: only one may
-// rotate it, or the family would be left with two usable tokens and the reuse
-// that reveals a theft would go unnoticed.
+// Only one of two refreshes racing on the same token may rotate it, or the
+// family is left with two usable tokens and a theft goes unnoticed.
 func TestRefreshConcurrentRotationYieldsOneWinner(t *testing.T) {
 	svc := newService()
 
@@ -403,6 +404,31 @@ func TestLogoutAll(t *testing.T) {
 		_, err = svc.Identify(context.Background(), token)
 		assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected every session to be ended, got %s", err))
 	}
+}
+
+// A revoked token keeps a valid signature until it expires, so without a
+// session check it could log its owner out over and over.
+func TestLogoutRejectsRevokedToken(t *testing.T) {
+	svc := newService()
+
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	require.Nil(t, svc.Logout(context.Background(), secret), "Logout expected to succeed")
+
+	err = svc.Logout(context.Background(), secret)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected a revoked token to be rejected, got %s", err))
+
+	err = svc.LogoutAll(context.Background(), secret)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected a revoked token to be rejected, got %s", err))
+
+	_, next, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	assert.True(t, errors.Contains(svc.LogoutAll(context.Background(), secret), errors.ErrAuthentication), "expected a revoked token to stay rejected")
+
+	_, err = svc.Identify(context.Background(), next)
+	assert.Nil(t, err, fmt.Sprintf("the new session expected to survive, got %s", err))
 }
 
 func TestRevoke(t *testing.T) {

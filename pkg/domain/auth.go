@@ -143,8 +143,6 @@ type Session struct {
 	RevokedAt      time.Time
 }
 
-// Revoked reports whether this particular token has been marked dead, whether
-// by rotation, by logout, or by a family-wide reuse kill.
 func (s Session) Revoked() bool {
 	return !s.RevokedAt.IsZero()
 }

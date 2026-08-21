@@ -58,18 +58,47 @@ func (sr sessionRepo) Retrieve(ctx context.Context, jti string) (auth.Session, e
 	return toSession(dbs), nil
 }
 
-func (sr sessionRepo) RevokeIfLive(ctx context.Context, jti string, at time.Time) (auth.Session, bool, error) {
-	q := `UPDATE sessions SET revoked_at = $1
-	      WHERE jti = $2 AND revoked_at IS NULL
-	      RETURNING jti, user_id, family_id, session_start_at, revoked_at`
+func (sr sessionRepo) Rotate(ctx context.Context, jti, nextJTI string, at time.Time) (auth.Session, bool, error) {
+	tx, err := sr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return auth.Session{}, false, errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+	defer tx.Rollback()
+
+	rq := `UPDATE sessions SET revoked_at = $1
+	       WHERE jti = $2 AND revoked_at IS NULL
+	       RETURNING jti, user_id, family_id, session_start_at, revoked_at`
 
 	dbs := dbSession{}
-	if err := sr.db.QueryRowxContext(ctx, q, at, jti).StructScan(&dbs); err != nil {
+	if err := tx.QueryRowxContext(ctx, rq, at, jti).StructScan(&dbs); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if err == sql.ErrNoRows || ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
-			return auth.Session{}, false, nil
+			lost, err := sr.Retrieve(ctx, jti)
+			return lost, false, err
 		}
 
+		return auth.Session{}, false, errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	iq := `INSERT INTO sessions (jti, user_id, family_id, session_start_at, revoked_at)
+	       VALUES (:jti, :user_id, :family_id, :session_start_at, :revoked_at)`
+
+	next := dbSession{
+		JTI:            nextJTI,
+		UserID:         dbs.UserID,
+		FamilyID:       dbs.FamilyID,
+		SessionStartAt: dbs.SessionStartAt,
+	}
+
+	if _, err := tx.NamedExecContext(ctx, iq, next); err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
+			return auth.Session{}, false, errors.Wrap(dbutil.ErrConflict, err)
+		}
+
+		return auth.Session{}, false, errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	if err := tx.Commit(); err != nil {
 		return auth.Session{}, false, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 

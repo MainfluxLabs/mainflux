@@ -68,29 +68,63 @@ func TestSessionSaveAndRetrieve(t *testing.T) {
 	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected not found, got %s", err))
 }
 
-func TestSessionRevokeIfLive(t *testing.T) {
+func TestSessionRotate(t *testing.T) {
 	repo := newSessionRepo()
 	session := newSession(t)
 	require.Nil(t, repo.Save(context.Background(), session), "saving session expected to succeed")
 
+	successor := rotate(t, session)
 	revokedAt := time.Now().UTC().Round(time.Millisecond)
-	won, ok, err := repo.RevokeIfLive(context.Background(), session.JTI, revokedAt)
-	require.Nil(t, err, fmt.Sprintf("revoking session expected to succeed: %s", err))
-	assert.True(t, ok, "expected to win the revoke on a live session")
+	won, ok, err := repo.Rotate(context.Background(), session.JTI, successor.JTI, revokedAt)
+	require.Nil(t, err, fmt.Sprintf("rotating session expected to succeed: %s", err))
+	assert.True(t, ok, "expected to win the rotation on a live session")
 	assert.Equal(t, session.FamilyID, won.FamilyID, "expected the row to be returned so the caller can reach its family")
 	assert.True(t, won.Revoked(), "expected the returned row to carry the revocation")
 
-	_, ok, err = repo.RevokeIfLive(context.Background(), session.JTI, revokedAt.Add(time.Hour))
-	require.Nil(t, err, fmt.Sprintf("second revoke expected to return cleanly: %s", err))
-	assert.False(t, ok, "expected the second revoke to lose")
+	next, err := repo.Retrieve(context.Background(), successor.JTI)
+	require.Nil(t, err, fmt.Sprintf("expected the successor to be written by the same rotation: %s", err))
+	assert.Equal(t, session.FamilyID, next.FamilyID, "expected the successor to stay in the family")
+	assert.Equal(t, session.UserID, next.UserID, "expected the successor to belong to the same user")
+	assert.True(t, session.SessionStartAt.Equal(next.SessionStartAt), "expected the session start to carry over")
+	assert.False(t, next.Revoked(), "expected the successor to be live")
+
+	lost, ok, err := repo.Rotate(context.Background(), session.JTI, rotate(t, session).JTI, revokedAt.Add(time.Hour))
+	require.Nil(t, err, fmt.Sprintf("replaying a rotated token expected to return cleanly: %s", err))
+	assert.False(t, ok, "expected the second rotation to lose")
+	assert.Equal(t, session.FamilyID, lost.FamilyID, "expected the family of a replayed token so that it can be killed")
 
 	retrieved, err := repo.Retrieve(context.Background(), session.JTI)
 	require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
 	assert.True(t, revokedAt.Equal(retrieved.RevokedAt), "expected the original revocation time to be kept")
 
-	_, ok, err = repo.RevokeIfLive(context.Background(), "00000000-0000-0000-0000-000000000000", revokedAt)
-	require.Nil(t, err, fmt.Sprintf("revoking an unknown jti expected to return cleanly: %s", err))
-	assert.False(t, ok, "expected an unknown jti to lose")
+	unknown := rotate(t, session)
+	_, _, err = repo.Rotate(context.Background(), "00000000-0000-0000-0000-000000000000", unknown.JTI, revokedAt)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected an unknown jti to be reported as not found, got %s", err))
+
+	_, err = repo.Retrieve(context.Background(), unknown.JTI)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected no successor for an unknown jti, got %s", err))
+
+	_, _, err = repo.Rotate(context.Background(), "not-a-uuid", unknown.JTI, revokedAt)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected a malformed jti to be reported as not found, got %s", err))
+}
+
+// A rotation that cannot write its successor must not revoke the token it was
+// handed, or the caller is left with no way back into the session.
+func TestSessionRotateIsAtomic(t *testing.T) {
+	repo := newSessionRepo()
+	session := newSession(t)
+	taken := newSession(t)
+
+	for _, s := range []auth.Session{session, taken} {
+		require.Nil(t, repo.Save(context.Background(), s), "saving session expected to succeed")
+	}
+
+	_, _, err := repo.Rotate(context.Background(), session.JTI, taken.JTI, time.Now().UTC())
+	assert.True(t, errors.Contains(err, dbutil.ErrConflict), fmt.Sprintf("expected a conflict on a duplicate successor jti, got %s", err))
+
+	retrieved, err := repo.Retrieve(context.Background(), session.JTI)
+	require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
+	assert.False(t, retrieved.Revoked(), "expected a failed rotation to leave the presented token live")
 }
 
 func TestSessionRevokeFamily(t *testing.T) {

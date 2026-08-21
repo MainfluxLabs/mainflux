@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -98,10 +99,11 @@ func (svc service) Issue(ctx context.Context, token string, key Key) (Key, strin
 	}
 }
 
-// loginKey opens a new session. Every login gets its own family, so revoking
-// one session -- whether by logout or by reuse detection -- never disturbs the
-// same user's other browsers or devices.
 func (svc service) loginKey(ctx context.Context, key Key) (Key, string, error) {
+	if key.IssuerID == "" {
+		return Key{}, "", errors.Wrap(errIssueUser, apiutil.ErrInvalidAPIKey)
+	}
+
 	familyID, err := svc.idProvider.ID()
 	if err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
@@ -110,9 +112,7 @@ func (svc service) loginKey(ctx context.Context, key Key) (Key, string, error) {
 	return svc.issueSessionKey(ctx, key, familyID, key.IssuedAt)
 }
 
-// issueSessionKey mints a token and records it as the live member of its
-// family. It is shared by the initial login and by every later rotation, which
-// differ only in whether the family and session start are new or carried over.
+// issueSessionKey mints a token and records it as the live member of its family.
 func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string, sessionStartAt time.Time) (Key, string, error) {
 	jti, err := svc.idProvider.ID()
 	if err != nil {
@@ -133,14 +133,10 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 	return svc.tmpKey(svc.loginDuration, key)
 }
 
-// Refresh rotates a login token. The presented token is revoked and replaced
-// by a successor in the same session, so the session survives while the token
-// string does not.
-//
-// Presenting a token that was already rotated means two parties hold the same
-// token, which is treated as theft: the entire session is revoked, and the
-// legitimate user has to log in again. Because each login gets its own family,
-// that kill is scoped to the compromised session only.
+// Refresh rotates a login token, replacing it with a successor in the same
+// session. Presenting a token that was already rotated means two parties hold
+// it, which is treated as theft: the whole session is revoked. Because each
+// login gets its own family, that kill is scoped to the compromised session.
 func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err != nil {
@@ -150,17 +146,33 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
 	}
 
-	session, won, err := svc.sessions.RevokeIfLive(ctx, key.ID, getTimestamp())
+	jti, err := svc.idProvider.ID()
 	if err != nil {
 		return "", errors.Wrap(errRefresh, err)
 	}
 
-	if !won {
-		revoked, err := svc.sessions.Retrieve(ctx, key.ID)
-		if err != nil {
+	_, secret, err := svc.tmpKey(svc.loginDuration, Key{
+		ID:       jti,
+		Type:     LoginKey,
+		IssuerID: key.IssuerID,
+		Subject:  key.Subject,
+		IssuedAt: getTimestamp(),
+	})
+	if err != nil {
+		return "", errors.Wrap(errRefresh, err)
+	}
+
+	session, won, err := svc.sessions.Rotate(ctx, key.ID, jti, getTimestamp())
+	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
 			return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
 		}
-		if err := svc.sessions.RevokeFamily(ctx, revoked.FamilyID, getTimestamp()); err != nil {
+
+		return "", errors.Wrap(errRefresh, err)
+	}
+
+	if !won {
+		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
 			return "", errors.Wrap(errRefresh, err)
 		}
 
@@ -177,35 +189,13 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 
 	svc.purgeDeadSessions(ctx)
 
-	next := Key{
-		Type:     LoginKey,
-		IssuerID: key.IssuerID,
-		Subject:  key.Subject,
-		IssuedAt: getTimestamp(),
-	}
-
-	_, secret, err := svc.issueSessionKey(ctx, next, session.FamilyID, session.SessionStartAt)
-	if err != nil {
-		return "", errors.Wrap(errRefresh, err)
-	}
-
 	return secret, nil
 }
 
-// Logout ends the session the token belongs to, leaving the user's other
-// sessions alone.
 func (svc service) Logout(ctx context.Context, token string) error {
-	key, err := svc.tokenizer.Parse(token)
+	session, err := svc.liveSession(ctx, token)
 	if err != nil {
 		return errors.Wrap(errLogout, err)
-	}
-	if key.Type != LoginKey || key.ID == "" {
-		return errors.Wrap(errLogout, errors.ErrAuthentication)
-	}
-
-	session, err := svc.sessions.Retrieve(ctx, key.ID)
-	if err != nil {
-		return errors.Wrap(errLogout, errors.ErrAuthentication)
 	}
 
 	if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
@@ -215,18 +205,41 @@ func (svc service) Logout(ctx context.Context, token string) error {
 	return nil
 }
 
-// LogoutAll ends every session belonging to the owner of the token.
 func (svc service) LogoutAll(ctx context.Context, token string) error {
-	issuerID, _, err := svc.login(token)
+	session, err := svc.liveSession(ctx, token)
 	if err != nil {
 		return errors.Wrap(errLogout, err)
 	}
 
-	if err := svc.sessions.RevokeByUser(ctx, issuerID, getTimestamp()); err != nil {
+	if err := svc.sessions.RevokeByUser(ctx, session.UserID, getTimestamp()); err != nil {
 		return errors.Wrap(errLogout, err)
 	}
 
 	return nil
+}
+
+// liveSession resolves a login token to the session backing it, rejecting one
+// already revoked. A signature only proves the token was minted at some point,
+// so without this check a token that was logged out, or killed as stolen, could
+// go on ending its owner's sessions until it expired.
+func (svc service) liveSession(ctx context.Context, token string) (Session, error) {
+	key, err := svc.tokenizer.Parse(token)
+	if err != nil {
+		return Session{}, err
+	}
+	if key.Type != LoginKey || key.IssuerID == "" || key.ID == "" {
+		return Session{}, errors.ErrAuthentication
+	}
+
+	session, err := svc.sessions.Retrieve(ctx, key.ID)
+	if err != nil {
+		return Session{}, errors.ErrAuthentication
+	}
+	if session.Revoked() {
+		return Session{}, errors.ErrAuthentication
+	}
+
+	return session, nil
 }
 
 // purgeDeadSessions drops rows that can no longer belong to a live session.

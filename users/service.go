@@ -435,12 +435,10 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
 }
 
-// Refresh exchanges a still-valid access token for a new one with a fresh
-// expiry. The old token is not invalidated -- access tokens are stateless and
-// remain usable until they expire on their own.
 func (svc usersService) Refresh(ctx context.Context, token string) (string, error) {
 	t, err := svc.auth.Refresh(ctx, token)
 	if err != nil {
+
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 
