@@ -51,9 +51,7 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 			return page, err
 		}
 		page.Messages = messages
-		if !rpm.NoTotal {
-			page.Total = total
-		}
+		page.Total = total
 
 		return page, nil
 	}
