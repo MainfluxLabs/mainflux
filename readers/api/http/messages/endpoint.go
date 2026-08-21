@@ -27,9 +27,14 @@ func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var total *uint64
+		if !req.pageMeta.NoTotal {
+			total = &page.Total
+		}
+
 		return listJSONMessagesRes{
 			JSONPageMetadata: req.pageMeta,
-			Total:            page.Total,
+			Total:            total,
 			Messages:         page.Messages,
 		}, nil
 	}
@@ -47,9 +52,14 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var total *uint64
+		if !req.pageMeta.NoTotal {
+			total = &page.Total
+		}
+
 		return listSenMLMessagesRes{
 			SenMLPageMetadata: req.pageMeta,
-			Total:             page.Total,
+			Total:             total,
 			Messages:          page.Messages,
 		}, nil
 	}
@@ -77,7 +87,9 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 				if page, err := svc.ListJSONMessages(ctx, req.token, domain.ThingKey{}, pm); err != nil {
 					item.Error = err.Error()
 				} else {
-					item.Total = page.Total
+					if !pm.NoTotal {
+						item.Total = &page.Total
+					}
 					item.Messages = page.Messages
 				}
 				results[idx] = item
@@ -111,7 +123,9 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 				if page, err := svc.ListSenMLMessages(ctx, req.token, domain.ThingKey{}, pm); err != nil {
 					item.Error = err.Error()
 				} else {
-					item.Total = page.Total
+					if !pm.NoTotal {
+						item.Total = &page.Total
+					}
 					item.Messages = page.Messages
 				}
 				results[idx] = item
