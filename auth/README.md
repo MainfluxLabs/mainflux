@@ -25,6 +25,7 @@ The service is configured using the environment variables presented in the follo
 | `MF_AUTH_SERVER_KEY`           | Path to server key in PEM format                                            |                          |
 | `MF_AUTH_SECRET`               | Secret string used for signing tokens                                       | auth                     |
 | `MF_AUTH_LOGIN_TOKEN_DURATION` | Login key expiration period                                                 | 10h                      |
+| `MF_AUTH_MAX_SESSION_DURATION` | Maximum age of a session, beyond which it cannot be refreshed              | 168h                     |
 | `MF_INVITE_DURATION`           | Validity period for organization invitations                                | 168h                     |
 | `MF_JAEGER_URL`                | Jaeger server URL for distributed tracing. Leave empty to disable tracing.  |                          |
 | `MF_AUTH_ES_URL`               | Event store (Redis) URL                                                     | redis://localhost:6379/0 |
@@ -76,6 +77,7 @@ MF_AUTH_HTTP_PORT=[http port] \
 MF_AUTH_GRPC_PORT=[grpc port] \
 MF_AUTH_SECRET=[signing secret] \
 MF_AUTH_LOGIN_TOKEN_DURATION=[token duration] \
+MF_AUTH_MAX_SESSION_DURATION=[max session age] \
 $GOBIN/mainfluxlabs-auth
 ```
 

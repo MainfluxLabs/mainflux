@@ -5,6 +5,7 @@ package auth
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -36,11 +37,21 @@ var (
 	// ErrRetrieveOrgsByMembership indicates that retrieving orgs by membership failed.
 	ErrRetrieveOrgsByMembership = errors.New("failed to retrieve orgs by membership")
 
-	errIssueUser      = errors.New("failed to issue new login key")
-	errIssueTmp       = errors.New("failed to issue new temporary key")
-	errRevoke         = errors.New("failed to remove key")
-	errRetrieve       = errors.New("failed to retrieve key data")
-	errIdentify       = errors.New("failed to validate token")
+	errIssueUser = errors.New("failed to issue new login key")
+	errIssueTmp  = errors.New("failed to issue new temporary key")
+	errRevoke    = errors.New("failed to remove key")
+	errRetrieve  = errors.New("failed to retrieve key data")
+	errIdentify  = errors.New("failed to validate token")
+	errRefresh   = errors.New("failed to refresh login key")
+	errLogout    = errors.New("failed to end session")
+
+	// ErrSessionReuse indicates that an already rotated token was presented
+	// again, which is treated as theft: the whole session is killed.
+	ErrSessionReuse = errors.New("refresh token reuse detected, session revoked")
+
+	// ErrSessionExpired indicates the session outlived its maximum age and
+	// cannot be extended any further.
+	ErrSessionExpired = errors.New("session has reached its maximum lifetime")
 	errUnknownSubject = errors.New("unknown subject")
 )
 
@@ -86,6 +97,7 @@ type Service interface {
 	OrgMemberships
 	Invites
 	Keys
+	Sessions
 }
 
 var _ Service = (*service)(nil)
@@ -95,6 +107,7 @@ type service struct {
 	users          domain.UsersClient
 	things         domain.ThingsClient
 	keys           KeyRepository
+	sessions       SessionRepository
 	roles          RolesRepository
 	memberships    OrgMembershipsRepository
 	invites        OrgInvitesRepository
@@ -102,25 +115,30 @@ type service struct {
 	idProvider     uuid.IDProvider
 	tokenizer      Tokenizer
 	loginDuration  time.Duration
+	maxSessionAge  time.Duration
 	inviteDuration time.Duration
+	lastPurge      *atomic.Int64
 }
 
 // New instantiates the auth service implementation.
-func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys KeyRepository, roles RolesRepository,
-	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, inviteDuration time.Duration) Service {
+func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys KeyRepository, sessions SessionRepository, roles RolesRepository,
+	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, maxSessionAge time.Duration, inviteDuration time.Duration) Service {
 	return &service{
 		tokenizer:      tokenizer,
 		things:         tc,
 		orgs:           orgs,
 		users:          uc,
 		keys:           keys,
+		sessions:       sessions,
 		roles:          roles,
 		memberships:    memberships,
 		invites:        invites,
 		email:          emailer,
 		idProvider:     idp,
 		loginDuration:  loginDuration,
+		maxSessionAge:  maxSessionAge,
 		inviteDuration: inviteDuration,
+		lastPurge:      &atomic.Int64{},
 	}
 }
 
@@ -150,7 +168,23 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 	}
 
 	switch key.Type {
-	case RecoveryKey, LoginKey:
+	case RecoveryKey:
+		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+	case LoginKey:
+		// Login tokens are revocable, so a valid signature is not enough: the
+		// session row has the last word. Checking it on every authenticated
+		// request is what makes logout and reuse kills take effect at once.
+		if key.ID == "" {
+			return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+		}
+		session, err := svc.sessions.Retrieve(ctx, key.ID)
+		if err != nil {
+			return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+		}
+		if session.Revoked() {
+			return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+		}
+
 		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
 	case APIKey:
 		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)

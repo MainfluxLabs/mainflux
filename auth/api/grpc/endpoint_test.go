@@ -37,6 +37,7 @@ const (
 	viewerID       = "viewerID"
 	viewerEmail    = "viewer@example.com"
 	loginDuration  = 30 * time.Minute
+	maxSessionAge  = 168 * time.Hour
 	inviteDuration = 7 * 24 * time.Hour
 )
 
@@ -52,7 +53,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, nil, nil, repo, roles, membersMock, nil, nil, idProvider, t, loginDuration, inviteDuration)
+	return auth.New(nil, nil, nil, repo, mocks.NewSessionRepository(), roles, membersMock, nil, nil, idProvider, t, loginDuration, maxSessionAge, inviteDuration)
 }
 
 func startGRPCServer(svc auth.Service, port int) {

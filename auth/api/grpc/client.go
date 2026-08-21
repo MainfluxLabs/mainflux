@@ -26,6 +26,7 @@ var _ domain.AuthClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	issue                               endpoint.Endpoint
+	refresh                             endpoint.Endpoint
 	identify                            endpoint.Endpoint
 	authorize                           endpoint.Endpoint
 	getOwnerIDByOrg                     endpoint.Endpoint
@@ -41,6 +42,14 @@ type grpcClient struct {
 // NewClient returns new gRPC client instance.
 func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) domain.AuthClient {
 	return &grpcClient{
+		refresh: kitot.TraceClient(tracer, "refresh")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"Refresh",
+			encodeRefreshRequest,
+			decodeIssueResponse,
+			protomfx.Token{},
+		).Endpoint()),
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
 			svcName,
@@ -137,6 +146,24 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 
 	ir := res.(issueRes)
 	return ir.value, nil
+}
+
+func (client grpcClient) Refresh(ctx context.Context, token string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.refresh(ctx, refreshReq{token: token})
+	if err != nil {
+		return "", err
+	}
+
+	ir := res.(issueRes)
+	return ir.value, nil
+}
+
+func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(refreshReq)
+	return &protomfx.Token{Value: req.token}, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {

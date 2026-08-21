@@ -32,6 +32,7 @@ const (
 	id             = "123e4567-e89b-12d3-a456-000000000001"
 	email          = "user@example.com"
 	loginDuration  = 30 * time.Minute
+	maxSessionAge  = 168 * time.Hour
 	inviteDuration = 7 * 24 * time.Hour
 )
 
@@ -70,7 +71,7 @@ func newService() auth.Service {
 	idProvider := uuid.NewMock()
 	t := jwt.New(secret)
 
-	return auth.New(nil, nil, nil, repo, nil, nil, nil, nil, idProvider, t, loginDuration, inviteDuration)
+	return auth.New(nil, nil, nil, repo, mocks.NewSessionRepository(), nil, nil, nil, nil, idProvider, t, loginDuration, maxSessionAge, inviteDuration)
 }
 
 func newServer(svc auth.Service) *httptest.Server {

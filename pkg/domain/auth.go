@@ -130,6 +130,23 @@ func (k Key) Expired() bool {
 	return k.ExpiresAt.UTC().Before(time.Now().UTC())
 }
 
+// Session records one issued login token. A token is identified by its JTI;
+// the session it belongs to is identified by FamilyID, which is set once at
+// login and carried forward unchanged through every rotation. Revoking a JTI
+// kills that one token, not the session: normal rotation revokes the old JTI
+// at the same moment it mints a successor in the same family.
+type Session struct {
+	JTI            string
+	UserID         string
+	FamilyID       string
+	SessionStartAt time.Time
+	RevokedAt      time.Time
+}
+
+func (s Session) Revoked() bool {
+	return !s.RevokedAt.IsZero()
+}
+
 // KeysPage contains page metadata and list of keys.
 type KeysPage struct {
 	Total uint64
@@ -139,6 +156,9 @@ type KeysPage struct {
 type AuthClient interface {
 	// Issue issues a token for the given id, email and key type.
 	Issue(ctx context.Context, id, email string, keyType uint32) (string, error)
+
+	// Refresh issues a new token to the owner of the provided still-valid one.
+	Refresh(ctx context.Context, token string) (string, error)
 
 	// Identify validates the token and returns the identity.
 	Identify(ctx context.Context, token string) (Identity, error)

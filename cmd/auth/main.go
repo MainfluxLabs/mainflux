@@ -60,6 +60,7 @@ const (
 	defServerKey       = ""
 	defJaegerURL       = ""
 	defLoginDuration   = "10h"
+	defMaxSessionAge   = "168h"
 	defInviteDuration  = "168h"
 	defAdminEmail      = ""
 	defTimeout         = "1s"
@@ -101,6 +102,7 @@ const (
 	envServerKey       = "MF_AUTH_SERVER_KEY"
 	envJaegerURL       = "MF_JAEGER_URL"
 	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envMaxSessionAge   = "MF_AUTH_MAX_SESSION_DURATION"
 	envInviteDuration  = "MF_INVITE_DURATION"
 	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
 	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
@@ -135,6 +137,7 @@ type config struct {
 	secret         string
 	jaegerURL      string
 	loginDuration  time.Duration
+	maxSessionAge  time.Duration
 	inviteDuration time.Duration
 	timeout        time.Duration
 	adminEmail     string
@@ -294,6 +297,11 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
+	maxSessionAge, err := time.ParseDuration(mainflux.Env(envMaxSessionAge, defMaxSessionAge))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envMaxSessionAge, err.Error())
+	}
+
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -320,6 +328,7 @@ func loadConfig() config {
 		secret:         mainflux.Env(envSecret, defSecret),
 		jaegerURL:      mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration:  loginDuration,
+		maxSessionAge:  maxSessionAge,
 		inviteDuration: inviteDuration,
 		timeout:        timeout,
 		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
@@ -347,6 +356,8 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 
 	database := dbutil.NewDatabase(db)
 	keysRepo := tracing.New(postgres.New(database), tracer)
+	sessionsRepo := postgres.NewSessionRepository(database)
+	sessionsRepo = tracing.SessionsRepositoryMiddleware(tracer, sessionsRepo)
 
 	rolesRepo := postgres.NewRolesRepo(db)
 	rolesRepo = tracing.RolesRepositoryMiddleware(tracer, rolesRepo)
@@ -382,7 +393,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 		}, []string{"method"}),
 	)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.inviteDuration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, sessionsRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.maxSessionAge, cfg.inviteDuration)
 	svc = rediscache.NewEventStoreMiddleware(svc, pub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

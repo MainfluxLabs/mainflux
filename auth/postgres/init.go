@@ -155,6 +155,24 @@ func migrateDB(db *sqlx.DB) error {
 				},
 				Down: []string{},
 			},
+			{
+				Id: "auth_7",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS sessions (
+						jti              UUID NOT NULL,
+						user_id          UUID NOT NULL,
+						family_id        UUID NOT NULL,
+						session_start_at TIMESTAMPTZ NOT NULL,
+						revoked_at       TIMESTAMPTZ,
+						PRIMARY KEY (jti)
+					)`,
+					`CREATE INDEX IF NOT EXISTS sessions_family_id_idx ON sessions (family_id)`,
+					`CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions (user_id)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS sessions`,
+				},
+			},
 		},
 	}
 

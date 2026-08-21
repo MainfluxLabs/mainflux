@@ -105,6 +105,17 @@ func (req registerUserReq) validate() error {
 	return req.user.Validate(userPasswordRegex)
 }
 
+type refreshReq struct {
+	token string
+}
+
+func (req refreshReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	return nil
+}
+
 type viewUserReq struct {
 	token string
 	id    string
