@@ -19,7 +19,6 @@ type sessionRepositoryMock struct {
 	sessions map[string]auth.Session
 }
 
-// NewSessionRepository creates an in-memory session repository.
 func NewSessionRepository() auth.SessionRepository {
 	return &sessionRepositoryMock{
 		sessions: make(map[string]auth.Session),
