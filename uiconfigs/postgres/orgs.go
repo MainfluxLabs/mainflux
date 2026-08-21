@@ -128,7 +128,7 @@ func (or orgConfigRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMe
 }
 
 func (or orgConfigRepository) Update(ctx context.Context, o uiconfigs.OrgConfig) (uiconfigs.OrgConfig, error) {
-	q := `UPDATE org_configs 
+	q := `UPDATE org_configs
       	  SET config = :config
           WHERE org_id = :org_id`
 
@@ -157,7 +157,7 @@ func (or orgConfigRepository) Update(ctx context.Context, o uiconfigs.OrgConfig)
 	}
 
 	if cnt == 0 {
-		return or.Save(ctx, o)
+		return uiconfigs.OrgConfig{}, dbutil.ErrNotFound
 	}
 
 	qSelect := `SELECT org_id, config

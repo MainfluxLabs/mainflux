@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -32,6 +33,14 @@ type Service interface {
 
 	// RemoveOrgConfig removes the org config by org id.
 	RemoveOrgConfig(ctx context.Context, orgID string) error
+
+	// RemoveGroupFromConfigs clears references to the given deleted Group and its Things
+	// wherever they appear in the org config.
+	RemoveGroupFromConfigs(ctx context.Context, orgID, groupID string, thingIDs []string) error
+
+	// RemoveThingsFromConfigs clears references to the given deleted Things wherever they
+	// appear in the org config.
+	RemoveThingsFromConfigs(ctx context.Context, orgID string, thingIDs []string) error
 
 	// BackupOrgsConfigs retrieves all org configs.
 	BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error)
@@ -135,6 +144,9 @@ func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, org
 
 	updated, err := svc.orgConfigs.Update(ctx, orgConfig)
 	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return svc.orgConfigs.Save(ctx, orgConfig)
+		}
 		return OrgConfig{}, err
 	}
 
@@ -143,6 +155,55 @@ func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, org
 
 func (svc *configService) RemoveOrgConfig(ctx context.Context, orgID string) error {
 	return svc.orgConfigs.Remove(ctx, orgID)
+}
+
+func (svc *configService) RemoveGroupFromConfigs(ctx context.Context, orgID, groupID string, thingIDs []string) error {
+	return svc.removeIDsFromOrgConfig(ctx, orgID, append([]string{groupID}, thingIDs...))
+}
+
+func (svc *configService) RemoveThingsFromConfigs(ctx context.Context, orgID string, thingIDs []string) error {
+	return svc.removeIDsFromOrgConfig(ctx, orgID, thingIDs)
+}
+
+// removeIDsFromOrgConfig loads the org's config, clears any reference to the given IDs from
+// it via removeIDsFromValue, and persists the result if anything actually changed.
+func (svc *configService) removeIDsFromOrgConfig(ctx context.Context, orgID string, ids []string) error {
+	if orgID == "" {
+		return nil
+	}
+
+	idSet := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if id == "" {
+			continue
+		}
+		idSet[id] = struct{}{}
+	}
+
+	if len(idSet) == 0 {
+		return nil
+	}
+
+	cfg, err := svc.orgConfigs.RetrieveByOrg(ctx, orgID)
+	if err != nil {
+		return err
+	}
+
+	if len(cfg.Config) == 0 {
+		return nil
+	}
+
+	marked, changed := removeIDsFromValue(map[string]any(cfg.Config), idSet)
+	if !changed {
+		return nil
+	}
+	cfg.Config = Config(marked.(map[string]any))
+
+	_, err = svc.orgConfigs.Update(ctx, cfg)
+	if errors.Contains(err, dbutil.ErrNotFound) {
+		return nil
+	}
+	return err
 }
 
 func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error) {
@@ -316,4 +377,52 @@ func (svc *configService) isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+// removeIDsFromValue clears references to the given IDs wherever they appear in v: a
+// map value matching one of the IDs is replaced in place with an empty string (the
+// surrounding object is still meaningful and kept), while an array element matching one of
+// the IDs is dropped from the array entirely (a bare ID with nothing else attached to it has
+// nothing left worth keeping once removed). The second return value indicates whether
+// anything changed.
+func removeIDsFromValue(v any, ids map[string]struct{}) (any, bool) {
+	switch val := v.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(val))
+		changed := false
+
+		for k, vv := range val {
+			if s, ok := vv.(string); ok {
+				if _, found := ids[s]; found {
+					result[k] = ""
+					changed = true
+					continue
+				}
+			}
+
+			marked, c := removeIDsFromValue(vv, ids)
+			result[k] = marked
+			changed = changed || c
+		}
+
+		return result, changed
+	case []any:
+		result := make([]any, 0, len(val))
+		changed := false
+		for _, vv := range val {
+			if s, ok := vv.(string); ok {
+				if _, found := ids[s]; found {
+					changed = true
+					continue
+				}
+			}
+
+			marked, c := removeIDsFromValue(vv, ids)
+			result = append(result, marked)
+			changed = changed || c
+		}
+		return result, changed
+	default:
+		return val, false
+	}
 }
