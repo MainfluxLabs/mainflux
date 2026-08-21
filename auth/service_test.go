@@ -100,13 +100,9 @@ func newServiceWithMaxSessionAge(maxAge time.Duration) auth.Service {
 		uuid.NewMock(), jwt.New(secret), loginDuration, maxAge, inviteDuration)
 }
 
-// A session cannot be extended past its maximum age, however recently the
-// token itself was rotated.
 func TestRefreshSessionMaxAge(t *testing.T) {
 	svc := newServiceWithMaxSessionAge(time.Minute)
 
-	// The token is still well within loginDuration, but the session it belongs
-	// to started long enough ago to be past the cap.
 	issuedAt := time.Now().Add(-10 * time.Minute)
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: issuedAt, IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -296,8 +292,6 @@ func TestRefreshRotatesToken(t *testing.T) {
 	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the rotated-away token to be rejected, got %s", err))
 }
 
-// Replaying an already rotated token means two parties hold it, so the whole
-// session dies -- including the token the legitimate user is currently on.
 func TestRefreshReuseKillsSession(t *testing.T) {
 	svc := newService()
 
@@ -317,7 +311,6 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
 }
 
-// A reuse kill is scoped to one login lineage, so a second browser survives.
 func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
 	svc := newService()
 
@@ -557,8 +550,6 @@ func TestIdentify(t *testing.T) {
 	_, expSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: exp1})
 	assert.Nil(t, err, fmt.Sprintf("Issuing expired login key expected to succeed: %s", err))
 
-	// Issue refuses unknown key types, so this one is signed directly to check
-	// that Identify still rejects a well-formed token of a type it does not know.
 	invalidSecret, err := jwt.New(secret).Issue(auth.Key{Type: 22, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Signing a key of an unknown type expected to succeed: %s", err))
 
