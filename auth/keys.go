@@ -142,6 +142,7 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(errRefresh, err)
 	}
+
 	if key.Type != LoginKey || key.IssuerID == "" || key.ID == "" {
 		return "", errors.Wrap(errRefresh, errors.ErrAuthentication)
 	}
@@ -158,6 +159,7 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		Subject:  key.Subject,
 		IssuedAt: getTimestamp(),
 	})
+
 	if err != nil {
 		return "", errors.Wrap(errRefresh, err)
 	}
@@ -252,6 +254,7 @@ func (svc service) purgeDeadSessions(ctx context.Context) {
 	if now.Sub(time.Unix(0, last)) < purgeInterval {
 		return
 	}
+
 	if !svc.lastPurge.CompareAndSwap(last, now.UnixNano()) {
 		return
 	}
