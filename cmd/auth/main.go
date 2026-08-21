@@ -357,6 +357,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 	database := dbutil.NewDatabase(db)
 	keysRepo := tracing.New(postgres.New(database), tracer)
 	sessionsRepo := postgres.NewSessionRepository(database)
+	sessionsRepo = tracing.SessionsRepositoryMiddleware(tracer, sessionsRepo)
 
 	rolesRepo := postgres.NewRolesRepo(db)
 	rolesRepo = tracing.RolesRepositoryMiddleware(tracer, rolesRepo)
