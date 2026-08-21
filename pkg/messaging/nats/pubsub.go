@@ -4,6 +4,7 @@
 package nats
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -14,6 +15,10 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	broker "github.com/nats-io/nats.go"
 )
+
+// ErrInvalidType indicates a subscription received a message whose type
+// doesn't match what it expected to unmarshal.
+var ErrInvalidType = errors.New("invalid message type")
 
 const (
 	// SubjectThings represents the wildcard subject covering all thing subjects.
@@ -92,7 +97,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Message)
 		if !ok {
-			return fmt.Errorf("nats: unexpected message type %T for message subject", msg)
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
 		return handler.Handle(subject, *v)
 	}
@@ -118,7 +123,7 @@ func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) err
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Alarm)
 		if !ok {
-			return fmt.Errorf("nats: unexpected message type %T for alarm subject", msg)
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
 		return handler(subject, *v)
 	}
@@ -130,7 +135,7 @@ func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandH
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Command)
 		if !ok {
-			return fmt.Errorf("nats: unexpected message type %T for command subject", msg)
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
 		return handler(subject, *v)
 	}
@@ -142,7 +147,7 @@ func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.Not
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Notification)
 		if !ok {
-			return fmt.Errorf("nats: unexpected message type %T for notification subject", msg)
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
 		return handler(subject, *v)
 	}
@@ -154,7 +159,7 @@ func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler)
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Webhook)
 		if !ok {
-			return fmt.Errorf("nats: unexpected message type %T for webhook subject", msg)
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
 		return handler(subject, *v)
 	}
@@ -248,11 +253,11 @@ func (ps *pubsub) natsHandler(newFn func() proto.Message, handleFn func(subject 
 	return func(m *broker.Msg) {
 		msg := newFn()
 		if err := proto.Unmarshal(m.Data, msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received %T: %s", msg, err))
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received %T for subject %s: %s", msg, m.Subject, err))
 			return
 		}
 		if err := handleFn(m.Subject, msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle %T: %s", msg, err))
+			ps.logger.Warn(fmt.Sprintf("Failed to handle %T for subject %s: %s", msg, m.Subject, err))
 		}
 	}
 }
