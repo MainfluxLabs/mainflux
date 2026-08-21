@@ -5,35 +5,11 @@ package sessions
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/auth"
-	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
-type sessionReq struct {
-	token string
-}
-
-func (req sessionReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	return nil
-}
-
-type logoutRes struct{}
-
-func (res logoutRes) Code() int { return http.StatusNoContent }
-
-func (res logoutRes) Headers() map[string]string { return map[string]string{} }
-
-func (res logoutRes) Empty() bool { return true }
-
-// logoutEndpoint ends the session the presented token belongs to, leaving the
-// user's other sessions running.
 func logoutEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(sessionReq)
@@ -49,7 +25,6 @@ func logoutEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-// logoutAllEndpoint ends every session belonging to the token's owner.
 func logoutAllEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(sessionReq)
