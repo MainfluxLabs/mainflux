@@ -22,6 +22,7 @@ import (
 	httpapi "github.com/MainfluxLabs/mainflux/filestore/api/http"
 	"github.com/MainfluxLabs/mainflux/filestore/events"
 	"github.com/MainfluxLabs/mainflux/filestore/postgres"
+	"github.com/MainfluxLabs/mainflux/filestore/store"
 	"github.com/MainfluxLabs/mainflux/filestore/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -65,6 +66,14 @@ const (
 	defDBSSLKey          = ""
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
+	defFilesPath         = "files"
+
+	defBackend         = "local"
+	defSeaweedURL      = "http://localhost:8888"
+	defSeaweedPrefix   = "filestore"
+	defSeaweedTimeout  = "30s"
+	defMaxUploadMB     = "1024"
+	maxAllowedUploadMB = 1 << 20
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -87,6 +96,12 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
+	envMaxUploadMB       = "MF_FILESTORE_MAX_UPLOAD_MB"
+	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
+	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
+	envBackend           = "MF_FILESTORE_BACKEND"
+	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
+	envFilesPath         = "MF_FILESTORE_FILES_PATH"
 )
 
 type config struct {
@@ -99,6 +114,7 @@ type config struct {
 	thingsConfig      clients.Config
 	authConfig        clients.Config
 	esURL             string
+	maxUploadBytes    int64
 }
 
 func main() {
@@ -149,7 +165,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, logger, cfg.maxUploadBytes), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -174,6 +190,11 @@ func loadConfig() config {
 	thingsAuthTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+	}
+
+	maxUploadMB, err := strconv.ParseInt(mainflux.Env(envMaxUploadMB, defMaxUploadMB), 10, 64)
+	if err != nil || maxUploadMB <= 0 || maxUploadMB > maxAllowedUploadMB {
+		log.Fatalf("Invalid %s value: %q (must be 1..%d)", envMaxUploadMB, mainflux.Env(envMaxUploadMB, defMaxUploadMB), maxAllowedUploadMB)
 	}
 
 	dbConfig := postgres.Config{
@@ -225,6 +246,26 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
+		maxUploadBytes:    maxUploadMB * 1024 * 1024,
+	}
+}
+
+func buildStore() store.FileStore {
+	switch mainflux.Env(envBackend, defBackend) {
+	case "seaweedfs":
+		to, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
+		if err != nil {
+			log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
+		}
+
+		fs, err := store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to)
+		if err != nil {
+			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
+		}
+
+		return fs
+	default:
+		return store.NewLocal(mainflux.Env(envFilesPath, defFilesPath))
 	}
 }
 
@@ -263,7 +304,8 @@ func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db 
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
-	svc := filestore.New(thingsAuth, thRepo, grRepo)
+	fs := buildStore()
+	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

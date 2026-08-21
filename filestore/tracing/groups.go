@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	saveGroupFile      = "save_group_file"
-	updateGroupFile    = "update_group_file"
-	retrieveGroupFile  = "retrieve_group_file"
-	retrieveGroupFiles = "retrieve_group_files"
-	removeGroupFile    = "remove_group_file"
-	removeGroupFiles   = "remove_group_files"
+	saveGroupFile           = "save_group_file"
+	updateGroupFile         = "update_group_file"
+	updateGroupFileChecksum = "update_group_file_checksum"
+	retrieveGroupFile       = "retrieve_group_file"
+	retrieveGroupFiles      = "retrieve_group_files"
+	removeGroupFile         = "remove_group_file"
+	removeGroupFiles        = "remove_group_files"
 )
 
 var (
@@ -49,6 +50,14 @@ func (grm groupsRepositoryMiddleware) Update(ctx context.Context, groupID string
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.Update(ctx, groupID, fi)
+}
+
+func (grm groupsRepositoryMiddleware) UpdateChecksum(ctx context.Context, groupID string, fi filestore.FileInfo) error {
+	span := dbutil.CreateSpan(ctx, grm.tracer, updateGroupFileChecksum)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.UpdateChecksum(ctx, groupID, fi)
 }
 
 func (grm groupsRepositoryMiddleware) Retrieve(ctx context.Context, groupID string, fi filestore.FileInfo) (filestore.FileInfo, error) {
