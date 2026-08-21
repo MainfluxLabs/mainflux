@@ -70,6 +70,11 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
+	var cancelFn func() error
+	if c, ok := handler.(messaging.Canceler); ok {
+		cancelFn = c.Cancel
+	}
+
 	s, ok := ps.subscriptions[id]
 	// If the client exists, check if it's subscribed to the topic and unsubscribe if needed.
 	switch ok {
@@ -87,7 +92,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		s = subscription{
 			client: client,
 			topics: []string{},
-			cancel: handler.Cancel,
+			cancel: cancelFn,
 		}
 	}
 	s.topics = append(s.topics, topic)

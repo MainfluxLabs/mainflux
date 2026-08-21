@@ -39,8 +39,12 @@ var (
 type MessageHandler interface {
 	// Handle handles messages passed by underlying implementation.
 	Handle(subject string, msg protomfx.Message) error
+}
 
-	// Cancel is used for cleanup during unsubscribing and it's optional.
+// Canceler is an optional capability a MessageHandler may implement for
+// cleanup when its subscription ends. Subscriber implementations detect it
+// via a type assertion.
+type Canceler interface {
 	Cancel() error
 }
 

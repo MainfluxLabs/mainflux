@@ -59,5 +59,3 @@ type messageHandlerFunc func(subject string, msg protomfx.Message) error
 func (f messageHandlerFunc) Handle(subject string, msg protomfx.Message) error {
 	return f(subject, msg)
 }
-
-func (messageHandlerFunc) Cancel() error { return nil }

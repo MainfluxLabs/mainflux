@@ -84,6 +84,10 @@ func NewPubSub(url, queue string, logger log.Logger) (*pubsub, error) {
 }
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
+	var cancelFn func() error
+	if c, ok := handler.(messaging.Canceler); ok {
+		cancelFn = c.Cancel
+	}
 	newFn := func() proto.Message { return &protomfx.Message{} }
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Message)
@@ -92,7 +96,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		}
 		return handler.Handle(subject, *v)
 	}
-	return ps.subscribeWithCancel(id, topic, newFn, handleFn, handler.Cancel)
+	return ps.subscribeWithCancel(id, topic, newFn, handleFn, cancelFn)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
