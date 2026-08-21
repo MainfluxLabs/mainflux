@@ -39,6 +39,7 @@ const (
 	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
+	noTotalKey             = "no_total"
 	publisherKey           = "publisher"
 	publisherIDKey         = "publisherID"
 	timeFormatKey          = "time_format"
@@ -557,6 +558,11 @@ func buildMessagesPageMetadata(r *http.Request) (readers.MessagesPageMetadata, e
 		return readers.MessagesPageMetadata{}, err
 	}
 
+	nt, err := apiutil.ReadBoolQuery(r, noTotalKey, false)
+	if err != nil {
+		return readers.MessagesPageMetadata{}, err
+	}
+
 	return readers.MessagesPageMetadata{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
@@ -567,6 +573,7 @@ func buildMessagesPageMetadata(r *http.Request) (readers.MessagesPageMetadata, e
 		AggType:     at,
 		AggFields:   af,
 		Dir:         d,
+		NoTotal:     nt,
 	}, nil
 }
 

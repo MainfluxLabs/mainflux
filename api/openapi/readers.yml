@@ -29,6 +29,7 @@ paths:
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
         - $ref: "#/components/parameters/AggField"
+        - $ref: "#/components/parameters/NoTotal"
       responses:
         '200':
           $ref: "#/components/responses/JSONMessagesPageRes"
@@ -183,6 +184,7 @@ paths:
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
         - $ref: "#/components/parameters/AggField"
+        - $ref: "#/components/parameters/NoTotal"
       responses:
         '200':
           $ref: "#/components/responses/SenMLMessagesPageRes"
@@ -325,6 +327,7 @@ paths:
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
         - $ref: "#/components/parameters/AggField"
+        - $ref: "#/components/parameters/NoTotal"
       responses:
         '200':
           description: Export file created successfully.
@@ -365,6 +368,7 @@ paths:
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
         - $ref: "#/components/parameters/AggField"
+        - $ref: "#/components/parameters/NoTotal"
       responses:
         '200':
           description: Export file created successfully.
@@ -545,7 +549,7 @@ components:
       properties:
         total:
           type: number
-          description: Total number of items that are present on the system.
+          description: Total number of items that are present on the system. Omitted if the `no_total` parameter was set.
         offset:
           type: number
           description: Number of items that were skipped during retrieval.
@@ -564,7 +568,7 @@ components:
       properties:
         total:
           type: number
-          description: Total number of items that are present on the system.
+          description: Total number of items that are present on the system. Omitted if the `no_total` parameter was set.
         offset:
           type: number
           description: Number of items that were skipped during retrieval.
@@ -622,6 +626,12 @@ components:
           type: string
           enum: [asc, desc]
           default: desc
+        no_total:
+          type: boolean
+          default: false
+          description: |
+            Skip computing the total count of matching messages. The result
+            item's `total` field will be omitted.
 
     SenMLSearchRequest:
       type: object
@@ -678,13 +688,19 @@ components:
           type: string
           enum: [asc, desc]
           default: desc
+        no_total:
+          type: boolean
+          default: false
+          description: |
+            Skip computing the total count of matching messages. The result
+            item's `total` field will be omitted.
 
     JSONSearchResultItem:
       type: object
       properties:
         total:
           type: integer
-          description: Total number of messages matching the query.
+          description: Total number of messages matching the query. Omitted if `no_total` was set on the request.
         messages:
           type: array
           items:
@@ -698,7 +714,7 @@ components:
       properties:
         total:
           type: integer
-          description: Total number of messages matching the query.
+          description: Total number of messages matching the query. Omitted if `no_total` was set on the request.
         messages:
           type: array
           items:
@@ -844,6 +860,16 @@ components:
       in: query
       schema:
         type: string
+      required: false
+    NoTotal:
+      name: no_total
+      description: |
+        Skip computing the total count of matching messages. The response's
+        `total` field will be omitted.
+      in: query
+      schema:
+        type: boolean
+        default: false
       required: false
 
   responses:

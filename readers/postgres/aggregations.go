@@ -52,6 +52,7 @@ type aggInput struct {
 	params     map[string]any
 	qp         queryParams
 	conditions []string
+	noTotal    bool
 }
 
 func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
@@ -76,6 +77,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 			dir:         rpm.Dir,
 		},
 		conditions: mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder),
+		noTotal:    rpm.NoTotal,
 	}
 
 	return as.readAggregatedMessages(ctx, input)
@@ -108,6 +110,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 			dir:         rpm.Dir,
 		},
 		conditions: mfreaders.SenMLConditions(rpm),
+		noTotal:    rpm.NoTotal,
 	}
 
 	return as.readAggregatedMessages(ctx, input)
@@ -141,6 +144,10 @@ func (as *aggregationService) readAggregatedMessages(ctx context.Context, input 
 	messages, err := as.scanAggregatedMessages(rows, qp.table)
 	if err != nil {
 		return []readers.Message{}, 0, err
+	}
+
+	if input.noTotal {
+		return messages, 0, nil
 	}
 
 	cq := buildAggCountQuery(qp)
