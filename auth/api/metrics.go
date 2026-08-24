@@ -32,8 +32,8 @@ func MetricsMiddleware(svc auth.Service, counter metrics.Counter, latency metric
 
 func (ms *metricsMiddleware) Issue(ctx context.Context, token string, key auth.Key) (auth.Key, string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "issue_key").Add(1)
-		ms.latency.With("method", "issue_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "issue").Add(1)
+		ms.latency.With("method", "issue").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.Issue(ctx, token, key)
@@ -41,8 +41,8 @@ func (ms *metricsMiddleware) Issue(ctx context.Context, token string, key auth.K
 
 func (ms *metricsMiddleware) Refresh(ctx context.Context, token string) (string, error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "refresh_key").Add(1)
-		ms.latency.With("method", "refresh_key").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "refresh").Add(1)
+		ms.latency.With("method", "refresh").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return ms.svc.Refresh(ctx, token)
