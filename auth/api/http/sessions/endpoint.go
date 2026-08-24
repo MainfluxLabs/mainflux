@@ -5,8 +5,10 @@ package sessions
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -21,7 +23,7 @@ func logoutEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return logoutRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
 
@@ -36,6 +38,6 @@ func logoutAllEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return logoutRes{}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
 }
