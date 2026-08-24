@@ -62,7 +62,7 @@ func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 		Created:     created,
 		Subtopic:    cmd.Subtopic,
 		Publisher:   cmd.Publisher,
-		RecipientID: cmd.RecipientID,
+		RecipientID: cmd.RecipientId,
 		Protocol:    cmd.Protocol,
 		Payload:     payload,
 	}

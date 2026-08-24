@@ -101,7 +101,7 @@ func (svc *adapterService) SendCommandToThing(ctx context.Context, token, thingI
 		return err
 	}
 
-	cmd.RecipientID = thingID
+	cmd.RecipientId = thingID
 	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 
@@ -116,7 +116,7 @@ func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key doma
 	}
 
 	cmd.Publisher = senderThingID
-	cmd.RecipientID = thingID
+	cmd.RecipientId = thingID
 	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 
