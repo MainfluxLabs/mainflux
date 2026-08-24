@@ -86,6 +86,10 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, err
 	}
 
+	if rpm.NoTotal {
+		return messages, 0, nil
+	}
+
 	total, err := as.countAgg(ctx, subquery, params)
 	if err != nil {
 		return []readers.Message{}, 0, err
@@ -136,6 +140,10 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	messages, err := as.executeAggQuery(ctx, query, params, mfreaders.SenMLTable)
 	if err != nil {
 		return []readers.Message{}, 0, err
+	}
+
+	if rpm.NoTotal {
+		return messages, 0, nil
 	}
 
 	total, err := as.countAgg(ctx, subquery, params)

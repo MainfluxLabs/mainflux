@@ -129,9 +129,10 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 			return page, err
 		}
 		page.Messages = messages
-		if !rpm.NoTotal {
-			page.Total = total
+		if rpm.NoTotal {
+			return page, nil
 		}
+		page.Total = total
 
 		return page, nil
 	}
