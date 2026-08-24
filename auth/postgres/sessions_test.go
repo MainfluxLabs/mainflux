@@ -30,10 +30,10 @@ func newSession(t *testing.T) auth.Session {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	return auth.Session{
-		JTI:            jti,
-		UserID:         userID,
-		FamilyID:       familyID,
-		SessionStartAt: time.Now().UTC().Round(time.Millisecond),
+		JTI:      jti,
+		UserID:   userID,
+		FamilyID: familyID,
+		StartAt:  time.Now().UTC().Round(time.Millisecond),
 	}
 }
 
@@ -85,7 +85,7 @@ func TestSessionRotate(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("expected the successor to be written by the same rotation: %s", err))
 	assert.Equal(t, session.FamilyID, next.FamilyID, "expected the successor to stay in the family")
 	assert.Equal(t, session.UserID, next.UserID, "expected the successor to belong to the same user")
-	assert.True(t, session.SessionStartAt.Equal(next.SessionStartAt), "expected the session start to carry over")
+	assert.True(t, session.StartAt.Equal(next.StartAt), "expected the session start to carry over")
 	assert.False(t, next.Revoked(), "expected the successor to be live")
 
 	lost, ok, err := repo.Rotate(context.Background(), session.JTI, rotate(t, session).JTI, revokedAt.Add(time.Hour))
@@ -182,7 +182,7 @@ func TestSessionRemoveExpired(t *testing.T) {
 	repo := newSessionRepo()
 
 	old := newSession(t)
-	old.SessionStartAt = time.Now().UTC().Add(-30 * 24 * time.Hour)
+	old.StartAt = time.Now().UTC().Add(-30 * 24 * time.Hour)
 	recent := newSession(t)
 
 	for _, s := range []auth.Session{old, recent} {

@@ -136,11 +136,11 @@ func (k Key) Expired() bool {
 // kills that one token, not the session: normal rotation revokes the old JTI
 // at the same moment it mints a successor in the same family.
 type Session struct {
-	JTI            string
-	UserID         string
-	FamilyID       string
-	SessionStartAt time.Time
-	RevokedAt      time.Time
+	JTI       string
+	UserID    string
+	FamilyID  string
+	StartAt   time.Time
+	RevokedAt time.Time
 }
 
 func (s Session) Revoked() bool {
