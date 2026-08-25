@@ -69,19 +69,29 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	dir := dbutil.GetDirQuery(rpm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
-	query := fmt.Sprintf(`SELECT %s, COUNT(*) OVER() AS total_count FROM (
-          SELECT %s AS bucket, %s,
+	subquery := fmt.Sprintf(`SELECT %s AS bucket, %s,
                   MAX(%s) AS max_time,
                   MAX(CAST(subtopic AS text)) AS subtopic,
                   MAX(CAST(publisher AS text)) AS publisher,
                   MAX(CAST(protocol AS text)) AS protocol
           FROM %s %s
           GROUP BY bucket
-          HAVING %s
-          ORDER BY bucket %s) agg %s;`,
-		selectFields, bucket, aggExpr, mfreaders.JSONOrder, mfreaders.JSONTable, condition, having, dir, olq)
+          HAVING %s`,
+		bucket, aggExpr, mfreaders.JSONOrder, mfreaders.JSONTable, condition, having)
 
-	return as.executeAggQuery(ctx, query, params, mfreaders.JSONTable)
+	query := fmt.Sprintf(`SELECT %s FROM (%s ORDER BY bucket %s) agg %s;`, selectFields, subquery, dir, olq)
+
+	messages, err := as.executeAggQuery(ctx, query, params, mfreaders.JSONTable)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	total, err := as.countAgg(ctx, subquery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	return messages, total, nil
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
@@ -109,80 +119,82 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	dir := dbutil.GetDirQuery(rpm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
-	query := fmt.Sprintf(`SELECT
+	subquery := fmt.Sprintf(`SELECT
           MAX(time) AS time, MAX(CAST(subtopic AS text)) AS subtopic,
           MAX(CAST(publisher AS text)) AS publisher, MAX(CAST(protocol AS text)) AS protocol,
           '' AS name, '' AS unit,
           %s(value) AS value,
           CAST(NULL AS text) AS string_value, CAST(NULL AS bool) AS bool_value, CAST(NULL AS text) AS data_value,
-          CAST(NULL AS float) AS sum, MAX(update_time) AS update_time,
-          COUNT(*) OVER() AS total_count
+          CAST(NULL AS float) AS sum, MAX(update_time) AS update_time
           FROM %s %s
           GROUP BY %s
-          HAVING MAX(value) IS NOT NULL
-          ORDER BY %s %s %s;`,
-		aggFunc, mfreaders.SenMLTable, condition, bucket, bucket, dir, olq)
+          HAVING MAX(value) IS NOT NULL`,
+		aggFunc, mfreaders.SenMLTable, condition, bucket)
 
-	return as.executeAggQuery(ctx, query, params, mfreaders.SenMLTable)
+	query := fmt.Sprintf(`%s ORDER BY %s %s %s;`, subquery, bucket, dir, olq)
+
+	messages, err := as.executeAggQuery(ctx, query, params, mfreaders.SenMLTable)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	total, err := as.countAgg(ctx, subquery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	return messages, total, nil
 }
 
-func (as *aggregationService) executeAggQuery(ctx context.Context, query string, params map[string]any, table string) ([]readers.Message, uint64, error) {
+func (as *aggregationService) countAgg(ctx context.Context, subquery string, params map[string]any) (uint64, error) {
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM (%s) agg;`, subquery)
+	return dbutil.Total(ctx, as.db, cq, params)
+}
+
+func (as *aggregationService) executeAggQuery(ctx context.Context, query string, params map[string]any, table string) ([]readers.Message, error) {
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return []readers.Message{}, 0, nil
+			return []readers.Message{}, nil
 		}
-		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+		return []readers.Message{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
 	if rows == nil {
-		return []readers.Message{}, 0, nil
+		return []readers.Message{}, nil
 	}
 	defer rows.Close()
 
 	return scanAggregatedMessages(rows, table)
 }
 
-type aggJSONRow struct {
-	json.Message
-	Total uint64 `db:"total_count"`
-}
-
-type aggSenMLRow struct {
-	senml.Message
-	Total uint64 `db:"total_count"`
-}
-
-func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, uint64, error) {
+func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, error) {
 	messages := []readers.Message{}
-	total := uint64(0)
 
 	switch table {
 	case mfreaders.SenMLTable:
 		for rows.Next() {
-			row := aggSenMLRow{}
-			if err := rows.StructScan(&row); err != nil {
-				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
+			msg := senml.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			total = row.Total
-			messages = append(messages, row.Message)
+			messages = append(messages, msg)
 		}
 	default:
 		for rows.Next() {
-			row := aggJSONRow{}
-			if err := rows.StructScan(&row); err != nil {
-				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
+			msg := json.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			total = row.Total
-			m, err := row.Message.ToMap()
+			m, err := msg.ToMap()
 			if err != nil {
-				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
 			messages = append(messages, m)
 		}
 	}
 
-	return messages, total, nil
+	return messages, nil
 }
 
 func timeBucketExpr(intervalVal uint64, intervalUnit, timeColumn string) string {
