@@ -357,17 +357,7 @@ paths:
       summary: Access token rotation
       description: |
         Exchanges a still-valid access token for a replacement in the same
-        session, with a fresh expiry. The presented token is revoked at the
-        same moment, so it stops working everywhere immediately and the caller
-        must switch to the returned one.
-
-        Presenting a token that was already rotated means two parties hold it.
-        That is treated as theft: the whole session is revoked and the user has
-        to log in again. Each login is its own session, so this never affects
-        the user's other browsers or devices.
-
-        A session cannot be extended past MF_AUTH_MAX_SESSION_DURATION from the
-        original login, regardless of how recently it was rotated.
+        session, with a fresh expiry, and revokes the presented one. 
       tags:
         - users
       security:
