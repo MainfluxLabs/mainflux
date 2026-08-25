@@ -129,12 +129,6 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 			return page, err
 		}
 		page.Messages = messages
-		if rpm.NoTotal {
-			// readAggregatedSenMLMessages already computes the total as part of the
-			// same round trip, over the already-bucketed rows.
-			// NoTotal just means we don't return that value via page.Total.
-			return page, nil
-		}
 		page.Total = total
 
 		return page, nil

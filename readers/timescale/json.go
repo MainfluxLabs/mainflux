@@ -128,12 +128,6 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 			return page, err
 		}
 		page.Messages = messages
-		if rpm.NoTotal {
-			// readAggregatedJSONMessages already computes the total as part of the
-			// same round trip, over the already-bucketed `agg` subquery rows.
-			// NoTotal just means we don't return that value via page.Total.
-			return page, nil
-		}
 		page.Total = total
 
 		return page, nil
