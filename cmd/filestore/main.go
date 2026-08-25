@@ -68,12 +68,11 @@ const (
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
 
-	defBackend         = "local"
-	defSeaweedURL      = "http://localhost:8888"
-	defSeaweedPrefix   = "filestore"
-	defSeaweedTimeout  = "30s"
-	defMaxUploadMB     = "1024"
-	maxAllowedUploadMB = 1 << 20
+	defBackend        = "local"
+	defSeaweedURL     = "http://localhost:8888"
+	defSeaweedPrefix  = "filestore"
+	defSeaweedTimeout = "30s"
+	defMaxUploadMB    = "1024"
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -193,8 +192,8 @@ func loadConfig() config {
 	}
 
 	maxUploadMB, err := strconv.ParseInt(mainflux.Env(envMaxUploadMB, defMaxUploadMB), 10, 64)
-	if err != nil || maxUploadMB <= 0 || maxUploadMB > maxAllowedUploadMB {
-		log.Fatalf("Invalid %s value: %q (must be 1..%d)", envMaxUploadMB, mainflux.Env(envMaxUploadMB, defMaxUploadMB), maxAllowedUploadMB)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envMaxUploadMB, err.Error())
 	}
 
 	dbConfig := postgres.Config{
