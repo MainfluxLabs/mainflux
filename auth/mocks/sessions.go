@@ -64,10 +64,10 @@ func (srm *sessionRepositoryMock) Rotate(ctx context.Context, jti, nextJTI strin
 	session.RevokedAt = at
 	srm.sessions[jti] = session
 	srm.sessions[nextJTI] = auth.Session{
-		JTI:      nextJTI,
-		UserID:   session.UserID,
-		FamilyID: session.FamilyID,
-		StartAt:  session.StartAt,
+		JTI:       nextJTI,
+		UserID:    session.UserID,
+		FamilyID:  session.FamilyID,
+		StartedAt: session.StartedAt,
 	}
 
 	return session, true, nil
@@ -101,7 +101,7 @@ func (srm *sessionRepositoryMock) RemoveExpired(ctx context.Context, before time
 	defer srm.mu.Unlock()
 
 	for jti, session := range srm.sessions {
-		if session.StartAt.Before(before) {
+		if session.StartedAt.Before(before) {
 			delete(srm.sessions, jti)
 		}
 	}

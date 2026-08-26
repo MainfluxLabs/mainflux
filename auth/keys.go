@@ -113,7 +113,7 @@ func (svc service) loginKey(ctx context.Context, key Key) (Key, string, error) {
 }
 
 // issueSessionKey mints a token and records it as the live member of its family.
-func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string, startAt time.Time) (Key, string, error) {
+func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string, startedAt time.Time) (Key, string, error) {
 	jti, err := svc.idProvider.ID()
 	if err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
@@ -121,10 +121,10 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 	key.ID = jti
 
 	session := Session{
-		JTI:      jti,
-		UserID:   key.IssuerID,
-		FamilyID: familyID,
-		StartAt:  startAt,
+		JTI:       jti,
+		UserID:    key.IssuerID,
+		FamilyID:  familyID,
+		StartedAt: startedAt,
 	}
 	if err := svc.sessions.Save(ctx, session); err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
@@ -181,7 +181,7 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		return "", errors.Wrap(errRefresh, ErrSessionReuse)
 	}
 
-	if getTimestamp().After(session.StartAt.Add(svc.maxSessionAge)) {
+	if getTimestamp().After(session.StartedAt.Add(svc.maxSessionAge)) {
 		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
 			return "", errors.Wrap(errRefresh, err)
 		}

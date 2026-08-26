@@ -162,7 +162,7 @@ func migrateDB(db *sqlx.DB) error {
 						jti        UUID NOT NULL,
 						user_id    UUID NOT NULL,
 						family_id  UUID NOT NULL,
-						start_at   TIMESTAMPTZ NOT NULL,
+						started_at TIMESTAMPTZ NOT NULL,
 						revoked_at TIMESTAMPTZ,
 						PRIMARY KEY (jti)
 					)`,

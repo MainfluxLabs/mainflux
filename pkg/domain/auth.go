@@ -139,7 +139,7 @@ type Session struct {
 	JTI       string
 	UserID    string
 	FamilyID  string
-	StartAt   time.Time
+	StartedAt time.Time
 	RevokedAt time.Time
 }
 
