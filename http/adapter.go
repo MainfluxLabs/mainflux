@@ -67,7 +67,7 @@ func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID
 		return err
 	}
 
-	cmd.RecipientID = thingID
+	cmd.RecipientId = thingID
 	if err := as.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd); err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domai
 	}
 
 	cmd.Publisher = publisherID
-	cmd.RecipientID = thingID
+	cmd.RecipientId = thingID
 	return as.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 

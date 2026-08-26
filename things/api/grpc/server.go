@@ -301,16 +301,16 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingCommandReq)
 	return thingCommandReq{
-		publisherID: req.GetPublisherID(),
-		recipientID: req.GetRecipientID(),
+		publisherID: req.GetPublisherId(),
+		recipientID: req.GetRecipientId(),
 	}, nil
 }
 
 func decodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingGroupCommandReq)
 	return thingGroupCommandReq{
-		publisherID: req.GetPublisherID(),
-		groupID:     req.GetGroupID(),
+		publisherID: req.GetPublisherId(),
+		groupID:     req.GetGroupId(),
 	}, nil
 }
 
@@ -349,8 +349,8 @@ func decodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 	for _, membership := range memberships {
 		ret.memberships = append(ret.memberships, groupMembership{
-			userID:  membership.GetUserID(),
-			groupID: membership.GetGroupID(),
+			userID:  membership.GetUserId(),
+			groupID: membership.GetGroupId(),
 			role:    membership.GetRole(),
 		})
 	}
@@ -360,7 +360,7 @@ func decodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 func decodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.GetGroupReq)
-	return getGroupReq{groupID: req.GetGroupID()}, nil
+	return getGroupReq{groupID: req.GetGroupId()}, nil
 }
 
 func encodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
@@ -372,7 +372,7 @@ func encodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 	res := grpcRes.(pubConfigByKeyRes)
 
 	return &protomfx.PubConfigByKeyRes{
-		PublisherID:   res.PubConfigInfo.PublisherID,
+		PublisherId:   res.PubConfigInfo.PublisherID,
 		ProfileConfig: protoutil.DomainConfigToProto(res.ProfileConfig),
 	}, nil
 }
@@ -415,7 +415,7 @@ func encodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 
 	return &protomfx.Group{
 		Id:    res.id,
-		OrgID: res.orgID,
+		OrgId: res.orgID,
 		Name:  res.name,
 	}, nil
 }

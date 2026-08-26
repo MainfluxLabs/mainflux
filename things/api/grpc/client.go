@@ -394,12 +394,12 @@ func encodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 
 func encodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingCommandReq)
-	return &protomfx.ThingCommandReq{PublisherID: req.publisherID, RecipientID: req.recipientID}, nil
+	return &protomfx.ThingCommandReq{PublisherId: req.publisherID, RecipientId: req.recipientID}, nil
 }
 
 func encodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingGroupCommandReq)
-	return &protomfx.ThingGroupCommandReq{PublisherID: req.publisherID, GroupID: req.groupID}, nil
+	return &protomfx.ThingGroupCommandReq{PublisherId: req.publisherID, GroupId: req.groupID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -441,8 +441,8 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 	for _, memb := range req.memberships {
 		protoReq.Memberships = append(protoReq.Memberships, &protomfx.GroupMembership{
-			UserID:  memb.userID,
-			GroupID: memb.groupID,
+			UserId:  memb.userID,
+			GroupId: memb.groupID,
 			Role:    memb.role,
 		})
 	}
@@ -452,7 +452,7 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 func encodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(getGroupReq)
-	return &protomfx.GetGroupReq{GroupID: req.groupID}, nil
+	return &protomfx.GetGroupReq{GroupId: req.groupID}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
@@ -465,7 +465,7 @@ func decodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 
 	return pubConfigByKeyRes{
 		PubConfigInfo: domain.PubConfigInfo{
-			PublisherID:   res.GetPublisherID(),
+			PublisherID:   res.GetPublisherId(),
 			ProfileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
 		},
 	}, nil
@@ -502,7 +502,7 @@ func decodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.Group)
 	return groupRes{
 		id:    res.GetId(),
-		orgID: res.GetOrgID(),
+		orgID: res.GetOrgId(),
 		name:  res.GetName(),
 	}, nil
 }

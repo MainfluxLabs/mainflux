@@ -94,7 +94,7 @@ func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.Th
 	}
 
 	cmd.Publisher = res
-	cmd.RecipientID = thingID
+	cmd.RecipientId = thingID
 	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 

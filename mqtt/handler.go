@@ -261,7 +261,7 @@ func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
 		Publisher:   msg.Publisher,
 		Subtopic:    msg.Subtopic,
 		Payload:     msg.Payload,
-		RecipientID: extractRecipient(subject),
+		RecipientId: extractRecipient(subject),
 		Protocol:    msg.Protocol,
 		Created:     msg.Created,
 	}
