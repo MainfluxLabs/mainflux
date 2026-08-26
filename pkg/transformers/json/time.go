@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 )
 
 var errUnsupportedFormat = errors.New("unsupported time format")
@@ -23,7 +24,7 @@ func ParseTimestamp(tr domain.Transformer, v any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return t.UnixNano(), nil
+	return transformers.TimeToNanos(t)
 }
 
 func parseTimestamp(format string, timestamp any, location string) (time.Time, error) {
@@ -48,9 +49,9 @@ func parseUnix(format string, timestamp any) (time.Time, error) {
 	case "unix":
 		return time.Unix(integer, fractional).UTC(), nil
 	case "unix_ms":
-		return time.Unix(0, integer*1e6).UTC(), nil
+		return time.UnixMilli(integer).UTC(), nil
 	case "unix_us":
-		return time.Unix(0, integer*1e3).UTC(), nil
+		return time.UnixMicro(integer).UTC(), nil
 	case "unix_ns":
 		return time.Unix(0, integer).UTC(), nil
 	default:
@@ -93,14 +94,20 @@ func parseComponents(timestamp any) (int64, int64, error) {
 	case uint64:
 		return int64(ts), 0, nil
 	case float32:
-		integer, fractional := math.Modf(float64(ts))
-		return int64(integer), int64(fractional * 1e9), nil
+		return parseFloatComponents(float64(ts))
 	case float64:
-		integer, fractional := math.Modf(ts)
-		return int64(integer), int64(fractional * 1e9), nil
+		return parseFloatComponents(ts)
 	default:
 		return 0, 0, errUnsupportedFormat
 	}
+}
+
+func parseFloatComponents(ts float64) (int64, int64, error) {
+	integer, fractional := math.Modf(ts)
+	if _, err := transformers.SecondsToNanos(integer); err != nil {
+		return 0, 0, err
+	}
+	return int64(integer), int64(fractional * 1e9), nil
 }
 
 func parseUnixTimeComponents(first, second string) (int64, int64, error) {
