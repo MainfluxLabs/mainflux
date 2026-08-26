@@ -17,7 +17,7 @@ var (
 
 type listJSONMessagesRes struct {
 	readers.JSONPageMetadata
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 }
 
@@ -35,7 +35,7 @@ func (res listJSONMessagesRes) Empty() bool {
 
 type listSenMLMessagesRes struct {
 	readers.SenMLPageMetadata
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 }
 
@@ -70,7 +70,7 @@ func (res exportFileRes) Empty() bool {
 type searchJSONMessagesRes []searchJSONResultItem
 
 type searchJSONResultItem struct {
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 	Error    string            `json:"error,omitempty"`
 }
@@ -96,7 +96,7 @@ func (res searchJSONMessagesRes) Empty() bool {
 type searchSenMLMessagesRes []searchSenMLResultItem
 
 type searchSenMLResultItem struct {
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 	Error    string            `json:"error,omitempty"`
 }

@@ -62,6 +62,10 @@ func (jr *jsonRepository) readAll(ctx context.Context, rpm readers.JSONPageMetad
 	}
 	page.Messages = messages
 
+	if rpm.NoTotal {
+		return page, nil
+	}
+
 	condition := jr.fmtCondition(rpm)
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM json %s;`, condition)
 	total, err := dbutil.Total(ctx, jr.db, query, params)
