@@ -44,8 +44,7 @@ const (
 	responseDecline = "decline"
 	invalidResponse = "wrong"
 
-	loginDuration = 30 * time.Minute
-
+	loginDuration  = 30 * time.Minute
 	maxSessionAge  = 168 * time.Hour
 	inviteDuration = 7 * 24 * time.Hour
 )

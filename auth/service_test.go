@@ -46,8 +46,7 @@ const (
 	invalid           = "invalid"
 	n                 = 10
 
-	loginDuration = 30 * time.Minute
-
+	loginDuration  = 30 * time.Minute
 	maxSessionAge  = 168 * time.Hour
 	inviteDuration = 7 * 24 * time.Hour
 )
@@ -114,7 +113,7 @@ func TestRefreshSessionMaxAge(t *testing.T) {
 	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))
 
 	_, err = svc.Identify(context.Background(), secret)
-	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the capped session to be revoked, got %s", err))
+	assert.Nil(t, err, fmt.Sprintf("the capped token expected to stay usable until it expires: %s", err))
 }
 
 func createGroups() map[string]things.Group {
@@ -289,7 +288,7 @@ func TestRefreshRotatesToken(t *testing.T) {
 	assert.Equal(t, email, identity.Email, fmt.Sprintf("expected email %s got %s", email, identity.Email))
 
 	_, err = svc.Identify(context.Background(), secret)
-	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the rotated-away token to be rejected, got %s", err))
+	assert.Nil(t, err, fmt.Sprintf("the rotated-away token expected to stay usable until it expires: %s", err))
 }
 
 func TestRefreshReuseKillsSession(t *testing.T) {
@@ -305,7 +304,7 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
 	_, err = svc.Identify(context.Background(), rotated)
-	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the live token to be killed with its family, got %s", err))
+	assert.Nil(t, err, fmt.Sprintf("the killed family's token expected to stay usable until it expires: %s", err))
 
 	_, err = svc.Refresh(context.Background(), rotated)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
@@ -325,7 +324,7 @@ func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
 	_, err = svc.Refresh(context.Background(), first)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
-	_, err = svc.Identify(context.Background(), second)
+	_, err = svc.Refresh(context.Background(), second)
 	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive: %s", err))
 }
 
@@ -376,9 +375,12 @@ func TestLogout(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Logout expected to succeed: %s", err))
 
 	_, err = svc.Identify(context.Background(), first)
-	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected the logged out token to be rejected, got %s", err))
+	assert.Nil(t, err, fmt.Sprintf("the logged out token expected to stay usable until it expires: %s", err))
 
-	_, err = svc.Identify(context.Background(), second)
+	_, err = svc.Refresh(context.Background(), first)
+	assert.NotNil(t, err, "expected the logged out session to be unextendable")
+
+	_, err = svc.Refresh(context.Background(), second)
 	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive logout: %s", err))
 }
 
@@ -395,8 +397,48 @@ func TestLogoutAll(t *testing.T) {
 
 	for _, token := range []string{first, second} {
 		_, err = svc.Identify(context.Background(), token)
-		assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("expected every session to be ended, got %s", err))
+		assert.Nil(t, err, fmt.Sprintf("a logged out token expected to stay usable until it expires: %s", err))
+
+		_, err = svc.Refresh(context.Background(), token)
+		assert.NotNil(t, err, "expected every session to be unextendable")
 	}
+}
+
+// RevokeUserSessions is the path another service takes after a credential
+// change, so unlike LogoutAll it must work from a user ID alone, with no token
+// of that user's in hand.
+func TestRevokeUserSessions(t *testing.T) {
+	svc := newService()
+
+	_, first, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.RevokeUserSessions(context.Background(), id)
+	assert.Nil(t, err, fmt.Sprintf("RevokeUserSessions expected to succeed: %s", err))
+
+	for _, token := range []string{first, second} {
+		_, err = svc.Refresh(context.Background(), token)
+		assert.NotNil(t, err, "expected every session of the user to be unextendable")
+	}
+
+	err = svc.RevokeUserSessions(context.Background(), "")
+	assert.True(t, errors.Contains(err, apiutil.ErrMissingUserID), fmt.Sprintf("expected an empty user id to be rejected, got %s", err))
+}
+
+// Revoking one user must not touch another's sessions.
+func TestRevokeUserSessionsIsScopedToUser(t *testing.T) {
+	svc := newService()
+
+	_, other, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "other-user", Subject: "other@example.com"})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.RevokeUserSessions(context.Background(), id)
+	require.Nil(t, err, fmt.Sprintf("RevokeUserSessions expected to succeed: %s", err))
+
+	_, err = svc.Refresh(context.Background(), other)
+	assert.Nil(t, err, fmt.Sprintf("another user's session expected to survive: %s", err))
 }
 
 // A revoked token keeps a valid signature until it expires, so without a
@@ -420,7 +462,7 @@ func TestLogoutRejectsRevokedToken(t *testing.T) {
 
 	assert.True(t, errors.Contains(svc.LogoutAll(context.Background(), secret), errors.ErrAuthentication), "expected a revoked token to stay rejected")
 
-	_, err = svc.Identify(context.Background(), next)
+	_, err = svc.Refresh(context.Background(), next)
 	assert.Nil(t, err, fmt.Sprintf("the new session expected to survive, got %s", err))
 }
 
