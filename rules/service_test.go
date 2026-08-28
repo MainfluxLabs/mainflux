@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -37,7 +36,7 @@ func newService() rules.Service {
 	return newServiceWithPub(mocks.NewPublisher())
 }
 
-func newServiceWithPub(pub nats.Publisher) rules.Service {
+func newServiceWithPub(pub rules.Publisher) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{

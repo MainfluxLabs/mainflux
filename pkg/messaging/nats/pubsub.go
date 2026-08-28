@@ -4,17 +4,21 @@
 package nats
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	broker "github.com/nats-io/nats.go"
 )
+
+// ErrInvalidType indicates a subscription received a message whose type
+// doesn't match what it expected to unmarshal.
+var ErrInvalidType = errors.New("invalid message type")
 
 const (
 	// SubjectThings represents the wildcard subject covering all thing subjects.
@@ -45,24 +49,6 @@ const (
 	SubjectRules = "rules"
 )
 
-// PubSub extends messaging.PubSub with alarm/command/notification/webhook publishing and subscribing.
-type PubSub interface {
-	messaging.PubSub
-	messaging.AlarmPublisher
-	messaging.AlarmSubscriber
-	messaging.CommandPublisher
-	messaging.CommandSubscriber
-	messaging.NotificationPublisher
-	messaging.NotificationSubscriber
-	messaging.WebhookPublisher
-	messaging.WebhookSubscriber
-
-	// PublishByFlags publishes msg to every subject enabled by the dispatcher flags in pc.
-	PublishByFlags(msg protomfx.Message, pc *domain.ProfileConfig) error
-}
-
-var _ PubSub = (*pubsub)(nil)
-
 type subscription struct {
 	*broker.Subscription
 	cancel func() error
@@ -83,7 +69,7 @@ type pubsub struct {
 // from ordinary subscribe. For more information, please take a look
 // here: https://docs.nats.io/developing-with-nats/receiving/queues.
 // If the queue is empty, Subscribe will be used.
-func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
+func NewPubSub(url, queue string, logger log.Logger) (*pubsub, error) {
 	conn, js, err := connect(url)
 	if err != nil {
 		return nil, err
@@ -103,24 +89,19 @@ func NewPubSub(url, queue string, logger log.Logger) (PubSub, error) {
 }
 
 func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
+	var cancelFn func() error
+	if c, ok := handler.(messaging.Canceler); ok {
+		cancelFn = c.Cancel
 	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	if s, ok := ps.subscriptions[topic]; ok {
-		if _, ok := s[id]; ok {
-			if err := ps.unsubscribe(id, topic); err != nil {
-				return err
-			}
+	newFn := func() proto.Message { return &protomfx.Message{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Message)
+		if !ok {
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
+		return handler.Handle(subject, *v)
 	}
-	return ps.subscribe(id, topic, ps.natsHandler(handler), handler.Cancel)
+	return ps.subscribeWithCancel(id, topic, newFn, handleFn, cancelFn)
 }
 
 func (ps *pubsub) Unsubscribe(id, topic string) error {
@@ -135,6 +116,54 @@ func (ps *pubsub) Unsubscribe(id, topic string) error {
 	defer ps.mu.Unlock()
 
 	return ps.unsubscribe(id, topic)
+}
+
+func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
+	newFn := func() proto.Message { return &protomfx.Alarm{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Alarm)
+		if !ok {
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribe(id, SubjectAlarms, newFn, handleFn)
+}
+
+func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
+	newFn := func() proto.Message { return &protomfx.Command{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Command)
+		if !ok {
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribe(id, topic, newFn, handleFn)
+}
+
+func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
+	newFn := func() proto.Message { return &protomfx.Notification{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Notification)
+		if !ok {
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribe(id, topic, newFn, handleFn)
+}
+
+func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
+	newFn := func() proto.Message { return &protomfx.Webhook{} }
+	handleFn := func(subject string, msg proto.Message) error {
+		v, ok := msg.(*protomfx.Webhook)
+		if !ok {
+			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
+		}
+		return handler(subject, *v)
+	}
+	return ps.subscribe(id, SubjectWebhooks, newFn, handleFn)
 }
 
 // unsubscribe removes the subscription for the given id and topic.
@@ -163,15 +192,42 @@ func (ps *pubsub) unsubscribe(id, topic string) error {
 	return nil
 }
 
-// subscribe registers a NATS subscription for the given id and topic.
-// Must be called with ps.mu held.
-func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn func() error) error {
+// subscribe is the shared Subscribe entry point for typed streams whose
+// handler doesn't need cleanup on unsubscribe.
+func (ps *pubsub) subscribe(id, topic string, newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error) error {
+	return ps.subscribeWithCancel(id, topic, newFn, handleFn, nil)
+}
+
+// subscribeWithCancel is the shared Subscribe entry point for every typed
+// stream. newFn allocates the concrete proto.Message to unmarshal into,
+// handleFn dispatches the unmarshaled message to the caller's typed handler,
+// and cancelFn, if set, runs on unsubscribe.
+func (ps *pubsub) subscribeWithCancel(id, topic string, newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error, cancelFn func() error) error {
+	if id == "" {
+		return messaging.ErrEmptyID
+	}
+	if topic == "" {
+		return messaging.ErrEmptyTopic
+	}
+
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	if s, ok := ps.subscriptions[topic]; ok {
+		if _, ok := s[id]; ok {
+			if err := ps.unsubscribe(id, topic); err != nil {
+				return err
+			}
+		}
+	}
+
 	s, ok := ps.subscriptions[topic]
 	if !ok {
 		s = make(map[string]subscription)
 		ps.subscriptions[topic] = s
 	}
 
+	nh := ps.natsHandler(newFn, handleFn)
 	var (
 		sub *broker.Subscription
 		err error
@@ -191,181 +247,17 @@ func (ps *pubsub) subscribe(id, topic string, nh broker.MsgHandler, cancelFn fun
 	return nil
 }
 
-func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.subscribe(id, SubjectAlarms, ps.natsAlarmHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeAlarms(id string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, SubjectAlarms)
-}
-
-func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	if s, ok := ps.subscriptions[topic]; ok {
-		if _, ok := s[id]; ok {
-			if err := ps.unsubscribe(id, topic); err != nil {
-				return err
-			}
-		}
-	}
-	return ps.subscribe(id, topic, ps.natsCommandHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeCommands(id, topic string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, topic)
-}
-
-func (ps *pubsub) natsAlarmHandler(h messaging.AlarmHandler) broker.MsgHandler {
+// natsHandler wraps newFn/handleFn into the broker's raw message callback:
+// it allocates the concrete proto.Message, unmarshals into it, then dispatches.
+func (ps *pubsub) natsHandler(newFn func() proto.Message, handleFn func(subject string, msg proto.Message) error) broker.MsgHandler {
 	return func(m *broker.Msg) {
-		var alarm protomfx.Alarm
-		if err := proto.Unmarshal(m.Data, &alarm); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received alarm: %s", err))
+		msg := newFn()
+		if err := proto.Unmarshal(m.Data, msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received %T for subject %s: %s", msg, m.Subject, err))
 			return
 		}
-		if err := h.Handle(m.Subject, alarm); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle alarm: %s", err))
-		}
-	}
-}
-
-func (ps *pubsub) natsCommandHandler(h messaging.CommandHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var cmd protomfx.Command
-		if err := proto.Unmarshal(m.Data, &cmd); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received command: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, cmd); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle command: %s", err))
-		}
-	}
-}
-
-func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	if s, ok := ps.subscriptions[topic]; ok {
-		if _, ok := s[id]; ok {
-			if err := ps.unsubscribe(id, topic); err != nil {
-				return err
-			}
-		}
-	}
-	return ps.subscribe(id, topic, ps.natsNotificationHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeNotifications(id, topic string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-	if topic == "" {
-		return messaging.ErrEmptyTopic
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, topic)
-}
-
-func (ps *pubsub) SubscribeWebhooks(id string, handler messaging.WebhookHandler) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.subscribe(id, SubjectWebhooks, ps.natsWebhookHandler(handler), handler.Cancel)
-}
-
-func (ps *pubsub) UnsubscribeWebhooks(id string) error {
-	if id == "" {
-		return messaging.ErrEmptyID
-	}
-
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-
-	return ps.unsubscribe(id, SubjectWebhooks)
-}
-
-func (ps *pubsub) natsNotificationHandler(h messaging.NotificationHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var notification protomfx.Notification
-		if err := proto.Unmarshal(m.Data, &notification); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received notification: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, notification); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle notification: %s", err))
-		}
-	}
-}
-
-func (ps *pubsub) natsWebhookHandler(h messaging.WebhookHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var webhook protomfx.Webhook
-		if err := proto.Unmarshal(m.Data, &webhook); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received webhook: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, webhook); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle webhook: %s", err))
-		}
-	}
-}
-
-func (ps *pubsub) natsHandler(h messaging.MessageHandler) broker.MsgHandler {
-	return func(m *broker.Msg) {
-		var msg protomfx.Message
-		if err := proto.Unmarshal(m.Data, &msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to unmarshal received message: %s", err))
-			return
-		}
-		if err := h.Handle(m.Subject, msg); err != nil {
-			ps.logger.Warn(fmt.Sprintf("Failed to handle Mainflux message: %s", err))
+		if err := handleFn(m.Subject, msg); err != nil {
+			ps.logger.Warn(fmt.Sprintf("Failed to handle %T for subject %s: %s", msg, m.Subject, err))
 		}
 	}
 }

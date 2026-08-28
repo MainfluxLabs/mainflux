@@ -47,9 +47,15 @@ var (
 	errFailedCacheDisconnection = errors.New("failed to remove connection from cache")
 )
 
+// Publisher specifies the minimal publishing capability the MQTT handler needs.
+type Publisher interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+}
+
 // handler implements session.Handler interface
 type handler struct {
-	publisher nats.Publisher
+	publisher Publisher
 	things    domain.ThingsClient
 	service   Service
 	cache     cache.ConnectionCache
@@ -57,7 +63,7 @@ type handler struct {
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher nats.Publisher, things domain.ThingsClient,
+func NewHandler(publisher Publisher, things domain.ThingsClient,
 	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
@@ -247,7 +253,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		return nil
 	}
 
-	return h.publisher.PublishByFlags(msg, pc.ProfileConfig)
+	return h.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
@@ -255,7 +261,7 @@ func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
 		Publisher:   msg.Publisher,
 		Subtopic:    msg.Subtopic,
 		Payload:     msg.Payload,
-		RecipientID: extractRecipient(subject),
+		RecipientId: extractRecipient(subject),
 		Protocol:    msg.Protocol,
 		Created:     msg.Created,
 	}

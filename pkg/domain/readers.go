@@ -40,6 +40,7 @@ type MessagesPageMetadata struct {
 	AggType     string   `json:"agg_type,omitempty"`
 	AggFields   []string `json:"agg_fields,omitempty"`
 	Dir         string   `json:"dir,omitempty"`
+	NoTotal     bool     `json:"no_total,omitempty"`
 }
 
 // SenMLPageMetadata represents the parameters used to create database queries.

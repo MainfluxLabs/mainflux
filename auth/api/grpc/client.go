@@ -318,17 +318,17 @@ func encodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, e
 	gis := make([]*protomfx.GroupInvite, 0, len(req.groupInvites))
 	for _, gi := range req.groupInvites {
 		gis = append(gis, &protomfx.GroupInvite{
-			GroupID:    gi.GroupID,
+			GroupId:    gi.GroupID,
 			MemberRole: gi.MemberRole,
 		})
 	}
 
 	return &protomfx.CreateDormantOrgInviteReq{
 		Token:            req.token,
-		OrgID:            req.orgID,
+		OrgId:            req.orgID,
 		InviteeRole:      req.inviteeRole,
 		GroupInvites:     gis,
-		PlatformInviteID: req.platformInviteID,
+		PlatformInviteId: req.platformInviteID,
 	}, nil
 }
 
@@ -354,8 +354,8 @@ func encodeActivateOrgInviteRequest(_ context.Context, grpcReq any) (any, error)
 	req := grpcReq.(activateOrgInviteReq)
 
 	return &protomfx.ActivateOrgInviteReq{
-		PlatformInviteID: req.platformInviteID,
-		UserID:           req.userID,
+		PlatformInviteId: req.platformInviteID,
+		UserId:           req.userID,
 		RedirectPath:     req.redirectPath,
 	}, nil
 }
@@ -379,7 +379,7 @@ func (client grpcClient) GetDormantOrgInviteByPlatformInvite(ctx context.Context
 
 func encodeGetDormantOrgInviteByPlatformInviteRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(getDormantOrgInviteByPlatformInviteReq)
-	return &protomfx.GetDormantOrgInviteByPlatformInviteReq{PlatformInviteID: req.platformInviteID}, nil
+	return &protomfx.GetDormantOrgInviteByPlatformInviteReq{PlatformInviteId: req.platformInviteID}, nil
 }
 
 func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
@@ -388,7 +388,7 @@ func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	groupInvites := make([]auth.GroupInvite, 0, len(res.GetGroupInvites()))
 	for _, groupInvite := range res.GetGroupInvites() {
 		groupInvites = append(groupInvites, auth.GroupInvite{
-			GroupID:    groupInvite.GroupID,
+			GroupID:    groupInvite.GroupId,
 			MemberRole: groupInvite.MemberRole,
 		})
 	}
@@ -396,7 +396,7 @@ func decodeOrgInviteResponse(_ context.Context, grpcRes any) (any, error) {
 	return orgInviteRes{
 		auth.OrgInvite{
 			ID:           res.GetId(),
-			OrgID:        res.GetOrgID(),
+			OrgID:        res.GetOrgId(),
 			OrgName:      res.GetOrgName(),
 			InviteeRole:  res.GetInviteeRole(),
 			GroupInvites: groupInvites,
@@ -425,7 +425,7 @@ func encodeViewOrgRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(viewOrgReq)
 	return &protomfx.ViewOrgReq{
 		Token: req.token,
-		OrgID: req.id,
+		OrgId: req.id,
 	}, nil
 }
 
@@ -433,7 +433,7 @@ func decodeOrgResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.Org)
 	return orgRes{
 		id:      res.GetId(),
-		ownerID: res.GetOwnerID(),
+		ownerID: res.GetOwnerId(),
 		name:    res.GetName(),
 	}, nil
 }

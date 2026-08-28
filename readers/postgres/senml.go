@@ -99,6 +99,10 @@ func (sr *senmlRepository) readAll(ctx context.Context, rpm readers.SenMLPageMet
 	}
 	page.Messages = messages
 
+	if rpm.NoTotal {
+		return page, nil
+	}
+
 	condition := sr.fmtCondition(rpm)
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM senml %s;`, condition)
 	total, err := dbutil.Total(ctx, sr.db, query, params)

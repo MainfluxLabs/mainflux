@@ -134,7 +134,7 @@ func loadConfig() config {
 	}
 }
 
-func newService(tc domain.ThingsClient, nps nats.PubSub, logger logger.Logger) adapter.Service {
+func newService(tc domain.ThingsClient, nps adapter.PubSub, logger logger.Logger) adapter.Service {
 	svc := adapter.New(tc, nps)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

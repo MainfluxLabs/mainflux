@@ -8,21 +8,21 @@ package protomfx;
 import "google/protobuf/empty.proto";
 
 message Message {
-    string publisher   = 1;
-    string subtopic    = 2;
-    bytes payload      = 3;
-    string contentType = 4;
-    string protocol    = 5;
-    int64 created      = 6; // Unix timestamp in nanoseconds
+    string publisher    = 1;
+    string subtopic     = 2;
+    bytes payload       = 3;
+    string content_type = 4;
+    string protocol     = 5;
+    int64 created       = 6; // Unix timestamp in nanoseconds
 }
 
 message Command {
-    string publisher   = 1;
-    string subtopic    = 2;
-    bytes payload      = 3;
-    string recipientID = 4;
-    string protocol    = 5;
-    int64 created      = 6; // Unix timestamp in nanoseconds
+    string publisher    = 1;
+    string subtopic     = 2;
+    bytes payload       = 3;
+    string recipient_id = 4;
+    string protocol     = 5;
+    int64 created       = 6; // Unix timestamp in nanoseconds
 }
 
 service ReadersService {
@@ -98,16 +98,16 @@ message ThingKey {
 }
 
 message PubConfigByKeyRes {
-    string publisherID   = 1;
-    Config profileConfig = 2;
+    string publisher_id   = 1;
+    Config profile_config = 2;
 }
 
 message Config {
-    string contentType      = 1;
+    string content_type     = 1;
     Transformer transformer = 2;
-    bool writeEnabled       = 3;
-    bool webhookEnabled     = 4;
-    bool ruleEnabled        = 5;
+    bool write_enabled      = 3;
+    bool webhook_enabled    = 4;
+    bool rule_enabled       = 5;
 }
 
 message ConfigByThingRes{
@@ -115,11 +115,11 @@ message ConfigByThingRes{
 }
 
 message Transformer {
-    repeated string dataFilters = 1;
-    string dataField            = 2;
-    string timeField            = 3;
-    string timeFormat           = 4;
-    string timeLocation         = 5;
+    repeated string data_filters = 1;
+    string data_field            = 2;
+    string time_field            = 3;
+    string time_format           = 4;
+    string time_location         = 5;
 }
 
 message ThingID {
@@ -187,13 +187,13 @@ message ThingAccessReq {
 }
 
 message ThingCommandReq {
-    string publisherID = 1;
-    string recipientID = 2;
+    string publisher_id = 1;
+    string recipient_id = 2;
 }
 
 message ThingGroupCommandReq {
-    string publisherID = 1;
-    string groupID     = 2;
+    string publisher_id = 1;
+    string group_id     = 2;
 }
 
 message User {
@@ -216,13 +216,13 @@ message UsersByEmailsReq {
 }
 
 message UsersByIDsReq {
-    repeated string ids       = 1;
-    PageMetadata pageMetadata = 2;
+    repeated string ids        = 1;
+    PageMetadata page_metadata = 2;
 }
 
 message UsersRes {
-    repeated User users       = 1;
-    PageMetadata pageMetadata = 2;
+    repeated User users        = 1;
+    PageMetadata page_metadata = 2;
 }
 
 message AssignRoleReq {
@@ -244,27 +244,27 @@ message OrgAccessReq {
 }
 
 message GroupInvite {
-    string groupID = 1;
-    string memberRole = 2;
+    string group_id = 1;
+    string member_role = 2;
 }
 
 message CreateDormantOrgInviteReq {
     string token = 1;
-    string orgID = 2;
-    string inviteeRole = 3;
-    string platformInviteID = 4;
-    repeated GroupInvite groupInvites = 5;
+    string org_id = 2;
+    string invitee_role = 3;
+    string platform_invite_id = 4;
+    repeated GroupInvite group_invites = 5;
 }
 
 message ActivateOrgInviteReq {
-    string platformInviteID = 1;
-    string userID = 2;
-    string redirectPath = 3;
+    string platform_invite_id = 1;
+    string user_id = 2;
+    string redirect_path = 3;
 }
 
 message GroupMembership {
-    string userID = 1;
-    string groupID = 2;
+    string user_id = 1;
+    string group_id = 2;
     string role = 3;
 }
 
@@ -273,35 +273,35 @@ message CreateGroupMembershipsReq {
 }
 
 message GetDormantOrgInviteByPlatformInviteReq {
-    string platformInviteID = 1;
+    string platform_invite_id = 1;
 }
 
 message OrgInvite {
     string id = 1;
-    string orgID = 2;
-    string orgName = 3;
-    string inviteeRole = 4;
-    repeated GroupInvite groupInvites = 5;
+    string org_id = 2;
+    string org_name = 3;
+    string invitee_role = 4;
+    repeated GroupInvite group_invites = 5;
 }
 
 message ViewOrgReq {
     string token = 1;
-    string orgID = 2;
+    string org_id = 2;
 }
 
 message Org {
     string id = 1;
-    string ownerID = 2;
+    string owner_id = 2;
     string name = 3;
 }
 
 message GetGroupReq {
-    string groupID = 1;
+    string group_id = 1;
 }
 
 message Group {
     string id = 1;
-    string orgID = 2;
+    string org_id = 2;
     string name = 3;
 }
 
