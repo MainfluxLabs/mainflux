@@ -45,6 +45,9 @@ const (
 	ConcurrencyLimit       = 10
 )
 
+// UTF8BOM is the byte-order mark some tools (e.g. Excel) prepend when saving a file as UTF-8.
+var UTF8BOM = []byte{0xef, 0xbb, 0xbf}
+
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
 	Total  uint64 `json:"total,omitempty"`

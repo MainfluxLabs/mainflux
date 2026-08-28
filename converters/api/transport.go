@@ -32,8 +32,6 @@ const (
 	fileKey   = "file"
 )
 
-var utf8BOM = []byte{0xef, 0xbb, 0xbf}
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -83,7 +81,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	data = bytes.TrimPrefix(data, utf8BOM)
+	data = bytes.TrimPrefix(data, apiutil.UTF8BOM)
 
 	csvLines, readErr := csv.NewReader(bytes.NewReader(data)).ReadAll()
 	if readErr != nil {

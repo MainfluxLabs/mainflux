@@ -41,8 +41,6 @@ const (
 	jsonExt      = ".json"
 )
 
-var utf8BOM = []byte{0xef, 0xbb, 0xbf}
-
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -154,7 +152,7 @@ func decodeClientFile(_ context.Context, r *http.Request) (any, error) {
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
-	data = bytes.TrimPrefix(data, utf8BOM)
+	data = bytes.TrimPrefix(data, apiutil.UTF8BOM)
 
 	var fields []field
 	switch strings.ToLower(filepath.Ext(header.Filename)) {
