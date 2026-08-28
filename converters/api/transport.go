@@ -28,9 +28,8 @@ import (
 )
 
 const (
-	maxMemory            = 32 << 20
-	fileKey              = "file"
-	multiPartContentType = "multipart/form-data"
+	maxMemory = 32 << 20
+	fileKey   = "file"
 )
 
 var utf8BOM = []byte{0xef, 0xbb, 0xbf}
@@ -65,7 +64,7 @@ func MakeHandler(svc adapter.Service, ac domain.AuthClient, tracer opentracing.T
 }
 
 func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -101,7 +100,7 @@ func decodeConvertCSVFile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeConvertJSONFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
