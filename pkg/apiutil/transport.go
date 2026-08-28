@@ -39,6 +39,7 @@ const (
 	DescDir                = "desc"
 	ContentTypeJSON        = "application/json"
 	ContentTypeOctetStream = "application/octet-stream"
+	ContentTypeMultipart   = "multipart/form-data"
 	DefOffset              = 0
 	DefLimit               = 10
 	ConcurrencyLimit       = 10

@@ -4,9 +4,12 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -25,14 +28,20 @@ import (
 )
 
 const (
-	contentTypeJSON = "application/json"
-	idKey           = "id"
-	ctKey           = "Content-Type"
-	ipAddressKey    = "ip_address"
-	portKey         = "port"
-	slaveIDKey      = "slave_id"
-	frequencyKey    = "frequency"
+	idKey        = "id"
+	ctKey        = "Content-Type"
+	ipAddressKey = "ip_address"
+	portKey      = "port"
+	slaveIDKey   = "slave_id"
+	frequencyKey = "frequency"
+	clientKey    = "client"
+	fileKey      = "file"
+	maxMemory    = 32 << 20
+	csvExt       = ".csv"
+	jsonExt      = ".json"
 )
+
+var utf8BOM = []byte{0xef, 0xbb, 0xbf}
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
@@ -106,17 +115,79 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 	return r
 }
 
-func decodeCreateClients(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get(ctKey), contentTypeJSON) {
+// decodeCreateClients dispatches on Content-Type so JSON bulk-create and file import share one route.
+func decodeCreateClients(ctx context.Context, r *http.Request) (any, error) {
+	ct := r.Header.Get(ctKey)
+	switch {
+	case strings.Contains(ct, apiutil.ContentTypeJSON):
+		req := createClientsReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
+		if err := json.NewDecoder(r.Body).Decode(&req.Clients); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+
+		return req, nil
+	case strings.Contains(ct, apiutil.ContentTypeMultipart):
+		return decodeClientFile(ctx, r)
+	default:
 		return nil, apiutil.ErrUnsupportedContentType
 	}
+}
 
-	req := createClientsReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
-	if err := json.NewDecoder(r.Body).Decode(&req.Clients); err != nil {
+// decodeClientFile builds one client from its config part plus data fields parsed from the file part.
+func decodeClientFile(_ context.Context, r *http.Request) (any, error) {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
+	var c client
+	if err := json.Unmarshal([]byte(r.FormValue(clientKey)), &c); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	file, header, err := r.FormFile(fileKey)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	data = bytes.TrimPrefix(data, utf8BOM)
+
+	var fields []field
+	switch strings.ToLower(filepath.Ext(header.Filename)) {
+	case csvExt:
+		fields, err = parseCSVFields(bytes.NewReader(data))
+	case jsonExt:
+		err = json.Unmarshal(data, &fields)
+	default:
+		return nil, ErrUnsupportedFileFormat
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	c.DataFields = normalizeFieldCase(fields)
+
+	req := createClientsReq{
+		token:   apiutil.ExtractBearerToken(r),
+		thingID: bone.GetValue(r, idKey),
+		Clients: []client{c},
+	}
+
 	return req, nil
+}
+
+// normalizeFieldCase normalizes fields in imported files to avoid case sensitivity.
+func normalizeFieldCase(fields []field) []field {
+	for i := range fields {
+		fields[i].Type = strings.ToLower(strings.TrimSpace(fields[i].Type))
+		fields[i].ByteOrder = strings.ToUpper(strings.TrimSpace(fields[i].ByteOrder))
+	}
+	return fields
 }
 
 func buildPageMetadata(r *http.Request) (modbus.PageMetadata, error) {
@@ -200,7 +271,7 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeUpdateClient(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get(ctKey), contentTypeJSON) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -216,7 +287,7 @@ func decodeUpdateClient(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeRemoveClients(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get(ctKey), contentTypeJSON) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -232,7 +303,7 @@ func decodeRemoveClients(_ context.Context, r *http.Request) (any, error) {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	w.Header().Set(ctKey, contentTypeJSON)
+	w.Header().Set(ctKey, apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -260,7 +331,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrMissingFieldName,
 		err == ErrInvalidFieldType,
 		err == ErrInvalidByteOrder,
-		err == ErrInvalidFieldLength:
+		err == ErrInvalidFieldLength,
+		err == ErrUnsupportedFileFormat:
 		w.WriteHeader(http.StatusBadRequest)
 	default:
 		apiutil.EncodeError(err, w)
