@@ -8,7 +8,11 @@ paths:
   /things/{thingId}/clients:
     post:
       summary: Create Modbus clients for a thing
-      description: Creates one or more Modbus clients associated with the thing identified by the provided ID.
+      description: >-
+        Creates Modbus clients associated with the thing identified by the provided ID.
+        Accepts either a JSON body with an array of clients, or a
+        multipart/form-data request importing a single client whose data fields are parsed from
+        an uploaded CSV or JSON file.
       tags:
         - clients
       parameters:
@@ -356,7 +360,10 @@ components:
 
   requestBodies:
     CreateClientsReq:
-      description: JSON-formatted array of Modbus clients to create.
+      description: >-
+        Either a JSON array of Modbus clients to create, or a
+        multipart/form-data request importing a single client whose data fields are parsed from
+        an uploaded CSV or JSON file.
       required: true
       content:
         application/json:
@@ -382,6 +389,25 @@ components:
                   scale: 0.1
                   byte_order: "ABCD"
                   address: 0
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              client:
+                type: string
+                description: JSON-encoded client connection info (same shape as ClientReqSchema, without data_fields).
+                example: >-
+                  '{"name":"Temperature sensor","ip_address":"192.168.1.100","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}'
+              file:
+                type: string
+                format: binary
+                description: >-
+                  CSV or JSON file listing the client's data fields. 
+                  CSV requires a header row naming columns (name, type, unit, scale, byte_order, address, length), in any order and matched case-insensitively; 
+                  unknown columns are ignored.
+            required:
+              - client
+              - file
     UpdateClientReq:
       description: JSON-formatted document describing the updated Modbus client.
       required: true
