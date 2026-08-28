@@ -220,6 +220,18 @@ func (svc service) LogoutAll(ctx context.Context, token string) error {
 	return nil
 }
 
+func (svc service) RevokeUserSessions(ctx context.Context, userID string) error {
+	if userID == "" {
+		return errors.Wrap(errLogout, apiutil.ErrMissingUserID)
+	}
+
+	if err := svc.sessions.RevokeByUser(ctx, userID, getTimestamp()); err != nil {
+		return errors.Wrap(errLogout, err)
+	}
+
+	return nil
+}
+
 // liveSession resolves a login token to the session backing it, rejecting one
 // already revoked. A signature only proves the token was minted at some point,
 // so without this check a token that was logged out, or killed as stolen, could

@@ -55,4 +55,10 @@ type Sessions interface {
 	// LogoutAll ends every session belonging to the owner of the provided
 	// token.
 	LogoutAll(ctx context.Context, token string) error
+
+	// RevokeUserSessions ends every session belonging to the identified user.
+	// It is the path another service takes after a credential change, so
+	// unlike LogoutAll it works from a user ID alone, with no token of that
+	// user's in hand.
+	RevokeUserSessions(ctx context.Context, userID string) error
 }

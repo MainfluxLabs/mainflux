@@ -69,6 +69,19 @@ func (lm *loggingMiddleware) LogoutAll(ctx context.Context, token string) (err e
 	return lm.svc.LogoutAll(ctx, token)
 }
 
+func (lm *loggingMiddleware) RevokeUserSessions(ctx context.Context, userID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method revoke_user_sessions for user %s took %s to complete", userID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokeUserSessions(ctx, userID)
+}
+
 func (lm *loggingMiddleware) Issue(ctx context.Context, token string, newKey auth.Key) (key auth.Key, _ string, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
