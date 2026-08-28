@@ -4,10 +4,12 @@
 package http_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -38,19 +40,25 @@ const (
 	testIP       = "192.168.1.1"
 	testPort     = "502"
 	testFuncCode = "ReadHoldingRegisters"
+
+	missingPart  = "__missing__"
+	csvFileName  = "registers.csv"
+	jsonFileName = "registers.json"
+	txtFileName  = "registers.txt"
 )
 
 var (
 	validScheduler   = `"scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}`
 	invalidScheduler = `"scheduler":{"frequency":"invalid"}`
-	validDataField   = `"data_fields":[{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}]`
+
+	dataField           = `{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}`
+	validDataFields = fmt.Sprintf(`"data_fields":[%s]`, dataField)
 
 	// baseClientJSON holds the fixed name/IP/port/function_code fields shared by most test bodies.
-	baseClientJSON = fmt.Sprintf(`"name":"test-client","ip_address":"%s","port":"%s","function_code":"%s"`, testIP, testPort, testFuncCode)
-
-	validCreateBody = fmt.Sprintf(`[{%s,%s,%s}]`, baseClientJSON, validScheduler, validDataField)
+	baseClientJSON  = fmt.Sprintf(`"name":"test-client","ip_address":"%s","port":"%s","function_code":"%s"`, testIP, testPort, testFuncCode)
+	validCreateBody = fmt.Sprintf(`[{%s,%s,%s}]`, baseClientJSON, validScheduler, validDataFields)
 	validUpdateBody = fmt.Sprintf(`{"name":"updated-client","ip_address":"%s","port":"%s","function_code":"%s",%s,%s}`,
-		testIP, testPort, testFuncCode, validScheduler, validDataField)
+		testIP, testPort, testFuncCode, validScheduler, validDataFields)
 
 	testClient = modbus.Client{
 		Name:         "test-client",
@@ -199,7 +207,7 @@ func TestCreateClients(t *testing.T) {
 		},
 		{
 			desc:        "create clients with empty name",
-			body:        fmt.Sprintf(`[{"name":"","ip_address":"%s","port":"%s","function_code":"%s",%s,%s}]`, testIP, testPort, testFuncCode, validScheduler, validDataField),
+			body:        fmt.Sprintf(`[{"name":"","ip_address":"%s","port":"%s","function_code":"%s",%s,%s}]`, testIP, testPort, testFuncCode, validScheduler, validDataFields),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -207,7 +215,7 @@ func TestCreateClients(t *testing.T) {
 		},
 		{
 			desc:        "create clients with name too long",
-			body:        fmt.Sprintf(`[{"name":"%s","ip_address":"%s","port":"%s","function_code":"%s",%s,%s}]`, longName, testIP, testPort, testFuncCode, validScheduler, validDataField),
+			body:        fmt.Sprintf(`[{"name":"%s","ip_address":"%s","port":"%s","function_code":"%s",%s,%s}]`, longName, testIP, testPort, testFuncCode, validScheduler, validDataFields),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -215,7 +223,7 @@ func TestCreateClients(t *testing.T) {
 		},
 		{
 			desc:        "create clients with missing IP address",
-			body:        fmt.Sprintf(`[{"name":"test-client","ip_address":"","port":"%s","function_code":"%s",%s,%s}]`, testPort, testFuncCode, validScheduler, validDataField),
+			body:        fmt.Sprintf(`[{"name":"test-client","ip_address":"","port":"%s","function_code":"%s",%s,%s}]`, testPort, testFuncCode, validScheduler, validDataFields),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -223,7 +231,7 @@ func TestCreateClients(t *testing.T) {
 		},
 		{
 			desc:        "create clients with missing port",
-			body:        fmt.Sprintf(`[{"name":"test-client","ip_address":"%s","port":"","function_code":"%s",%s,%s}]`, testIP, testFuncCode, validScheduler, validDataField),
+			body:        fmt.Sprintf(`[{"name":"test-client","ip_address":"%s","port":"","function_code":"%s",%s,%s}]`, testIP, testFuncCode, validScheduler, validDataFields),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -231,7 +239,7 @@ func TestCreateClients(t *testing.T) {
 		},
 		{
 			desc:        "create clients with invalid scheduler",
-			body:        fmt.Sprintf(`[{%s,%s,%s}]`, baseClientJSON, invalidScheduler, validDataField),
+			body:        fmt.Sprintf(`[{%s,%s,%s}]`, baseClientJSON, invalidScheduler, validDataFields),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -239,7 +247,7 @@ func TestCreateClients(t *testing.T) {
 		},
 		{
 			desc:        "create clients with invalid function code",
-			body:        fmt.Sprintf(`[{"name":"test-client","ip_address":"%s","port":"%s","function_code":"invalid",%s,%s}]`, testIP, testPort, validScheduler, validDataField),
+			body:        fmt.Sprintf(`[{"name":"test-client","ip_address":"%s","port":"%s","function_code":"invalid",%s,%s}]`, testIP, testPort, validScheduler, validDataFields),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -616,7 +624,7 @@ func TestUpdateClient(t *testing.T) {
 			desc:        "update client with invalid scheduler",
 			token:       token,
 			id:          clID,
-			body:        fmt.Sprintf(`{%s,%s,%s}`, baseClientJSON, invalidScheduler, validDataField),
+			body:        fmt.Sprintf(`{%s,%s,%s}`, baseClientJSON, invalidScheduler, validDataFields),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
@@ -624,7 +632,7 @@ func TestUpdateClient(t *testing.T) {
 			desc:        "update client with invalid function code",
 			token:       token,
 			id:          clID,
-			body:        fmt.Sprintf(`{"name":"test-client","ip_address":"%s","port":"%s","function_code":"invalid",%s,%s}`, testIP, testPort, validScheduler, validDataField),
+			body:        fmt.Sprintf(`{"name":"test-client","ip_address":"%s","port":"%s","function_code":"invalid",%s,%s}`, testIP, testPort, validScheduler, validDataFields),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
@@ -722,6 +730,163 @@ func TestRemoveClients(t *testing.T) {
 			token:       tc.token,
 			body:        strings.NewReader(tc.body),
 			contentType: tc.contentType,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func multipartBody(t *testing.T, clientJSON, fileName, fileContent string) (*bytes.Buffer, string) {
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+
+	if clientJSON != missingPart {
+		require.NoError(t, w.WriteField("client", clientJSON))
+	}
+
+	if fileName != missingPart {
+		fw, err := w.CreateFormFile("file", fileName)
+		require.NoError(t, err)
+		_, err = fw.Write([]byte(fileContent))
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, w.Close())
+
+	return &buf, w.FormDataContentType()
+}
+
+func TestImportClient(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	validClientJSON := fmt.Sprintf(`{%s,%s}`, baseClientJSON, validScheduler)
+	validFieldsCSV := "name,type,unit,scale,byte_order,address,length\ntemperature,float32,,,ABCD,0,\nhumidity,float32,,,ABCD,2,\n"
+	validFieldsJSON := fmt.Sprintf(`[%s]`, dataField)
+
+	csvBody, csvContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
+	jsonFileBody, jsonFileContentType := multipartBody(t, validClientJSON, jsonFileName, validFieldsJSON)
+
+	badExtBody, badExtContentType := multipartBody(t, validClientJSON, txtFileName, validFieldsCSV)
+	badCSVBody, badCSVContentType := multipartBody(t, validClientJSON, csvFileName,
+		"name,type,unit,scale,byte_order,address,length\ntemperature,float32,,,ABCD,not-a-number,\n")
+	emptyFileBody, emptyFileContentType := multipartBody(t, validClientJSON, csvFileName, "")
+
+	badClientJSONBody, badClientJSONContentType := multipartBody(t, `}{`, csvFileName, validFieldsCSV)
+	noClientPartBody, noClientPartContentType := multipartBody(t, missingPart, csvFileName, validFieldsCSV)
+	noFilePartBody, noFilePartContentType := multipartBody(t, validClientJSON, missingPart, "")
+
+	wrongTokenBody, wrongTokenContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
+	wrongThingBody, wrongThingContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
+
+	cases := []struct {
+		desc        string
+		body        *bytes.Buffer
+		thingID     string
+		contentType string
+		token       string
+		status      int
+	}{
+		{
+			desc:        "import client with valid csv file",
+			body:        csvBody,
+			thingID:     thingID,
+			contentType: csvContentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "import client with valid json file",
+			body:        jsonFileBody,
+			thingID:     thingID,
+			contentType: jsonFileContentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "import client with unsupported content type",
+			body:        csvBody,
+			thingID:     thingID,
+			contentType: "text/plain",
+			token:       token,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "import client with unsupported file extension",
+			body:        badExtBody,
+			thingID:     thingID,
+			contentType: badExtContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with malformed csv row",
+			body:        badCSVBody,
+			thingID:     thingID,
+			contentType: badCSVContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with empty file",
+			body:        emptyFileBody,
+			thingID:     thingID,
+			contentType: emptyFileContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with invalid client JSON",
+			body:        badClientJSONBody,
+			thingID:     thingID,
+			contentType: badClientJSONContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with missing client part",
+			body:        noClientPartBody,
+			thingID:     thingID,
+			contentType: noClientPartContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with missing file part",
+			body:        noFilePartBody,
+			thingID:     thingID,
+			contentType: noFilePartContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with wrong token",
+			body:        wrongTokenBody,
+			thingID:     thingID,
+			contentType: wrongTokenContentType,
+			token:       wrongToken,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "import client with wrong thing ID",
+			body:        wrongThingBody,
+			thingID:     wrongID,
+			contentType: wrongThingContentType,
+			token:       token,
+			status:      http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/things/%s/clients", ts.URL, tc.thingID),
+			contentType: tc.contentType,
+			token:       tc.token,
+			body:        tc.body,
 		}
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
