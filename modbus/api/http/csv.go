@@ -13,7 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
-// parseCSVFields mirrors the header-driven CSV convention converters/service.go uses for uploaded files.
+// parseCSVFields reads one register per row, matching columns to a header row case-insensitively.
 func parseCSVFields(r io.Reader) ([]field, error) {
 	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1
