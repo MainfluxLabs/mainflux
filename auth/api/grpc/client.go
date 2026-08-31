@@ -27,6 +27,7 @@ var _ domain.AuthClient = (*grpcClient)(nil)
 type grpcClient struct {
 	issue                               endpoint.Endpoint
 	refresh                             endpoint.Endpoint
+	revokeUserSessions                  endpoint.Endpoint
 	identify                            endpoint.Endpoint
 	authorize                           endpoint.Endpoint
 	getOwnerIDByOrg                     endpoint.Endpoint
@@ -49,6 +50,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeRefreshRequest,
 			decodeIssueResponse,
 			protomfx.Token{},
+		).Endpoint()),
+		revokeUserSessions: kitot.TraceClient(tracer, "revoke_user_sessions")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RevokeUserSessions",
+			encodeRevokeUserSessionsRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
 		).Endpoint()),
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
@@ -161,9 +170,27 @@ func (client grpcClient) Refresh(ctx context.Context, token string) (string, err
 	return ir.value, nil
 }
 
+func (client grpcClient) RevokeUserSessions(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.revokeUserSessions(ctx, revokeUserSessionsReq{id: id})
+	if err != nil {
+		return err
+	}
+
+	er := res.(emptyRes)
+	return er.err
+}
+
 func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(refreshReq)
 	return &protomfx.Token{Value: req.token}, nil
+}
+
+func encodeRevokeUserSessionsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(revokeUserSessionsReq)
+	return &protomfx.RevokeUserSessionsReq{Id: req.id}, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {

@@ -40,6 +40,10 @@ func (svc authServiceMock) Refresh(_ context.Context, token string) (string, err
 	return id, nil
 }
 
+func (svc authServiceMock) RevokeUserSessions(_ context.Context, id string) error {
+	return nil
+}
+
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
 	if id, ok := svc.users[email]; ok {
 		switch keyType {

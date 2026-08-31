@@ -24,6 +24,7 @@ var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 type grpcServer struct {
 	issue                               kitgrpc.Handler
 	refresh                             kitgrpc.Handler
+	revokeUserSessions                  kitgrpc.Handler
 	identify                            kitgrpc.Handler
 	authorize                           kitgrpc.Handler
 	getOwnerIDByOrg                     kitgrpc.Handler
@@ -47,6 +48,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "refresh")(refreshEndpoint(svc)),
 			decodeRefreshRequest,
 			encodeIssueResponse,
+		),
+		revokeUserSessions: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "revoke_user_sessions")(revokeUserSessionsEndpoint(svc)),
+			decodeRevokeUserSessionsRequest,
+			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "identify")(identifyEndpoint(svc)),
@@ -110,6 +116,14 @@ func (s *grpcServer) Refresh(ctx context.Context, token *protomfx.Token) (*proto
 		return nil, encodeError(err)
 	}
 	return res.(*protomfx.Token), nil
+}
+
+func (s *grpcServer) RevokeUserSessions(ctx context.Context, req *protomfx.RevokeUserSessionsReq) (*emptypb.Empty, error) {
+	_, res, err := s.revokeUserSessions.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*emptypb.Empty), nil
 }
 
 func (s *grpcServer) Identify(ctx context.Context, token *protomfx.Token) (*protomfx.UserIdentity, error) {
@@ -216,6 +230,11 @@ func encodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 func decodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.Token)
 	return refreshReq{token: req.GetValue()}, nil
+}
+
+func decodeRevokeUserSessionsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RevokeUserSessionsReq)
+	return revokeUserSessionsReq{id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
