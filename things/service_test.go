@@ -3650,6 +3650,46 @@ func TestGetGroupIDByProfile(t *testing.T) {
 	}
 }
 
+func TestGetOrgIDByGroup(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	cases := []struct {
+		desc    string
+		groupID string
+		orgID   string
+		err     error
+	}{
+		{
+			desc:    "get org id by group id",
+			groupID: grID,
+			orgID:   orgID,
+			err:     nil,
+		},
+		{
+			desc:    "get org id by non-existing group id",
+			groupID: wrongValue,
+			orgID:   emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "get org id by empty group id",
+			groupID: emptyValue,
+			orgID:   emptyValue,
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		orgID, err := svc.GetOrgIDByGroup(context.Background(), tc.groupID)
+		assert.Equal(t, tc.orgID, orgID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.orgID, orgID))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func TestGetGroupIDsByOrg(t *testing.T) {
 	svc := newService()
 
