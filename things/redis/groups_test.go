@@ -49,7 +49,7 @@ func TestViewOrgByGroup(t *testing.T) {
 		},
 		{
 			desc:    "view org by non-cached group",
-			groupID: "gr-view-missing",
+			groupID: "345",
 			orgID:   "",
 			err:     dbutil.ErrNotFound,
 		},
