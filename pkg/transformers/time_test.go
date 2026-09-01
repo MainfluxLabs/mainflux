@@ -40,19 +40,19 @@ func TestSecondsToNanos(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "negative seconds within range",
+			desc: "negative seconds",
 			sec:  -1638310819,
 			want: -1638310819000000000,
 			err:  nil,
 		},
 		{
-			desc: "beyond int64 nanoseconds",
+			desc: "overflow",
 			sec:  1e10,
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "below int64 nanoseconds",
+			desc: "underflow",
 			sec:  -1e10,
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
@@ -64,13 +64,13 @@ func TestSecondsToNanos(t *testing.T) {
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "positive infinity",
+			desc: "+Inf",
 			sec:  math.Inf(1),
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "negative infinity",
+			desc: "-Inf",
 			sec:  math.Inf(-1),
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
@@ -98,25 +98,25 @@ func TestTimeToNanos(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc: "maximum representable",
+			desc: "max",
 			val:  time.Unix(0, math.MaxInt64).UTC(),
 			want: math.MaxInt64,
 			err:  nil,
 		},
 		{
-			desc: "minimum representable",
+			desc: "min",
 			val:  time.Unix(0, math.MinInt64).UTC(),
 			want: math.MinInt64,
 			err:  nil,
 		},
 		{
-			desc: "one nanosecond past the maximum",
+			desc: "one nano past max",
 			val:  time.Unix(0, math.MaxInt64).UTC().Add(time.Nanosecond),
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "one nanosecond before the minimum",
+			desc: "one nano before min",
 			val:  time.Unix(0, math.MinInt64).UTC().Add(-time.Nanosecond),
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
@@ -144,37 +144,37 @@ func TestSecondsToNanosBoundaries(t *testing.T) {
 		err  error
 	}{
 		{
-			desc: "largest whole second",
+			desc: "max whole second",
 			sec:  9223372036,
 			want: 9223372036000000000,
 			err:  nil,
 		},
 		{
-			desc: "sub-second remainder inside the limit",
+			desc: "max sub-second",
 			sec:  9223372036.5,
 			want: 9223372036499999744,
 			err:  nil,
 		},
 		{
-			desc: "one second past the limit",
+			desc: "one second past max",
 			sec:  9223372037,
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "two to the sixty-three nanoseconds",
+			desc: "2^63 nanoseconds",
 			sec:  math.Pow(2, 63) / 1e9,
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "smallest whole second",
+			desc: "min whole second",
 			sec:  -9223372036,
 			want: -9223372036000000000,
 			err:  nil,
 		},
 		{
-			desc: "negative sub-second remainder inside the limit",
+			desc: "min sub-second",
 			sec:  -9223372036.5,
 			want: -9223372036499999744,
 			err:  nil,
@@ -188,7 +188,7 @@ func TestSecondsToNanosBoundaries(t *testing.T) {
 	}
 }
 
-func TestSecondsToNanosRejectsPreviouslyWrappedValue(t *testing.T) {
+func TestSecondsToNanosOverflow(t *testing.T) {
 	_, err := transformers.SecondsToNanos(1e10)
 
 	assert.True(t, errors.Contains(err, transformers.ErrTimestampOutOfRange), "expected an out-of-range error")

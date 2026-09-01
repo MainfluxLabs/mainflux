@@ -40,31 +40,31 @@ func TestTransformPayloadTime(t *testing.T) {
 		err  error
 	}{
 		{
-			desc: "seconds scaled to nanoseconds",
+			desc: "whole seconds",
 			time: 1638310819,
 			want: 1638310819000000000,
 			err:  nil,
 		},
 		{
-			desc: "fractional seconds scaled to nanoseconds",
+			desc: "fractional seconds",
 			time: 1638310819.5,
 			want: 1638310819500000000,
 			err:  nil,
 		},
 		{
-			desc: "missing time falls back to reception timestamp",
+			desc: "missing time",
 			time: 0,
 			want: created,
 			err:  nil,
 		},
 		{
-			desc: "seconds beyond int64 nanoseconds",
+			desc: "overflow",
 			time: 1e10,
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc: "seconds below int64 nanoseconds",
+			desc: "underflow",
 			time: -1e10,
 			want: 0,
 			err:  transformers.ErrTimestampOutOfRange,
@@ -91,7 +91,7 @@ func TestTransformPayloadTime(t *testing.T) {
 	}
 }
 
-func TestTransformPayloadTimeOutOfRangeIsMalformedEntity(t *testing.T) {
+func TestTransformPayloadTimeOutOfRange(t *testing.T) {
 	msg := protomfx.Message{
 		Payload:     senmlPayload(t, 1e10),
 		ContentType: senml.JSON,

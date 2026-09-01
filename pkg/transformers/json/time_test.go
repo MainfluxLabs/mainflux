@@ -59,35 +59,35 @@ func TestParseTimestamp(t *testing.T) {
 			err:    nil,
 		},
 		{
-			desc:   "unix seconds beyond int64 nanoseconds",
+			desc:   "unix seconds overflow",
 			format: "unix",
 			val:    "10000000000",
 			ns:     0,
 			err:    transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc:   "unix milliseconds beyond int64 nanoseconds",
+			desc:   "unix milliseconds overflow",
 			format: "unix_ms",
 			val:    "10000000000000",
 			ns:     0,
 			err:    transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc:   "unix microseconds beyond int64 nanoseconds",
+			desc:   "unix microseconds overflow",
 			format: "unix_us",
 			val:    "10000000000000000",
 			ns:     0,
 			err:    transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc:   "rfc3339 beyond int64 nanoseconds",
+			desc:   "rfc3339 overflow",
 			format: "rfc3339",
 			val:    "9999-12-31T00:00:00Z",
 			ns:     0,
 			err:    transformers.ErrTimestampOutOfRange,
 		},
 		{
-			desc:   "float seconds beyond int64 nanoseconds",
+			desc:   "float seconds overflow",
 			format: "unix",
 			val:    float64(1e30),
 			ns:     0,
@@ -103,7 +103,7 @@ func TestParseTimestamp(t *testing.T) {
 	}
 }
 
-func TestParseTimestampOutOfRangeIsMalformedEntity(t *testing.T) {
+func TestParseTimestampOutOfRange(t *testing.T) {
 	tr := domain.Transformer{TimeFormat: "unix"}
 	_, err := mfjson.ParseTimestamp(tr, "10000000000")
 
