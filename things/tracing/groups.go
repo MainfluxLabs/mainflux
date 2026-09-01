@@ -23,8 +23,8 @@ const (
 	removeGroupMembership           = "remove_group_membership"
 	retrieveGroupIDsByMember        = "retrieve_group_ids_by_member"
 	retrieveGroupIDsByOrgMembership = "retrieve_group_ids_by_org_membership"
-	saveOrgByGroup                  = "save_org_by_group"
-	retrieveOrgByGroup              = "retrieve_org_by_group"
+	saveOrgIDByGroupID              = "save_org_id_by_group_id"
+	retrieveOrgIDByGroupID          = "retrieve_org_id_by_group_id"
 )
 
 var _ things.GroupRepository = (*groupRepositoryMiddleware)(nil)
@@ -176,7 +176,7 @@ func (gcm groupCacheMiddleware) RetrieveGroupIDsByMember(ctx context.Context, me
 }
 
 func (gcm groupCacheMiddleware) SaveOrg(ctx context.Context, groupID, orgID string) error {
-	span := dbutil.CreateSpan(ctx, gcm.tracer, saveOrgByGroup)
+	span := dbutil.CreateSpan(ctx, gcm.tracer, saveOrgIDByGroupID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
@@ -184,7 +184,7 @@ func (gcm groupCacheMiddleware) SaveOrg(ctx context.Context, groupID, orgID stri
 }
 
 func (gcm groupCacheMiddleware) ViewOrg(ctx context.Context, groupID string) (string, error) {
-	span := dbutil.CreateSpan(ctx, gcm.tracer, retrieveOrgByGroup)
+	span := dbutil.CreateSpan(ctx, gcm.tracer, retrieveOrgIDByGroupID)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
