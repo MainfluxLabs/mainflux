@@ -168,6 +168,7 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 					`CREATE INDEX IF NOT EXISTS sessions_family_id_idx ON sessions (family_id)`,
 					`CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions (user_id)`,
+					`CREATE INDEX IF NOT EXISTS sessions_started_at_idx ON sessions (started_at)`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS sessions`,
