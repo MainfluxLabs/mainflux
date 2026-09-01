@@ -206,6 +206,10 @@ func (svc *mainfluxThings) GetGroupIDByProfile(context.Context, string) (string,
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) GetOrgIDByGroup(context.Context, string) (string, error) {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) GetGroupIDsByOrg(context.Context, string, string) ([]string, error) {
 	panic("not implemented")
 }
