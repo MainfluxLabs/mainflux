@@ -76,12 +76,14 @@ func (trm *thingRepositoryMock) UpdateGroupAndProfile(_ context.Context, thing t
 		return dbutil.ErrNotFound
 	}
 
-	existingThing.ProfileID = thing.ProfileID
+	if thing.ProfileID != "" {
+		existingThing.ProfileID = thing.ProfileID
+	}
 	if thing.GroupID != "" {
 		existingThing.GroupID = thing.GroupID
 	}
 
-	trm.things[thing.ID] = thing
+	trm.things[thing.ID] = existingThing
 
 	return nil
 }
