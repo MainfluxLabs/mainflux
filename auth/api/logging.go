@@ -71,7 +71,7 @@ func (lm *loggingMiddleware) LogoutAll(ctx context.Context, token string) (err e
 
 func (lm *loggingMiddleware) RevokeSessions(ctx context.Context, userID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method revoke_sessions for user %s took %s to complete", userID, time.Since(begin))
+		message := fmt.Sprintf("Method revoke_sessions for user id %s took %s to complete", userID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
