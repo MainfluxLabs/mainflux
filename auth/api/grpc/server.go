@@ -24,7 +24,7 @@ var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 type grpcServer struct {
 	issue                               kitgrpc.Handler
 	refresh                             kitgrpc.Handler
-	revokeSessions                  kitgrpc.Handler
+	revokeSessions                      kitgrpc.Handler
 	identify                            kitgrpc.Handler
 	authorize                           kitgrpc.Handler
 	getOwnerIDByOrg                     kitgrpc.Handler
