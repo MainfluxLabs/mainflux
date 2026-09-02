@@ -27,7 +27,7 @@ var _ domain.AuthClient = (*grpcClient)(nil)
 type grpcClient struct {
 	issue                               endpoint.Endpoint
 	refresh                             endpoint.Endpoint
-	revokeUserSessions                  endpoint.Endpoint
+	revokeSessions                      endpoint.Endpoint
 	identify                            endpoint.Endpoint
 	authorize                           endpoint.Endpoint
 	getOwnerIDByOrg                     endpoint.Endpoint
@@ -51,7 +51,7 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeIssueResponse,
 			protomfx.Token{},
 		).Endpoint()),
-		revokeUserSessions: kitot.TraceClient(tracer, "revoke_user_sessions")(kitgrpc.NewClient(
+		revokeSessions: kitot.TraceClient(tracer, "revoke_sessions")(kitgrpc.NewClient(
 			conn,
 			svcName,
 			"RevokeUserSessions",
@@ -174,7 +174,7 @@ func (client grpcClient) RevokeUserSessions(ctx context.Context, id string) erro
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 
-	res, err := client.revokeUserSessions(ctx, revokeUserSessionsReq{id: id})
+	res, err := client.revokeSessions(ctx, revokeUserSessionsReq{id: id})
 	if err != nil {
 		return err
 	}
