@@ -104,8 +104,8 @@ func parseComponents(timestamp any) (int64, int64, error) {
 
 func parseFloatComponents(ts float64) (int64, int64, error) {
 	integer, fractional := math.Modf(ts)
-	if _, err := transformers.SecondsToNanos(integer); err != nil {
-		return 0, 0, err
+	if math.IsNaN(integer) || integer >= float64(math.MaxInt64) || integer < float64(math.MinInt64) {
+		return 0, 0, errors.Wrap(transformers.ErrTimestampOutOfRange, errors.ErrMalformedEntity)
 	}
 	return int64(integer), int64(fractional * 1e9), nil
 }
