@@ -71,7 +71,7 @@ func (svc authServiceMock) Refresh(_ context.Context, token string) (string, err
 	return u.Email, nil
 }
 
-func (svc authServiceMock) RevokeUserSessions(_ context.Context, id string) error {
+func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
 	return nil
 }
 

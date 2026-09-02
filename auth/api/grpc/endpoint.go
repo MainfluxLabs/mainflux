@@ -50,14 +50,14 @@ func refreshEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func revokeUserSessionsEndpoint(svc auth.Service) endpoint.Endpoint {
+func revokeSessionsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(revokeUserSessionsReq)
+		req := request.(revokeSessionsReq)
 		if err := req.validate(); err != nil {
 			return emptyRes{}, err
 		}
 
-		if err := svc.RevokeUserSessions(ctx, req.id); err != nil {
+		if err := svc.RevokeSessions(ctx, req.id); err != nil {
 			return emptyRes{}, err
 		}
 

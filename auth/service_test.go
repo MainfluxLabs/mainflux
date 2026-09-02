@@ -404,10 +404,10 @@ func TestLogoutAll(t *testing.T) {
 	}
 }
 
-// RevokeUserSessions is the path another service takes after a credential
+// RevokeSessions is the path another service takes after a credential
 // change, so unlike LogoutAll it must work from a user ID alone, with no token
 // of that user's in hand.
-func TestRevokeUserSessions(t *testing.T) {
+func TestRevokeSessions(t *testing.T) {
 	svc := newService()
 
 	_, first, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
@@ -415,27 +415,27 @@ func TestRevokeUserSessions(t *testing.T) {
 	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.RevokeUserSessions(context.Background(), id)
-	assert.Nil(t, err, fmt.Sprintf("RevokeUserSessions expected to succeed: %s", err))
+	err = svc.RevokeSessions(context.Background(), id)
+	assert.Nil(t, err, fmt.Sprintf("RevokeSessions expected to succeed: %s", err))
 
 	for _, token := range []string{first, second} {
 		_, err = svc.Refresh(context.Background(), token)
 		assert.NotNil(t, err, "expected every session of the user to be unextendable")
 	}
 
-	err = svc.RevokeUserSessions(context.Background(), "")
+	err = svc.RevokeSessions(context.Background(), "")
 	assert.True(t, errors.Contains(err, apiutil.ErrMissingUserID), fmt.Sprintf("expected an empty user id to be rejected, got %s", err))
 }
 
 // Revoking one user must not touch another's sessions.
-func TestRevokeUserSessionsIsScopedToUser(t *testing.T) {
+func TestRevokeSessionsIsScopedToUser(t *testing.T) {
 	svc := newService()
 
 	_, other, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "other-user", Subject: "other@example.com"})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.RevokeUserSessions(context.Background(), id)
-	require.Nil(t, err, fmt.Sprintf("RevokeUserSessions expected to succeed: %s", err))
+	err = svc.RevokeSessions(context.Background(), id)
+	require.Nil(t, err, fmt.Sprintf("RevokeSessions expected to succeed: %s", err))
 
 	_, err = svc.Refresh(context.Background(), other)
 	assert.Nil(t, err, fmt.Sprintf("another user's session expected to survive: %s", err))

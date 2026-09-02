@@ -24,7 +24,7 @@ var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 type grpcServer struct {
 	issue                               kitgrpc.Handler
 	refresh                             kitgrpc.Handler
-	revokeUserSessions                  kitgrpc.Handler
+	revokeSessions                  kitgrpc.Handler
 	identify                            kitgrpc.Handler
 	authorize                           kitgrpc.Handler
 	getOwnerIDByOrg                     kitgrpc.Handler
@@ -49,9 +49,9 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeRefreshRequest,
 			encodeIssueResponse,
 		),
-		revokeUserSessions: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "revoke_user_sessions")(revokeUserSessionsEndpoint(svc)),
-			decodeRevokeUserSessionsRequest,
+		revokeSessions: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "revoke_sessions")(revokeSessionsEndpoint(svc)),
+			decodeRevokeSessionsRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -118,8 +118,8 @@ func (s *grpcServer) Refresh(ctx context.Context, token *protomfx.Token) (*proto
 	return res.(*protomfx.Token), nil
 }
 
-func (s *grpcServer) RevokeUserSessions(ctx context.Context, req *protomfx.RevokeUserSessionsReq) (*emptypb.Empty, error) {
-	_, res, err := s.revokeUserSessions.ServeGRPC(ctx, req)
+func (s *grpcServer) RevokeSessions(ctx context.Context, req *protomfx.RevokeSessionsReq) (*emptypb.Empty, error) {
+	_, res, err := s.revokeSessions.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -232,9 +232,9 @@ func decodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	return refreshReq{token: req.GetValue()}, nil
 }
 
-func decodeRevokeUserSessionsRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.RevokeUserSessionsReq)
-	return revokeUserSessionsReq{id: req.GetId()}, nil
+func decodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RevokeSessionsReq)
+	return revokeSessionsReq{id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {

@@ -66,13 +66,13 @@ func (ms *metricsMiddleware) LogoutAll(ctx context.Context, token string) error 
 	return ms.svc.LogoutAll(ctx, token)
 }
 
-func (ms *metricsMiddleware) RevokeUserSessions(ctx context.Context, userID string) error {
+func (ms *metricsMiddleware) RevokeSessions(ctx context.Context, userID string) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "revoke_user_sessions").Add(1)
-		ms.latency.With("method", "revoke_user_sessions").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "revoke_sessions").Add(1)
+		ms.latency.With("method", "revoke_sessions").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RevokeUserSessions(ctx, userID)
+	return ms.svc.RevokeSessions(ctx, userID)
 }
 
 func (ms *metricsMiddleware) Revoke(ctx context.Context, token, id string) error {

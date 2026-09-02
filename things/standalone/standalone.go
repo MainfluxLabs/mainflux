@@ -43,7 +43,7 @@ func (repo singleUserRepo) Refresh(ctx context.Context, token string) (string, e
 	return repo.token, nil
 }
 
-func (repo singleUserRepo) RevokeUserSessions(ctx context.Context, id string) error {
+func (repo singleUserRepo) RevokeSessions(ctx context.Context, id string) error {
 	return errUnsupported
 }
 

@@ -220,7 +220,7 @@ func (svc service) LogoutAll(ctx context.Context, token string) error {
 	return nil
 }
 
-func (svc service) RevokeUserSessions(ctx context.Context, userID string) error {
+func (svc service) RevokeSessions(ctx context.Context, userID string) error {
 	if userID == "" {
 		return errors.Wrap(errLogout, apiutil.ErrMissingUserID)
 	}

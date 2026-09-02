@@ -58,11 +58,11 @@ func (req refreshReq) validate() error {
 	return nil
 }
 
-type revokeUserSessionsReq struct {
+type revokeSessionsReq struct {
 	id string
 }
 
-func (req revokeUserSessionsReq) validate() error {
+func (req revokeSessionsReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingUserID
 	}

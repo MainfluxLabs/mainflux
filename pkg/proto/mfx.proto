@@ -81,7 +81,7 @@ service UsersService {
 service AuthService {
     rpc Issue(IssueReq) returns (Token) {}
     rpc Refresh(Token) returns (Token) {}
-    rpc RevokeUserSessions(RevokeUserSessionsReq) returns (google.protobuf.Empty) {}
+    rpc RevokeSessions(RevokeSessionsReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (UserIdentity) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc GetOwnerIDByOrg(OrgID) returns (OwnerID) {}
@@ -169,7 +169,7 @@ message IssueReq {
     uint32 type  = 3;
 }
 
-message RevokeUserSessionsReq {
+message RevokeSessionsReq {
     string id = 1;
 }
 

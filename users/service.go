@@ -845,7 +845,7 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 		return err
 	}
 
-	return svc.auth.RevokeUserSessions(ctx, ir.id)
+	return svc.auth.RevokeSessions(ctx, ir.id)
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
@@ -893,7 +893,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return err
 	}
 
-	return svc.auth.RevokeUserSessions(ctx, userID)
+	return svc.auth.RevokeSessions(ctx, userID)
 }
 
 func (svc usersService) SendPasswordReset(_ context.Context, redirectPath, email, token string) error {
@@ -913,7 +913,7 @@ func (svc usersService) DisableUser(ctx context.Context, token, id string) error
 		return err
 	}
 
-	return svc.auth.RevokeUserSessions(ctx, id)
+	return svc.auth.RevokeSessions(ctx, id)
 }
 
 func (svc usersService) changeStatus(ctx context.Context, token, id, status string) error {
