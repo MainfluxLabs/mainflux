@@ -783,7 +783,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "import client with valid csv file",
+			desc:        "create client with valid csv file",
 			body:        validBody,
 			thingID:     thingID,
 			contentType: validContentType,
@@ -791,7 +791,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusCreated,
 		},
 		{
-			desc:        "import client with unsupported content type",
+			desc:        "create client with unsupported content type",
 			body:        validBody,
 			thingID:     thingID,
 			contentType: "text/plain",
@@ -799,7 +799,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
-			desc:        "import client with malformed csv row",
+			desc:        "create client with malformed csv row",
 			body:        badRowBody,
 			thingID:     thingID,
 			contentType: badRowContentType,
@@ -807,7 +807,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with empty file",
+			desc:        "create client with empty file",
 			body:        emptyFileBody,
 			thingID:     thingID,
 			contentType: emptyFileContentType,
@@ -815,7 +815,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with invalid client JSON",
+			desc:        "create client with invalid client JSON",
 			body:        badClientJSONBody,
 			thingID:     thingID,
 			contentType: badClientJSONContentType,
@@ -823,7 +823,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with missing client part",
+			desc:        "create client with missing client part",
 			body:        noClientPartBody,
 			thingID:     thingID,
 			contentType: noClientPartContentType,
@@ -831,7 +831,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with missing file part",
+			desc:        "create client with missing file part",
 			body:        noFilePartBody,
 			thingID:     thingID,
 			contentType: noFilePartContentType,
@@ -839,7 +839,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with wrong token",
+			desc:        "create client with wrong token",
 			body:        wrongTokenBody,
 			thingID:     thingID,
 			contentType: wrongTokenContentType,
@@ -847,7 +847,7 @@ func TestCreateClientFromCSV(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "import client with wrong thing ID",
+			desc:        "create client with wrong thing ID",
 			body:        wrongThingBody,
 			thingID:     wrongID,
 			contentType: wrongThingContentType,
@@ -904,7 +904,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "import client with valid json file",
+			desc:        "create client with valid json file",
 			body:        validBody,
 			thingID:     thingID,
 			contentType: validContentType,
@@ -912,7 +912,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusCreated,
 		},
 		{
-			desc:        "import client with unsupported content type",
+			desc:        "create client with unsupported content type",
 			body:        validBody,
 			thingID:     thingID,
 			contentType: "text/plain",
@@ -920,7 +920,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
-			desc:        "import client with malformed json fields",
+			desc:        "create client with malformed json fields",
 			body:        badFieldsBody,
 			thingID:     thingID,
 			contentType: badFieldsContentType,
@@ -928,7 +928,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with empty file",
+			desc:        "create client with empty file",
 			body:        emptyFileBody,
 			thingID:     thingID,
 			contentType: emptyFileContentType,
@@ -936,7 +936,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with invalid client JSON",
+			desc:        "create client with invalid client JSON",
 			body:        badClientJSONBody,
 			thingID:     thingID,
 			contentType: badClientJSONContentType,
@@ -944,7 +944,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with missing client part",
+			desc:        "create client with missing client part",
 			body:        noClientPartBody,
 			thingID:     thingID,
 			contentType: noClientPartContentType,
@@ -952,7 +952,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with missing file part",
+			desc:        "create client with missing file part",
 			body:        noFilePartBody,
 			thingID:     thingID,
 			contentType: noFilePartContentType,
@@ -960,7 +960,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "import client with wrong token",
+			desc:        "create client with wrong token",
 			body:        wrongTokenBody,
 			thingID:     thingID,
 			contentType: wrongTokenContentType,
@@ -968,7 +968,7 @@ func TestCreateClientFromJSON(t *testing.T) {
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "import client with wrong thing ID",
+			desc:        "create client with wrong thing ID",
 			body:        wrongThingBody,
 			thingID:     wrongID,
 			contentType: wrongThingContentType,
