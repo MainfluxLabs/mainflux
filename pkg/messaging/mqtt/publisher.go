@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -43,19 +44,27 @@ func NewPublisher(address string, timeout time.Duration) (Publisher, error) {
 func (pub publisher) Publish(subject string, msg protomfx.Message) error {
 	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
 	if err != nil {
-		return err
+		return errors.Wrap(messaging.ErrPublishMessage, err)
 	}
 
-	return pub.publish(subject, payload)
+	if err := pub.publish(subject, payload); err != nil {
+		return errors.Wrap(messaging.ErrPublishMessage, err)
+	}
+
+	return nil
 }
 
 func (pub publisher) PublishCommand(subject string, cmd protomfx.Command) error {
 	payload, err := json.Marshal(messaging.ToJSONCommand(cmd))
 	if err != nil {
-		return err
+		return errors.Wrap(messaging.ErrPublishCommand, err)
 	}
 
-	return pub.publish(subject, payload)
+	if err := pub.publish(subject, payload); err != nil {
+		return errors.Wrap(messaging.ErrPublishCommand, err)
+	}
+
+	return nil
 }
 
 func (pub publisher) publish(subject string, payload []byte) error {
@@ -63,7 +72,7 @@ func (pub publisher) publish(subject string, payload []byte) error {
 
 	token := pub.client.Publish(topic, qos, false, payload)
 	if !token.WaitTimeout(pub.timeout) {
-		return messaging.ErrPublishTimeout
+		return ErrTimeoutReached
 	}
 
 	return token.Error()

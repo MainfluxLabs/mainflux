@@ -16,8 +16,17 @@ var (
 	// ErrPublishMessage indicates that message publishing failed.
 	ErrPublishMessage = errors.New("failed to publish message")
 
-	// ErrPublishTimeout indicates that the publishing failed due to timeout.
-	ErrPublishTimeout = errors.New("failed to publish due to timeout reached")
+	// ErrPublishCommand indicates that command publishing failed.
+	ErrPublishCommand = errors.New("failed to publish command")
+
+	// ErrPublishAlarm indicates that alarm publishing failed.
+	ErrPublishAlarm = errors.New("failed to publish alarm")
+
+	// ErrPublishNotification indicates that notification publishing failed.
+	ErrPublishNotification = errors.New("failed to publish notification")
+
+	// ErrPublishWebhook indicates that webhook publishing failed.
+	ErrPublishWebhook = errors.New("failed to publish webhook")
 
 	// ErrMalformedSubtopic indicates that the subtopic is malformed.
 	ErrMalformedSubtopic = errors.New("malformed subtopic")

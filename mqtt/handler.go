@@ -39,6 +39,7 @@ var (
 
 	ErrFailedConnect     = errors.New("failed to connect")
 	ErrFailedDisconnect  = errors.New("failed to disconnect")
+	ErrFailedPublish     = errors.New("failed to publish")
 	ErrFailedSubscribe   = errors.New("failed to subscribe")
 	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
 
@@ -208,7 +209,7 @@ func (h *handler) Connect(c *session.Client) {
 // Publish - after client successfully published
 func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	if c == nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedPublish, ErrClientNotInitialized).Error())
 		return
 	}
 
