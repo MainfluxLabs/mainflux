@@ -44,14 +44,13 @@ const (
 	missingPart  = "__missing__"
 	csvFileName  = "registers.csv"
 	jsonFileName = "registers.json"
-	txtFileName  = "registers.txt"
 )
 
 var (
 	validScheduler   = `"scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}`
 	invalidScheduler = `"scheduler":{"frequency":"invalid"}`
 
-	dataField           = `{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}`
+	dataField       = `{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}`
 	validDataFields = fmt.Sprintf(`"data_fields":[%s]`, dataField)
 
 	// baseClientJSON holds the fixed name/IP/port/function_code fields shared by most test bodies.
@@ -757,27 +756,21 @@ func multipartBody(t *testing.T, clientJSON, fileName, fileContent string) (*byt
 	return &buf, w.FormDataContentType()
 }
 
-func TestImportClient(t *testing.T) {
+func TestCreateClientFromCSV(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
 	validClientJSON := fmt.Sprintf(`{%s,%s}`, baseClientJSON, validScheduler)
 	validFieldsCSV := "name,type,unit,scale,byte_order,address,length\ntemperature,float32,,,ABCD,0,\nhumidity,float32,,,ABCD,2,\n"
-	validFieldsJSON := fmt.Sprintf(`[%s]`, dataField)
 
-	csvBody, csvContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
-	jsonFileBody, jsonFileContentType := multipartBody(t, validClientJSON, jsonFileName, validFieldsJSON)
-
-	badExtBody, badExtContentType := multipartBody(t, validClientJSON, txtFileName, validFieldsCSV)
-	badCSVBody, badCSVContentType := multipartBody(t, validClientJSON, csvFileName,
+	validBody, validContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
+	badRowBody, badRowContentType := multipartBody(t, validClientJSON, csvFileName,
 		"name,type,unit,scale,byte_order,address,length\ntemperature,float32,,,ABCD,not-a-number,\n")
 	emptyFileBody, emptyFileContentType := multipartBody(t, validClientJSON, csvFileName, "")
-
 	badClientJSONBody, badClientJSONContentType := multipartBody(t, `}{`, csvFileName, validFieldsCSV)
 	noClientPartBody, noClientPartContentType := multipartBody(t, missingPart, csvFileName, validFieldsCSV)
 	noFilePartBody, noFilePartContentType := multipartBody(t, validClientJSON, missingPart, "")
-
 	wrongTokenBody, wrongTokenContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
 	wrongThingBody, wrongThingContentType := multipartBody(t, validClientJSON, csvFileName, validFieldsCSV)
 
@@ -791,41 +784,25 @@ func TestImportClient(t *testing.T) {
 	}{
 		{
 			desc:        "import client with valid csv file",
-			body:        csvBody,
+			body:        validBody,
 			thingID:     thingID,
-			contentType: csvContentType,
-			token:       token,
-			status:      http.StatusCreated,
-		},
-		{
-			desc:        "import client with valid json file",
-			body:        jsonFileBody,
-			thingID:     thingID,
-			contentType: jsonFileContentType,
+			contentType: validContentType,
 			token:       token,
 			status:      http.StatusCreated,
 		},
 		{
 			desc:        "import client with unsupported content type",
-			body:        csvBody,
+			body:        validBody,
 			thingID:     thingID,
 			contentType: "text/plain",
 			token:       token,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
-			desc:        "import client with unsupported file extension",
-			body:        badExtBody,
-			thingID:     thingID,
-			contentType: badExtContentType,
-			token:       token,
-			status:      http.StatusBadRequest,
-		},
-		{
 			desc:        "import client with malformed csv row",
-			body:        badCSVBody,
+			body:        badRowBody,
 			thingID:     thingID,
-			contentType: badCSVContentType,
+			contentType: badRowContentType,
 			token:       token,
 			status:      http.StatusBadRequest,
 		},
@@ -883,7 +860,7 @@ func TestImportClient(t *testing.T) {
 		req := testRequest{
 			client:      ts.Client(),
 			method:      http.MethodPost,
-			url:         fmt.Sprintf("%s/things/%s/clients", ts.URL, tc.thingID),
+			url:         fmt.Sprintf("%s/things/%s/clients/csv", ts.URL, tc.thingID),
 			contentType: tc.contentType,
 			token:       tc.token,
 			body:        tc.body,
@@ -891,5 +868,133 @@ func TestImportClient(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+
+		if tc.status == http.StatusCreated {
+			var body clientRes
+			err = json.NewDecoder(res.Body).Decode(&body)
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+			assert.NotEmpty(t, body.ID, fmt.Sprintf("%s: expected a single client object with an id", tc.desc))
+		}
+	}
+}
+
+func TestCreateClientFromJSON(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	validClientJSON := fmt.Sprintf(`{%s,%s}`, baseClientJSON, validScheduler)
+	validFieldsJSON := fmt.Sprintf(`[%s]`, dataField)
+
+	validBody, validContentType := multipartBody(t, validClientJSON, jsonFileName, validFieldsJSON)
+	badFieldsBody, badFieldsContentType := multipartBody(t, validClientJSON, jsonFileName, `not valid json`)
+	emptyFileBody, emptyFileContentType := multipartBody(t, validClientJSON, jsonFileName, "")
+	badClientJSONBody, badClientJSONContentType := multipartBody(t, `}{`, jsonFileName, validFieldsJSON)
+	noClientPartBody, noClientPartContentType := multipartBody(t, missingPart, jsonFileName, validFieldsJSON)
+	noFilePartBody, noFilePartContentType := multipartBody(t, validClientJSON, missingPart, "")
+	wrongTokenBody, wrongTokenContentType := multipartBody(t, validClientJSON, jsonFileName, validFieldsJSON)
+	wrongThingBody, wrongThingContentType := multipartBody(t, validClientJSON, jsonFileName, validFieldsJSON)
+
+	cases := []struct {
+		desc        string
+		body        *bytes.Buffer
+		thingID     string
+		contentType string
+		token       string
+		status      int
+	}{
+		{
+			desc:        "import client with valid json file",
+			body:        validBody,
+			thingID:     thingID,
+			contentType: validContentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "import client with unsupported content type",
+			body:        validBody,
+			thingID:     thingID,
+			contentType: "text/plain",
+			token:       token,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "import client with malformed json fields",
+			body:        badFieldsBody,
+			thingID:     thingID,
+			contentType: badFieldsContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with empty file",
+			body:        emptyFileBody,
+			thingID:     thingID,
+			contentType: emptyFileContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with invalid client JSON",
+			body:        badClientJSONBody,
+			thingID:     thingID,
+			contentType: badClientJSONContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with missing client part",
+			body:        noClientPartBody,
+			thingID:     thingID,
+			contentType: noClientPartContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with missing file part",
+			body:        noFilePartBody,
+			thingID:     thingID,
+			contentType: noFilePartContentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "import client with wrong token",
+			body:        wrongTokenBody,
+			thingID:     thingID,
+			contentType: wrongTokenContentType,
+			token:       wrongToken,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "import client with wrong thing ID",
+			body:        wrongThingBody,
+			thingID:     wrongID,
+			contentType: wrongThingContentType,
+			token:       token,
+			status:      http.StatusForbidden,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/things/%s/clients/json", ts.URL, tc.thingID),
+			contentType: tc.contentType,
+			token:       tc.token,
+			body:        tc.body,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+
+		if tc.status == http.StatusCreated {
+			var body clientRes
+			err = json.NewDecoder(res.Body).Decode(&body)
+			assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+			assert.NotEmpty(t, body.ID, fmt.Sprintf("%s: expected a single client object with an id", tc.desc))
+		}
 	}
 }

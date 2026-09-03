@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux"
@@ -37,8 +36,6 @@ const (
 	clientKey    = "client"
 	fileKey      = "file"
 	maxMemory    = 32 << 20
-	csvExt       = ".csv"
-	jsonExt      = ".json"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -58,6 +55,24 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 			withIdentity,
 		)(createClientsEndpoint(svc)),
 		decodeCreateClients,
+		encodeResponse,
+		opts...,
+	))
+	r.Post("/things/:id/clients/csv", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_client_csv"),
+			withIdentity,
+		)(createClientFromFileEndpoint(svc)),
+		decodeCreateClientCSV,
+		encodeResponse,
+		opts...,
+	))
+	r.Post("/things/:id/clients/json", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "create_client_json"),
+			withIdentity,
+		)(createClientFromFileEndpoint(svc)),
+		decodeCreateClientJSON,
 		encodeResponse,
 		opts...,
 	))
@@ -113,70 +128,80 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 	return r
 }
 
-// decodeCreateClients dispatches on Content-Type so JSON bulk-create and file import share one route.
-func decodeCreateClients(ctx context.Context, r *http.Request) (any, error) {
-	ct := r.Header.Get(ctKey)
-	switch {
-	case strings.Contains(ct, apiutil.ContentTypeJSON):
-		req := createClientsReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
-		if err := json.NewDecoder(r.Body).Decode(&req.Clients); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		return req, nil
-	case strings.Contains(ct, apiutil.ContentTypeMultipart):
-		return decodeClientFile(ctx, r)
-	default:
+func decodeCreateClients(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	req := createClientsReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey)}
+	if err := json.NewDecoder(r.Body).Decode(&req.Clients); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
-// decodeClientFile builds one client from its config part plus data fields parsed from the file part.
-func decodeClientFile(_ context.Context, r *http.Request) (any, error) {
-	if err := r.ParseMultipartForm(maxMemory); err != nil {
+// decodeCreateClientCSV builds one client from its config part plus data fields parsed from a CSV file part.
+func decodeCreateClientCSV(_ context.Context, r *http.Request) (any, error) {
+	c, data, err := decodeClientFileParts(r)
+	if err != nil {
+		return nil, err
+	}
+
+	fields, err := parseCSVFields(bytes.NewReader(data))
+	if err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	c.DataFields = normalizeFieldCase(fields)
+
+	return createClientReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey), client: c}, nil
+}
+
+// decodeCreateClientJSON builds one client from its config part plus data fields parsed from a JSON file part.
+func decodeCreateClientJSON(_ context.Context, r *http.Request) (any, error) {
+	c, data, err := decodeClientFileParts(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var fields []field
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	c.DataFields = normalizeFieldCase(fields)
+
+	return createClientReq{token: apiutil.ExtractBearerToken(r), thingID: bone.GetValue(r, idKey), client: c}, nil
+}
+
+// decodeClientFileParts parses the "client" config part and returns the raw bytes of the "file" part,
+// shared by both file decoders regardless of the file's format.
+func decodeClientFileParts(r *http.Request) (client, []byte, error) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeMultipart) {
+		return client{}, nil, apiutil.ErrUnsupportedContentType
+	}
+
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
+		return client{}, nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
 	var c client
 	if err := json.Unmarshal([]byte(r.FormValue(clientKey)), &c); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return client{}, nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
-	file, header, err := r.FormFile(fileKey)
+	file, _, err := r.FormFile(fileKey)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return client{}, nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		return client{}, nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 	data = bytes.TrimPrefix(data, apiutil.UTF8BOM)
 
-	var fields []field
-	switch strings.ToLower(filepath.Ext(header.Filename)) {
-	case csvExt:
-		fields, err = parseCSVFields(bytes.NewReader(data))
-	case jsonExt:
-		err = json.Unmarshal(data, &fields)
-	default:
-		return nil, ErrUnsupportedFileFormat
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	c.DataFields = normalizeFieldCase(fields)
-
-	req := createClientsReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, idKey),
-		Clients: []client{c},
-	}
-
-	return req, nil
+	return c, data, nil
 }
 
 // normalizeFieldCase normalizes fields in imported files to avoid case sensitivity.
@@ -329,8 +354,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrMissingFieldName,
 		err == ErrInvalidFieldType,
 		err == ErrInvalidByteOrder,
-		err == ErrInvalidFieldLength,
-		err == ErrUnsupportedFileFormat:
+		err == ErrInvalidFieldLength:
 		w.WriteHeader(http.StatusBadRequest)
 	default:
 		apiutil.EncodeError(err, w)

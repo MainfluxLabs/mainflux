@@ -127,7 +127,7 @@ $GOBIN/mainfluxlabs-modbus
 
 ## Usage
 
-### Creating clients: JSON body (`Content-Type: application/json`)
+### Creating clients (`POST /things/{thingId}/clients`, `Content-Type: application/json`)
 
 A JSON array of client objects (see fields above), each with `data_fields` given inline. Multiple clients can be created in one request.
 
@@ -138,11 +138,11 @@ curl -X POST http://localhost:9028/things/<thingId>/clients \
   -d '[{"name":"pump-1","ip_address":"10.0.0.5","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"},"data_fields":[{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}]}]'
 ```
 
-### Creating clients: file import (`Content-Type: multipart/form-data`)
+Importing a client creates a single client whose connection info is given as a `client` form field (JSON, same shape as above without `data_fields`) and whose `data_fields` are parsed from an uploaded `file` part. Meant for a client with many registers, so they don't have to be entered one by one through a form. Both import endpoints require `Content-Type: multipart/form-data`.
 
-Creates a single client whose connection info is given as a `client` form field (JSON, same shape as above without `data_fields`) and whose `data_fields` are parsed from an uploaded `file` part (CSV or JSON). Meant for a client with many registers, so they don't have to be entered one by one through a form.
+### Importing a client with a CSV file (`POST /things/{thingId}/clients/csv`)
 
-A JSON file is an array of data field objects, same shape as `data_fields` above. A CSV file needs a header row naming columns, one row per register; header names are matched case-insensitively and unknown columns are ignored. In both CSV and JSON files, `type` and `byte_order` values are also matched case-insensitively (e.g. `Float32`, `FLOAT32`, and `float32` are equivalent) — this only normalizes casing, not vendor type names that differ from ours entirely (see below).
+The file needs a header row naming columns, one row per register; header names are matched case-insensitively and unknown columns are ignored. `type` and `byte_order` values are also matched case-insensitively (e.g. `Float32`, `FLOAT32`, and `float32` are equivalent) — this only normalizes casing, not vendor type names that differ from ours entirely (see below).
 
 | Column       | Maps to                    | Required                                                         |
 | ------------ | -------------------------- | ---------------------------------------------------------------- |
@@ -161,7 +161,7 @@ humidity,float32,%,,ABCD,2,
 ```
 
 ```bash
-curl -X POST http://localhost:9028/things/<thingId>/clients \
+curl -X POST http://localhost:9028/things/<thingId>/clients/csv \
   -H "Authorization: Bearer <token>" \
   -F 'client={"name":"pump-1","ip_address":"10.0.0.5","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}' \
   -F "file=@registers.csv"
@@ -175,5 +175,16 @@ Modbus itself doesn't define a file format for register maps, but vendor datashe
 - Rename the description/name column to `name`.
 - Rename the data-type column to `type`, translating vendor type codes to ours, e.g. `U16`→`uint16`, `S16`→`int16`, `U32`→`uint32`, `Float`→`float32`. Casing doesn't matter (`Float32` and `FLOAT32` both work), but the word itself still needs to match one of ours — `Float` alone isn't `float32`.
 - `Function Code` in particular is set once via the `client` field, not per register, so a register map spanning more than one function code needs to be split into separate imports (see [Function Codes](#function-codes) above).
+
+### Importing a client with a JSON file (`POST /things/{thingId}/clients/json`)
+
+The file is a JSON array of data field objects, same shape as `data_fields` above. `type` and `byte_order` values are matched case-insensitively, same as the CSV import.
+
+```bash
+curl -X POST http://localhost:9028/things/<thingId>/clients/json \
+  -H "Authorization: Bearer <token>" \
+  -F 'client={"name":"pump-1","ip_address":"10.0.0.5","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}' \
+  -F 'file=[{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}]'
+```
 
 For the full HTTP API reference, see the [OpenAPI specification](https://mainfluxlabs.github.io/docs/swagger/).

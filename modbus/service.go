@@ -45,6 +45,10 @@ type Service interface {
 	// CreateClients creates clients for certain thing identified by the thing ID.
 	CreateClients(ctx context.Context, token, thingID string, Clients ...Client) ([]Client, error)
 
+	// CreateClient creates a single client for the thing identified by the thing ID,
+	// with data fields parsed from an uploaded file.
+	CreateClient(ctx context.Context, token, thingID string, client Client) (Client, error)
+
 	// ListClientsByThing retrieves data about a subset of clients
 	// related to a certain thing.
 	ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error)
@@ -134,7 +138,7 @@ func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, id
 	}
 }
 
-func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
+func (cs *clientsService) createClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -168,6 +172,19 @@ func (cs *clientsService) CreateClients(ctx context.Context, token, thingID stri
 	}
 
 	return cls, nil
+}
+
+func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
+	return cs.createClients(ctx, token, thingID, clients...)
+}
+
+func (cs *clientsService) CreateClient(ctx context.Context, token, thingID string, client Client) (Client, error) {
+	cls, err := cs.createClients(ctx, token, thingID, client)
+	if err != nil {
+		return Client{}, err
+	}
+
+	return cls[0], nil
 }
 
 func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error) {

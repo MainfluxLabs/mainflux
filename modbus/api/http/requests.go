@@ -17,18 +17,17 @@ const (
 )
 
 var (
-	ErrMissingID             = errors.New("missing client id")
-	ErrInvalidScheduler      = errors.New("missing or invalid scheduler")
-	ErrMissingIPAddress      = errors.New("missing IP address")
-	ErrMissingPort           = errors.New("missing port")
-	ErrMissingDataFields     = errors.New("missing data fields")
-	ErrInvalidFunctionCode   = errors.New("invalid function code")
-	ErrMissingFieldName      = errors.New("missing field name")
-	ErrInvalidFieldType      = errors.New("invalid field type")
-	ErrInvalidFieldLength    = errors.New("invalid field length")
-	ErrInvalidByteOrder      = errors.New("invalid byte order")
-	ErrUnsupportedFileFormat = errors.New("unsupported file format")
-	ErrInvalidCSVRow         = errors.New("invalid csv row")
+	ErrMissingID           = errors.New("missing client id")
+	ErrInvalidScheduler    = errors.New("missing or invalid scheduler")
+	ErrMissingIPAddress    = errors.New("missing IP address")
+	ErrMissingPort         = errors.New("missing port")
+	ErrMissingDataFields   = errors.New("missing data fields")
+	ErrInvalidFunctionCode = errors.New("invalid function code")
+	ErrMissingFieldName    = errors.New("missing field name")
+	ErrInvalidFieldType    = errors.New("invalid field type")
+	ErrInvalidFieldLength  = errors.New("invalid field length")
+	ErrInvalidByteOrder    = errors.New("invalid byte order")
+	ErrInvalidCSVRow       = errors.New("invalid csv row")
 )
 
 // validatePageMetadata validates the modbus page metadata.
@@ -224,6 +223,24 @@ func (req updateClientReq) validate() error {
 	}
 
 	return nil
+}
+
+type createClientReq struct {
+	token   string
+	thingID string
+	client
+}
+
+func (req createClientReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	return req.client.validate()
 }
 
 type removeClientsReq struct {
