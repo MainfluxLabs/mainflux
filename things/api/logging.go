@@ -424,6 +424,19 @@ func (lm *loggingMiddleware) GetGroupIDByProfile(ctx context.Context, profileID 
 	return lm.svc.GetGroupIDByProfile(ctx, profileID)
 }
 
+func (lm *loggingMiddleware) GetOrgIDByGroup(ctx context.Context, groupID string) (_ string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_org_id_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetOrgIDByGroup(ctx, groupID)
+}
+
 func (lm *loggingMiddleware) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) (_ []string, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

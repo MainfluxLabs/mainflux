@@ -146,6 +146,9 @@ type Service interface {
 	// GetGroupIDByProfile returns a profile's group ID for given profile ID.
 	GetGroupIDByProfile(ctx context.Context, profileID string) (string, error)
 
+	// GetOrgIDByGroup returns a group's org ID for given group ID.
+	GetOrgIDByGroup(ctx context.Context, groupID string) (string, error)
+
 	// GetGroupIDsByOrg returns all group IDs belonging to an org.
 	GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error)
 
@@ -778,6 +781,10 @@ func (ts *thingsService) GetGroupIDByProfile(ctx context.Context, profileID stri
 	return ts.getGroupIDByProfile(ctx, profileID)
 }
 
+func (ts *thingsService) GetOrgIDByGroup(ctx context.Context, groupID string) (string, error) {
+	return ts.getOrgIDByGroup(ctx, groupID)
+}
+
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
 	if err := ts.isAdmin(ctx, token); err != nil {
 		return Backup{}, err
@@ -933,6 +940,23 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
+}
+
+func (ts *thingsService) getOrgIDByGroup(ctx context.Context, grID string) (string, error) {
+	orgID, err := ts.groupCache.ViewOrg(ctx, grID)
+	if err != nil {
+		gr, err := ts.groups.RetrieveByID(ctx, grID)
+		if err != nil {
+			return "", err
+		}
+		orgID = gr.OrgID
+
+		if err := ts.groupCache.SaveOrg(ctx, grID, orgID); err != nil {
+			return "", err
+		}
+	}
+
+	return orgID, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {

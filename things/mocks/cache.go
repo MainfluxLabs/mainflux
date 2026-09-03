@@ -202,16 +202,22 @@ func (pcm *profileCacheMock) RemoveGroup(_ context.Context, profileID string) er
 type groupCacheMock struct {
 	mu      sync.Mutex
 	members map[string]string
+	orgs    map[string]string
 }
 
 // NewGroupCache returns mock cache instance.
 func NewGroupCache() things.GroupCache {
 	return &groupCacheMock{
 		members: make(map[string]string),
+		orgs:    make(map[string]string),
 	}
 }
 
 func (gcm *groupCacheMock) RemoveGroupEntities(_ context.Context, groupID string) error {
+	gcm.mu.Lock()
+	defer gcm.mu.Unlock()
+
+	delete(gcm.orgs, groupID)
 	return nil
 }
 
@@ -260,6 +266,26 @@ func (gcm *groupCacheMock) RetrieveGroupIDsByMember(_ context.Context, memberID 
 	}
 
 	return groups, nil
+}
+
+func (gcm *groupCacheMock) SaveOrg(_ context.Context, groupID, orgID string) error {
+	gcm.mu.Lock()
+	defer gcm.mu.Unlock()
+
+	gcm.orgs[groupID] = orgID
+	return nil
+}
+
+func (gcm *groupCacheMock) ViewOrg(_ context.Context, groupID string) (string, error) {
+	gcm.mu.Lock()
+	defer gcm.mu.Unlock()
+
+	orgID, ok := gcm.orgs[groupID]
+	if !ok {
+		return "", dbutil.ErrNotFound
+	}
+
+	return orgID, nil
 }
 
 func mKey(groupID, memberID string) string {
