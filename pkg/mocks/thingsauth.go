@@ -62,6 +62,16 @@ func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req domain.Us
 	return errors.ErrAuthorization
 }
 
+func (svc thingsServiceMock) CanUserAccessThings(ctx context.Context, req domain.UserAccessThingsReq) error {
+	for _, id := range req.IDs {
+		if err := svc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: req.Token, ID: id, Action: req.Action}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (svc thingsServiceMock) CanUserAccessProfile(_ context.Context, req domain.UserAccessReq) error {
 	gr, ok := svc.groups[req.Token]
 	if !ok {

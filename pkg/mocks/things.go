@@ -170,6 +170,10 @@ func (svc *mainfluxThings) CanUserAccessThing(context.Context, things.UserAccess
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) CanUserAccessThings(context.Context, things.UserAccessThingsReq) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) CanUserAccessProfile(context.Context, things.UserAccessReq) error {
 	panic("not implemented")
 }
