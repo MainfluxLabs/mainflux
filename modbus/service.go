@@ -36,7 +36,6 @@ type PageMetadata struct {
 	Frequency string `json:"frequency,omitempty"`
 }
 
-
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -232,15 +231,23 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 }
 
 func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids ...string) error {
+	cls := make([]Client, 0, len(ids))
+	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		client, err := cs.clients.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
-		if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupEditor}); err != nil {
-			return err
-		}
 
+		cls = append(cls, client)
+		thingIDs = append(thingIDs, client.ThingID)
+	}
+
+	if err := cs.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	for _, client := range cls {
 		cs.unscheduleTask(client)
 	}
 

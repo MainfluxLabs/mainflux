@@ -33,7 +33,6 @@ type PageMetadata struct {
 	Frequency string `json:"frequency,omitempty"`
 }
 
-
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -223,15 +222,23 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 }
 
 func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, ids ...string) error {
+	dls := make([]Downlink, 0, len(ids))
+	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		downlink, err := ds.downlinks.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
-		if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: downlink.ThingID, Action: domain.GroupEditor}); err != nil {
-			return err
-		}
 
+		dls = append(dls, downlink)
+		thingIDs = append(thingIDs, downlink.ThingID)
+	}
+
+	if err := ds.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	for _, downlink := range dls {
 		ds.unscheduleTask(downlink)
 	}
 
