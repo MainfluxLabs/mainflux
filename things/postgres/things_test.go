@@ -263,6 +263,123 @@ func TestRetrieveThingByID(t *testing.T) {
 	}
 }
 
+func TestRetrieveGroupIDsByThings(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
+
+	group := createGroup(t, dbMiddleware)
+	prID := generateUUID(t)
+
+	p := things.Profile{
+		ID:      prID,
+		GroupID: group.ID,
+		Name:    profileName,
+	}
+	_, err := profileRepo.Save(context.Background(), p)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var ids []string
+	for i := 0; i < 3; i++ {
+		th := things.Thing{
+			ID:        generateUUID(t),
+			GroupID:   group.ID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("%s-%d", thingName, i),
+			Key:       generateUUID(t),
+		}
+
+		ths, err := thingRepo.Save(context.Background(), th)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		ids = append(ids, ths[0].ID)
+	}
+
+	nonexistentThingID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := map[string]struct {
+		ids  []string
+		size int
+		err  error
+	}{
+		"retrieve group ids of all existing things": {
+			ids:  ids,
+			size: len(ids),
+			err:  nil,
+		},
+		"retrieve group ids of a subset of existing things": {
+			ids:  ids[:2],
+			size: 2,
+			err:  nil,
+		},
+		"retrieve group ids with a non-existing thing id": {
+			ids:  append([]string{nonexistentThingID}, ids...),
+			size: len(ids),
+			err:  nil,
+		},
+		"retrieve group ids with an empty list of ids": {
+			ids:  []string{},
+			size: 0,
+			err:  nil,
+		},
+		"retrieve group ids with a malformed thing id": {
+			ids:  append([]string{invalidID}, ids...),
+			size: 0,
+			err:  dbutil.ErrNotFound,
+		},
+	}
+
+	for desc, tc := range cases {
+		grIDs, err := thingRepo.RetrieveGroupIDsByThings(context.Background(), tc.ids)
+		assert.Equal(t, tc.size, len(grIDs), fmt.Sprintf("%s: expected %d group ids got %d\n", desc, tc.size, len(grIDs)))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+
+		for _, id := range tc.ids {
+			if grID, ok := grIDs[id]; ok {
+				assert.Equal(t, group.ID, grID, fmt.Sprintf("%s: expected group %s got %s\n", desc, group.ID, grID))
+			}
+		}
+	}
+}
+
+func TestRetrieveGroupIDsByThingsCanonicalizesIDs(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
+
+	group := createGroup(t, dbMiddleware)
+	prID := generateUUID(t)
+
+	_, err := profileRepo.Save(context.Background(), things.Profile{ID: prID, GroupID: group.ID, Name: profileName})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	id := generateUUID(t)
+	_, err = thingRepo.Save(context.Background(), things.Thing{
+		ID:        id,
+		GroupID:   group.ID,
+		ProfileID: prID,
+		Name:      thingName,
+		Key:       generateUUID(t),
+	})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	// Postgres accepts several spellings of the same UUID and always returns the
+	// canonical one, so callers must not assume the result is keyed by whatever
+	// they passed in. Each spelling has to resolve to exactly one row.
+	cases := map[string]string{
+		"canonical id":       id,
+		"upper-case id":      strings.ToUpper(id),
+		"id without hyphens": strings.ReplaceAll(id, "-", ""),
+	}
+
+	for desc, spelling := range cases {
+		grIDs, err := thingRepo.RetrieveGroupIDsByThings(context.Background(), []string{spelling})
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s\n", desc, err))
+		assert.Equal(t, 1, len(grIDs), fmt.Sprintf("%s: expected 1 group id got %d\n", desc, len(grIDs)))
+		assert.Equal(t, group.ID, grIDs[id], fmt.Sprintf("%s: expected result keyed by the canonical id\n", desc))
+	}
+}
+
 func TestRetrieveByKey(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)
