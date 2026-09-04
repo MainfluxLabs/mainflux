@@ -274,7 +274,6 @@ func jsonBucketColumns(aggType string) string {
 }
 
 func jsonAggExpr(aggType string, aggFields []string) (string, error) {
-	// first and last pick a whole row, so they stay valid without agg fields.
 	if isFirstLast(aggType) {
 		col, dir := mfreaders.JSONOrder, aggOrderDir(aggType)
 		pick := func(field string) string {
@@ -300,6 +299,7 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 			return "", err
 
 		}
+
 		if fn == strings.ToUpper(readers.AggregationCount) {
 			exprs = append(exprs, fmt.Sprintf("%s(%s) AS agg_value_%d", fn, jsonPath, i))
 		} else {
@@ -323,7 +323,6 @@ func jsonSelectFields(aggFields []string, aggType string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			// -> not ->>, so numbers, bools and objects keep their JSON type.
 			pairs = append(pairs, fmt.Sprintf("'%s', agg.agg_payload->'%s'", escaped, escaped))
 		}
 		return fmt.Sprintf("%s\n          jsonb_build_object(%s) AS payload", head, strings.Join(pairs, ", ")), nil
@@ -353,8 +352,7 @@ func jsonFilterNullFields(aggFields []string, aggType string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// first and last also serve string, bool and object payloads, so they
-		// test for presence rather than for a numeric value.
+
 		if isFirstLast(aggType) {
 			conditions = append(conditions, fmt.Sprintf("MAX(%s) IS NOT NULL", jsonPath))
 		} else {
