@@ -79,7 +79,8 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 			if err != nil {
 				return nil, errors.New(fmt.Sprintf("line %d: invalid %s", line, colAddress))
 			}
-			f.Address = uint16(v)
+			addr := uint16(v)
+			f.Address = &addr
 		}
 
 		if s := get(row, colLength); s != "" {

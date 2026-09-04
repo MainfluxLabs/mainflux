@@ -183,7 +183,7 @@ func toDataFields(fields []field) []modbus.DataField {
 			Unit:      f.Unit,
 			Scale:     f.Scale,
 			ByteOrder: f.ByteOrder,
-			Address:   f.Address,
+			Address:   *f.Address,
 			Length:    f.Length,
 		}
 	}
@@ -199,7 +199,7 @@ func toDataFieldsRes(fields []modbus.DataField) []field {
 			Unit:      f.Unit,
 			Scale:     f.Scale,
 			ByteOrder: f.ByteOrder,
-			Address:   f.Address,
+			Address:   &f.Address,
 			Length:    f.Length,
 		}
 	}

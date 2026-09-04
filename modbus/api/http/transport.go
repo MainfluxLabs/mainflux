@@ -352,6 +352,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrMissingDataFields,
 		err == ErrInvalidFunctionCode,
 		err == ErrMissingFieldName,
+		err == ErrMissingFieldAddress,
 		err == ErrInvalidFieldType,
 		err == ErrInvalidByteOrder,
 		err == ErrInvalidFieldLength:
