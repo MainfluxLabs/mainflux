@@ -120,6 +120,23 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	return things.Thing{}, dbutil.ErrNotFound
 }
 
+func (trm *thingRepositoryMock) RetrieveGroupIDsByThings(_ context.Context, ids []string) (map[string]string, error) {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	grIDs := make(map[string]string, len(ids))
+	for _, id := range ids {
+		for _, th := range trm.things {
+			if th.ID == id {
+				grIDs[th.ID] = th.GroupID
+				break
+			}
+		}
+	}
+
+	return grIDs, nil
+}
+
 func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	trm.mu.Lock()
 	defer trm.mu.Unlock()

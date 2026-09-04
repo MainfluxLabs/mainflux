@@ -109,25 +109,35 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 }
 
 func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...string) error {
+	grIDs := make(map[string]string, len(ids))
+	orgIDs := make(map[string]string)
 	for _, id := range ids {
 		groupID, err := es.Service.GetGroupIDByThing(ctx, id)
 		if err != nil {
 			return err
+		}
+		grIDs[id] = groupID
+
+		if _, ok := orgIDs[groupID]; ok {
+			continue
 		}
 
 		group, err := es.Service.ViewGroup(ctx, token, groupID)
 		if err != nil {
 			return err
 		}
+		orgIDs[groupID] = group.OrgID
+	}
 
-		if err := es.Service.RemoveThings(ctx, token, id); err != nil {
-			return err
-		}
+	if err := es.Service.RemoveThings(ctx, token, ids...); err != nil {
+		return err
+	}
 
+	for _, id := range ids {
 		es.pub.Publish(ctx, events.Event{
 			Action:  events.ThingRemoved{ID: id},
-			GroupID: groupID,
-			OrgID:   group.OrgID,
+			GroupID: grIDs[id],
+			OrgID:   orgIDs[grIDs[id]],
 		})
 	}
 
