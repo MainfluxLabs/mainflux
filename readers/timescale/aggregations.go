@@ -353,11 +353,12 @@ func jsonFilterNullFields(aggFields []string, aggType string) (string, error) {
 			return "", err
 		}
 
+		expr := fmt.Sprintf("CAST(%s AS FLOAT)", jsonPath)
 		if isFirstLast(aggType) {
-			conditions = append(conditions, fmt.Sprintf("MAX(%s) IS NOT NULL", jsonPath))
-		} else {
-			conditions = append(conditions, fmt.Sprintf("MAX(CAST(%s AS FLOAT)) IS NOT NULL", jsonPath))
+			expr = jsonPath
 		}
+
+		conditions = append(conditions, fmt.Sprintf("MAX(%s) IS NOT NULL", expr))
 	}
 	return strings.Join(conditions, " OR "), nil
 }
