@@ -3339,6 +3339,113 @@ func TestCanUserAccessThing(t *testing.T) {
 	}
 }
 
+func TestCanUserAccessThings(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "batch-1"}, things.Thing{Name: "batch-2"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	thIDs := []string{ths[0].ID, ths[1].ID}
+
+	otherGrs, err := svc.CreateGroups(context.Background(), token, orgID, things.Group{OrgID: orgID, Name: "other-test-group"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	otherGrID := otherGrs[0].ID
+
+	otherPrs, err := svc.CreateProfiles(context.Background(), token, otherGrID, things.Profile{Name: "other-test"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	otherThs, err := svc.CreateThings(context.Background(), token, otherPrs[0].ID, things.Thing{Name: "batch-3"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	otherThID := otherThs[0].ID
+
+	gms := []things.GroupMembership{
+		{MemberID: otherUser.ID, Email: otherUser.Email, Role: things.Admin, GroupID: grID},
+		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer, GroupID: grID},
+		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor, GroupID: grID},
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, gms...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc string
+		req  things.UserAccessThingsReq
+		err  error
+	}{
+		{
+			desc: "check user access to things as owner",
+			req:  things.UserAccessThingsReq{Token: token, IDs: thIDs, Action: things.Owner},
+			err:  nil,
+		},
+		{
+			desc: "check user access to things as viewer",
+			req:  things.UserAccessThingsReq{Token: viewerToken, IDs: thIDs, Action: things.Viewer},
+			err:  nil,
+		},
+		{
+			desc: "check user access to things as editor",
+			req:  things.UserAccessThingsReq{Token: editorToken, IDs: thIDs, Action: things.Editor},
+			err:  nil,
+		},
+		{
+			desc: "check user access to things spanning multiple groups as owner",
+			req:  things.UserAccessThingsReq{Token: token, IDs: append([]string{otherThID}, thIDs...), Action: things.Owner},
+			err:  nil,
+		},
+		{
+			desc: "check user access to things spanning a group the user is not a member of",
+			req:  things.UserAccessThingsReq{Token: viewerToken, IDs: append([]string{otherThID}, thIDs...), Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check user access to things with matching group id",
+			req:  things.UserAccessThingsReq{Token: viewerToken, IDs: thIDs, GroupID: grID, Action: things.Viewer},
+			err:  nil,
+		},
+		{
+			desc: "check user access to things with a thing outside the given group",
+			req:  things.UserAccessThingsReq{Token: token, IDs: append([]string{otherThID}, thIDs...), GroupID: grID, Action: things.Owner},
+			err:  errors.ErrAuthorization,
+		},
+		{
+			desc: "check user access to things with insufficient role",
+			req:  things.UserAccessThingsReq{Token: viewerToken, IDs: thIDs, Action: things.Editor},
+			err:  errors.ErrAuthorization,
+		},
+		{
+			desc: "check user access to things with wrong credentials",
+			req:  things.UserAccessThingsReq{Token: wrongValue, IDs: thIDs, Action: things.Viewer},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "check user access to non-existing thing",
+			req:  things.UserAccessThingsReq{Token: token, IDs: append([]string{wrongValue}, thIDs...), Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check unauthorized user access to things",
+			req:  things.UserAccessThingsReq{Token: unauthToken, IDs: thIDs, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "check user access to empty list of things",
+			req:  things.UserAccessThingsReq{Token: token, IDs: []string{}, Action: things.Viewer},
+			err:  nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.CanUserAccessThings(context.Background(), tc.req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func TestCanUserAccessProfile(t *testing.T) {
 	svc := newService()
 
