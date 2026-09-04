@@ -36,7 +36,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 		if !ok || i >= len(row) {
 			return ""
 		}
-		return row[i]
+		return strings.TrimSpace(row[i])
 	}
 
 	var fields []field
