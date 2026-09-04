@@ -27,7 +27,6 @@ var (
 	ErrInvalidFieldType    = errors.New("invalid field type")
 	ErrInvalidFieldLength  = errors.New("invalid field length")
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
-	ErrInvalidCSVRow       = errors.New("invalid csv row")
 )
 
 // validatePageMetadata validates the modbus page metadata.

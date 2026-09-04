@@ -33,7 +33,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, errors.Wrap(ErrInvalidCSVRow, err)
+		return nil, err
 	}
 
 	col := make(map[string]int, len(header))
@@ -56,7 +56,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 			break
 		}
 		if err != nil {
-			return nil, errors.Wrap(ErrInvalidCSVRow, err)
+			return nil, err
 		}
 
 		f := field{
@@ -69,7 +69,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 		if s := get(row, colScale); s != "" {
 			v, err := strconv.ParseFloat(s, 64)
 			if err != nil {
-				return nil, errors.Wrap(ErrInvalidCSVRow, errors.New(fmt.Sprintf("line %d: invalid scale", line)))
+				return nil, errors.New(fmt.Sprintf("line %d: invalid %s", line, colScale))
 			}
 			f.Scale = v
 		}
@@ -77,7 +77,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 		if s := get(row, colAddress); s != "" {
 			v, err := strconv.ParseUint(s, 10, 16)
 			if err != nil {
-				return nil, errors.Wrap(ErrInvalidCSVRow, errors.New(fmt.Sprintf("line %d: invalid address", line)))
+				return nil, errors.New(fmt.Sprintf("line %d: invalid %s", line, colAddress))
 			}
 			f.Address = uint16(v)
 		}
@@ -85,7 +85,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 		if s := get(row, colLength); s != "" {
 			v, err := strconv.ParseUint(s, 10, 16)
 			if err != nil {
-				return nil, errors.Wrap(ErrInvalidCSVRow, errors.New(fmt.Sprintf("line %d: invalid length", line)))
+				return nil, errors.New(fmt.Sprintf("line %d: invalid %s", line, colLength))
 			}
 			f.Length = uint16(v)
 		}
