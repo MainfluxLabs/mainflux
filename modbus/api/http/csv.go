@@ -13,6 +13,16 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+const (
+	colName      = "name"
+	colType      = "type"
+	colUnit      = "unit"
+	colByteOrder = "byte_order"
+	colScale     = "scale"
+	colAddress   = "address"
+	colLength    = "length"
+)
+
 // parseCSVFields reads one register per row, matching columns to a header row case-insensitively.
 func parseCSVFields(r io.Reader) ([]field, error) {
 	reader := csv.NewReader(r)
@@ -50,13 +60,13 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 		}
 
 		f := field{
-			Name:      get(row, "name"),
-			Type:      get(row, "type"),
-			Unit:      get(row, "unit"),
-			ByteOrder: get(row, "byte_order"),
+			Name:      get(row, colName),
+			Type:      get(row, colType),
+			Unit:      get(row, colUnit),
+			ByteOrder: get(row, colByteOrder),
 		}
 
-		if s := get(row, "scale"); s != "" {
+		if s := get(row, colScale); s != "" {
 			v, err := strconv.ParseFloat(s, 64)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidCSVRow, errors.New(fmt.Sprintf("line %d: invalid scale", line)))
@@ -64,7 +74,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 			f.Scale = v
 		}
 
-		if s := get(row, "address"); s != "" {
+		if s := get(row, colAddress); s != "" {
 			v, err := strconv.ParseUint(s, 10, 16)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidCSVRow, errors.New(fmt.Sprintf("line %d: invalid address", line)))
@@ -72,7 +82,7 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 			f.Address = uint16(v)
 		}
 
-		if s := get(row, "length"); s != "" {
+		if s := get(row, colLength); s != "" {
 			v, err := strconv.ParseUint(s, 10, 16)
 			if err != nil {
 				return nil, errors.Wrap(ErrInvalidCSVRow, errors.New(fmt.Sprintf("line %d: invalid length", line)))
