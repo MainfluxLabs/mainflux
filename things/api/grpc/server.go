@@ -26,6 +26,7 @@ type grpcServer struct {
 	getPubConfigByKey      kitgrpc.Handler
 	getConfigByThing       kitgrpc.Handler
 	canUserAccessThing     kitgrpc.Handler
+	canUserAccessThings    kitgrpc.Handler
 	canUserAccessProfile   kitgrpc.Handler
 	canUserAccessGroup     kitgrpc.Handler
 	canThingAccessGroup    kitgrpc.Handler
@@ -57,6 +58,11 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		canUserAccessThing: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "can_user_access_thing")(canUserAccessThingEndpoint(svc)),
 			decodeUserAccessThingRequest,
+			encodeEmptyResponse,
+		),
+		canUserAccessThings: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "can_user_access_things")(canUserAccessThingsEndpoint(svc)),
+			decodeUserAccessThingsRequest,
 			encodeEmptyResponse,
 		),
 		canUserAccessProfile: kitgrpc.NewServer(
@@ -146,6 +152,15 @@ func (gs *grpcServer) GetConfigByThing(ctx context.Context, req *protomfx.ThingI
 
 func (gs *grpcServer) CanUserAccessThing(ctx context.Context, req *protomfx.UserAccessReq) (*emptypb.Empty, error) {
 	_, res, err := gs.canUserAccessThing.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
+func (gs *grpcServer) CanUserAccessThings(ctx context.Context, req *protomfx.UserAccessThingsReq) (*emptypb.Empty, error) {
+	_, res, err := gs.canUserAccessThings.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -281,6 +296,11 @@ func decodeGetConfigByThingRequest(_ context.Context, grpcReq any) (any, error) 
 func decodeUserAccessThingRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.UserAccessReq)
 	return userAccessThingReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, id: req.GetId()}, nil
+}
+
+func decodeUserAccessThingsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.UserAccessThingsReq)
+	return userAccessThingsReq{accessReq: accessReq{token: req.GetToken(), action: req.GetAction()}, ids: req.GetIds(), groupID: req.GetGroupId()}, nil
 }
 
 func decodeUserAccessProfileRequest(_ context.Context, grpcReq any) (any, error) {

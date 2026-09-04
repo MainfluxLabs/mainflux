@@ -67,6 +67,26 @@ func (req userAccessThingReq) validate() error {
 	return req.accessReq.validate()
 }
 
+type userAccessThingsReq struct {
+	accessReq
+	ids     []string
+	groupID string
+}
+
+func (req userAccessThingsReq) validate() error {
+	if len(req.ids) == 0 {
+		return apiutil.ErrMissingThingID
+	}
+
+	for _, id := range req.ids {
+		if id == "" {
+			return apiutil.ErrMissingThingID
+		}
+	}
+
+	return req.accessReq.validate()
+}
+
 type userAccessProfileReq struct {
 	accessReq
 	id string
