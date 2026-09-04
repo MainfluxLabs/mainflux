@@ -328,8 +328,12 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return err
 	}
 
+	return ts.canMemberAccessGroup(ctx, token, user.ID, groupID, action)
+}
+
+func (ts *thingsService) canMemberAccessGroup(ctx context.Context, token, memberID, groupID, action string) error {
 	gm := GroupMembership{
-		MemberID: user.ID,
+		MemberID: memberID,
 		GroupID:  groupID,
 	}
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -38,7 +39,6 @@ type PageMetadata struct {
 	ContentType string         `json:"content_type,omitempty"`
 	Role        string         `json:"role,omitempty"`
 }
-
 
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -119,6 +119,10 @@ type Service interface {
 	// CanUserAccessThing determines whether a user has access to a thing.
 	CanUserAccessThing(ctx context.Context, req UserAccessReq) error
 
+	// CanUserAccessThings determines whether a user has access to all of the
+	// given things. GroupID is optional; see domain.UserAccessThingsReq.
+	CanUserAccessThings(ctx context.Context, req UserAccessThingsReq) error
+
 	// CanUserAccessProfile determines whether a user has access to a profile.
 	CanUserAccessProfile(ctx context.Context, req UserAccessReq) error
 
@@ -186,6 +190,7 @@ type Backup struct {
 // Domain type aliases
 type (
 	UserAccessReq        = domain.UserAccessReq
+	UserAccessThingsReq  = domain.UserAccessThingsReq
 	ThingAccessReq       = domain.ThingAccessReq
 	PubConfigInfo        = domain.PubConfigInfo
 	ThingCommandReq      = domain.ThingCommandReq
@@ -316,17 +321,22 @@ func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token s
 }
 
 func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error {
+	thIDs := make([]string, 0, len(things))
 	for _, thing := range things {
-		ar := UserAccessReq{
-			Token:  token,
-			ID:     thing.ID,
-			Action: Editor,
-		}
+		thIDs = append(thIDs, thing.ID)
+	}
 
-		if err := ts.CanUserAccessThing(ctx, ar); err != nil {
-			return err
-		}
+	ar := UserAccessThingsReq{
+		Token:  token,
+		IDs:    thIDs,
+		Action: Editor,
+	}
 
+	if err := ts.CanUserAccessThings(ctx, ar); err != nil {
+		return err
+	}
+
+	for _, thing := range things {
 		th, err := ts.things.RetrieveByID(ctx, thing.ID)
 		if err != nil {
 			return err
@@ -422,16 +432,16 @@ func (ts *thingsService) ListThingsByProfile(ctx context.Context, token, prID st
 }
 
 func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...string) error {
-	for _, id := range ids {
-		ar := UserAccessReq{
-			Token:  token,
-			ID:     id,
-			Action: Admin,
-		}
-		if err := ts.CanUserAccessThing(ctx, ar); err != nil {
-			return err
-		}
+	ar := UserAccessThingsReq{
+		Token:  token,
+		IDs:    ids,
+		Action: Admin,
+	}
+	if err := ts.CanUserAccessThings(ctx, ar); err != nil {
+		return err
+	}
 
+	for _, id := range ids {
 		if err := ts.thingCache.RemoveThing(ctx, id); err != nil {
 			return err
 		}
@@ -620,6 +630,49 @@ func (ts *thingsService) CanUserAccessThing(ctx context.Context, req UserAccessR
 	}
 
 	return ts.canAccessGroup(ctx, req.Token, grID, req.Action)
+}
+
+func (ts *thingsService) CanUserAccessThings(ctx context.Context, req UserAccessThingsReq) error {
+	if len(req.IDs) == 0 {
+		return nil
+	}
+
+	user, err := ts.auth.Identify(ctx, req.Token)
+	if err != nil {
+		return err
+	}
+
+	grIDsByThing, err := ts.getGroupIDsByThings(ctx, req.IDs)
+	if err != nil {
+		return err
+	}
+
+	var grIDs []string
+	switch req.GroupID {
+	case "":
+		seen := make(map[string]bool, len(grIDsByThing))
+		for _, grID := range grIDsByThing {
+			if !seen[grID] {
+				seen[grID] = true
+				grIDs = append(grIDs, grID)
+			}
+		}
+	default:
+		for _, grID := range grIDsByThing {
+			if grID != req.GroupID {
+				return errors.ErrAuthorization
+			}
+		}
+		grIDs = []string{req.GroupID}
+	}
+
+	for _, grID := range grIDs {
+		if err := ts.canMemberAccessGroup(ctx, req.Token, user.ID, grID, req.Action); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (ts *thingsService) CanUserAccessProfile(ctx context.Context, req UserAccessReq) error {
@@ -933,6 +986,53 @@ func (ts *thingsService) getGroupIDByThing(ctx context.Context, thID string) (st
 	}
 
 	return grID, nil
+}
+
+func (ts *thingsService) getGroupIDsByThings(ctx context.Context, thIDs []string) (map[string]string, error) {
+	grIDs := make(map[string]string, len(thIDs))
+	seen := make(map[string]bool, len(thIDs))
+	var missing []string
+
+	for _, thID := range thIDs {
+		if seen[thID] {
+			continue
+		}
+
+		seen[thID] = true
+
+		grID, err := ts.thingCache.ViewGroup(ctx, thID)
+		if err != nil {
+			missing = append(missing, thID)
+			continue
+		}
+		grIDs[thID] = grID
+	}
+
+	if len(missing) == 0 {
+		return grIDs, nil
+	}
+
+	fetched, err := ts.things.RetrieveGroupIDsByThings(ctx, missing)
+	if err != nil {
+		return nil, err
+	}
+
+	// The repository keys the result by the canonical form of the ID, which need
+	// not match the caller's spelling, so existence is checked by count rather
+	// than by looking each requested ID back up.
+	if len(fetched) != len(missing) {
+		return nil, dbutil.ErrNotFound
+	}
+
+	for thID, grID := range fetched {
+		grIDs[thID] = grID
+
+		if err := ts.thingCache.SaveGroup(ctx, thID, grID); err != nil {
+			return nil, err
+		}
+	}
+
+	return grIDs, nil
 }
 
 func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (string, error) {
