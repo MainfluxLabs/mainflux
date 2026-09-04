@@ -157,8 +157,8 @@ type AuthClient interface {
 	// Issue issues a token for the given id, email and key type.
 	Issue(ctx context.Context, id, email string, keyType uint32) (string, error)
 
-	// Refresh issues a new token to the owner of the provided still-valid one.
-	Refresh(ctx context.Context, token string) (string, error)
+	// RefreshToken issues a new token to the owner of the provided still-valid one.
+	RefreshToken(ctx context.Context, token string) (string, error)
 
 	// RevokeSessions ends every session belonging to the identified user.
 	RevokeSessions(ctx context.Context, id string) error

@@ -112,7 +112,7 @@ func (lm *loggingMiddleware) Login(ctx context.Context, user users.User) (token 
 	return lm.svc.Login(ctx, user)
 }
 
-func (lm *loggingMiddleware) Refresh(ctx context.Context, token string) (_ string, err error) {
+func (lm *loggingMiddleware) RefreshToken(ctx context.Context, token string) (_ string, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method refresh for user %s took %s to complete", email, time.Since(begin))
@@ -123,7 +123,7 @@ func (lm *loggingMiddleware) Refresh(ctx context.Context, token string) (_ strin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Refresh(ctx, token)
+	return lm.svc.RefreshToken(ctx, token)
 }
 
 func (lm *loggingMiddleware) OAuthLogin(provider string) (data users.OAuthLoginData, err error) {

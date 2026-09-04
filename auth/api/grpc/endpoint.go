@@ -41,7 +41,7 @@ func refreshEndpoint(svc auth.Service) endpoint.Endpoint {
 			return issueRes{}, err
 		}
 
-		secret, err := svc.Refresh(ctx, req.token)
+		secret, err := svc.RefreshToken(ctx, req.token)
 		if err != nil {
 			return issueRes{}, err
 		}

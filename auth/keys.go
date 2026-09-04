@@ -133,11 +133,11 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 	return svc.tmpKey(svc.loginDuration, key)
 }
 
-// Refresh rotates a login token, replacing it with a successor in the same
+// RefreshToken rotates a login token, replacing it with a successor in the same
 // session. Presenting a token that was already rotated means two parties hold
 // it, which is treated as theft: the whole session is revoked. Because each
 // login gets its own family, that kill is scoped to the compromised session.
-func (svc service) Refresh(ctx context.Context, token string) (string, error) {
+func (svc service) RefreshToken(ctx context.Context, token string) (string, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err != nil {
 		return "", errors.Wrap(errRefresh, err)

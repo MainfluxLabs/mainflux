@@ -62,7 +62,7 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 	return "", errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Refresh(_ context.Context, token string) (string, error) {
+func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string, error) {
 	u, ok := svc.usersByEmail[token]
 	if !ok {
 		return "", errors.ErrAuthentication

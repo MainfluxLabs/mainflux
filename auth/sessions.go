@@ -13,7 +13,7 @@ import (
 type Session = domain.Session
 
 // A row is written for every login token that is issued, and is never deleted
-// on revocation: the revoked row is what lets Refresh tell a replayed token
+// on revocation: the revoked row is what lets RefreshToken tell a replayed token
 // apart from an unknown one. Rows are removed only once they are old enough
 // that no session could still depend on them, see RemoveExpired.
 type SessionRepository interface {
@@ -43,10 +43,10 @@ type SessionRepository interface {
 }
 
 type Sessions interface {
-	// Refresh rotates a login token: the presented token is revoked and a
+	// RefreshToken rotates a login token: the presented token is revoked and a
 	// replacement is issued into the same session. Replaying an already
 	// rotated token is treated as theft and kills the whole session.
-	Refresh(ctx context.Context, token string) (string, error)
+	RefreshToken(ctx context.Context, token string) (string, error)
 
 	// Logout ends the session the provided token belongs to, leaving the
 	// user's other sessions untouched.

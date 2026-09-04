@@ -157,7 +157,7 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 	return ir.value, nil
 }
 
-func (client grpcClient) Refresh(ctx context.Context, token string) (string, error) {
+func (client grpcClient) RefreshToken(ctx context.Context, token string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
 

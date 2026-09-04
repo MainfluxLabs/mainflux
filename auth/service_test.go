@@ -109,7 +109,7 @@ func TestRefreshSessionMaxDuration(t *testing.T) {
 	_, err = svc.Identify(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("the token itself expected to still be valid: %s", err))
 
-	_, err = svc.Refresh(context.Background(), secret)
+	_, err = svc.RefreshToken(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))
 
 	_, err = svc.Identify(context.Background(), secret)
@@ -267,7 +267,7 @@ func TestRefresh(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.Refresh(context.Background(), tc.token)
+		_, err := svc.RefreshToken(context.Background(), tc.token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -278,7 +278,7 @@ func TestRefreshRotatesToken(t *testing.T) {
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	rotated, err := svc.Refresh(context.Background(), secret)
+	rotated, err := svc.RefreshToken(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 	assert.NotEqual(t, secret, rotated, "expected rotation to mint a different token")
 
@@ -297,16 +297,16 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	rotated, err := svc.Refresh(context.Background(), secret)
+	rotated, err := svc.RefreshToken(context.Background(), secret)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 
-	_, err = svc.Refresh(context.Background(), secret)
+	_, err = svc.RefreshToken(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
 	_, err = svc.Identify(context.Background(), rotated)
 	assert.Nil(t, err, fmt.Sprintf("the killed family's token expected to stay usable until it expires: %s", err))
 
-	_, err = svc.Refresh(context.Background(), rotated)
+	_, err = svc.RefreshToken(context.Background(), rotated)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
 }
 
@@ -318,13 +318,13 @@ func TestRefreshReuseDoesNotKillOtherSessions(t *testing.T) {
 	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, err = svc.Refresh(context.Background(), first)
+	_, err = svc.RefreshToken(context.Background(), first)
 	require.Nil(t, err, fmt.Sprintf("Refreshing login key expected to succeed: %s", err))
 
-	_, err = svc.Refresh(context.Background(), first)
+	_, err = svc.RefreshToken(context.Background(), first)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
-	_, err = svc.Refresh(context.Background(), second)
+	_, err = svc.RefreshToken(context.Background(), second)
 	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive: %s", err))
 }
 
@@ -345,7 +345,7 @@ func TestRefreshConcurrentRotationYieldsOneWinner(t *testing.T) {
 	for i := 0; i < racers; i++ {
 		go func(i int) {
 			defer wg.Done()
-			tokens[i], results[i] = svc.Refresh(context.Background(), secret)
+			tokens[i], results[i] = svc.RefreshToken(context.Background(), secret)
 		}(i)
 	}
 	wg.Wait()
@@ -377,10 +377,10 @@ func TestLogout(t *testing.T) {
 	_, err = svc.Identify(context.Background(), first)
 	assert.Nil(t, err, fmt.Sprintf("the logged out token expected to stay usable until it expires: %s", err))
 
-	_, err = svc.Refresh(context.Background(), first)
+	_, err = svc.RefreshToken(context.Background(), first)
 	assert.NotNil(t, err, "expected the logged out session to be unextendable")
 
-	_, err = svc.Refresh(context.Background(), second)
+	_, err = svc.RefreshToken(context.Background(), second)
 	assert.Nil(t, err, fmt.Sprintf("the other session expected to survive logout: %s", err))
 }
 
@@ -399,7 +399,7 @@ func TestLogoutAll(t *testing.T) {
 		_, err = svc.Identify(context.Background(), token)
 		assert.Nil(t, err, fmt.Sprintf("a logged out token expected to stay usable until it expires: %s", err))
 
-		_, err = svc.Refresh(context.Background(), token)
+		_, err = svc.RefreshToken(context.Background(), token)
 		assert.NotNil(t, err, "expected every session to be unextendable")
 	}
 }
@@ -419,7 +419,7 @@ func TestRevokeSessions(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("RevokeSessions expected to succeed: %s", err))
 
 	for _, token := range []string{first, second} {
-		_, err = svc.Refresh(context.Background(), token)
+		_, err = svc.RefreshToken(context.Background(), token)
 		assert.NotNil(t, err, "expected every session of the user to be unextendable")
 	}
 
@@ -437,7 +437,7 @@ func TestRevokeSessionsIsScopedToUser(t *testing.T) {
 	err = svc.RevokeSessions(context.Background(), id)
 	require.Nil(t, err, fmt.Sprintf("RevokeSessions expected to succeed: %s", err))
 
-	_, err = svc.Refresh(context.Background(), other)
+	_, err = svc.RefreshToken(context.Background(), other)
 	assert.Nil(t, err, fmt.Sprintf("another user's session expected to survive: %s", err))
 }
 
@@ -462,7 +462,7 @@ func TestLogoutRejectsRevokedToken(t *testing.T) {
 
 	assert.True(t, errors.Contains(svc.LogoutAll(context.Background(), secret), errors.ErrAuthentication), "expected a revoked token to stay rejected")
 
-	_, err = svc.Refresh(context.Background(), next)
+	_, err = svc.RefreshToken(context.Background(), next)
 	assert.Nil(t, err, fmt.Sprintf("the new session expected to survive, got %s", err))
 }
 

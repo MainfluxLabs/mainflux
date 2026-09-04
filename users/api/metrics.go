@@ -85,13 +85,13 @@ func (ms *metricsMiddleware) Login(ctx context.Context, user users.User) (string
 	return ms.svc.Login(ctx, user)
 }
 
-func (ms *metricsMiddleware) Refresh(ctx context.Context, token string) (string, error) {
+func (ms *metricsMiddleware) RefreshToken(ctx context.Context, token string) (string, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "refresh").Add(1)
 		ms.latency.With("method", "refresh").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Refresh(ctx, token)
+	return ms.svc.RefreshToken(ctx, token)
 }
 
 func (ms *metricsMiddleware) OAuthLogin(provider string) (data users.OAuthLoginData, err error) {

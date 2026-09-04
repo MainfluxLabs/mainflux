@@ -245,7 +245,7 @@ func TestRefresh(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		_, err := svc.Refresh(context.Background(), tc.token)
+		_, err := svc.RefreshToken(context.Background(), tc.token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

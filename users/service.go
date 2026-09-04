@@ -87,9 +87,9 @@ type Service interface {
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
 
-	// Refresh issues a new access token to the bearer of a still-valid one,
+	// RefreshToken issues a new access token to the bearer of a still-valid one,
 	// extending the session without re-sending credentials.
-	Refresh(ctx context.Context, token string) (string, error)
+	RefreshToken(ctx context.Context, token string) (string, error)
 
 	// OAuthLogin returns the URL to initiate OAuth login.
 	OAuthLogin(provider string) (data OAuthLoginData, err error)
@@ -435,8 +435,8 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
 }
 
-func (svc usersService) Refresh(ctx context.Context, token string) (string, error) {
-	t, err := svc.auth.Refresh(ctx, token)
+func (svc usersService) RefreshToken(ctx context.Context, token string) (string, error) {
+	t, err := svc.auth.RefreshToken(ctx, token)
 	if err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}

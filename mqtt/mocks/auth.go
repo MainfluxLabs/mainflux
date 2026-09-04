@@ -31,7 +31,7 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 	return domain.Identity{}, errors.ErrAuthentication
 }
 
-func (svc authServiceMock) Refresh(_ context.Context, token string) (string, error) {
+func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string, error) {
 	id, ok := svc.users[token]
 	if !ok {
 		return "", errors.ErrAuthentication

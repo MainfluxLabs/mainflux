@@ -209,7 +209,7 @@ func refreshEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		token, err := svc.Refresh(ctx, req.token)
+		token, err := svc.RefreshToken(ctx, req.token)
 		if err != nil {
 			return nil, err
 		}
