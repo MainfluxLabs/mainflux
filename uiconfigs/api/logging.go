@@ -84,6 +84,32 @@ func (lm *loggingMiddleware) RemoveOrgConfig(ctx context.Context, orgID string) 
 	return lm.svc.RemoveOrgConfig(ctx, orgID)
 }
 
+func (lm *loggingMiddleware) RemoveGroupFromConfigs(ctx context.Context, orgID, groupID string, thingIDs []string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_group_from_configs for org %v, group %v, thing ids %v took %s to complete", orgID, groupID, thingIDs, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveGroupFromConfigs(ctx, orgID, groupID, thingIDs)
+}
+
+func (lm *loggingMiddleware) RemoveThingsFromConfigs(ctx context.Context, orgID string, thingIDs []string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_things_from_configs for org %v, thing ids %v took %s to complete", orgID, thingIDs, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveThingsFromConfigs(ctx, orgID, thingIDs)
+}
+
 func (lm *loggingMiddleware) BackupOrgsConfigs(ctx context.Context, token string) (response uiconfigs.OrgConfigBackup, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
