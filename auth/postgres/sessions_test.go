@@ -74,38 +74,124 @@ func TestSessionRotate(t *testing.T) {
 	require.Nil(t, repo.Save(context.Background(), session), "saving session expected to succeed")
 
 	successor := rotate(t, session)
-	revokedAt := time.Now().UTC().Round(time.Millisecond)
-	won, ok, err := repo.Rotate(context.Background(), session.JTI, successor.JTI, revokedAt)
-	require.Nil(t, err, fmt.Sprintf("rotating session expected to succeed: %s", err))
-	assert.True(t, ok, "expected to win the rotation on a live session")
-	assert.Equal(t, session.FamilyID, won.FamilyID, "expected the row to be returned so the caller can reach its family")
-	assert.True(t, won.Revoked(), "expected the returned row to carry the revocation")
-
-	next, err := repo.Retrieve(context.Background(), successor.JTI)
-	require.Nil(t, err, fmt.Sprintf("expected the successor to be written by the same rotation: %s", err))
-	assert.Equal(t, session.FamilyID, next.FamilyID, "expected the successor to stay in the family")
-	assert.Equal(t, session.UserID, next.UserID, "expected the successor to belong to the same user")
-	assert.True(t, session.StartedAt.Equal(next.StartedAt), "expected the session start to carry over")
-	assert.False(t, next.Revoked(), "expected the successor to be live")
-
-	lost, ok, err := repo.Rotate(context.Background(), session.JTI, rotate(t, session).JTI, revokedAt.Add(time.Hour))
-	require.Nil(t, err, fmt.Sprintf("replaying a rotated token expected to return cleanly: %s", err))
-	assert.False(t, ok, "expected the second rotation to lose")
-	assert.Equal(t, session.FamilyID, lost.FamilyID, "expected the family of a replayed token so that it can be killed")
-
-	retrieved, err := repo.Retrieve(context.Background(), session.JTI)
-	require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
-	assert.True(t, revokedAt.Equal(retrieved.RevokedAt), "expected the original revocation time to be kept")
-
+	replayed := rotate(t, session)
 	unknown := rotate(t, session)
-	_, _, err = repo.Rotate(context.Background(), "00000000-0000-0000-0000-000000000000", unknown.JTI, revokedAt)
-	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected an unknown jti to be reported as not found, got %s", err))
+	revokedAt := time.Now().UTC().Round(time.Millisecond)
 
-	_, err = repo.Retrieve(context.Background(), unknown.JTI)
-	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected no successor for an unknown jti, got %s", err))
+	cases := []struct {
+		desc    string
+		jti     string
+		nextJTI string
+		at      time.Time
+		rotated auth.Session
+		ok      bool
+		err     error
+	}{
+		{
+			desc:    "rotate a live session",
+			jti:     session.JTI,
+			nextJTI: successor.JTI,
+			at:      revokedAt,
+			rotated: auth.Session{
+				JTI:       session.JTI,
+				UserID:    session.UserID,
+				FamilyID:  session.FamilyID,
+				StartedAt: session.StartedAt,
+				RevokedAt: revokedAt,
+			},
+			ok:  true,
+			err: nil,
+		},
+		{
+			desc:    "replay a rotated token",
+			jti:     session.JTI,
+			nextJTI: replayed.JTI,
+			at:      revokedAt.Add(time.Hour),
+			rotated: auth.Session{
+				JTI:       session.JTI,
+				UserID:    session.UserID,
+				FamilyID:  session.FamilyID,
+				StartedAt: session.StartedAt,
+				RevokedAt: revokedAt,
+			},
+			ok:  false,
+			err: nil,
+		},
+		{
+			desc:    "rotate an unknown jti",
+			jti:     "00000000-0000-0000-0000-000000000000",
+			nextJTI: unknown.JTI,
+			at:      revokedAt,
+			rotated: auth.Session{},
+			ok:      false,
+			err:     dbutil.ErrNotFound,
+		},
+		{
+			desc:    "rotate a malformed jti",
+			jti:     "not-a-uuid",
+			nextJTI: unknown.JTI,
+			at:      revokedAt,
+			rotated: auth.Session{},
+			ok:      false,
+			err:     dbutil.ErrNotFound,
+		},
+	}
 
-	_, _, err = repo.Rotate(context.Background(), "not-a-uuid", unknown.JTI, revokedAt)
-	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected a malformed jti to be reported as not found, got %s", err))
+	for _, tc := range cases {
+		rotated, ok, err := repo.Rotate(context.Background(), tc.jti, tc.nextJTI, tc.at)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.ok, ok, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.ok, ok))
+		assert.Equal(t, tc.rotated.JTI, rotated.JTI, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.rotated.JTI, rotated.JTI))
+		assert.Equal(t, tc.rotated.FamilyID, rotated.FamilyID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.rotated.FamilyID, rotated.FamilyID))
+		assert.True(t, tc.rotated.RevokedAt.Equal(rotated.RevokedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.rotated.RevokedAt, rotated.RevokedAt))
+	}
+
+	retrieveCases := []struct {
+		desc    string
+		jti     string
+		session auth.Session
+		err     error
+	}{
+		{
+			desc: "retrieve the successor written by the rotation",
+			jti:  successor.JTI,
+			session: auth.Session{
+				JTI:       successor.JTI,
+				UserID:    session.UserID,
+				FamilyID:  session.FamilyID,
+				StartedAt: session.StartedAt,
+			},
+			err: nil,
+		},
+		{
+			desc: "retrieve the rotated session",
+			jti:  session.JTI,
+			session: auth.Session{
+				JTI:       session.JTI,
+				UserID:    session.UserID,
+				FamilyID:  session.FamilyID,
+				StartedAt: session.StartedAt,
+				RevokedAt: revokedAt,
+			},
+			err: nil,
+		},
+		{
+			desc:    "retrieve the successor of a rotation that never happened",
+			jti:     unknown.JTI,
+			session: auth.Session{},
+			err:     dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range retrieveCases {
+		retrieved, err := repo.Retrieve(context.Background(), tc.jti)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.session.JTI, retrieved.JTI, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.JTI, retrieved.JTI))
+		assert.Equal(t, tc.session.UserID, retrieved.UserID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.UserID, retrieved.UserID))
+		assert.Equal(t, tc.session.FamilyID, retrieved.FamilyID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.FamilyID, retrieved.FamilyID))
+		assert.True(t, tc.session.StartedAt.Equal(retrieved.StartedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.StartedAt, retrieved.StartedAt))
+		assert.True(t, tc.session.RevokedAt.Equal(retrieved.RevokedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.RevokedAt, retrieved.RevokedAt))
+	}
 }
 
 // A rotation that cannot write its successor must not revoke the token it was
