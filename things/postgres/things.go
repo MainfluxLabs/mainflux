@@ -123,6 +123,35 @@ func (tr thingRepository) RetrieveByKey(ctx context.Context, key things.ThingKey
 	return id, nil
 }
 
+func (tr thingRepository) RetrieveGroupIDsByThings(ctx context.Context, ids []string) (map[string]string, error) {
+	grIDs := make(map[string]string, len(ids))
+	if len(ids) == 0 {
+		return grIDs, nil
+	}
+
+	type thingGroup struct {
+		ID      string `db:"id"`
+		GroupID string `db:"group_id"`
+	}
+
+	query := `SELECT id, group_id FROM things WHERE id = ANY($1::uuid[]);`
+
+	var rows []thingGroup
+	if err := tr.db.SelectContext(ctx, &rows, query, ids); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return nil, errors.Wrap(dbutil.ErrNotFound, err)
+		}
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	for _, r := range rows {
+		grIDs[r.ID] = r.GroupID
+	}
+
+	return grIDs, nil
+}
+
 func (tr thingRepository) RetrieveByGroups(ctx context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
 	if len(groupIDs) == 0 {
 		return things.ThingsPage{}, nil
