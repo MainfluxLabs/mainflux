@@ -58,6 +58,7 @@ service ThingsService {
     rpc GetPubConfigByKey(ThingKey) returns (PubConfigByKeyRes) {}
     rpc GetConfigByThing(ThingID) returns (ConfigByThingRes){}
     rpc CanUserAccessThing(UserAccessReq) returns (google.protobuf.Empty) {}
+    rpc CanUserAccessThings(UserAccessThingsReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessProfile(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanUserAccessGroup(UserAccessReq) returns (google.protobuf.Empty) {}
     rpc CanThingAccessGroup(ThingAccessReq) returns (google.protobuf.Empty) {}
@@ -178,6 +179,13 @@ message UserAccessReq {
     string token  = 1;
     string id     = 2;
     string action = 3;
+}
+
+message UserAccessThingsReq {
+    string token        = 1;
+    repeated string ids = 2;
+    string group_id     = 3;
+    string action       = 4;
 }
 
 message ThingAccessReq {
