@@ -87,6 +87,17 @@ type UserAccessReq struct {
 	Action string
 }
 
+// UserAccessThingsReq represents a user access request for multiple things.
+// GroupID is optional: when set, every thing must belong to that group and the
+// group is authorized once; when empty, the group of each thing is resolved and
+// every distinct group is authorized.
+type UserAccessThingsReq struct {
+	Token   string
+	IDs     []string
+	GroupID string
+	Action  string
+}
+
 // ThingAccessReq represents a thing access request.
 type ThingAccessReq struct {
 	ThingKey
@@ -153,6 +164,7 @@ type ThingsClient interface {
 	GetPubConfigByKey(ctx context.Context, key ThingKey) (PubConfigInfo, error)
 	GetConfigByThing(ctx context.Context, thingID string) (*ProfileConfig, error)
 	CanUserAccessThing(ctx context.Context, ar UserAccessReq) error
+	CanUserAccessThings(ctx context.Context, ar UserAccessThingsReq) error
 	CanUserAccessProfile(ctx context.Context, ar UserAccessReq) error
 	CanUserAccessGroup(ctx context.Context, ar UserAccessReq) error
 	CanThingAccessGroup(ctx context.Context, ar ThingAccessReq) error
