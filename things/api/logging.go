@@ -307,6 +307,19 @@ func (lm *loggingMiddleware) CanUserAccessThing(ctx context.Context, req things.
 	return lm.svc.CanUserAccessThing(ctx, req)
 }
 
+func (lm *loggingMiddleware) CanUserAccessThings(ctx context.Context, req things.UserAccessThingsReq) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method can_user_access_things for %d thing ids took %s to complete", len(req.IDs), time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CanUserAccessThings(ctx, req)
+}
+
 func (lm *loggingMiddleware) CanUserAccessProfile(ctx context.Context, req things.UserAccessReq) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method can_user_access_profile for profile id %s took %s to complete", req.ID, time.Since(begin))
