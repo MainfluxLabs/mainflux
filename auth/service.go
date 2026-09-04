@@ -103,42 +103,42 @@ type Service interface {
 var _ Service = (*service)(nil)
 
 type service struct {
-	orgs           OrgRepository
-	users          domain.UsersClient
-	things         domain.ThingsClient
-	keys           KeyRepository
-	sessions       SessionRepository
-	roles          RolesRepository
-	memberships    OrgMembershipsRepository
-	invites        OrgInvitesRepository
-	email          Emailer
-	idProvider     uuid.IDProvider
-	tokenizer      Tokenizer
-	loginDuration  time.Duration
-	maxSessionAge  time.Duration
-	inviteDuration time.Duration
-	lastPurge      *atomic.Int64
+	orgs               OrgRepository
+	users              domain.UsersClient
+	things             domain.ThingsClient
+	keys               KeyRepository
+	sessions           SessionRepository
+	roles              RolesRepository
+	memberships        OrgMembershipsRepository
+	invites            OrgInvitesRepository
+	email              Emailer
+	idProvider         uuid.IDProvider
+	tokenizer          Tokenizer
+	loginDuration      time.Duration
+	maxSessionDuration time.Duration
+	inviteDuration     time.Duration
+	lastPurge          *atomic.Int64
 }
 
 // New instantiates the auth service implementation.
 func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys KeyRepository, sessions SessionRepository, roles RolesRepository,
-	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, maxSessionAge time.Duration, inviteDuration time.Duration) Service {
+	memberships OrgMembershipsRepository, invites OrgInvitesRepository, emailer Emailer, idp uuid.IDProvider, tokenizer Tokenizer, loginDuration time.Duration, maxSessionDuration time.Duration, inviteDuration time.Duration) Service {
 	return &service{
-		tokenizer:      tokenizer,
-		things:         tc,
-		orgs:           orgs,
-		users:          uc,
-		keys:           keys,
-		sessions:       sessions,
-		roles:          roles,
-		memberships:    memberships,
-		invites:        invites,
-		email:          emailer,
-		idProvider:     idp,
-		loginDuration:  loginDuration,
-		maxSessionAge:  maxSessionAge,
-		inviteDuration: inviteDuration,
-		lastPurge:      &atomic.Int64{},
+		tokenizer:          tokenizer,
+		things:             tc,
+		orgs:               orgs,
+		users:              uc,
+		keys:               keys,
+		sessions:           sessions,
+		roles:              roles,
+		memberships:        memberships,
+		invites:            invites,
+		email:              emailer,
+		idProvider:         idp,
+		loginDuration:      loginDuration,
+		maxSessionDuration: maxSessionDuration,
+		inviteDuration:     inviteDuration,
+		lastPurge:          &atomic.Int64{},
 	}
 }
 

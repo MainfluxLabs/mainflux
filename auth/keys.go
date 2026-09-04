@@ -181,7 +181,7 @@ func (svc service) Refresh(ctx context.Context, token string) (string, error) {
 		return "", errors.Wrap(errRefresh, ErrSessionReuse)
 	}
 
-	if getTimestamp().After(session.StartedAt.Add(svc.maxSessionAge)) {
+	if getTimestamp().After(session.StartedAt.Add(svc.maxSessionDuration)) {
 		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
 			return "", errors.Wrap(errRefresh, err)
 		}
@@ -271,7 +271,7 @@ func (svc service) purgeDeadSessions(ctx context.Context) {
 		return
 	}
 
-	svc.sessions.RemoveExpired(ctx, now.Add(-svc.maxSessionAge))
+	svc.sessions.RemoveExpired(ctx, now.Add(-svc.maxSessionDuration))
 }
 
 func (svc service) Revoke(ctx context.Context, token, id string) error {

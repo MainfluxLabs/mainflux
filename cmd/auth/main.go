@@ -43,36 +43,36 @@ const (
 	stopWaitTime = 5 * time.Second
 	svcName      = "auth"
 
-	defLogLevel        = "error"
-	defDBHost          = "localhost"
-	defDBPort          = "5432"
-	defDBUser          = "mainflux"
-	defDBPass          = "mainflux"
-	defDB              = "auth"
-	defDBSSLMode       = "disable"
-	defDBSSLCert       = ""
-	defDBSSLKey        = ""
-	defDBSSLRootCert   = ""
-	defHTTPPort        = "8180"
-	defGRPCPort        = "8181"
-	defSecret          = "auth"
-	defServerCert      = ""
-	defServerKey       = ""
-	defJaegerURL       = ""
-	defLoginDuration   = "10h"
-	defMaxSessionAge   = "168h"
-	defInviteDuration  = "168h"
-	defAdminEmail      = ""
-	defTimeout         = "1s"
-	defThingsGRPCURL   = "localhost:8183"
-	defThingsCACerts   = ""
-	defThingsClientTLS = "false"
-	defUsersCACerts    = ""
-	defUsersClientTLS  = "false"
-	defUsersGRPCURL    = "localhost:8184"
-	defESURL           = "redis://localhost:6379/0"
-	defESStreamMaxLen  = "100000"
-	defESBufferSize    = "10000"
+	defLogLevel           = "error"
+	defDBHost             = "localhost"
+	defDBPort             = "5432"
+	defDBUser             = "mainflux"
+	defDBPass             = "mainflux"
+	defDB                 = "auth"
+	defDBSSLMode          = "disable"
+	defDBSSLCert          = ""
+	defDBSSLKey           = ""
+	defDBSSLRootCert      = ""
+	defHTTPPort           = "8180"
+	defGRPCPort           = "8181"
+	defSecret             = "auth"
+	defServerCert         = ""
+	defServerKey          = ""
+	defJaegerURL          = ""
+	defLoginDuration      = "10h"
+	defMaxSessionDuration = "168h"
+	defInviteDuration     = "168h"
+	defAdminEmail         = ""
+	defTimeout            = "1s"
+	defThingsGRPCURL      = "localhost:8183"
+	defThingsCACerts      = ""
+	defThingsClientTLS    = "false"
+	defUsersCACerts       = ""
+	defUsersClientTLS     = "false"
+	defUsersGRPCURL       = "localhost:8184"
+	defESURL              = "redis://localhost:6379/0"
+	defESStreamMaxLen     = "100000"
+	defESBufferSize       = "10000"
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -84,36 +84,36 @@ const (
 
 	defHost = "http://localhost"
 
-	envLogLevel        = "MF_AUTH_LOG_LEVEL"
-	envDBHost          = "MF_AUTH_DB_HOST"
-	envDBPort          = "MF_AUTH_DB_PORT"
-	envDBUser          = "MF_AUTH_DB_USER"
-	envDBPass          = "MF_AUTH_DB_PASS"
-	envDB              = "MF_AUTH_DB"
-	envDBSSLMode       = "MF_AUTH_DB_SSL_MODE"
-	envDBSSLCert       = "MF_AUTH_DB_SSL_CERT"
-	envDBSSLKey        = "MF_AUTH_DB_SSL_KEY"
-	envDBSSLRootCert   = "MF_AUTH_DB_SSL_ROOT_CERT"
-	envHTTPPort        = "MF_AUTH_HTTP_PORT"
-	envGRPCPort        = "MF_AUTH_GRPC_PORT"
-	envTimeout         = "MF_AUTH_GRPC_TIMEOUT"
-	envSecret          = "MF_AUTH_SECRET"
-	envServerCert      = "MF_AUTH_SERVER_CERT"
-	envServerKey       = "MF_AUTH_SERVER_KEY"
-	envJaegerURL       = "MF_JAEGER_URL"
-	envLoginDuration   = "MF_AUTH_LOGIN_TOKEN_DURATION"
-	envMaxSessionAge   = "MF_AUTH_MAX_SESSION_DURATION"
-	envInviteDuration  = "MF_INVITE_DURATION"
-	envAdminEmail      = "MF_USERS_ADMIN_EMAIL"
-	envThingsGRPCURL   = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsCACerts   = "MF_THINGS_CA_CERTS"
-	envThingsClientTLS = "MF_THINGS_CLIENT_TLS"
-	envUsersGRPCURL    = "MF_USERS_GRPC_URL"
-	envUsersCACerts    = "MF_USERS_CA_CERTS"
-	envUsersClientTLS  = "MF_USERS_CLIENT_TLS"
-	envESURL           = "MF_AUTH_ES_URL"
-	envESStreamMaxLen  = "MF_AUTH_ES_STREAM_MAXLEN"
-	envESBufferSize    = "MF_AUTH_ES_BUFFER_SIZE"
+	envLogLevel           = "MF_AUTH_LOG_LEVEL"
+	envDBHost             = "MF_AUTH_DB_HOST"
+	envDBPort             = "MF_AUTH_DB_PORT"
+	envDBUser             = "MF_AUTH_DB_USER"
+	envDBPass             = "MF_AUTH_DB_PASS"
+	envDB                 = "MF_AUTH_DB"
+	envDBSSLMode          = "MF_AUTH_DB_SSL_MODE"
+	envDBSSLCert          = "MF_AUTH_DB_SSL_CERT"
+	envDBSSLKey           = "MF_AUTH_DB_SSL_KEY"
+	envDBSSLRootCert      = "MF_AUTH_DB_SSL_ROOT_CERT"
+	envHTTPPort           = "MF_AUTH_HTTP_PORT"
+	envGRPCPort           = "MF_AUTH_GRPC_PORT"
+	envTimeout            = "MF_AUTH_GRPC_TIMEOUT"
+	envSecret             = "MF_AUTH_SECRET"
+	envServerCert         = "MF_AUTH_SERVER_CERT"
+	envServerKey          = "MF_AUTH_SERVER_KEY"
+	envJaegerURL          = "MF_JAEGER_URL"
+	envLoginDuration      = "MF_AUTH_LOGIN_TOKEN_DURATION"
+	envMaxSessionDuration = "MF_AUTH_MAX_SESSION_DURATION"
+	envInviteDuration     = "MF_INVITE_DURATION"
+	envAdminEmail         = "MF_USERS_ADMIN_EMAIL"
+	envThingsGRPCURL      = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsCACerts      = "MF_THINGS_CA_CERTS"
+	envThingsClientTLS    = "MF_THINGS_CLIENT_TLS"
+	envUsersGRPCURL       = "MF_USERS_GRPC_URL"
+	envUsersCACerts       = "MF_USERS_CA_CERTS"
+	envUsersClientTLS     = "MF_USERS_CLIENT_TLS"
+	envESURL              = "MF_AUTH_ES_URL"
+	envESStreamMaxLen     = "MF_AUTH_ES_STREAM_MAXLEN"
+	envESBufferSize       = "MF_AUTH_ES_BUFFER_SIZE"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -127,24 +127,24 @@ const (
 )
 
 type config struct {
-	logLevel       string
-	dbConfig       postgres.Config
-	httpConfig     servers.Config
-	grpcConfig     servers.Config
-	thingsConfig   clients.Config
-	usersConfig    clients.Config
-	emailConfig    email.Config
-	secret         string
-	jaegerURL      string
-	loginDuration  time.Duration
-	maxSessionAge  time.Duration
-	inviteDuration time.Duration
-	timeout        time.Duration
-	adminEmail     string
-	host           string
-	esURL          string
-	esStreamMaxLen int64
-	esBufferSize   int
+	logLevel           string
+	dbConfig           postgres.Config
+	httpConfig         servers.Config
+	grpcConfig         servers.Config
+	thingsConfig       clients.Config
+	usersConfig        clients.Config
+	emailConfig        email.Config
+	secret             string
+	jaegerURL          string
+	loginDuration      time.Duration
+	maxSessionDuration time.Duration
+	inviteDuration     time.Duration
+	timeout            time.Duration
+	adminEmail         string
+	host               string
+	esURL              string
+	esStreamMaxLen     int64
+	esBufferSize       int
 }
 
 func main() {
@@ -297,9 +297,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envTimeout, err.Error())
 	}
 
-	maxSessionAge, err := time.ParseDuration(mainflux.Env(envMaxSessionAge, defMaxSessionAge))
+	maxSessionDuration, err := time.ParseDuration(mainflux.Env(envMaxSessionDuration, defMaxSessionDuration))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envMaxSessionAge, err.Error())
+		log.Fatalf("Invalid %s value: %s", envMaxSessionDuration, err.Error())
 	}
 
 	inviteDuration, err := time.ParseDuration(mainflux.Env(envInviteDuration, defInviteDuration))
@@ -318,24 +318,24 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:       mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:       dbConfig,
-		httpConfig:     httpConfig,
-		grpcConfig:     grpcConfig,
-		thingsConfig:   thingsConfig,
-		usersConfig:    usersConfig,
-		emailConfig:    emailConfig,
-		secret:         mainflux.Env(envSecret, defSecret),
-		jaegerURL:      mainflux.Env(envJaegerURL, defJaegerURL),
-		loginDuration:  loginDuration,
-		maxSessionAge:  maxSessionAge,
-		inviteDuration: inviteDuration,
-		timeout:        timeout,
-		adminEmail:     mainflux.Env(envAdminEmail, defAdminEmail),
-		host:           mainflux.Env(envHost, defHost),
-		esURL:          mainflux.Env(envESURL, defESURL),
-		esStreamMaxLen: esStreamMaxLen,
-		esBufferSize:   esBufferSize,
+		logLevel:           mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:           dbConfig,
+		httpConfig:         httpConfig,
+		grpcConfig:         grpcConfig,
+		thingsConfig:       thingsConfig,
+		usersConfig:        usersConfig,
+		emailConfig:        emailConfig,
+		secret:             mainflux.Env(envSecret, defSecret),
+		jaegerURL:          mainflux.Env(envJaegerURL, defJaegerURL),
+		loginDuration:      loginDuration,
+		maxSessionDuration: maxSessionDuration,
+		inviteDuration:     inviteDuration,
+		timeout:            timeout,
+		adminEmail:         mainflux.Env(envAdminEmail, defAdminEmail),
+		host:               mainflux.Env(envHost, defHost),
+		esURL:              mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:     esStreamMaxLen,
+		esBufferSize:       esBufferSize,
 	}
 
 }
@@ -393,7 +393,7 @@ func newService(db *sqlx.DB, tc domain.ThingsClient, uc domain.UsersClient, trac
 		}, []string{"method"}),
 	)
 
-	svc := auth.New(orgsRepo, tc, uc, keysRepo, sessionsRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.maxSessionAge, cfg.inviteDuration)
+	svc := auth.New(orgsRepo, tc, uc, keysRepo, sessionsRepo, rolesRepo, membsRepo, invitesRepo, authEmailer, idProvider, t, cfg.loginDuration, cfg.maxSessionDuration, cfg.inviteDuration)
 	svc = rediscache.NewEventStoreMiddleware(svc, pub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

@@ -46,9 +46,9 @@ const (
 	invalid           = "invalid"
 	n                 = 10
 
-	loginDuration  = 30 * time.Minute
-	maxSessionAge  = 168 * time.Hour
-	inviteDuration = 7 * 24 * time.Hour
+	loginDuration      = 30 * time.Minute
+	maxSessionDuration = 168 * time.Hour
+	inviteDuration     = 7 * 24 * time.Hour
 )
 
 var (
@@ -85,22 +85,22 @@ func newService() auth.Service {
 	tc := thmocks.NewThingsServiceClient(nil, nil, createGroups())
 	t := jwt.New(secret)
 
-	return auth.New(orgRepo, tc, uc, keyRepo, mocks.NewSessionRepository(), roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, maxSessionAge, inviteDuration)
+	return auth.New(orgRepo, tc, uc, keyRepo, mocks.NewSessionRepository(), roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, maxSessionDuration, inviteDuration)
 }
 
-// newServiceWithMaxSessionAge builds a service whose sessions are capped
+// newServiceWithMaxSessionDuration builds a service whose sessions are capped
 // sooner than the default, so the hard cap can be reached in a test.
-func newServiceWithMaxSessionAge(maxAge time.Duration) auth.Service {
+func newServiceWithMaxSessionDuration(maxDuration time.Duration) auth.Service {
 	membsRepo := mocks.NewOrgMembershipsRepository()
 
 	return auth.New(mocks.NewOrgRepository(membsRepo), thmocks.NewThingsServiceClient(nil, nil, createGroups()),
 		mocks.NewUsersService(usersByIDs, usersByEmails), mocks.NewKeyRepository(), mocks.NewSessionRepository(),
 		mocks.NewRolesRepository(), membsRepo, mocks.NewInvitesRepository(), mocks.NewEmailer(),
-		uuid.NewMock(), jwt.New(secret), loginDuration, maxAge, inviteDuration)
+		uuid.NewMock(), jwt.New(secret), loginDuration, maxDuration, inviteDuration)
 }
 
-func TestRefreshSessionMaxAge(t *testing.T) {
-	svc := newServiceWithMaxSessionAge(time.Minute)
+func TestRefreshSessionMaxDuration(t *testing.T) {
+	svc := newServiceWithMaxSessionDuration(time.Minute)
 
 	issuedAt := time.Now().Add(-10 * time.Minute)
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: issuedAt, IssuerID: id, Subject: email})

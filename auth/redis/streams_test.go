@@ -36,8 +36,8 @@ const (
 
 	loginDuration = 30 * time.Minute
 
-	maxSessionAge  = 168 * time.Hour
-	inviteDuration = 7 * 24 * time.Hour
+	maxSessionDuration = 168 * time.Hour
+	inviteDuration     = 7 * 24 * time.Hour
 )
 
 var (
@@ -77,7 +77,7 @@ func newService() auth.Service {
 	tc := thmocks.NewThingsServiceClient(nil, nil, nil)
 	t := jwt.New(secret)
 
-	return auth.New(orgRepo, tc, uc, keyRepo, mocks.NewSessionRepository(), roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, maxSessionAge, inviteDuration)
+	return auth.New(orgRepo, tc, uc, keyRepo, mocks.NewSessionRepository(), roleRepo, membsRepo, invitesRepo, emailerMock, idMockProvider, t, loginDuration, maxSessionDuration, inviteDuration)
 }
 
 func TestCreateOrg(t *testing.T) {
