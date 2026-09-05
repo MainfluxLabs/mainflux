@@ -202,6 +202,22 @@ func loginEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func refreshEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(refreshReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		token, err := svc.RefreshToken(ctx, req.token)
+		if err != nil {
+			return nil, err
+		}
+
+		return tokenRes{token}, nil
+	}
+}
+
 func oauthLoginEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(oauthLoginReq)

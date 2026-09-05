@@ -373,6 +373,48 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func TestRefresh(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	auth := mocks.NewAuthService("", usersList, nil)
+
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
+	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
+	tokenData := toJSON(map[string]string{"token": token})
+
+	cases := []struct {
+		desc   string
+		token  string
+		status int
+		res    string
+	}{
+		{"refresh with a valid token", token, http.StatusCreated, tokenData},
+		{"refresh with an invalid token", "invalid", http.StatusUnauthorized, unauthRes},
+		{"refresh without a token", "", http.StatusUnauthorized, missingTokRes},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      client,
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/tokens/refresh", ts.URL),
+			contentType: contentType,
+			token:       tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		assert.Equal(t, tc.res, data, fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data))
+	}
+}
+
 func TestUser(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)

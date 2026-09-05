@@ -26,6 +26,8 @@ var _ domain.AuthClient = (*grpcClient)(nil)
 
 type grpcClient struct {
 	issue                               endpoint.Endpoint
+	refresh                             endpoint.Endpoint
+	revokeSessions                      endpoint.Endpoint
 	identify                            endpoint.Endpoint
 	authorize                           endpoint.Endpoint
 	getOwnerIDByOrg                     endpoint.Endpoint
@@ -41,6 +43,22 @@ type grpcClient struct {
 // NewClient returns new gRPC client instance.
 func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Duration) domain.AuthClient {
 	return &grpcClient{
+		refresh: kitot.TraceClient(tracer, "refresh")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"Refresh",
+			encodeRefreshRequest,
+			decodeIssueResponse,
+			protomfx.Token{},
+		).Endpoint()),
+		revokeSessions: kitot.TraceClient(tracer, "revoke_sessions")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RevokeSessions",
+			encodeRevokeSessionsRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
 			svcName,
@@ -137,6 +155,42 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 
 	ir := res.(issueRes)
 	return ir.value, nil
+}
+
+func (client grpcClient) RefreshToken(ctx context.Context, token string) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.refresh(ctx, refreshReq{token: token})
+	if err != nil {
+		return "", err
+	}
+
+	ir := res.(issueRes)
+	return ir.value, nil
+}
+
+func (client grpcClient) RevokeSessions(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.revokeSessions(ctx, revokeSessionsReq{id: id})
+	if err != nil {
+		return err
+	}
+
+	er := res.(emptyRes)
+	return er.err
+}
+
+func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(refreshReq)
+	return &protomfx.Token{Value: req.token}, nil
+}
+
+func encodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(revokeSessionsReq)
+	return &protomfx.RevokeSessionsReq{Id: req.id}, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
