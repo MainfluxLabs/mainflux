@@ -51,6 +51,54 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
+  /things/{thingId}/clients/csv:
+    post:
+      summary: Create a Modbus client with data fields from an uploaded CSV file
+      description: Creates one Modbus client for the thing identified by the provided ID, with the client's connection info supplied as a JSON form field and its data fields (registers) parsed from an uploaded CSV file.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateClientCSVReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/ClientCreatedRes"
+        '400':
+          description: Failed due to malformed client JSON or an invalid CSV file.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /things/{thingId}/clients/json:
+    post:
+      summary: Create a Modbus client with data fields from an uploaded JSON file
+      description: Creates one Modbus client for the thing identified by the provided ID, with the client's connection info supplied as a JSON form field and its data fields (registers) parsed from an uploaded JSON file.
+      tags:
+        - clients
+      parameters:
+        - $ref: "#/components/parameters/ThingId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateClientJSONReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/ClientCreatedRes"
+        '400':
+          description: Failed due to malformed client JSON or an invalid JSON file.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
   /groups/{groupId}/clients:
     get:
       summary: List Modbus clients by group
@@ -382,6 +430,55 @@ components:
                   scale: 0.1
                   byte_order: "ABCD"
                   address: 0
+    CreateClientCSVReq:
+      description: Multipart form with a JSON "client" part describing the client's connection info and a "file" part (CSV) listing its data fields.
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              client:
+                type: string
+                description: >-
+                  JSON-encoded object holding every ClientReqSchema property except data_fields:
+                  name, ip_address, port, slave_id, function_code, scheduler, metadata.
+                example: >-
+                  '{"name":"Temperature sensor","ip_address":"192.168.1.100","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}'
+              file:
+                type: string
+                format: binary
+                description: >-
+                  CSV file whose rows become the client's data fields, one row per field.
+                  Requires a header row naming the columns (name, type, unit, scale, byte_order, address, length), in any order;
+                  header names are matched case-insensitively and unknown columns are ignored.
+                  The "type" and "byte_order" cell values are also matched case-insensitively.
+            required:
+              - client
+              - file
+    CreateClientJSONReq:
+      description: Multipart form with a JSON "client" part describing the client's connection info and a "file" part (JSON) listing its data fields.
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              client:
+                type: string
+                description: >-
+                  JSON-encoded object holding every ClientReqSchema property except data_fields:
+                  name, ip_address, port, slave_id, function_code, scheduler, metadata.
+                example: >-
+                  '{"name":"Temperature sensor","ip_address":"192.168.1.100","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}'
+              file:
+                type: string
+                format: binary
+                description: >-
+                  JSON file containing an array of objects, one per data field, each with the same properties as DataField.
+            required:
+              - client
+              - file
     UpdateClientReq:
       description: JSON-formatted document describing the updated Modbus client.
       required: true
@@ -461,6 +558,32 @@ components:
                     address: 0
     ClientRes:
       description: Client details retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ClientResSchema"
+          example:
+            id: "c1d2e3f4-a5b6-7890-cdef-012345678901"
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            thing_id: "123e4567-e89b-12d3-a456-426614174000"
+            name: "Temperature sensor"
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
+            function_code: "ReadHoldingRegisters"
+            scheduler:
+              frequency: "minutely"
+              minute: 5
+              time_zone: "UTC"
+            data_fields:
+              - name: "temperature"
+                type: "float32"
+                unit: "°C"
+                scale: 0.1
+                byte_order: "ABCD"
+                address: 0
+    ClientCreatedRes:
+      description: Client created.
       content:
         application/json:
           schema:

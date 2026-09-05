@@ -48,6 +48,39 @@ func createClientsEndpoint(svc modbus.Service) endpoint.Endpoint {
 	}
 }
 
+func createClientFromFileEndpoint(svc modbus.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(createClientReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		scheduler := cron.NormalizeTimezone(req.Scheduler)
+		dataFields := toDataFields(req.DataFields)
+
+		cl := modbus.Client{
+			Name:         req.Name,
+			IPAddress:    req.IPAddress,
+			Port:         req.Port,
+			SlaveID:      req.SlaveID,
+			FunctionCode: req.FunctionCode,
+			Scheduler:    scheduler,
+			DataFields:   dataFields,
+			Metadata:     req.Metadata,
+		}
+
+		saved, err := svc.CreateClient(ctx, req.token, req.thingID, cl)
+		if err != nil {
+			return nil, err
+		}
+
+		res := buildClientResponse(saved)
+		res.created = true
+
+		return res, nil
+	}
+}
+
 func listClientsByThingEndpoint(svc modbus.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listClientsByThingReq)
@@ -122,7 +155,7 @@ func updateClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return clientResponse{updated: true}, nil
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 
@@ -150,7 +183,7 @@ func toDataFields(fields []field) []modbus.DataField {
 			Unit:      f.Unit,
 			Scale:     f.Scale,
 			ByteOrder: f.ByteOrder,
-			Address:   f.Address,
+			Address:   *f.Address,
 			Length:    f.Length,
 		}
 	}
@@ -166,7 +199,7 @@ func toDataFieldsRes(fields []modbus.DataField) []field {
 			Unit:      f.Unit,
 			Scale:     f.Scale,
 			ByteOrder: f.ByteOrder,
-			Address:   f.Address,
+			Address:   &f.Address,
 			Length:    f.Length,
 		}
 	}
