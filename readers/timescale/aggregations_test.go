@@ -71,21 +71,35 @@ func TestTimeBucketExpr(t *testing.T) {
 			intervalVal:  1,
 			intervalUnit: "hour",
 			timeColumn:   "time",
-			resPart:      "time_bucket('1 hour', to_timestamp(time / 1000000000))",
+			resPart:      "time_bucket(3600000000000, time)",
 		},
 		{
 			desc:         "5 minutes on created column",
 			intervalVal:  5,
 			intervalUnit: "minute",
 			timeColumn:   "created",
-			resPart:      "time_bucket('5 minute', to_timestamp(created / 1000000000))",
+			resPart:      "time_bucket(300000000000, created)",
 		},
 		{
 			desc:         "1 day",
 			intervalVal:  1,
 			intervalUnit: "day",
 			timeColumn:   "time",
-			resPart:      "time_bucket('1 day', to_timestamp(time / 1000000000))",
+			resPart:      "time_bucket(86400000000000, time)",
+		},
+		{
+			desc:         "1 month falls back to calendar bucketing",
+			intervalVal:  1,
+			intervalUnit: "month",
+			timeColumn:   "time",
+			resPart:      "time_bucket('1 month', to_timestamp(time / 1000000000))",
+		},
+		{
+			desc:         "1 year falls back to calendar bucketing",
+			intervalVal:  1,
+			intervalUnit: "year",
+			timeColumn:   "time",
+			resPart:      "time_bucket('1 year', to_timestamp(time / 1000000000))",
 		},
 	}
 

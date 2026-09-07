@@ -25,6 +25,25 @@ const (
 	GreaterThanKey = "gt"
 	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
 	GreaterThanEqualKey = "ge"
+
+	// MicrosecondInterval represents the microsecond aggregation interval unit.
+	MicrosecondInterval = "microsecond"
+	// MillisecondInterval represents the millisecond aggregation interval unit.
+	MillisecondInterval = "millisecond"
+	// SecondInterval represents the second aggregation interval unit.
+	SecondInterval = "second"
+	// MinuteInterval represents the minute aggregation interval unit.
+	MinuteInterval = "minute"
+	// HourInterval represents the hour aggregation interval unit.
+	HourInterval = "hour"
+	// DayInterval represents the day aggregation interval unit.
+	DayInterval = "day"
+	// WeekInterval represents the week aggregation interval unit.
+	WeekInterval = "week"
+	// MonthInterval represents the month aggregation interval unit.
+	MonthInterval = "month"
+	// YearInterval represents the year aggregation interval unit.
+	YearInterval = "year"
 )
 
 func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string {

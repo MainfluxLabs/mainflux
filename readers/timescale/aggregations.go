@@ -205,9 +205,45 @@ func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, e
 	return messages, nil
 }
 
+// timeBucketExpr builds the time_bucket() expression used to group rows.
+// Fixed-duration units bucket directly on the raw nanosecond bigint column
+// using TimescaleDB's integer time_bucket overload, avoiding a per-row
+// to_timestamp() cast and letting Timescale bucket on the native hypertable
+// partitioning column. Calendar units (month/year) have no fixed duration,
+// so they fall back to bucketing on a converted timestamptz.
 func timeBucketExpr(intervalVal uint64, intervalUnit, timeColumn string) string {
+	if widthNs, ok := fixedIntervalNs(intervalVal, intervalUnit); ok {
+		return fmt.Sprintf("time_bucket(%d, %s)", widthNs, timeColumn)
+	}
+
 	interval := fmt.Sprintf("%d %s", intervalVal, intervalUnit)
 	return fmt.Sprintf("time_bucket('%s', to_timestamp(%s / 1000000000))", interval, timeColumn)
+}
+
+func fixedIntervalNs(intervalVal uint64, intervalUnit string) (uint64, bool) {
+	const nanosPerSecond = 1_000_000_000
+
+	var unitNs uint64
+	switch intervalUnit {
+	case mfreaders.MicrosecondInterval:
+		unitNs = 1_000
+	case mfreaders.MillisecondInterval:
+		unitNs = 1_000_000
+	case mfreaders.SecondInterval:
+		unitNs = nanosPerSecond
+	case mfreaders.MinuteInterval:
+		unitNs = 60 * nanosPerSecond
+	case mfreaders.HourInterval:
+		unitNs = 3600 * nanosPerSecond
+	case mfreaders.DayInterval:
+		unitNs = 24 * 3600 * nanosPerSecond
+	case mfreaders.WeekInterval:
+		unitNs = 7 * 24 * 3600 * nanosPerSecond
+	default:
+		return 0, false
+	}
+
+	return intervalVal * unitNs, true
 }
 
 func sqlAggFunc(aggType string) string {
