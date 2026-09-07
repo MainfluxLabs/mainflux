@@ -225,19 +225,19 @@ func fixedIntervalNs(intervalVal uint64, intervalUnit string) (uint64, bool) {
 
 	var unitNs uint64
 	switch intervalUnit {
-	case "microsecond":
+	case mfreaders.MicrosecondInterval:
 		unitNs = 1_000
-	case "millisecond":
+	case mfreaders.MillisecondInterval:
 		unitNs = 1_000_000
-	case "second":
+	case mfreaders.SecondInterval:
 		unitNs = nanosPerSecond
-	case "minute":
+	case mfreaders.MinuteInterval:
 		unitNs = 60 * nanosPerSecond
-	case "hour":
+	case mfreaders.HourInterval:
 		unitNs = 3600 * nanosPerSecond
-	case "day":
+	case mfreaders.DayInterval:
 		unitNs = 24 * 3600 * nanosPerSecond
-	case "week":
+	case mfreaders.WeekInterval:
 		unitNs = 7 * 24 * 3600 * nanosPerSecond
 	default:
 		return 0, false
