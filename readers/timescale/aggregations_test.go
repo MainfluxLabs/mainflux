@@ -142,28 +142,28 @@ func TestJsonAggExpr(t *testing.T) {
 			res:       "AVG(CAST(payload->'sensor'->>'temp' AS FLOAT)) AS agg_value_0",
 		},
 		{
-			desc:      "first orders ascending",
+			desc:      "first picks the earliest payload",
 			aggType:   readers.AggregationFirst,
 			aggFields: []string{"temperature"},
-			res:       "(array_agg(COALESCE(payload, CAST('{}' AS jsonb)) ORDER BY created ASC))[1] AS agg_payload",
+			res:       "first(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload",
 		},
 		{
-			desc:      "last orders descending",
+			desc:      "last picks the latest payload",
 			aggType:   readers.AggregationLast,
 			aggFields: []string{"temperature"},
-			res:       "(array_agg(COALESCE(payload, CAST('{}' AS jsonb)) ORDER BY created DESC))[1] AS agg_payload",
+			res:       "last(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload",
 		},
 		{
 			desc:      "first selects the picked row time",
 			aggType:   readers.AggregationFirst,
 			aggFields: []string{"temperature"},
-			res:       "(array_agg(created ORDER BY created ASC))[1] AS agg_time",
+			res:       "first(created, created) AS agg_time",
 		},
 		{
 			desc:      "identity columns come from the picked row",
 			aggType:   readers.AggregationFirst,
 			aggFields: []string{"temperature"},
-			res:       "(array_agg(publisher ORDER BY created ASC))[1] AS agg_publisher",
+			res:       "first(publisher, created) AS agg_publisher",
 		},
 		{
 			desc:      "first without agg fields is still valid",
@@ -461,69 +461,52 @@ func TestIsFirstLast(t *testing.T) {
 	}
 }
 
-func TestAggOrderDir(t *testing.T) {
-	cases := []struct {
-		desc    string
-		aggType string
-		res     string
-	}{
-		{desc: "first is ascending", aggType: readers.AggregationFirst, res: "ASC"},
-		{desc: "last is descending", aggType: readers.AggregationLast, res: "DESC"},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.desc, func(t *testing.T) {
-			assert.Equal(t, tc.res, aggOrderDir(tc.aggType))
-		})
-	}
-}
-
 func TestSenmlFirstLastSubquery(t *testing.T) {
 	bucket := timeBucketExpr(1, "hour", mfreaders.SenMLOrder)
 
 	cases := []struct {
 		desc      string
-		dir       string
+		aggType   string
 		condition string
 		resParts  []string
 	}{
 		{
-			desc: "first picks the earliest row of the bucket",
-			dir:  "ASC",
+			desc:    "first picks the earliest row of the bucket",
+			aggType: readers.AggregationFirst,
 			resParts: []string{
-				"(array_agg(time ORDER BY time ASC))[1] AS time",
-				"(array_agg(value ORDER BY time ASC))[1] AS value",
-				"(array_agg(string_value ORDER BY time ASC))[1] AS string_value",
+				"first(time, time) AS time",
+				"first(value, time) AS value",
+				"first(string_value, time) AS string_value",
 			},
 		},
 		{
-			desc: "last picks the latest row of the bucket",
-			dir:  "DESC",
+			desc:    "last picks the latest row of the bucket",
+			aggType: readers.AggregationLast,
 			resParts: []string{
-				"(array_agg(time ORDER BY time DESC))[1] AS time",
-				"(array_agg(data_value ORDER BY time DESC))[1] AS data_value",
+				"last(time, time) AS time",
+				"last(data_value, time) AS data_value",
 			},
 		},
 		{
-			desc: "identity columns come from the picked row",
-			dir:  "ASC",
+			desc:    "identity columns come from the picked row",
+			aggType: readers.AggregationFirst,
 			resParts: []string{
-				"(array_agg(subtopic ORDER BY time ASC))[1] AS subtopic",
-				"(array_agg(publisher ORDER BY time ASC))[1] AS publisher",
-				"(array_agg(protocol ORDER BY time ASC))[1] AS protocol",
+				"first(subtopic, time) AS subtopic",
+				"first(publisher, time) AS publisher",
+				"first(protocol, time) AS protocol",
 			},
 		},
 		{
-			desc: "nullable non-pointer columns are coalesced",
-			dir:  "ASC",
+			desc:    "nullable non-pointer columns are coalesced",
+			aggType: readers.AggregationFirst,
 			resParts: []string{
-				"COALESCE((array_agg(unit ORDER BY time ASC))[1], '') AS unit",
-				"COALESCE((array_agg(update_time ORDER BY time ASC))[1], 0) AS update_time",
+				"COALESCE(first(unit, time), '') AS unit",
+				"COALESCE(first(update_time, time), 0) AS update_time",
 			},
 		},
 		{
 			desc:      "carries the where clause and groups by the bucket",
-			dir:       "ASC",
+			aggType:   readers.AggregationFirst,
 			condition: "WHERE publisher = :publisher",
 			resParts: []string{
 				"WHERE publisher = :publisher",
@@ -534,7 +517,7 @@ func TestSenmlFirstLastSubquery(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := senmlFirstLastSubquery(tc.dir, tc.condition, bucket)
+			result := senmlFirstLastSubquery(tc.aggType, tc.condition, bucket)
 			for _, part := range tc.resParts {
 				assert.Contains(t, result, part)
 			}
