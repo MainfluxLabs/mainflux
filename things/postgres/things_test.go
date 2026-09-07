@@ -363,9 +363,6 @@ func TestRetrieveGroupIDsByThingsCanonicalizesIDs(t *testing.T) {
 	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	// Postgres accepts several spellings of the same UUID and always returns the
-	// canonical one, so callers must not assume the result is keyed by whatever
-	// they passed in. Each spelling has to resolve to exactly one row.
 	cases := map[string]string{
 		"canonical id":       id,
 		"upper-case id":      strings.ToUpper(id),

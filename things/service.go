@@ -1024,9 +1024,6 @@ func (ts *thingsService) getGroupIDsByThings(ctx context.Context, thIDs []string
 		return nil, err
 	}
 
-	// The repository keys the result by the canonical form of the ID, which need
-	// not match the caller's spelling, so existence is checked by count rather
-	// than by looking each requested ID back up.
 	if len(fetched) != len(missing) {
 		return nil, dbutil.ErrNotFound
 	}
