@@ -262,15 +262,24 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 }
 
 func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
+	tx, err := tr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	defer tx.Rollback()
+
+	q := `DELETE FROM things WHERE id = :id;`
 	for _, id := range ids {
 		dbth := dbThing{
 			ID: id,
 		}
-		q := `DELETE FROM things WHERE id = :id;`
-		_, err := tr.db.NamedExecContext(ctx, q, dbth)
-		if err != nil {
+		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
 			return errors.Wrap(dbutil.ErrRemoveEntity, err)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
