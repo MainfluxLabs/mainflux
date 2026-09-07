@@ -4,6 +4,49 @@ info:
   description: HTTP API for managing platform API keys.
   version: "1.0.0"
 paths:
+  /sessions/logout:
+    post:
+      summary: End the current session
+      description: |
+        Revokes the session the presented token belongs to, along with every
+        token that descends from the same login. The user's other sessions,
+        on other browsers or devices, are unaffected.
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Session ended.
+        '401':
+          description: Missing, malformed, or already revoked token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServiceError'
+  /sessions/logout-all:
+    post:
+      summary: End every session for the user
+      description: |
+        Revokes every session belonging to the owner of the presented token,
+        across all of their browsers and devices.
+      tags:
+        - auth
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: All sessions ended.
+        '401':
+          description: Missing, malformed, or already revoked token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServiceError'
   /keys:
     get:
       summary: List API keys

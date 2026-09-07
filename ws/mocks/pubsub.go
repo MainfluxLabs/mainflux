@@ -42,7 +42,7 @@ func (pubsub *mockPubSub) Unsubscribe(string, string) error {
 
 func (pubsub *mockPubSub) PublishCommand(string, protomfx.Command) error {
 	if pubsub.fail {
-		return messaging.ErrPublishMessage
+		return messaging.ErrPublishCommand
 	}
 	return nil
 }

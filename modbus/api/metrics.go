@@ -39,6 +39,15 @@ func (ms *metricsMiddleware) CreateClients(ctx context.Context, token, thingID s
 	return ms.svc.CreateClients(ctx, token, thingID, clients...)
 }
 
+func (ms *metricsMiddleware) CreateClient(ctx context.Context, token, thingID string, client modbus.Client) (modbus.Client, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "create_client").Add(1)
+		ms.latency.With("method", "create_client").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.CreateClient(ctx, token, thingID, client)
+}
+
 func (ms *metricsMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm modbus.PageMetadata) (modbus.ClientsPage, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "list_clients_by_thing").Add(1)

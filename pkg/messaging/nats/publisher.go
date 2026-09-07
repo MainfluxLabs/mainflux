@@ -7,6 +7,8 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
 	broker "github.com/nats-io/nats.go"
@@ -45,23 +47,38 @@ func NewPublisher(url string) (*publisher, error) {
 }
 
 func (pub *publisher) Publish(subject string, msg protomfx.Message) error {
-	return pub.publish(subject, &msg)
+	if err := pub.publish(subject, &msg); err != nil {
+		return errors.Wrap(messaging.ErrPublishMessage, err)
+	}
+	return nil
 }
 
 func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
-	return pub.publish(subject, &alarm)
+	if err := pub.publish(subject, &alarm); err != nil {
+		return errors.Wrap(messaging.ErrPublishAlarm, err)
+	}
+	return nil
 }
 
 func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
-	return pub.publish(subject, &cmd)
+	if err := pub.publish(subject, &cmd); err != nil {
+		return errors.Wrap(messaging.ErrPublishCommand, err)
+	}
+	return nil
 }
 
 func (pub *publisher) PublishNotification(subject string, notification protomfx.Notification) error {
-	return pub.publish(subject, &notification)
+	if err := pub.publish(subject, &notification); err != nil {
+		return errors.Wrap(messaging.ErrPublishNotification, err)
+	}
+	return nil
 }
 
 func (pub *publisher) PublishWebhook(subject string, webhook protomfx.Webhook) error {
-	return pub.publish(subject, &webhook)
+	if err := pub.publish(subject, &webhook); err != nil {
+		return errors.Wrap(messaging.ErrPublishWebhook, err)
+	}
+	return nil
 }
 
 func (pub *publisher) publish(subject string, msg proto.Message) error {
@@ -106,12 +123,12 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 	}
 
 	if pc.WriteEnabled {
-		if err := pub.publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), &msg); err != nil {
+		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
 			return err
 		}
 	}
 	if pc.RuleEnabled {
-		if err := pub.publish(SubjectRules, &msg); err != nil {
+		if err := pub.Publish(SubjectRules, msg); err != nil {
 			return err
 		}
 	}

@@ -21,8 +21,13 @@ const (
 	qos      = 2
 )
 
-// ErrConnect indicates that connection to the MQTT broker failed.
-var ErrConnect = errors.New("failed to connect to MQTT broker")
+var (
+	// ErrConnect indicates that connection to the MQTT broker failed.
+	ErrConnect = errors.New("failed to connect to MQTT broker")
+
+	// ErrTimeoutReached indicates that the broker did not acknowledge the publish before the timeout.
+	ErrTimeoutReached = errors.New("timeout reached")
+)
 
 var _ messaging.PubSub = (*pubsub)(nil)
 

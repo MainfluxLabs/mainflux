@@ -33,10 +33,14 @@ type clientResponse struct {
 	Scheduler    cron.Scheduler `json:"scheduler"`
 	DataFields   []field        `json:"data_fields"`
 	Metadata     map[string]any `json:"metadata,omitempty"`
-	updated      bool
+	created      bool
 }
 
 func (res clientResponse) Code() int {
+	if res.created {
+		return http.StatusCreated
+	}
+
 	return http.StatusOK
 }
 
@@ -45,7 +49,7 @@ func (res clientResponse) Headers() map[string]string {
 }
 
 func (res clientResponse) Empty() bool {
-	return res.updated
+	return false
 }
 
 type clientsRes struct {

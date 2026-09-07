@@ -29,7 +29,6 @@ import (
 
 const (
 	contentType            = "application/json"
-	multiPartContentType   = "multipart/form-data"
 	octetStreamContentType = "application/octet-stream"
 	maxMemory              = 32 << 20
 	metadataKey            = "metadata"
@@ -175,7 +174,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 }
 
 func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -261,7 +260,7 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), multiPartContentType) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 

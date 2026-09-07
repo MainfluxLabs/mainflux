@@ -27,21 +27,21 @@ func NewFailingPublisher() rules.Publisher {
 
 func (ps *mockPublisher) PublishAlarm(string, protomfx.Alarm) error {
 	if ps.fail {
-		return messaging.ErrPublishMessage
+		return messaging.ErrPublishAlarm
 	}
 	return nil
 }
 
 func (ps *mockPublisher) PublishNotification(string, protomfx.Notification) error {
 	if ps.fail {
-		return messaging.ErrPublishMessage
+		return messaging.ErrPublishNotification
 	}
 	return nil
 }
 
 func (ps *mockPublisher) PublishWebhook(string, protomfx.Webhook) error {
 	if ps.fail {
-		return messaging.ErrPublishMessage
+		return messaging.ErrPublishWebhook
 	}
 	return nil
 }

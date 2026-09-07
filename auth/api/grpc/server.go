@@ -23,6 +23,8 @@ var _ protomfx.AuthServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
 	issue                               kitgrpc.Handler
+	refresh                             kitgrpc.Handler
+	revokeSessions                      kitgrpc.Handler
 	identify                            kitgrpc.Handler
 	authorize                           kitgrpc.Handler
 	getOwnerIDByOrg                     kitgrpc.Handler
@@ -41,6 +43,16 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "issue")(issueEndpoint(svc)),
 			decodeIssueRequest,
 			encodeIssueResponse,
+		),
+		refresh: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "refresh")(refreshEndpoint(svc)),
+			decodeRefreshRequest,
+			encodeIssueResponse,
+		),
+		revokeSessions: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "revoke_sessions")(revokeSessionsEndpoint(svc)),
+			decodeRevokeSessionsRequest,
+			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "identify")(identifyEndpoint(svc)),
@@ -96,6 +108,22 @@ func (s *grpcServer) Issue(ctx context.Context, req *protomfx.IssueReq) (*protom
 		return nil, encodeError(err)
 	}
 	return res.(*protomfx.Token), nil
+}
+
+func (s *grpcServer) Refresh(ctx context.Context, token *protomfx.Token) (*protomfx.Token, error) {
+	_, res, err := s.refresh.ServeGRPC(ctx, token)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.Token), nil
+}
+
+func (s *grpcServer) RevokeSessions(ctx context.Context, req *protomfx.RevokeSessionsReq) (*emptypb.Empty, error) {
+	_, res, err := s.revokeSessions.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*emptypb.Empty), nil
 }
 
 func (s *grpcServer) Identify(ctx context.Context, token *protomfx.Token) (*protomfx.UserIdentity, error) {
@@ -197,6 +225,16 @@ func decodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(issueRes)
 	return &protomfx.Token{Value: res.value}, nil
+}
+
+func decodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.Token)
+	return refreshReq{token: req.GetValue()}, nil
+}
+
+func decodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RevokeSessionsReq)
+	return revokeSessionsReq{id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -311,6 +349,8 @@ func encodeError(err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, auth.ErrKeyExpired),
+		errors.Contains(err, auth.ErrSessionReuse),
+		errors.Contains(err, auth.ErrSessionExpired),
 		err == apiutil.ErrMissingEmail,
 		err == apiutil.ErrBearerToken:
 		return status.Error(codes.Unauthenticated, err.Error())

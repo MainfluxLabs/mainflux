@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/senml"
 )
 
@@ -53,7 +54,11 @@ func TransformPayload(msg *protomfx.Message) error {
 		case 0:
 			t = msg.Created
 		default:
-			t = int64(v.Time * 1e9)
+			ts, err := transformers.SecondsToNanos(v.Time)
+			if err != nil {
+				return err
+			}
+			t = ts
 		}
 
 		payloads[i] = Message{

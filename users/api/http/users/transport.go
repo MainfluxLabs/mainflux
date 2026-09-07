@@ -154,6 +154,13 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		opts...,
 	))
 
+	mux.Post("/tokens/refresh", kithttp.NewServer(
+		kitot.TraceServer(tracer, "refresh")(refreshEndpoint(svc)),
+		decodeRefresh,
+		encodeResponse,
+		opts...,
+	))
+
 	mux.Get("/users/oauth/:provider", kithttp.NewServer(
 		kitot.TraceServer(tracer, "oauth_login")(oauthLoginEndpoint(svc)),
 		decodeOAuthLogin,
@@ -318,6 +325,10 @@ func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
 	}
 	user.Email = strings.TrimSpace(user.Email)
 	return userReq{user}, nil
+}
+
+func decodeRefresh(_ context.Context, r *http.Request) (any, error) {
+	return refreshReq{token: apiutil.ExtractBearerToken(r)}, nil
 }
 
 func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {

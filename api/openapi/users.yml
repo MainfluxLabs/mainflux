@@ -352,6 +352,33 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServiceError'
+  /tokens/refresh:
+    post:
+      summary: Access token rotation
+      description: |
+        Exchanges a still-valid access token for a replacement in the same
+        session, with a fresh expiry, and revokes the presented one. 
+      tags:
+        - users
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Access token renewed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: |
+            Missing, malformed, or expired token; a replayed token whose
+            session has now been revoked; or a session past its maximum age.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServiceError'
   /password/reset-request:
     post:
       summary: User password reset request
@@ -1019,3 +1046,4 @@ components:
 
 security:
   - bearerAuth: []
+  

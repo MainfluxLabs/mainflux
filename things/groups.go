@@ -107,6 +107,12 @@ type GroupCache interface {
 
 	// RetrieveGroupIDsByMember returns group IDs for given memberID.
 	RetrieveGroupIDsByMember(context.Context, string) ([]string, error)
+
+	// SaveOrg stores org ID by given group ID.
+	SaveOrg(context.Context, string, string) error
+
+	// ViewOrg returns org ID by given group ID.
+	ViewOrg(context.Context, string) (string, error)
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error) {

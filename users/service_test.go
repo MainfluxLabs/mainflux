@@ -220,6 +220,36 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func TestRefresh(t *testing.T) {
+	svc := newService()
+
+	token, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := map[string]struct {
+		token string
+		err   error
+	}{
+		"refresh with a valid token": {
+			token: token,
+			err:   nil,
+		},
+		"refresh with an invalid token": {
+			token: wrong,
+			err:   errors.ErrAuthentication,
+		},
+		"refresh with an empty token": {
+			token: "",
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for desc, tc := range cases {
+		_, err := svc.RefreshToken(context.Background(), tc.token)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
 func TestViewUser(t *testing.T) {
 	svc := newService()
 
