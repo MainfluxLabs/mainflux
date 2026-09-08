@@ -99,10 +99,11 @@ func (p *payload) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) err
 			nameStack = nameStack[:len(nameStack)-1]
 
 		case xml.CharData:
-			val := strings.TrimSpace(string(elem))
-			if val == "" {
+			raw := strings.TrimSpace(string(elem))
+			if raw == "" {
 				continue
 			}
+			val := parseValue(raw)
 
 			current := stack[len(stack)-1]
 			if len(current) == 0 {
@@ -125,6 +126,21 @@ func getFormat(ct string) string {
 	default:
 		return ""
 	}
+}
+
+// parseValue converts XML text to a bool or number when it represents one, otherwise returns it unchanged.
+func parseValue(s string) any {
+	switch s {
+	case "true":
+		return true
+	case "false":
+		return false
+	}
+	// Only number-shaped text becomes a number; null, arrays and prose stay strings.
+	if c := s[0]; (c == '-' || (c >= '0' && c <= '9')) && json.Valid([]byte(s)) {
+		return json.Number(s)
+	}
+	return s
 }
 
 func removeUnderscoreKeys(data map[string]any) map[string]any {
