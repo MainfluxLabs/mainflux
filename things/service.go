@@ -636,13 +636,13 @@ func (ts *thingsService) CanUserAccessThing(ctx context.Context, req UserAccessR
 }
 
 func (ts *thingsService) CanUserAccessThings(ctx context.Context, req UserAccessThingsReq) error {
-	if len(req.IDs) == 0 {
-		return nil
-	}
-
 	user, err := ts.auth.Identify(ctx, req.Token)
 	if err != nil {
 		return err
+	}
+
+	if len(req.IDs) == 0 {
+		return nil
 	}
 
 	grIDsByThing, err := ts.getGroupIDsByThings(ctx, req.IDs)
