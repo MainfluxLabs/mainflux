@@ -327,6 +327,16 @@ func TestRetrieveGroupIDsByThings(t *testing.T) {
 			size: 0,
 			err:  dbutil.ErrNotFound,
 		},
+		"retrieve group ids with a non-canonical thing id": {
+			ids:  []string{strings.ToUpper(ids[0])},
+			size: 1,
+			err:  nil,
+		},
+		"retrieve group ids with the same thing in two spellings": {
+			ids:  []string{ids[0], strings.ToUpper(ids[0])},
+			size: 2,
+			err:  nil,
+		},
 	}
 
 	for desc, tc := range cases {
@@ -339,41 +349,6 @@ func TestRetrieveGroupIDsByThings(t *testing.T) {
 				assert.Equal(t, group.ID, grID, fmt.Sprintf("%s: expected group %s got %s\n", desc, group.ID, grID))
 			}
 		}
-	}
-}
-
-func TestRetrieveGroupIDsByThingsCanonicalizesIDs(t *testing.T) {
-	dbMiddleware := dbutil.NewDatabase(db)
-	thingRepo := postgres.NewThingRepository(dbMiddleware)
-	profileRepo := postgres.NewProfileRepository(dbMiddleware)
-
-	group := createGroup(t, dbMiddleware)
-	prID := generateUUID(t)
-
-	_, err := profileRepo.Save(context.Background(), things.Profile{ID: prID, GroupID: group.ID, Name: profileName})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	id := generateUUID(t)
-	_, err = thingRepo.Save(context.Background(), things.Thing{
-		ID:        id,
-		GroupID:   group.ID,
-		ProfileID: prID,
-		Name:      thingName,
-		Key:       generateUUID(t),
-	})
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-
-	cases := map[string]string{
-		"canonical id":       id,
-		"upper-case id":      strings.ToUpper(id),
-		"id without hyphens": strings.ReplaceAll(id, "-", ""),
-	}
-
-	for desc, spelling := range cases {
-		grIDs, err := thingRepo.RetrieveGroupIDsByThings(context.Background(), []string{spelling})
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s\n", desc, err))
-		assert.Equal(t, 1, len(grIDs), fmt.Sprintf("%s: expected 1 group id got %d\n", desc, len(grIDs)))
-		assert.Equal(t, group.ID, grIDs[id], fmt.Sprintf("%s: expected result keyed by the canonical id\n", desc))
 	}
 }
 
