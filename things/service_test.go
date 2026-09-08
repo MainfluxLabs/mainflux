@@ -3438,6 +3438,16 @@ func TestCanUserAccessThings(t *testing.T) {
 			req:  things.UserAccessThingsReq{Token: token, IDs: []string{}, Action: things.Viewer},
 			err:  nil,
 		},
+		{
+			desc: "check user access to empty list of things within a group",
+			req:  things.UserAccessThingsReq{Token: viewerToken, IDs: []string{}, GroupID: grID, Action: things.Viewer},
+			err:  nil,
+		},
+		{
+			desc: "check unauthorized user access to empty list of things within a group",
+			req:  things.UserAccessThingsReq{Token: unauthToken, IDs: []string{}, GroupID: grID, Action: things.Viewer},
+			err:  dbutil.ErrNotFound,
+		},
 	}
 
 	for _, tc := range cases {

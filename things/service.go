@@ -641,10 +641,6 @@ func (ts *thingsService) CanUserAccessThings(ctx context.Context, req UserAccess
 		return err
 	}
 
-	if len(req.IDs) == 0 {
-		return nil
-	}
-
 	grIDsByThing, err := ts.getGroupIDsByThings(ctx, req.IDs)
 	if err != nil {
 		return err
