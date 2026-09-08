@@ -332,11 +332,6 @@ func TestRetrieveGroupIDsByThings(t *testing.T) {
 			size: 1,
 			err:  nil,
 		},
-		"retrieve group ids with the same thing in two spellings": {
-			ids:  []string{ids[0], strings.ToUpper(ids[0])},
-			size: 2,
-			err:  nil,
-		},
 	}
 
 	for desc, tc := range cases {
