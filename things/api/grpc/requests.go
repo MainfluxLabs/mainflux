@@ -75,7 +75,7 @@ type userAccessThingsReq struct {
 
 func (req userAccessThingsReq) validate() error {
 	if len(req.ids) == 0 {
-		return apiutil.ErrMissingThingID
+		return apiutil.ErrEmptyList
 	}
 
 	for _, id := range req.ids {

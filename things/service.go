@@ -641,7 +641,7 @@ func (ts *thingsService) CanUserAccessThings(ctx context.Context, req UserAccess
 		return err
 	}
 
-	grIDsByThing, err := ts.getGroupIDsByThings(ctx, req.IDs)
+	grIDsByThings, err := ts.getGroupIDsByThings(ctx, req.IDs)
 	if err != nil {
 		return err
 	}
@@ -649,15 +649,15 @@ func (ts *thingsService) CanUserAccessThings(ctx context.Context, req UserAccess
 	var grIDs []string
 	switch req.GroupID {
 	case "":
-		seen := make(map[string]bool, len(grIDsByThing))
-		for _, grID := range grIDsByThing {
+		seen := make(map[string]bool, len(grIDsByThings))
+		for _, grID := range grIDsByThings {
 			if !seen[grID] {
 				seen[grID] = true
 				grIDs = append(grIDs, grID)
 			}
 		}
 	default:
-		for _, grID := range grIDsByThing {
+		for _, grID := range grIDsByThings {
 			if grID != req.GroupID {
 				return errors.ErrAuthorization
 			}
