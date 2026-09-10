@@ -263,6 +263,90 @@ func TestRetrieveThingByID(t *testing.T) {
 	}
 }
 
+func TestRetrieveGroupIDsByThings(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	thingRepo := postgres.NewThingRepository(dbMiddleware)
+	profileRepo := postgres.NewProfileRepository(dbMiddleware)
+
+	group := createGroup(t, dbMiddleware)
+	prID := generateUUID(t)
+
+	p := things.Profile{
+		ID:      prID,
+		GroupID: group.ID,
+		Name:    profileName,
+	}
+	_, err := profileRepo.Save(context.Background(), p)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	var ids []string
+	for i := 0; i < 3; i++ {
+		th := things.Thing{
+			ID:        generateUUID(t),
+			GroupID:   group.ID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("%s-%d", thingName, i),
+			Key:       generateUUID(t),
+		}
+
+		ths, err := thingRepo.Save(context.Background(), th)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		ids = append(ids, ths[0].ID)
+	}
+
+	nonexistentThingID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := map[string]struct {
+		ids  []string
+		size int
+		err  error
+	}{
+		"retrieve group ids of all existing things": {
+			ids:  ids,
+			size: len(ids),
+			err:  nil,
+		},
+		"retrieve group ids of a subset of existing things": {
+			ids:  ids[:2],
+			size: 2,
+			err:  nil,
+		},
+		"retrieve group ids with a non-existing thing id": {
+			ids:  append([]string{nonexistentThingID}, ids...),
+			size: len(ids),
+			err:  nil,
+		},
+		"retrieve group ids with an empty list of ids": {
+			ids:  []string{},
+			size: 0,
+			err:  nil,
+		},
+		"retrieve group ids with a malformed thing id": {
+			ids:  append([]string{invalidID}, ids...),
+			size: 0,
+			err:  dbutil.ErrNotFound,
+		},
+		"retrieve group ids with a non-canonical thing id": {
+			ids:  []string{strings.ToUpper(ids[0])},
+			size: 1,
+			err:  nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		grIDs, err := thingRepo.RetrieveGroupIDsByThings(context.Background(), tc.ids)
+		assert.Equal(t, tc.size, len(grIDs), fmt.Sprintf("%s: expected %d group ids got %d\n", desc, tc.size, len(grIDs)))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+
+		for _, id := range tc.ids {
+			if grID, ok := grIDs[id]; ok {
+				assert.Equal(t, group.ID, grID, fmt.Sprintf("%s: expected group %s got %s\n", desc, group.ID, grID))
+			}
+		}
+	}
+}
+
 func TestRetrieveByKey(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	thingRepo := postgres.NewThingRepository(dbMiddleware)

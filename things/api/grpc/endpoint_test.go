@@ -137,3 +137,94 @@ func TestIdentify(t *testing.T) {
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
 	}
 }
+
+func TestCanUserAccessThings(t *testing.T) {
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, things.Group{Name: "batch-access-group", Description: "batch-access-group-desc"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, things.Profile{Name: "batch-access-profile"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	prID := prs[0].ID
+
+	ths, err := svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "batch-1"}, things.Thing{Name: "batch-2"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	thIDs := []string{ths[0].ID, ths[1].ID}
+
+	otherGrs, err := svc.CreateGroups(context.Background(), token, orgID, things.Group{Name: "other-batch-access-group"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	otherGrID := otherGrs[0].ID
+
+	usersAddr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.NewClient(usersAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	cli := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	cases := map[string]struct {
+		token   string
+		ids     []string
+		groupID string
+		action  string
+		code    codes.Code
+	}{
+		"check user access to things": {
+			token:  token,
+			ids:    thIDs,
+			action: things.Viewer,
+			code:   codes.OK,
+		},
+		"check user access to things with matching group id": {
+			token:   token,
+			ids:     thIDs,
+			groupID: grID,
+			action:  things.Viewer,
+			code:    codes.OK,
+		},
+		"check user access to things with a group id they do not belong to": {
+			token:   token,
+			ids:     thIDs,
+			groupID: otherGrID,
+			action:  things.Viewer,
+			code:    codes.PermissionDenied,
+		},
+		"check user access to things with a non-existing thing id": {
+			token:  token,
+			ids:    append([]string{wrong}, thIDs...),
+			action: things.Viewer,
+			code:   codes.NotFound,
+		},
+		"check user access to things with an empty list of ids": {
+			token:  token,
+			ids:    []string{},
+			action: things.Viewer,
+			code:   codes.InvalidArgument,
+		},
+		"check user access to things with an empty thing id": {
+			token:  token,
+			ids:    []string{""},
+			action: things.Viewer,
+			code:   codes.InvalidArgument,
+		},
+		"check user access to things with an invalid action": {
+			token:  token,
+			ids:    thIDs,
+			action: wrong,
+			code:   codes.InvalidArgument,
+		},
+		"check user access to things with an empty token": {
+			token:  "",
+			ids:    thIDs,
+			action: things.Viewer,
+			code:   codes.InvalidArgument,
+		},
+	}
+
+	for desc, tc := range cases {
+		err := cli.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: tc.token, IDs: tc.ids, GroupID: tc.groupID, Action: tc.action})
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "OK expected to be true")
+		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
+	}
+}

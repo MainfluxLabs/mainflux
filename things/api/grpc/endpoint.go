@@ -71,6 +71,28 @@ func canUserAccessThingEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func canUserAccessThingsEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(userAccessThingsReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		r := things.UserAccessThingsReq{
+			Token:   req.token,
+			IDs:     req.ids,
+			GroupID: req.groupID,
+			Action:  req.action,
+		}
+
+		if err := svc.CanUserAccessThings(ctx, r); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func canUserAccessProfileEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(userAccessProfileReq)
