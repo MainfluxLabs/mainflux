@@ -36,7 +36,6 @@ type PageMetadata struct {
 	Frequency string `json:"frequency,omitempty"`
 }
 
-
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -107,12 +106,16 @@ const (
 	Float32Type = "float32"
 	StringType  = "string"
 
-	maxRegs = 125  // 0x03 and 0x04
+	// Lowered from the protocol max (125): some devices/gateways can't handle
+	// a full-size block read even though the spec allows it. 64 is a common
+	// conservative cap in the wild.
+	maxRegs = 64
 	maxBits = 2000 // 0x01 and 0x02
 )
 
 var _ Service = (*clientsService)(nil)
 var (
+	errReadRegisters  = "failed to read registers"
 	errRateLimiter    = "failed to wait for rate limiter"
 	errFormatPayload  = "failed to format payload"
 	errGetConnection  = "failed to get connection"
@@ -375,40 +378,68 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 		defer cancel()
 
 		key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
+		logPrefix := fmt.Sprintf("client %s (%s) %s", client.ID, client.Name, key)
+
 		limiter := cs.getLimiter(key)
 		if err := limiter.Wait(ctx); err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s", errRateLimiter, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errRateLimiter, err))
 			return
 		}
 
 		handler, err := cs.connPool.Get(key)
 		if err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s", errGetConnection, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errGetConnection, err))
 			return
 		}
 		handler.SlaveId = client.SlaveID
 
 		data, err := cs.readData(handler, client, blocks)
 		if err != nil {
-			cs.logger.Error(err.Error())
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
 		}
 		if len(data) == 0 {
-			cs.logger.Error(errEmptyResponse)
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, errEmptyResponse))
 			return
 		}
 
 		formattedPayload, err := formatPayload(data, client.DataFields, client.FunctionCode)
 		if err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s", errFormatPayload, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errFormatPayload, err))
 			return
 		}
 
 		if err := cs.publish(config, client.ThingID, formattedPayload); err != nil {
-			cs.logger.Error(err.Error())
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
 		}
+
+		cs.logger.Info(fmt.Sprintf("%s: published %d fields", logPrefix, len(data)))
 	}
+}
+
+func readBlock(mc gbmodbus.Client, funcCode string, start, length uint16) ([]byte, error) {
+	switch funcCode {
+	case ReadCoilsFunc:
+		return mc.ReadCoils(start, length)
+	case ReadDiscreteInputsFunc:
+		return mc.ReadDiscreteInputs(start, length)
+	case ReadInputRegistersFunc:
+		return mc.ReadInputRegisters(start, length)
+	default:
+		return mc.ReadHoldingRegisters(start, length)
+	}
+}
+
+// blockFields returns the client's data fields that fall inside the given block.
+func blockFields(fields []DataField, block Block) []DataField {
+	var res []DataField
+	for _, field := range fields {
+		if field.Address >= block.Start && field.Address < block.Start+block.Length {
+			res = append(res, field)
+		}
+	}
+	return res
 }
 
 func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Client, blocks []Block) (map[string][]byte, error) {
@@ -416,34 +447,23 @@ func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Cl
 	data := make(map[string][]byte)
 
 	for _, block := range blocks {
-		var (
-			raw []byte
-			err error
-		)
+		fields := blockFields(client.DataFields, block)
 
-		switch client.FunctionCode {
-		case ReadCoilsFunc:
-			raw, err = mc.ReadCoils(block.Start, block.Length)
-		case ReadDiscreteInputsFunc:
-			raw, err = mc.ReadDiscreteInputs(block.Start, block.Length)
-		case ReadInputRegistersFunc:
-			raw, err = mc.ReadInputRegisters(block.Start, block.Length)
-		default:
-			raw, err = mc.ReadHoldingRegisters(block.Start, block.Length)
-		}
+		raw, err := readBlock(mc, client.FunctionCode, block.Start, block.Length)
 		if err != nil {
-			return nil, err
+			var names []string
+			for _, field := range fields {
+				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
+			}
+			return nil, fmt.Errorf("%s: read %s starting at %d, length %d, fields [%s]: %w", errReadRegisters, client.FunctionCode, block.Start, block.Length, strings.Join(names, ", "), err)
 		}
 
-		// extract fields from block
-		for _, field := range client.DataFields {
-			if field.Address >= block.Start && field.Address < block.Start+block.Length {
-				bytes, err := extractFieldBytes(raw, field, block, client.FunctionCode)
-				if err != nil {
-					return nil, err
-				}
-				data[field.Name] = bytes
+		for _, field := range fields {
+			bytes, err := extractFieldBytes(raw, field, block, client.FunctionCode)
+			if err != nil {
+				return nil, fmt.Errorf("field %s@%d: %w", field.Name, field.Address, err)
 			}
+			data[field.Name] = bytes
 		}
 	}
 	return data, nil
@@ -461,7 +481,7 @@ func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string
 		bitIndex := uint(bitOffset % 8)
 
 		if byteIndex >= len(raw) {
-			return nil, fmt.Errorf("out of range coil %s", field.Name)
+			return nil, fmt.Errorf("field %s at address %d: out of range for coil block starting at %d, length %d", field.Name, field.Address, block.Start, block.Length)
 		}
 
 		// extract bit: mask byte and check if bit is set
@@ -479,7 +499,7 @@ func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string
 		lenByte := int(field.Length) * 2
 
 		if startByte+lenByte > len(raw) {
-			return nil, fmt.Errorf("out of range for register %s", field.Name)
+			return nil, fmt.Errorf("field %s at address %d, length %d: out of range for register block starting at %d, length %d", field.Name, field.Address, field.Length, block.Start, block.Length)
 		}
 
 		return raw[startByte : startByte+lenByte], nil
