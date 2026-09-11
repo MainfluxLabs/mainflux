@@ -25,9 +25,6 @@ func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 		if err := h.svc.UnassignRulesFromThing(ctx, e.ID); err != nil {
 			return err
 		}
-		if err := h.svc.UnassignScriptsFromThing(ctx, e.ID); err != nil {
-			return err
-		}
 	case events.GroupRemoved:
 		if err := h.svc.RemoveRulesByGroup(ctx, e.ID); err != nil {
 			return err

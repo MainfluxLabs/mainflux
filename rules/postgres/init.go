@@ -147,6 +147,20 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE rules DROP COLUMN IF EXISTS input_config`,
 				},
 			},
+			{
+				Id: "rules_8",
+				Up: []string{
+					`DROP TABLE IF EXISTS lua_scripts_things`,
+				},
+				Down: []string{
+					`CREATE TABLE IF NOT EXISTS lua_scripts_things (
+						thing_id      UUID NOT NULL,
+						lua_script_id UUID NOT NULL,
+						PRIMARY KEY (thing_id, lua_script_id),
+						FOREIGN KEY (lua_script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
+					);`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

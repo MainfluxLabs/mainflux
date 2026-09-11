@@ -44,18 +44,14 @@ type Service interface {
 	consumers.AlarmConsumer
 }
 
+// ServiceScripts manages Lua scripts as a group-scoped resource. Scripts are not
+// currently invoked anywhere; a follow-up wires them into rule conditions.
 type ServiceScripts interface {
 	// CreateScripts persists multiple Lua scripts.
 	CreateScripts(ctx context.Context, token, groupID string, scripts ...LuaScript) ([]LuaScript, error)
 
-	// ListScriptsByThing retrieves a list of Scripts associated with a specific Thing.
-	ListScriptsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (LuaScriptsPage, error)
-
 	// ListScriptsByGroup retrieves a list of scripts belonging to a specific Group.
 	ListScriptsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (LuaScriptsPage, error)
-
-	// ListThingIDsByScript retrieves a list of IDs of Things associated with a specific Script.
-	ListThingIDsByScript(ctx context.Context, token, scriptID string) ([]string, error)
 
 	// ViewScript retrieves a specific Script by its ID.
 	ViewScript(ctx context.Context, token, id string) (LuaScript, error)
@@ -68,15 +64,6 @@ type ServiceScripts interface {
 
 	// RemoveScriptsByGroup removes all Scripts belonging to a specific Group.
 	RemoveScriptsByGroup(ctx context.Context, groupID string) error
-
-	// AssignScripts assigns one or more Scripts to a specific Thing.
-	AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
-
-	// UnassignScripts unassigns one or more scripts from a specific Thing.
-	UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error
-
-	// UnassignScriptsFromThing unassigns all scripts from a specific Thing.
-	UnassignScriptsFromThing(ctx context.Context, thingID string) error
 
 	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
 	ListScriptRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ScriptRunsPage, error)
@@ -137,26 +124,23 @@ type Publisher interface {
 }
 
 type rulesService struct {
-	rules          Repository
-	things         domain.ThingsClient
-	readers        domain.ReadersClient
-	pub            Publisher
-	idProvider     uuid.IDProvider
-	logger         logger.Logger
-	scriptsEnabled bool
+	rules      Repository
+	things     domain.ThingsClient
+	pub        Publisher
+	idProvider uuid.IDProvider
+	logger     logger.Logger
 }
 
 var _ Service = (*rulesService)(nil)
 
 // New instantiates the rules service implementation.
-func New(rules Repository, things domain.ThingsClient, readers domain.ReadersClient, pub Publisher, idp uuid.IDProvider, logger logger.Logger, scriptsEnabled bool) Service {
+func New(rules Repository, things domain.ThingsClient, pub Publisher, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &rulesService{
-		rules:          rules,
-		things:         things,
-		pub:            pub,
-		idProvider:     idp,
-		logger:         logger,
-		scriptsEnabled: scriptsEnabled,
+		rules:      rules,
+		things:     things,
+		pub:        pub,
+		idProvider: idp,
+		logger:     logger,
 	}
 }
 
@@ -324,15 +308,6 @@ func (rs *rulesService) CreateScripts(ctx context.Context, token, groupID string
 	return rs.rules.SaveScripts(ctx, scripts...)
 }
 
-func (rs *rulesService) ListScriptsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (LuaScriptsPage, error) {
-	err := rs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer})
-	if err != nil {
-		return LuaScriptsPage{}, err
-	}
-
-	return rs.rules.RetrieveScriptsByThing(ctx, thingID, pm)
-}
-
 func (rs *rulesService) ListScriptsByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (LuaScriptsPage, error) {
 	err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer})
 	if err != nil {
@@ -340,19 +315,6 @@ func (rs *rulesService) ListScriptsByGroup(ctx context.Context, token, groupID s
 	}
 
 	return rs.rules.RetrieveScriptsByGroup(ctx, groupID, pm)
-}
-
-func (rs *rulesService) ListThingIDsByScript(ctx context.Context, token, scriptID string) ([]string, error) {
-	script, err := rs.rules.RetrieveScriptByID(ctx, scriptID)
-	if err != nil {
-		return []string{}, err
-	}
-
-	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: script.GroupID, Action: domain.GroupViewer}); err != nil {
-		return []string{}, err
-	}
-
-	return rs.rules.RetrieveThingIDsByScript(ctx, scriptID)
 }
 
 func (rs *rulesService) ViewScript(ctx context.Context, token, id string) (LuaScript, error) {
@@ -398,50 +360,6 @@ func (rs *rulesService) RemoveScripts(ctx context.Context, token string, ids ...
 
 func (rs *rulesService) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
 	return rs.rules.RemoveScriptsByGroup(ctx, groupID)
-}
-
-func (rs *rulesService) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
-	if err := rs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
-		return err
-	}
-
-	grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
-	if err != nil {
-		return err
-	}
-
-	for _, id := range scriptIDs {
-		script, err := rs.rules.RetrieveScriptByID(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		if script.GroupID != grID {
-			return errors.ErrAuthorization
-		}
-	}
-
-	if err := rs.rules.AssignScripts(ctx, thingID, scriptIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (rs *rulesService) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) error {
-	if err := rs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
-		return err
-	}
-
-	if err := rs.rules.UnassignScripts(ctx, thingID, scriptIDs...); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (rs *rulesService) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
-	return rs.rules.UnassignScriptsFromThing(ctx, thingID)
 }
 
 func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ScriptRunsPage, error) {
@@ -491,17 +409,6 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
 	}
-
-	if !rs.scriptsEnabled {
-		return nil
-	}
-
-	scriptsPage, err := rs.rules.RetrieveScriptsByThing(ctx, msg.Publisher, PageMetadata{})
-	if err != nil {
-		return err
-	}
-
-	rs.processLuaScripts(ctx, &msg, payload, scriptsPage.Scripts...)
 
 	return nil
 }
@@ -587,6 +494,38 @@ type Repository interface {
 	RepositoryScripts
 }
 
+type RepositoryScripts interface {
+	// SaveScripts persists multiple Lua scripts.
+	SaveScripts(ctx context.Context, scripts ...LuaScript) ([]LuaScript, error)
+
+	// RetrieveScriptByID retrieves a single Lua script denoted by ID.
+	RetrieveScriptByID(ctx context.Context, id string) (LuaScript, error)
+
+	// RetrieveScriptsByGroup retrieves a list of Lua scripts belonging to a specific Group.
+	RetrieveScriptsByGroup(ctx context.Context, groupID string, pm PageMetadata) (LuaScriptsPage, error)
+
+	// UpdateScript updates the script denoted by script.ID.
+	UpdateScript(ctx context.Context, script LuaScript) error
+
+	// RemoveScripts removes Lua scripts with the provided ids.
+	RemoveScripts(ctx context.Context, ids ...string) error
+
+	// RemoveScriptsByGroup removes all Lua scripts belonging to a specific Group.
+	RemoveScriptsByGroup(ctx context.Context, groupID string) error
+
+	// SaveScriptRuns preserves multiple ScriptRuns.
+	SaveScriptRuns(ctx context.Context, runs ...ScriptRun) ([]ScriptRun, error)
+
+	// RetrieveScriptRunByID retrieves a single ScriptRun based on its ID.
+	RetrieveScriptRunByID(ctx context.Context, id string) (ScriptRun, error)
+
+	// RetrieveScriptRunsByThing retrieves a list of Script runs by Thing ID.
+	RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm PageMetadata) (ScriptRunsPage, error)
+
+	// RemoveScriptRuns removes one or more Script runs by IDs.
+	RemoveScriptRuns(ctx context.Context, ids ...string) error
+}
+
 type RepositoryRules interface {
 	// Save persists multiple rules. Rules are saved using a transaction.
 	// If one rule fails then none will be saved.
@@ -623,51 +562,4 @@ type RepositoryRules interface {
 
 	// UnassignRulesFromThing unassigns all rules from the given thing.
 	UnassignRulesFromThing(ctx context.Context, thingID string) error
-}
-
-type RepositoryScripts interface {
-	// SaveScripts persists multiple Lua scripts.
-	SaveScripts(ctx context.Context, scripts ...LuaScript) ([]LuaScript, error)
-
-	// RetrieveScriptByID retrieves a single Lua script denoted by ID.
-	RetrieveScriptByID(ctx context.Context, id string) (LuaScript, error)
-
-	// RetrieveScriptsByThing retrieves a list of Lua scripts assigned to a specific Thing.
-	RetrieveScriptsByThing(ctx context.Context, thingID string, pm PageMetadata) (LuaScriptsPage, error)
-
-	// RetrieveScriptsByGroup retrieves a list of Lua scripts belonging to a specific Group.
-	RetrieveScriptsByGroup(ctx context.Context, groupID string, pm PageMetadata) (LuaScriptsPage, error)
-
-	// RetrieveThingIDsByScript retrieves a list of Thing IDs to which the specific Lua script is assigned.
-	RetrieveThingIDsByScript(ctx context.Context, scriptID string) ([]string, error)
-
-	// UpdateScript updates the script denoted by script.ID.
-	UpdateScript(ctx context.Context, script LuaScript) error
-
-	// RemoveScripts removes Lua scripts with the provided ids.
-	RemoveScripts(ctx context.Context, ids ...string) error
-
-	// RemoveScriptsByGroup removes all Lua scripts belonging to a specific Group.
-	RemoveScriptsByGroup(ctx context.Context, groupID string) error
-
-	// AssignScripts assigns one or more Lua scripts to a specific Thing.
-	AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
-
-	// Unassign unassgins one or more Lua scripts from a specific Thing.
-	UnassignScripts(ctx context.Context, thingID string, scriptIDs ...string) error
-
-	// UnassignScriptsFromThing unassigns all scripts from a specific Thing.
-	UnassignScriptsFromThing(ctx context.Context, thingID string) error
-
-	// SaveScriptRuns preserves multiple ScriptRuns.
-	SaveScriptRuns(ctx context.Context, runs ...ScriptRun) ([]ScriptRun, error)
-
-	// RetrieveScriptRunByID retrieves a single ScriptRun based on its ID.
-	RetrieveScriptRunByID(ctx context.Context, id string) (ScriptRun, error)
-
-	// RetrieveScriptRunsByThing retrieves a list of Script runs by Thing ID.
-	RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm PageMetadata) (ScriptRunsPage, error)
-
-	// RemoveScriptRuns removes one or more Script runs by IDs.
-	RemoveScriptRuns(ctx context.Context, ids ...string) error
 }
