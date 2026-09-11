@@ -48,10 +48,6 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 	return db, nil
 }
 
-// setChunkInterval reconciles chunk_time_interval on every connect rather than
-// in a migration: sql-migrate keys applied migrations by ID, so a value
-// templated into a migration body would never re-run on an existing database.
-// An empty interval leaves the hypertables untouched.
 func setChunkInterval(db *sqlx.DB, interval string) error {
 	if interval == "" {
 		return nil
