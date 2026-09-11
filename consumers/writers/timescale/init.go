@@ -5,6 +5,7 @@ package timescale
 
 import (
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
@@ -13,15 +14,16 @@ import (
 
 // Config defines the options that are used when connecting to a TimescaleSQL instance
 type Config struct {
-	Host        string
-	Port        string
-	User        string
-	Pass        string
-	Name        string
-	SSLMode     string
-	SSLCert     string
-	SSLKey      string
-	SSLRootCert string
+	Host          string
+	Port          string
+	User          string
+	Pass          string
+	Name          string
+	SSLMode       string
+	SSLCert       string
+	SSLKey        string
+	SSLRootCert   string
+	ChunkInterval string
 }
 
 // Connect creates a connection to the TimescaleSQL instance and applies any
@@ -39,7 +41,34 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 		return nil, err
 	}
 
+	if err := setChunkInterval(db, cfg.ChunkInterval); err != nil {
+		return nil, err
+	}
+
 	return db, nil
+}
+
+func setChunkInterval(db *sqlx.DB, interval string) error {
+	if interval == "" {
+		return nil
+	}
+
+	d, err := time.ParseDuration(interval)
+	if err != nil {
+		return fmt.Errorf("invalid chunk interval %q: %w", interval, err)
+	}
+	if d <= 0 {
+		return fmt.Errorf("invalid chunk interval %q: must be positive", interval)
+	}
+
+	q := `SELECT set_chunk_time_interval(CAST($1 AS regclass), CAST($2 AS bigint))`
+	for _, table := range []string{"senml", "json"} {
+		if _, err := db.Exec(q, table, d.Nanoseconds()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func migrateDB(db *sqlx.DB) error {
@@ -92,6 +121,17 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{
 					"DROP INDEX IF EXISTS idx_json_dedup",
 					"ALTER TABLE json DROP COLUMN IF EXISTS payload_hash",
+				},
+			},
+			{
+				Id: "messages_3",
+				Up: []string{
+					`CREATE INDEX IF NOT EXISTS idx_senml_publisher_name_time ON senml(publisher, name, time DESC)`,
+					`DROP INDEX IF EXISTS idx_json_created`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_senml_publisher_name_time`,
+					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
 				},
 			},
 		},

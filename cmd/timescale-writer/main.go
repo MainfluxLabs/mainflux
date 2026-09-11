@@ -29,30 +29,32 @@ const (
 	svcName      = "timescaledb-writer"
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel      = "error"
-	defBrokerURL     = "nats://localhost:4222"
-	defPort          = "8180"
-	defDBHost        = "localhost"
-	defDBPort        = "5432"
-	defDBUser        = "mainflux"
-	defDBPass        = "mainflux"
-	defDB            = "mainflux"
-	defDBSSLMode     = "disable"
-	defDBSSLCert     = ""
-	defDBSSLKey      = ""
-	defDBSSLRootCert = ""
-	envBrokerURL     = "MF_BROKER_URL"
-	envLogLevel      = "MF_TIMESCALE_WRITER_LOG_LEVEL"
-	envPort          = "MF_TIMESCALE_WRITER_PORT"
-	envDBHost        = "MF_TIMESCALE_WRITER_DB_HOST"
-	envDBPort        = "MF_TIMESCALE_WRITER_DB_PORT"
-	envDBUser        = "MF_TIMESCALE_WRITER_DB_USER"
-	envDBPass        = "MF_TIMESCALE_WRITER_DB_PASS"
-	envDB            = "MF_TIMESCALE_WRITER_DB"
-	envDBSSLMode     = "MF_TIMESCALE_WRITER_DB_SSL_MODE"
-	envDBSSLCert     = "MF_TIMESCALE_WRITER_DB_SSL_CERT"
-	envDBSSLKey      = "MF_TIMESCALE_WRITER_DB_SSL_KEY"
-	envDBSSLRootCert = "MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT"
+	defLogLevel        = "error"
+	defBrokerURL       = "nats://localhost:4222"
+	defPort            = "8180"
+	defDBHost          = "localhost"
+	defDBPort          = "5432"
+	defDBUser          = "mainflux"
+	defDBPass          = "mainflux"
+	defDB              = "mainflux"
+	defDBSSLMode       = "disable"
+	defDBSSLCert       = ""
+	defDBSSLKey        = ""
+	defDBSSLRootCert   = ""
+	defDBChunkInterval = ""
+	envBrokerURL       = "MF_BROKER_URL"
+	envLogLevel        = "MF_TIMESCALE_WRITER_LOG_LEVEL"
+	envPort            = "MF_TIMESCALE_WRITER_PORT"
+	envDBHost          = "MF_TIMESCALE_WRITER_DB_HOST"
+	envDBPort          = "MF_TIMESCALE_WRITER_DB_PORT"
+	envDBUser          = "MF_TIMESCALE_WRITER_DB_USER"
+	envDBPass          = "MF_TIMESCALE_WRITER_DB_PASS"
+	envDB              = "MF_TIMESCALE_WRITER_DB"
+	envDBSSLMode       = "MF_TIMESCALE_WRITER_DB_SSL_MODE"
+	envDBSSLCert       = "MF_TIMESCALE_WRITER_DB_SSL_CERT"
+	envDBSSLKey        = "MF_TIMESCALE_WRITER_DB_SSL_KEY"
+	envDBSSLRootCert   = "MF_TIMESCALE_WRITER_DB_SSL_ROOT_CERT"
+	envDBChunkInterval = "MF_TIMESCALE_WRITER_DB_CHUNK_INTERVAL"
 )
 
 type config struct {
@@ -108,15 +110,16 @@ func main() {
 
 func loadConfig() config {
 	dbConfig := timescale.Config{
-		Host:        mainflux.Env(envDBHost, defDBHost),
-		Port:        mainflux.Env(envDBPort, defDBPort),
-		User:        mainflux.Env(envDBUser, defDBUser),
-		Pass:        mainflux.Env(envDBPass, defDBPass),
-		Name:        mainflux.Env(envDB, defDB),
-		SSLMode:     mainflux.Env(envDBSSLMode, defDBSSLMode),
-		SSLCert:     mainflux.Env(envDBSSLCert, defDBSSLCert),
-		SSLKey:      mainflux.Env(envDBSSLKey, defDBSSLKey),
-		SSLRootCert: mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
+		Host:          mainflux.Env(envDBHost, defDBHost),
+		Port:          mainflux.Env(envDBPort, defDBPort),
+		User:          mainflux.Env(envDBUser, defDBUser),
+		Pass:          mainflux.Env(envDBPass, defDBPass),
+		Name:          mainflux.Env(envDB, defDB),
+		SSLMode:       mainflux.Env(envDBSSLMode, defDBSSLMode),
+		SSLCert:       mainflux.Env(envDBSSLCert, defDBSSLCert),
+		SSLKey:        mainflux.Env(envDBSSLKey, defDBSSLKey),
+		SSLRootCert:   mainflux.Env(envDBSSLRootCert, defDBSSLRootCert),
+		ChunkInterval: mainflux.Env(envDBChunkInterval, defDBChunkInterval),
 	}
 
 	httpConfig := servers.Config{
