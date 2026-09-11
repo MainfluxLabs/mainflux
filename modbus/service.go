@@ -433,7 +433,7 @@ func readBlock(mc gbmodbus.Client, funcCode string, start, length uint16) ([]byt
 
 // blockFields returns the client's data fields that fall inside the given block.
 func blockFields(fields []DataField, block Block) []DataField {
-	var res []DataField
+	res := make([]DataField, 0, len(fields))
 	for _, field := range fields {
 		if field.Address >= block.Start && field.Address < block.Start+block.Length {
 			res = append(res, field)
@@ -451,7 +451,7 @@ func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Cl
 
 		raw, err := readBlock(mc, client.FunctionCode, block.Start, block.Length)
 		if err != nil {
-			var names []string
+			names := make([]string, 0, len(fields))
 			for _, field := range fields {
 				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
 			}
