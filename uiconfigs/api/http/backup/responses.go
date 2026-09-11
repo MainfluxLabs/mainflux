@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	groups "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/groups"
 	orgs "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/orgs"
 	things "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/things"
 )
@@ -15,6 +16,7 @@ var (
 type backupResponse struct {
 	OrgsConfigs   []orgs.OrgConfigResponse     `json:"orgs_configs"`
 	ThingsConfigs []things.ThingConfigResponse `json:"things_configs"`
+	GroupsConfigs []groups.GroupConfigResponse `json:"groups_configs"`
 }
 
 func (res backupResponse) Code() int {

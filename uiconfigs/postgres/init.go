@@ -68,6 +68,18 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE thing_configs DROP COLUMN group_id`,
 				},
 			},
+			{
+				Id: "uiconfigs_3",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS group_configs (
+                        group_id UUID PRIMARY KEY,
+                        config   JSONB
+					)`,
+				},
+				Down: []string{
+					`DROP TABLE IF EXISTS group_configs`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

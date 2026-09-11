@@ -180,6 +180,75 @@ func (lm *loggingMiddleware) BackupThingsConfigs(ctx context.Context, token stri
 	return lm.svc.BackupThingsConfigs(ctx, token)
 }
 
+func (lm *loggingMiddleware) ViewGroupConfig(ctx context.Context, token, groupID string) (response uiconfigs.GroupConfig, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method view_group_config by user %s, group %v took %s to complete", email, groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ViewGroupConfig(ctx, token, groupID)
+}
+
+func (lm *loggingMiddleware) ListGroupsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (response uiconfigs.GroupConfigPage, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method list_groups_configs by user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListGroupsConfigs(ctx, token, pm)
+}
+
+func (lm *loggingMiddleware) UpdateGroupConfig(ctx context.Context, token string, groupConfig uiconfigs.GroupConfig) (response uiconfigs.GroupConfig, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method update_group_config by user %s, group %v took %s to complete", email, groupConfig.GroupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UpdateGroupConfig(ctx, token, groupConfig)
+}
+
+func (lm *loggingMiddleware) RemoveGroupConfig(ctx context.Context, groupID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_group_config for group %v took %s to complete", groupID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveGroupConfig(ctx, groupID)
+}
+
+func (lm *loggingMiddleware) BackupGroupsConfigs(ctx context.Context, token string) (response uiconfigs.GroupConfigBackup, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method backup_groups_configs by user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.BackupGroupsConfigs(ctx, token)
+}
+
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (response uiconfigs.Backup, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
