@@ -77,71 +77,6 @@ func (rr ruleRepository) RetrieveScriptByID(ctx context.Context, id string) (rul
 	return toLuaScript(dbs), nil
 }
 
-func (rr ruleRepository) RetrieveScriptsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
-	dq := dbutil.GetDirQuery(pm.Dir)
-	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-
-	thingQuery := "lst.thing_id = :thing_id"
-	nameQuery, name := dbutil.GetNameQuery(pm.Name)
-
-	whereClause := dbutil.BuildWhereClause(thingQuery, nameQuery)
-
-	query := `
-		SELECT ls.id, ls.group_id, ls.script, ls.name, ls.description
-		FROM lua_scripts ls
-		INNER JOIN lua_scripts_things lst ON ls.id = lst.lua_script_id
-		%s
-		ORDER BY %s %s
-		%s
-	`
-
-	queryCount := `
-		SELECT COUNT(*)
-		FROM lua_scripts ls
-		INNER JOIN lua_scripts_things lst ON ls.id = lst.lua_script_id
-		%s
-	`
-
-	query = fmt.Sprintf(query, whereClause, oq, dq, olq)
-	queryCount = fmt.Sprintf(queryCount, whereClause)
-
-	params := map[string]any{
-		"thing_id": thingID,
-		"name":     name,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-	}
-
-	rows, err := rr.db.NamedQueryContext(ctx, query, params)
-	if err != nil {
-		return rules.LuaScriptsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var scripts []rules.LuaScript
-	for rows.Next() {
-		var dba dbLuaScript
-		if err = rows.StructScan(&dba); err != nil {
-			return rules.LuaScriptsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-		}
-
-		scripts = append(scripts, toLuaScript(dba))
-	}
-
-	total, err := dbutil.Total(ctx, rr.db, queryCount, params)
-	if err != nil {
-		return rules.LuaScriptsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	page := rules.LuaScriptsPage{
-		Scripts: scripts,
-		Total:   total,
-	}
-
-	return page, nil
-}
-
 func (rr ruleRepository) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
@@ -196,21 +131,6 @@ func (rr ruleRepository) RetrieveScriptsByGroup(ctx context.Context, groupID str
 	}
 
 	return page, nil
-}
-
-func (rr ruleRepository) RetrieveThingIDsByScript(ctx context.Context, scriptID string) ([]string, error) {
-	query := `
-		SELECT thing_id
-		FROM lua_scripts_things
-		WHERE lua_script_id = $1
-	`
-
-	thingIDs := []string{}
-	if err := rr.db.SelectContext(ctx, &thingIDs, query, scriptID); err != nil {
-		return nil, err
-	}
-
-	return thingIDs, nil
 }
 
 func (rr ruleRepository) UpdateScript(ctx context.Context, script rules.LuaScript) error {
@@ -271,79 +191,6 @@ func (rr ruleRepository) RemoveScriptsByGroup(ctx context.Context, groupID strin
 	`
 
 	params := map[string]any{"group_id": groupID}
-	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
-	}
-
-	return nil
-}
-
-func (rr ruleRepository) AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error {
-	tx, err := rr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(dbutil.ErrCreateEntity, err)
-	}
-	defer tx.Rollback()
-
-	query := `
-		INSERT INTO lua_scripts_things (thing_id, lua_script_id)
-		VALUES (:thing_id, :lua_script_id)
-	`
-
-	for _, scriptID := range scriptIDs {
-		params := map[string]any{
-			"lua_script_id": scriptID,
-			"thing_id":      thingID,
-		}
-
-		if _, err := tx.NamedExecContext(ctx, query, params); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					continue
-				}
-			}
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(dbutil.ErrCreateEntity, err)
-	}
-
-	return nil
-}
-
-func (rr ruleRepository) UnassignScripts(ctx context.Context, thingID string, scriptIDs ...string) error {
-	query := `
-		DELETE FROM lua_scripts_things
-		WHERE lua_script_id = :lua_script_id AND thing_id = :thing_id
-	`
-
-	for _, scriptID := range scriptIDs {
-		params := map[string]any{
-			"lua_script_id": scriptID,
-			"thing_id":      thingID,
-		}
-		if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
-	}
-
-	return nil
-}
-
-func (rr ruleRepository) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
-	query := `
-		DELETE FROM lua_scripts_things WHERE thing_id = :thing_id;
-	`
-
-	params := map[string]any{
-		"thing_id": thingID,
-	}
 	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}

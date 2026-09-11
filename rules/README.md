@@ -1,18 +1,18 @@
 # Rules Service
 
-The Rules service provides two complementary automation engines for processing incoming device messages: a **rule engine** for threshold-based condition matching, and a **Lua scripting engine** for arbitrary message processing logic.
+The Rules service provides a **rule engine** for threshold-based condition matching on incoming device messages.
 
-Both engines are driven by the same event stream: every message published by a thing is evaluated against all rules and scripts assigned to that thing.
+The engine is driven by the event stream: every message published by a thing is evaluated against all rules assigned to that thing.
 
 ## Resource Model
 
 ```
 Group
-└── Rule / Script
+└── Rule
     └── assigned to → Things
 ```
 
-Rules and scripts are created within a group and then assigned to individual things. When a thing publishes a message, the service evaluates all rules and scripts assigned to that thing against the message payload.
+Rules are created within a group and then assigned to individual things. When a thing publishes a message, the service evaluates all rules assigned to that thing against the message payload.
 
 ## Rules
 
@@ -71,97 +71,6 @@ Each action specifies what to do when a rule fires.
 - **`smtp`** — triggers an SMTP email notification via the registered notifier with the given `id`
 - **`smpp`** — triggers an SMPP SMS notification via the registered notifier with the given `id`
 
-## Lua Scripts
-
-Lua scripts provide a programmable alternative to condition-based rules. A script is arbitrary Lua code that runs once per incoming message (or once per array element, for array payloads). Scripts can read the message payload, make decisions, and call platform API functions.
-
-### Script Fields
-
-| Field         | Description                           |
-| ------------- | ------------------------------------- |
-| `id`          | Unique script identifier (UUID)       |
-| `group_id`    | ID of the group the script belongs to |
-| `name`        | Human-readable script name            |
-| `description` | Optional free-form description        |
-| `script`      | Lua source code (max 65,535 bytes)    |
-
-### Lua Execution Environment
-
-Each script execution receives an isolated Lua environment. The following global is available:
-
-#### `mfx` table
-
-| Field                      | Type   | Description                                        |
-| -------------------------- | ------ | -------------------------------------------------- |
-| `mfx.message.payload`      | table  | Parsed message payload (JSON object or array item) |
-| `mfx.message.subtopic`     | string | Message subtopic                                   |
-| `mfx.message.created`      | number | Message creation timestamp (Unix)                  |
-| `mfx.message.publisher_id` | string | Thing ID that published the message                |
-
-#### `mfx` API functions
-
-| Function                       | Returns             | Description                                                                    |
-| ------------------------------ | ------------------- | ------------------------------------------------------------------------------ |
-| `mfx.smtp_notify(notifier_id)` | `bool[, error_msg]` | Triggers an SMTP notification via the specified notifier. Max 2 calls per run. |
-| `mfx.create_alarm(level)`      | `bool[, error_msg]` | Creates an alarm for this script at the given level (1–5). Max 1 call per run. |
-| `mfx.log(message)`             | `bool[, error_msg]` | Appends a message to the run log (max 256 lines, 2048 chars each).             |
-
-Available Lua standard libraries: `base`, `math`, `string`, `table`. The `print` function is disabled.
-
-#### Execution Limits
-
-| Limit                 | Value       |
-| --------------------- | ----------- |
-| Max instructions      | 1,000,000   |
-| Max log lines per run | 256         |
-| Max log line length   | 2,048 chars |
-
-#### Example Script
-
-```lua
-local payload = mfx.message.payload
-
-local temp = tonumber(payload["temperature"])
-local hum  = tonumber(payload["humidity"])
-
-if not temp or not hum or hum <= 0 then
-  mfx.log("Invalid or missing fields")
-  return
-end
-
--- Magnus formula: dew point from temperature and relative humidity
-local gamma = math.log(hum / 100.0) + (17.625 * temp) / (243.04 + temp)
-local dew_point = 243.04 * gamma / (17.625 - gamma)
-local spread = temp - dew_point  -- smaller spread → closer to condensation
-
-mfx.log(string.format("temp=%.1f  hum=%.1f%%  dew_point=%.1f  spread=%.1f",
-  temp, hum, dew_point, spread))
-
--- Condensation risk: surface is near or below dew point
-if spread <= 2.0 then
-  mfx.log("Condensation risk: spread=" .. string.format("%.1f", spread) .. "°C")
-  mfx.create_alarm(3)
-  mfx.smtp_notify("654e4567-e89b-12d3-a456-426614174999")
-end
-```
-
-### Script Runs
-
-Every script execution is recorded as a script run. Run records capture the outcome, logs, and any runtime error.
-
-| Field         | Description                                  |
-| ------------- | -------------------------------------------- |
-| `id`          | Unique run identifier (UUID)                 |
-| `script_id`   | ID of the script that was executed           |
-| `thing_id`    | ID of the thing that triggered the execution |
-| `logs`        | Log lines written via `mfx.log()`            |
-| `started_at`  | Execution start timestamp (RFC 3339)         |
-| `finished_at` | Execution end timestamp (RFC 3339)           |
-| `status`      | `success` or `fail`                          |
-| `error`       | Runtime error message, if any                |
-
-Run records are retrievable per thing and can be bulk-deleted via the API.
-
 ## Configuration
 
 The service is configured using the environment variables presented in the following table. Note that any unset variables will be replaced with their default values.
@@ -187,11 +96,8 @@ The service is configured using the environment variables presented in the follo
 | `MF_RULES_SERVER_KEY`             | Path to server key in PEM format                                           |                          |
 | `MF_THINGS_AUTH_GRPC_URL`         | Things service Auth gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`     | Things service Auth gRPC request timeout                                   | 1s                       |
-| `MF_POSTGRES_READER_GRPC_URL`     | Postgres reader gRPC URL                                                   | localhost:8184           |
-| `MF_POSTGRES_READER_GRPC_TIMEOUT` | Postgres reader gRPC request timeout                                       | 1s                       |
 | `MF_RULES_ES_URL`                 | Event store URL                                                            | redis://localhost:6379/0 |
 | `MF_RULES_EVENT_CONSUMER`         | Event store consumer name                                                  | rules                    |
-| `MF_RULES_SCRIPTS_ENABLED`        | Enable Lua scripting engine                                                | false                    |
 
 ## Deployment
 

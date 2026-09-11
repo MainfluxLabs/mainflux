@@ -250,98 +250,6 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/{thingId}/scripts:
-    get:
-      summary: Retrieve Scripts assigned to a Thing.
-      description: Retrieves a list of Lua scripts assigned to a specific Thing identified by the provided ID.
-      tags:
-        - scripts
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      responses:
-        '200':
-          $ref: "#/components/responses/ListScriptsRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '422':
-          description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    post:
-      summary: Assign Scripts to a Thing.
-      description: Assigns one or more Lua scripts to a specific thing identified by the provided ID.
-      tags:
-        - scripts
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      requestBody:
-        $ref: "#/components/requestBodies/ThingScriptsReq"
-      responses:
-        '200':
-          description: Scripts assigned successfully.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '404':
-          description: Thing or one of the scripts does not exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-    patch:
-      summary: Unassign Scripts from Thing.
-      description: Unassigns Lua scripts from a specific thing identified by the provided ID.
-      tags:
-        - scripts
-      parameters:
-        - $ref: "#/components/parameters/ThingId"
-      requestBody:
-        $ref: "#/components/requestBodies/ThingScriptsReq"
-      responses:
-        '200':
-          description: Scripts unassigned successfully.
-        '400':
-          description: Failed due to malformed JSON.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '404':
-          description: Thing or one of the scripts does not exist.
-        '415':
-          description: Missing or invalid content type.
-        '500':
-          $ref: "#/components/responses/ServiceError"
-  /scripts/{scriptId}/things:
-    get:
-      summary: Retrieve list of IDs of Things assigned a specific Script identified by the provided ID.
-      description: Retrieve list of IDs of Things assigned a specific Script identified by the provided ID.
-      tags:
-        - scripts
-      parameters:
-        - $ref: "#/components/parameters/ScriptId"
-      responses:
-        '200':
-          $ref: "#/components/responses/ListThingIDsRes"
-        '400':
-          description: Failed due to malformed query parameters.
-        '401':
-          description: Missing or invalid access token provided.
-        '403':
-          description: Failed to perform authorization over the entity.
-        '404':
-          description: Script does not exist.
-        '422':
-          description: Database can't process request.
-        '500':
-          $ref: "#/components/responses/ServiceError"
   /scripts/{scriptId}:
     get:
       summary: Retrieve a specific Script.
@@ -908,25 +816,6 @@ components:
               $ref: "#/components/schemas/ExampleScript"
     RemoveScriptsReq:
       description: JSON-formatted document describing the IDs of scripts for deleting.
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              script_ids:
-                type: array
-                items:
-                  type: string
-                  format: uuid
-            required:
-              - script_ids
-          example:
-            script_ids:
-              - "456e4567-e89b-12d3-a456-426614174abc"
-              - "789e4567-e89b-12d3-a456-426614174def"
-    ThingScriptsReq:
-      description: JSON-formatted document describing the script IDs to assign/unassign.
       required: true
       content:
         application/json:

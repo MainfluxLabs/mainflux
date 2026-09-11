@@ -40,22 +40,6 @@ func createScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listScriptsByThingEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listScriptsByThingReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		page, err := svc.ListScriptsByThing(ctx, req.token, req.thingID, req.pageMetadata)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildScriptsPageResponse(page, req.pageMetadata), nil
-	}
-}
-
 func listScriptsByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listScriptsByGroupReq)
@@ -69,23 +53,6 @@ func listScriptsByGroupEndpoint(svc rules.Service) endpoint.Endpoint {
 		}
 
 		return buildScriptsPageResponse(page, req.pageMetadata), nil
-	}
-}
-
-func listThingIDsByScriptEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(scriptReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		ids, err := svc.ListThingIDsByScript(ctx, req.token, req.id)
-		if err != nil {
-			return nil, err
-		}
-
-		res := thingIDsRes{ThingIDs: ids}
-		return res, nil
 	}
 }
 
@@ -139,36 +106,6 @@ func removeScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 		}
 
 		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
-	}
-}
-
-func assignScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(thingScriptsReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.AssignScripts(ctx, req.token, req.thingID, req.ScriptIDs...); err != nil {
-			return nil, err
-		}
-
-		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
-	}
-}
-
-func unassignScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(thingScriptsReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.UnassignScripts(ctx, req.token, req.thingID, req.ScriptIDs...); err != nil {
-			return nil, err
-		}
-
-		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
 	}
 }
 

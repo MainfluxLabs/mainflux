@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	_ apiutil.Response = (*thingIDsRes)(nil)
 	_ apiutil.Response = (*scriptRes)(nil)
 	_ apiutil.Response = (*scriptsRes)(nil)
 	_ apiutil.Response = (*scriptsPageRes)(nil)
@@ -26,22 +25,6 @@ type pageRes struct {
 	Ord    string `json:"order,omitempty"`
 	Dir    string `json:"direction,omitempty"`
 	Name   string `json:"name,omitempty"`
-}
-
-type thingIDsRes struct {
-	ThingIDs []string `json:"thing_ids"`
-}
-
-func (res thingIDsRes) Code() int {
-	return http.StatusOK
-}
-
-func (res thingIDsRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res thingIDsRes) Empty() bool {
-	return false
 }
 
 type scriptRes struct {
