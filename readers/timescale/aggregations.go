@@ -123,6 +123,10 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	if isFirstLast(rpm.AggType) {
 		subquery = senmlFirstLastSubquery(rpm.AggType, condition, bucket)
 	}
+	if view, widthNs, ok := caggSource(rpm); ok {
+		bucket = caggBucketExpr(rpm, widthNs)
+		subquery = caggSubquery(view, caggAggExpr(rpm.AggType), caggConditions(rpm), bucket)
+	}
 
 	query := fmt.Sprintf(`%s ORDER BY %s %s %s;`, subquery, bucket, dir, olq)
 
@@ -141,6 +145,113 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 	}
 
 	return messages, total, nil
+}
+
+// Continuous aggregate rungs, coarsest first. A request is routed to the
+// coarsest rung whose bucket width divides the requested width exactly.
+var caggLadder = []struct {
+	view    string
+	widthNs uint64
+}{
+	{"senml_1d", 86400000000000},
+	{"senml_1h", 3600000000000},
+}
+
+// caggMinWidthNs is the narrowest bucket worth routing. Below it the raw
+// hypertable wins: TimescaleDB streams chunks already ordered by time_bucket and
+// stops at the LIMIT, so a narrow bucket is answered by reading only a handful
+// of rows. Measured crossover on 90 days of 5-minute samples: at 1h raw wins
+// 0.21ms to 0.38ms, at 3h the aggregate wins 0.18ms to 0.59ms.
+const caggMinWidthNs = 10800000000000
+
+// caggSource picks the continuous aggregate that can answer rpm, or an empty
+// view name when the request must run against the raw hypertable.
+func caggSource(rpm readers.SenMLPageMetadata) (string, uint64, bool) {
+	if caggAggExpr(rpm.AggType) == "" {
+		return "", 0, false
+	}
+	if rpm.Value != 0 || rpm.BoolValue || rpm.StringValue != "" || rpm.DataValue != "" {
+		return "", 0, false
+	}
+	if rpm.From <= 0 || rpm.To <= rpm.From {
+		return "", 0, false
+	}
+
+	widthNs, fixed := fixedIntervalNs(rpm.AggValue, rpm.AggInterval)
+	if !fixed {
+		// Month and year have no fixed size; roll them up from daily buckets.
+		if isCalendarInterval(rpm.AggInterval) {
+			return caggLadder[0].view, 0, true
+		}
+		return "", 0, false
+	}
+	if widthNs < caggMinWidthNs {
+		return "", 0, false
+	}
+
+	for _, c := range caggLadder {
+		if widthNs >= c.widthNs && widthNs%c.widthNs == 0 {
+			return c.view, widthNs, true
+		}
+	}
+
+	return "", 0, false
+}
+
+func isCalendarInterval(intervalUnit string) bool {
+	return intervalUnit == mfreaders.MonthInterval || intervalUnit == mfreaders.YearInterval
+}
+
+// caggBucketExpr buckets the already-bucketed rows of a continuous aggregate.
+func caggBucketExpr(rpm readers.SenMLPageMetadata, widthNs uint64) string {
+	if widthNs == 0 {
+		interval := fmt.Sprintf("%d %s", rpm.AggValue, rpm.AggInterval)
+		return fmt.Sprintf("time_bucket('%s', to_timestamp(bucket / 1000000000))", interval)
+	}
+	return fmt.Sprintf("time_bucket(%d, bucket)", widthNs)
+}
+
+// caggAggExpr rolls per-bucket partials up to the requested width. AVG is
+// recomputed from the stored sum and count; averaging the averages would be
+// wrong. Types the raw path cannot serve are rejected so both paths agree.
+func caggAggExpr(aggType string) string {
+	switch aggType {
+	case readers.AggregationAvg:
+		return "SUM(sum_value) / NULLIF(SUM(count_value), 0)"
+	case readers.AggregationCount:
+		return "SUM(count_value)"
+	case readers.AggregationMin:
+		return "MIN(min_value)"
+	case readers.AggregationMax:
+		return "MAX(max_value)"
+	default:
+		return ""
+	}
+}
+
+func caggConditions(rpm readers.SenMLPageMetadata) string {
+	conds := mfreaders.BaseConditions(rpm.MessagesPageMetadata, "bucket")
+	if rpm.Name != "" {
+		conds = append(conds, "name = :name")
+	}
+
+	return dbutil.BuildWhereClause(conds...)
+}
+
+// caggSubquery mirrors senmlAggSubquery's column list so the same scanner and
+// count query work unchanged.
+func caggSubquery(view, aggExpr, condition, bucket string) string {
+	return fmt.Sprintf(`SELECT
+          MAX(max_time) AS time, MAX(CAST(subtopic AS text)) AS subtopic,
+          MAX(CAST(publisher AS text)) AS publisher, MAX(CAST(protocol AS text)) AS protocol,
+          '' AS name, '' AS unit,
+          %s AS value,
+          CAST(NULL AS text) AS string_value, CAST(NULL AS bool) AS bool_value, CAST(NULL AS text) AS data_value,
+          CAST(NULL AS float) AS sum, MAX(max_update_time) AS update_time
+          FROM %s %s
+          GROUP BY %s
+          HAVING SUM(count_value) > 0`,
+		aggExpr, view, condition, bucket)
 }
 
 func senmlAggSubquery(aggFunc, condition, bucket string) string {

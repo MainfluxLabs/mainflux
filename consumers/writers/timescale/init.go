@@ -134,6 +134,49 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
 				},
 			},
+			{
+				Id: "messages_4",
+				Up: []string{
+					`CREATE OR REPLACE FUNCTION senml_now() RETURNS BIGINT LANGUAGE SQL STABLE AS $f$
+						SELECT (EXTRACT(EPOCH FROM now()) * 1000000000)::BIGINT $f$`,
+					`SELECT set_integer_now_func('senml', 'senml_now', replace_if_exists => TRUE)`,
+					`CREATE MATERIALIZED VIEW IF NOT EXISTS senml_1h
+						WITH (timescaledb.continuous, timescaledb.materialized_only = true) AS
+						SELECT time_bucket(3600000000000, time) AS bucket,
+							publisher, name, subtopic, protocol,
+							SUM(value) AS sum_value, COUNT(value) AS count_value,
+							MIN(value) AS min_value, MAX(value) AS max_value,
+							MAX(time) AS max_time, MAX(update_time) AS max_update_time
+						FROM senml
+						GROUP BY bucket, publisher, name, subtopic, protocol
+						WITH NO DATA`,
+					`CREATE MATERIALIZED VIEW IF NOT EXISTS senml_1d
+						WITH (timescaledb.continuous, timescaledb.materialized_only = true) AS
+						SELECT time_bucket(86400000000000, time) AS bucket,
+							publisher, name, subtopic, protocol,
+							SUM(value) AS sum_value, COUNT(value) AS count_value,
+							MIN(value) AS min_value, MAX(value) AS max_value,
+							MAX(time) AS max_time, MAX(update_time) AS max_update_time
+						FROM senml
+						GROUP BY bucket, publisher, name, subtopic, protocol
+						WITH NO DATA`,
+					`SELECT add_continuous_aggregate_policy('senml_1h',
+						start_offset => 2592000000000000::bigint,
+						end_offset => 3600000000000::bigint,
+						schedule_interval => INTERVAL '30 minutes',
+						if_not_exists => TRUE)`,
+					`SELECT add_continuous_aggregate_policy('senml_1d',
+						start_offset => 7776000000000000::bigint,
+						end_offset => 86400000000000::bigint,
+						schedule_interval => INTERVAL '6 hours',
+						if_not_exists => TRUE)`,
+				},
+				Down: []string{
+					`DROP MATERIALIZED VIEW IF EXISTS senml_1d`,
+					`DROP MATERIALIZED VIEW IF EXISTS senml_1h`,
+					`DROP FUNCTION IF EXISTS senml_now()`,
+				},
+			},
 		},
 	}
 
