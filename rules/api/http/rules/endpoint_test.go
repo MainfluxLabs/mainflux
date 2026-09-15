@@ -41,8 +41,8 @@ const (
 
 var (
 	threshold1, threshold2 = 30.0, 80.0
-	condTemp               = rules.Condition{Field: "temperature", Comparator: ">", Threshold: &threshold1}
-	condHum                = rules.Condition{Field: "humidity", Comparator: "<", Threshold: &threshold2}
+	condTemp               = rules.Condition{Type: rules.ConditionTypeThreshold, Field: "temperature", Comparator: ">", Threshold: &threshold1}
+	condHum                = rules.Condition{Type: rules.ConditionTypeThreshold, Field: "humidity", Comparator: "<", Threshold: &threshold2}
 	action                 = rules.Action{Type: rules.ActionTypeAlarm, Level: 1}
 )
 
@@ -151,6 +151,12 @@ func TestCreateRules(t *testing.T) {
 	defer ts.Close()
 
 	validInput := rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}}
+	alarmInput := rules.Input{Type: rules.InputTypeAlarm, ThingIDs: []string{thingID}}
+
+	savedScripts, err := svc.CreateScripts(context.Background(), token, groupID, rules.LuaScript{Name: "cond-script", Script: "return true"})
+	require.Nil(t, err)
+	scriptID := savedScripts[0].ID
+	condScript := rules.Condition{Type: rules.ConditionTypeScript, ScriptID: scriptID}
 
 	validReq := rulesReq{Rules: []rule{
 		{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{action}},
@@ -377,6 +383,61 @@ func TestCreateRules(t *testing.T) {
 			contentType: contentType,
 			body: rulesReq{Rules: []rule{
 				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condTemp}, Actions: []rules.Action{{Type: rules.ActionTypeAlarm, Level: 0}}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with valid script condition",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{condScript}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusCreated,
+			size:   1,
+		},
+		{
+			desc:        "create rule with script condition missing script id",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{{Type: rules.ConditionTypeScript}}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with unknown condition type",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{{Type: "unknown", Field: "temperature", Comparator: ">", Threshold: &threshold1}}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with missing condition type",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: validInput, Conditions: []rules.Condition{{Field: "temperature", Comparator: ">", Threshold: &threshold1}}, Actions: []rules.Action{action}},
+			}},
+			status: http.StatusBadRequest,
+			size:   0,
+		},
+		{
+			desc:        "create rule with script condition on alarm input",
+			auth:        token,
+			groupID:     groupID,
+			contentType: contentType,
+			body: rulesReq{Rules: []rule{
+				{Name: ruleName, Input: alarmInput, Conditions: []rules.Condition{condScript}, Actions: []rules.Action{{Type: rules.ActionTypeSMTP, ID: "notifier-1"}}},
 			}},
 			status: http.StatusBadRequest,
 			size:   0,
@@ -735,7 +796,7 @@ func TestUpdateRule(t *testing.T) {
 	updatedRule := rule{
 		Name:       "updated-rule",
 		Input:      rules.Input{Type: rules.InputTypeMessage},
-		Conditions: []rules.Condition{{Field: "temperature", Comparator: ">", Threshold: &updThreshold}},
+		Conditions: []rules.Condition{{Type: rules.ConditionTypeThreshold, Field: "temperature", Comparator: ">", Threshold: &updThreshold}},
 		Actions:    []rules.Action{action},
 	}
 
