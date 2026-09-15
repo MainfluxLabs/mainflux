@@ -191,10 +191,11 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 	return r
 }
 
-func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeSaveFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
 		if r.ContentLength > maxUploadBytes {
 			return nil, apiutil.ErrLimitSize
@@ -283,10 +284,11 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeSaveGroupFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
 		if r.ContentLength > maxUploadBytes {
 			return nil, apiutil.ErrLimitSize
