@@ -1,6 +1,8 @@
 package rules
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -164,10 +166,10 @@ func NewLuaEnv(service *rulesService, script *LuaScript, message *protomfx.Messa
 }
 
 // Run the environment's associated Lua script.
-func (env *luaEnv) execute() (ScriptRun, error) {
+func (env *luaEnv) execute() (ScriptRun, bool, error) {
 	id, err := env.service.idProvider.ID()
 	if err != nil {
-		return ScriptRun{}, err
+		return ScriptRun{}, false, err
 	}
 
 	run := ScriptRun{
@@ -178,18 +180,52 @@ func (env *luaEnv) execute() (ScriptRun, error) {
 		Status:    ScriptRunStatusSuccess,
 	}
 
-	err = lua.DoString(env.ls, env.script.Script)
+	runErr := lua.DoString(env.ls, env.script.Script)
 
 	run.FinishedAt = time.Now()
 	run.Logs = env.logs
-	run.err = err
+	run.err = runErr
 
-	if run.err != nil {
-		run.Error = run.err.Error()
+	if runErr != nil {
+		run.Error = runErr.Error()
 		run.Status = ScriptRunStatusFail
+		return run, false, nil
 	}
 
-	return run, nil
+	ok := env.ls.Top() > 0 && env.ls.TypeOf(-1) == lua.TypeBoolean
+	if !ok {
+		return run, false, nil
+	}
+
+	return run, env.ls.ToBoolean(-1), nil
+}
+
+// runScriptCondition runs the script identified by scriptID as a Condition and returns its
+// boolean result. It is fail-closed: any error along the way makes the condition false.
+func (rs *rulesService) runScriptCondition(ctx context.Context, msg *protomfx.Message, payload map[string]any, scriptID string) bool {
+	script, err := rs.rules.RetrieveScriptByID(ctx, scriptID)
+	if err != nil {
+		rs.logger.Error(fmt.Sprintf("retrieving script with id %s for condition evaluation failed with error: %v", scriptID, err))
+		return false
+	}
+
+	env, err := NewLuaEnv(rs, &script, msg, payload, luaLog)
+	if err != nil {
+		rs.logger.Error(fmt.Sprintf("creating lua environment for script with id %s failed with error: %v", scriptID, err))
+		return false
+	}
+
+	run, result, err := env.execute()
+	if err != nil {
+		rs.logger.Error(fmt.Sprintf("executing script with id %s failed with error: %v", scriptID, err))
+		return false
+	}
+
+	if _, err := rs.rules.SaveScriptRuns(ctx, run); err != nil {
+		rs.logger.Error(fmt.Sprintf("preserving script run to database failed with error: %v", err))
+	}
+
+	return result
 }
 
 // Create a table containing Mainflux Message data and push it to the Lua stack. The fields of the table are:
