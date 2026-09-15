@@ -52,7 +52,7 @@ type Service interface {
 	// identified by the provided group ID.
 	RemoveNotifiersByGroup(ctx context.Context, groupID string) error
 
-	consumers.MessageConsumer
+	consumers.NotificationConsumer
 }
 
 var _ Service = (*notifierService)(nil)
@@ -74,7 +74,7 @@ func New(idp uuid.IDProvider, sender Sender, notifierRepo NotifierRepository, th
 	}
 }
 
-func (ns *notifierService) ConsumeMessage(subject string, msg protomfx.Message) error {
+func (ns *notifierService) ConsumeNotification(subject string, notification protomfx.Notification) error {
 	ctx := context.Background()
 
 	parts := strings.Split(subject, ".")
@@ -88,7 +88,7 @@ func (ns *notifierService) ConsumeMessage(subject string, msg protomfx.Message) 
 		return errors.Wrap(ErrNotify, err)
 	}
 
-	if err = ns.sender.Send(notifier.Contacts, msg); err != nil {
+	if err = ns.sender.Send(notifier.Contacts, notification); err != nil {
 		return errors.Wrap(ErrNotify, err)
 	}
 

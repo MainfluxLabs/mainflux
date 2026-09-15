@@ -13,6 +13,7 @@ import (
 const (
 	membersByGroupPrefix = "mbs_by_gr"
 	groupsByMemberPrefix = "grs_by_mb"
+	orgByGroupPrefix     = "org_by_gr"
 )
 
 var _ things.GroupCache = (*groupCache)(nil)
@@ -33,6 +34,7 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 		thingsByGroupIDKey(groupID),
 		profilesByGroupIDKey(groupID),
 		membersByGroupIDKey(groupID),
+		orgByGroupIDKey(groupID),
 	}
 	pipe := gc.client.Pipeline()
 	prefixes := []string{thingsByGroupPrefix, profilesByGroupPrefix, membersByGroupPrefix}
@@ -130,8 +132,34 @@ func (gc *groupCache) RetrieveGroupIDsByMember(ctx context.Context, memberID str
 	return groups, nil
 }
 
+func (gc *groupCache) SaveOrg(ctx context.Context, groupID, orgID string) error {
+	ok := orgByGroupIDKey(groupID)
+	if err := gc.client.Set(ctx, ok, orgID, 0).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (gc *groupCache) ViewOrg(ctx context.Context, groupID string) (string, error) {
+	ok := orgByGroupIDKey(groupID)
+	orgID, err := gc.client.Get(ctx, ok).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return "", errors.Wrap(dbutil.ErrNotFound, err)
+		}
+		return "", errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return orgID, nil
+}
+
 func membersByGroupIDKey(groupID string) string {
 	return fmt.Sprintf("%s:%s", membersByGroupPrefix, groupID)
+}
+
+func orgByGroupIDKey(groupID string) string {
+	return fmt.Sprintf("%s:%s", orgByGroupPrefix, groupID)
 }
 
 func groupsByMemberIDKey(memberID string) string {

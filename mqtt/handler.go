@@ -39,6 +39,7 @@ var (
 
 	ErrFailedConnect     = errors.New("failed to connect")
 	ErrFailedDisconnect  = errors.New("failed to disconnect")
+	ErrFailedPublish     = errors.New("failed to publish")
 	ErrFailedSubscribe   = errors.New("failed to subscribe")
 	ErrFailedUnsubscribe = errors.New("failed to unsubscribe")
 
@@ -47,9 +48,15 @@ var (
 	errFailedCacheDisconnection = errors.New("failed to remove connection from cache")
 )
 
+// Publisher specifies the minimal publishing capability the MQTT handler needs.
+type Publisher interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+}
+
 // handler implements session.Handler interface
 type handler struct {
-	publisher messaging.Publisher
+	publisher Publisher
 	things    domain.ThingsClient
 	service   Service
 	cache     cache.ConnectionCache
@@ -57,7 +64,7 @@ type handler struct {
 }
 
 // NewHandler creates new Handler entity
-func NewHandler(publisher messaging.Publisher, things domain.ThingsClient,
+func NewHandler(publisher Publisher, things domain.ThingsClient,
 	svc Service, cache cache.ConnectionCache, logger logger.Logger) session.Handler {
 	return &handler{
 		publisher: publisher,
@@ -202,10 +209,19 @@ func (h *handler) Connect(c *session.Client) {
 // Publish - after client successfully published
 func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 	if c == nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, ErrClientNotInitialized).Error())
+		h.logger.Error(errors.Wrap(ErrFailedPublish, ErrClientNotInitialized).Error())
 		return
 	}
 
+	if err := h.publishToBus(c, *topic, *payload); err != nil {
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish to topic %s: %s", c.ID, *topic, err))
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published to topic %s", c.ID, *topic))
+}
+
+func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) error {
 	tk := domain.ThingKey{
 		Value: string(c.Password),
 		Type:  c.Username,
@@ -213,55 +229,55 @@ func (h *handler) Publish(c *session.Client, topic *string, payload *[]byte) {
 
 	pc, err := h.things.GetPubConfigByKey(context.Background(), tk)
 	if err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return err
 	}
 
-	subject, subtopic, err := parseTopic(*topic, pc.PublisherID)
+	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
 	if err != nil {
-		h.logger.Error(errors.Wrap(errFailedParseSubtopic, err).Error())
-		return
+		return errors.Wrap(errFailedParseSubtopic, err)
 	}
 
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
-		Payload:  *payload,
+		Payload:  payload,
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
+		return err
 	}
 
 	if isCommandSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
-			h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-			return
+			return err
 		}
-		h.logger.Info(fmt.Sprintf("client_id %s published command to topic %s", c.ID, *topic))
-		return
+		return nil
 	}
 
-	if err := h.publishMessage(pc, msg); err != nil {
-		h.logger.Error(errors.Wrap(messaging.ErrPublishMessage, err).Error())
-		return
-	}
-
-	h.logger.Info(fmt.Sprintf("client_id %s published message to topic %s", c.ID, *topic))
+	return h.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
-	return h.publisher.Publish(subject, msg)
+	cmd := protomfx.Command{
+		Publisher:   msg.Publisher,
+		Subtopic:    msg.Subtopic,
+		Payload:     msg.Payload,
+		RecipientId: extractRecipient(subject),
+		Protocol:    msg.Protocol,
+		Created:     msg.Created,
+	}
+	return h.publisher.PublishCommand(subject, cmd)
 }
 
-func (h *handler) publishMessage(pc domain.PubConfigInfo, msg protomfx.Message) error {
-	for _, s := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := h.publisher.Publish(s, msg); err != nil {
-			return err
-		}
+// extractRecipient extracts the recipient thing ID from a
+// "things.<id>.commands[.subtopic]" subject. Group-targeted commands
+// ("groups.<id>.commands[.subtopic]") have no single recipient thing.
+func extractRecipient(subject string) string {
+	parts := strings.SplitN(subject, ".", 3)
+	if len(parts) < 2 || parts[0] != topicPrefixThings {
+		return ""
 	}
-	return nil
+	return parts[1]
 }
 
 func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
@@ -370,6 +386,17 @@ func (h *handler) Disconnect(c *session.Client) {
 	}
 
 	h.logger.Info(fmt.Sprintf("client_id %s disconnected", c.ID))
+
+	if !c.WillFlag || c.CleanDisconnect {
+		return
+	}
+
+	if err := h.publishToBus(c, c.WillTopic, c.WillMessage); err != nil {
+		h.logger.Error(fmt.Sprintf("client_id %s failed to publish will to topic %s: %s", c.ID, c.WillTopic, err))
+		return
+	}
+
+	h.logger.Info(fmt.Sprintf("client_id %s published will message to topic %s", c.ID, c.WillTopic))
 }
 
 func (h *handler) identify(c *session.Client) (string, error) {

@@ -39,6 +39,7 @@ const (
 	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
 	aggFieldKey            = "agg_field"
+	noTotalKey             = "no_total"
 	publisherKey           = "publisher"
 	publisherIDKey         = "publisherID"
 	timeFormatKey          = "time_format"
@@ -262,12 +263,12 @@ func decodeSearchSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return nil, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return nil, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
@@ -283,10 +284,12 @@ func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error
 	req := deleteAllJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			Subtopic: subtopic,
-			Protocol: protocol,
-			From:     from,
-			To:       to,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Subtopic: subtopic,
+				Protocol: protocol,
+				From:     from,
+				To:       to,
+			},
 		},
 	}
 
@@ -298,12 +301,12 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return nil, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return nil, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
@@ -319,11 +322,13 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	req := deleteJSONMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.JSONPageMetadata{
-			Publisher: publisherID,
-			Subtopic:  subtopic,
-			Protocol:  protocol,
-			From:      from,
-			To:        to,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Publisher: publisherID,
+				Subtopic:  subtopic,
+				Protocol:  protocol,
+				From:      from,
+				To:        to,
+			},
 		},
 	}
 
@@ -344,8 +349,10 @@ func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, erro
 	req := deleteAllSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			From: from,
-			To:   to,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				From: from,
+				To:   to,
+			},
 		},
 	}
 
@@ -357,12 +364,12 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return nil, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return nil, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
@@ -378,11 +385,13 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 	req := deleteSenMLMessagesReq{
 		token: apiutil.ExtractBearerToken(r),
 		pageMeta: readers.SenMLPageMetadata{
-			Publisher: publisher,
-			Subtopic:  subtopic,
-			Protocol:  protocol,
-			From:      from,
-			To:        to,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Publisher: publisher,
+				Subtopic:  subtopic,
+				Protocol:  protocol,
+				From:      from,
+				To:        to,
+			},
 		},
 	}
 
@@ -402,7 +411,7 @@ func decodeExportJSONMessages(_ context.Context, r *http.Request) (any, error) {
 
 	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
 	if err != nil {
-		return readers.SenMLPageMetadata{}, err
+		return nil, err
 	}
 
 	pageMeta, err := BuildJSONPageMetadata(r)
@@ -433,7 +442,7 @@ func decodeExportSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 
 	timeFormat, err := apiutil.ReadStringQuery(r, timeFormatKey, "")
 	if err != nil {
-		return readers.SenMLPageMetadata{}, err
+		return nil, err
 	}
 
 	pageMeta, err := BuildSenMLPageMetadata(r)
@@ -502,53 +511,59 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
-func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
+// buildMessagesPageMetadata reads the query parameters shared by all message formats.
+func buildMessagesPageMetadata(r *http.Request) (readers.MessagesPageMetadata, error) {
 	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	to, err := apiutil.ReadIntQuery(r, toKey, 0)
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
 	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
 	if err != nil {
-		return readers.JSONPageMetadata{}, err
+		return readers.MessagesPageMetadata{}, err
 	}
 
-	pageMeta := readers.JSONPageMetadata{
+	nt, err := apiutil.ReadBoolQuery(r, noTotalKey, false)
+	if err != nil {
+		return readers.MessagesPageMetadata{}, err
+	}
+
+	return readers.MessagesPageMetadata{
 		Subtopic:    subtopic,
 		Protocol:    protocol,
 		From:        from,
@@ -558,23 +573,26 @@ func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
 		AggType:     at,
 		AggFields:   af,
 		Dir:         d,
+		NoTotal:     nt,
+	}, nil
+}
+
+func BuildJSONPageMetadata(r *http.Request) (readers.JSONPageMetadata, error) {
+	rm, err := buildMessagesPageMetadata(r)
+	if err != nil {
+		return readers.JSONPageMetadata{}, err
 	}
 
-	return pageMeta, nil
+	return readers.JSONPageMetadata{MessagesPageMetadata: rm}, nil
 }
 
 func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) {
+	rm, err := buildMessagesPageMetadata(r)
+	if err != nil {
+		return readers.SenMLPageMetadata{}, err
+	}
+
 	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	subtopic, err := apiutil.ReadStringQuery(r, subtopicKey, "")
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	protocol, err := apiutil.ReadStringQuery(r, protocolKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -599,63 +617,18 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
 	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
 	if err != nil && err != apiutil.ErrNotFoundParam {
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	ai, err := apiutil.ReadStringQuery(r, aggIntervalKey, "")
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	av, err := apiutil.ReadUintQuery(r, aggValueKey, 1)
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	at, err := apiutil.ReadStringQuery(r, aggTypeKey, "")
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	af, err := apiutil.ReadStringArrayQuery(r, aggFieldKey)
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	d, err := apiutil.ReadStringQuery(r, apiutil.DirKey, apiutil.DescDir)
-	if err != nil {
-		return readers.SenMLPageMetadata{}, err
-	}
-
-	pageMeta := readers.SenMLPageMetadata{
-		Name:        name,
-		Subtopic:    subtopic,
-		Protocol:    protocol,
-		Value:       v,
-		Comparator:  comparator,
-		StringValue: vs,
-		DataValue:   vd,
-		BoolValue:   vb,
-		From:        from,
-		To:          to,
-		AggInterval: ai,
-		AggValue:    av,
-		AggType:     at,
-		AggFields:   af,
-		Dir:         d,
-	}
-
-	return pageMeta, nil
+	return readers.SenMLPageMetadata{
+		MessagesPageMetadata: rm,
+		Name:                 name,
+		Value:                v,
+		Comparator:           comparator,
+		StringValue:          vs,
+		DataValue:            vd,
+		BoolValue:            vb,
+	}, nil
 }

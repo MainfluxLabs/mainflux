@@ -7,7 +7,7 @@ The Modbus service manages Modbus TCP polling clients for things and groups. Eac
 A Modbus client defines the connection parameters, poll schedule, and data fields to read from a Modbus TCP device.
 
 | Field           | Description                                                  |
-|-----------------|--------------------------------------------------------------|
+| --------------- | ------------------------------------------------------------ |
 | `id`            | Unique client identifier (UUID)                              |
 | `group_id`      | ID of the group the client belongs to                        |
 | `thing_id`      | ID of the thing the client is associated with                |
@@ -23,7 +23,7 @@ A Modbus client defines the connection parameters, poll schedule, and data field
 ### Function Codes
 
 | Value                  | Modbus Code | Description                                |
-|------------------------|-------------|--------------------------------------------|
+| ---------------------- | ----------- | ------------------------------------------ |
 | `ReadCoils`            | 0x01        | Read output coils (digital output)         |
 | `ReadDiscreteInputs`   | 0x02        | Read discrete inputs (digital input)       |
 | `ReadHoldingRegisters` | 0x03        | Read holding registers (read/write analog) |
@@ -34,7 +34,7 @@ A Modbus client defines the connection parameters, poll schedule, and data field
 The `scheduler` object controls when the client polls the device.
 
 | Field       | Description                                                                                                                                                            |
-|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `frequency` | Poll frequency: `once`, `minutely`, `hourly`, `daily`, or `weekly`                                                                                                     |
 | `time_zone` | IANA timezone name (e.g. `Europe/Berlin`, `UTC`)                                                                                                                       |
 | `date_time` | Date and time in `YYYY-MM-DD HH:MM` format (e.g. `2026-03-25 14:30`). Required when `frequency` is `once`; ignored otherwise. Must be at least 1 minute in the future. |
@@ -48,7 +48,7 @@ The `scheduler` object controls when the client polls the device.
 Each entry in `data_fields` describes a single register or coil to read.
 
 | Field        | Description                                                                                                           |
-|--------------|-----------------------------------------------------------------------------------------------------------------------|
+| ------------ | --------------------------------------------------------------------------------------------------------------------- |
 | `name`       | Field name used as the JSON key in the published message                                                              |
 | `type`       | Data type: `bool`, `int16`, `uint16`, `int32`, `uint32`, `float32`, or `string`                                       |
 | `unit`       | Optional unit label (e.g. `°C`, `%`)                                                                                  |
@@ -70,7 +70,7 @@ following table. Note that any unset variables will be replaced with their
 default values.
 
 | Variable                      | Description                                                                | Default                  |
-|-------------------------------|----------------------------------------------------------------------------|--------------------------|
+| ----------------------------- | -------------------------------------------------------------------------- | ------------------------ |
 | `MF_MODBUS_LOG_LEVEL`         | Log level for the Modbus service (debug, info, warn, error)                | error                    |
 | `MF_BROKER_URL`               | Message broker instance URL                                                | nats://localhost:4222    |
 | `MF_MODBUS_HTTP_PORT`         | Modbus service HTTP port                                                   | 9028                     |
@@ -126,5 +126,65 @@ $GOBIN/mainfluxlabs-modbus
 ```
 
 ## Usage
+
+### Creating clients (`POST /things/{thingId}/clients`, `Content-Type: application/json`)
+
+A JSON array of client objects (see fields above), each with `data_fields` given inline. Multiple clients can be created in one request.
+
+```bash
+curl -X POST http://localhost:9028/things/<thingId>/clients \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '[{"name":"pump-1","ip_address":"10.0.0.5","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"},"data_fields":[{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}]}]'
+```
+
+Importing a client creates a single client whose connection info is given as a `client` form field (JSON, same shape as above without `data_fields`) and whose `data_fields` are parsed from an uploaded `file` part. Meant for a client with many registers, so they don't have to be entered one by one through a form. Both import endpoints require `Content-Type: multipart/form-data`.
+
+### Importing a client with a CSV file (`POST /things/{thingId}/clients/csv`)
+
+The file needs a header row naming columns, one row per register; header names are matched case-insensitively and unknown columns are ignored. `type` and `byte_order` values are also matched case-insensitively (e.g. `Float32`, `FLOAT32`, and `float32` are equivalent) — this only normalizes casing, not vendor type names that differ from ours entirely (see below).
+
+| Column       | Maps to                    | Required                                                         |
+| ------------ | -------------------------- | ---------------------------------------------------------------- |
+| `name`       | `data_fields[].name`       | yes                                                              |
+| `type`       | `data_fields[].type`       | yes                                                              |
+| `unit`       | `data_fields[].unit`       | no                                                               |
+| `scale`      | `data_fields[].scale`      | no                                                               |
+| `byte_order` | `data_fields[].byte_order` | no                                                               |
+| `address`    | `data_fields[].address`    | yes                                                              |
+| `length`     | `data_fields[].length`     | only for `string` type — derived automatically for numeric types |
+
+```csv
+name,type,unit,scale,byte_order,address,length
+temperature,float32,celsius,0.1,ABCD,0,
+humidity,float32,%,,ABCD,2,
+```
+
+```bash
+curl -X POST http://localhost:9028/things/<thingId>/clients/csv \
+  -H "Authorization: Bearer <token>" \
+  -F 'client={"name":"pump-1","ip_address":"10.0.0.5","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}' \
+  -F "file=@registers.csv"
+```
+
+#### Adapting a vendor register map
+
+Modbus itself doesn't define a file format for register maps, but vendor datasheets commonly publish one with columns like `Address (hex/dec)`, `Description`, `Format`, `Unit`, `N`, `Access`, `Function Code`. To import one:
+
+- Rename the decimal address column to `address` (the hex column isn't needed).
+- Rename the description/name column to `name`.
+- Rename the data-type column to `type`, translating vendor type codes to ours, e.g. `U16`→`uint16`, `S16`→`int16`, `U32`→`uint32`, `Float`→`float32`. Casing doesn't matter (`Float32` and `FLOAT32` both work), but the word itself still needs to match one of ours — `Float` alone isn't `float32`.
+- `Function Code` in particular is set once via the `client` field, not per register, so a register map spanning more than one function code needs to be split into separate imports (see [Function Codes](#function-codes) above).
+
+### Importing a client with a JSON file (`POST /things/{thingId}/clients/json`)
+
+The file is a JSON array of data field objects, same shape as `data_fields` above. `type` and `byte_order` values are matched case-insensitively, same as the CSV import.
+
+```bash
+curl -X POST http://localhost:9028/things/<thingId>/clients/json \
+  -H "Authorization: Bearer <token>" \
+  -F 'client={"name":"pump-1","ip_address":"10.0.0.5","port":"502","slave_id":1,"function_code":"ReadHoldingRegisters","scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}}' \
+  -F 'file=[{"name":"temperature","type":"float32","byte_order":"ABCD","address":0}]'
+```
 
 For the full HTTP API reference, see the [OpenAPI specification](https://mainfluxlabs.github.io/docs/swagger/).

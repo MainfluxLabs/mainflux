@@ -104,7 +104,12 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID 
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()
 
-	memberships := mrm.membershipsByOrgID[orgID]
+	var memberships []auth.OrgMembership
+	for _, m := range mrm.membershipsByOrgID[orgID] {
+		if pm.Role == "" || m.Role == pm.Role {
+			memberships = append(memberships, m)
+		}
+	}
 
 	sortedMemberships := mocks.SortItems(pm.Order, pm.Dir, memberships, func(i int) (string, string) {
 		return memberships[i].Email, memberships[i].MemberID
@@ -113,7 +118,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID 
 	var oms []auth.OrgMembership
 	i := uint64(0)
 	for _, m := range sortedMemberships {
-		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+		if i >= pm.Offset && (pm.Limit == 0 || i < pm.Offset+pm.Limit) {
 			oms = append(oms, m)
 		}
 		i++
@@ -121,7 +126,7 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID 
 
 	return auth.OrgMembershipsPage{
 		OrgMemberships: oms,
-		Total:          uint64(len(mrm.membershipsByOrgID[orgID])),
+		Total:          uint64(len(memberships)),
 	}, nil
 }
 
@@ -132,22 +137,6 @@ func (mrm *orgMembershipsRepositoryMock) BackupAll(_ context.Context) ([]auth.Or
 	var oms []auth.OrgMembership
 	for _, m := range mrm.memberships {
 		oms = append(oms, m...)
-	}
-
-	return oms, nil
-}
-
-func (mrm *orgMembershipsRepositoryMock) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
-	mrm.mu.Lock()
-	defer mrm.mu.Unlock()
-
-	var oms []auth.OrgMembership
-	for _, membership := range mrm.memberships {
-		for _, mb := range membership {
-			if mb.OrgID == orgID {
-				oms = append(oms, mb)
-			}
-		}
 	}
 
 	return oms, nil

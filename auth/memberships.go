@@ -42,9 +42,6 @@ type OrgMembershipsRepository interface {
 
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
-
-	// BackupByOrg retrieves all memberships by org ID.
-	BackupByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)
 }
 
 // OrgMemberships specify an API that must be fulfilled by the domain service
@@ -133,57 +130,46 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 		return OrgMembershipsPage{}, err
 	}
 
-	memberships, err := svc.memberships.BackupByOrg(ctx, orgID)
+	mp, err := svc.memberships.RetrieveByOrg(ctx, orgID, PageMetadata{Role: pm.Role})
 	if err != nil {
 		return OrgMembershipsPage{}, errors.Wrap(ErrRetrieveMembershipsByOrg, err)
 	}
+	memberships := mp.OrgMemberships
+	if len(memberships) == 0 {
+		return OrgMembershipsPage{OrgMemberships: []OrgMembership{}}, nil
+	}
 
-	if pm.Role != "" {
-		var filtered []OrgMembership
-		for _, m := range memberships {
-			if m.Role == pm.Role {
-				filtered = append(filtered, m)
-			}
-		}
-		memberships = filtered
+	memberIDs := make([]string, 0, len(memberships))
+	membershipByMemberID := make(map[string]OrgMembership, len(memberships))
+	for _, m := range memberships {
+		memberIDs = append(memberIDs, m.MemberID)
+		membershipByMemberID[m.MemberID] = m
+	}
+
+	userPM := domain.UsersPageMetadata{
+		Email:  pm.Email,
+		Order:  pm.Order,
+		Dir:    pm.Dir,
+		Limit:  pm.Limit,
+		Offset: pm.Offset,
+	}
+
+	page, err := svc.users.GetUsersByIDs(ctx, memberIDs, userPM)
+	if err != nil {
+		return OrgMembershipsPage{}, err
 	}
 
 	oms := []OrgMembership{}
-	total := uint64(0)
-
-	if len(memberships) > 0 {
-		memberIDs := make([]string, 0, len(memberships))
-		membershipByMemberID := make(map[string]OrgMembership, len(memberships))
-		for _, m := range memberships {
-			memberIDs = append(memberIDs, m.MemberID)
-			membershipByMemberID[m.MemberID] = m
+	for _, u := range page.Users {
+		if m, ok := membershipByMemberID[u.ID]; ok {
+			m.Email = u.Email
+			oms = append(oms, m)
 		}
-
-		userPM := domain.UsersPageMetadata{
-			Email:  pm.Email,
-			Order:  pm.Order,
-			Dir:    pm.Dir,
-			Limit:  pm.Limit,
-			Offset: pm.Offset,
-		}
-
-		page, err := svc.users.GetUsersByIDs(ctx, memberIDs, userPM)
-		if err != nil {
-			return OrgMembershipsPage{}, err
-		}
-
-		for _, u := range page.Users {
-			if m, ok := membershipByMemberID[u.ID]; ok {
-				m.Email = u.Email
-				oms = append(oms, m)
-			}
-		}
-		total = page.Total
 	}
 
 	return OrgMembershipsPage{
 		OrgMemberships: oms,
-		Total:          total,
+		Total:          page.Total,
 	}, nil
 }
 

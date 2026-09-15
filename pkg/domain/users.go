@@ -29,6 +29,12 @@ type User struct {
 	Role     string   `json:"role,omitempty"`
 }
 
+// UserOrderFields maps API-facing order keys to SQL column expressions for the users table.
+var UserOrderFields = map[string]string{
+	"id":    "id",
+	"email": "LOWER(email)",
+}
+
 // Validate returns an error if user representation is invalid.
 func (u User) Validate(passRegex *regexp.Regexp) error {
 	if !email.IsEmail(u.Email) {

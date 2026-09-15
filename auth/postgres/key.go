@@ -72,7 +72,7 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 }
 
 func (kr repo) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, auth.KeyOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 

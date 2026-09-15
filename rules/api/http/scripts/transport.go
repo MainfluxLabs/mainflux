@@ -49,32 +49,12 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		opts...,
 	))
 
-	mux.Get("/things/:id/scripts", kithttp.NewServer(
-		endpoint.Chain(
-			kitot.TraceServer(tracer, "list_scripts_by_thing"),
-			withIdentity,
-		)(listScriptsByThingEndpoint(svc)),
-		decodeListScriptsByThing,
-		encodeResponse,
-		opts...,
-	))
-
 	mux.Get("/groups/:id/scripts", kithttp.NewServer(
 		endpoint.Chain(
 			kitot.TraceServer(tracer, "list_scripts_by_group"),
 			withIdentity,
 		)(listScriptsByGroupEndpoint(svc)),
 		decodeListScriptsByGroup,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/scripts/:id/things", kithttp.NewServer(
-		endpoint.Chain(
-			kitot.TraceServer(tracer, "list_thing_ids_by_script"),
-			withIdentity,
-		)(listThingIDsByScriptEndpoint(svc)),
-		decodeScriptReq,
 		encodeResponse,
 		opts...,
 	))
@@ -105,26 +85,6 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			withIdentity,
 		)(removeScriptsEndpoint(svc)),
 		decodeRemoveScripts,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Post("/things/:id/scripts", kithttp.NewServer(
-		endpoint.Chain(
-			kitot.TraceServer(tracer, "assign_scripts"),
-			withIdentity,
-		)(assignScriptsEndpoint(svc)),
-		decodeThingScripts,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Patch("/things/:id/scripts", kithttp.NewServer(
-		endpoint.Chain(
-			kitot.TraceServer(tracer, "unassign_scripts"),
-			withIdentity,
-		)(unassignScriptsEndpoint(svc)),
-		decodeThingScripts,
 		encodeResponse,
 		opts...,
 	))
@@ -164,29 +124,6 @@ func decodeCreateScripts(_ context.Context, r *http.Request) (any, error) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListScriptsByThing(_ context.Context, r *http.Request) (any, error) {
-	base, err := apiutil.BuildPageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	name, _ := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-
-	req := listScriptsByThingReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: rules.PageMetadata{
-			Offset: base.Offset,
-			Limit:  base.Limit,
-			Order:  base.Order,
-			Dir:    base.Dir,
-			Name:   name,
-		},
 	}
 
 	return req, nil
@@ -248,23 +185,6 @@ func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
 
 	req := removeScriptsReq{
 		token: apiutil.ExtractBearerToken(r),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeThingScripts(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := thingScriptsReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

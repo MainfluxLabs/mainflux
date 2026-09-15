@@ -111,5 +111,5 @@ func (req listPlatformInvitesRequest) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize)
+	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxEmailSize, users.PlatformInviteOrderFields)
 }

@@ -59,24 +59,6 @@ func (req createScriptsReq) validate() error {
 	return nil
 }
 
-type listScriptsByThingReq struct {
-	token        string
-	thingID      string
-	pageMetadata rules.PageMetadata
-}
-
-func (req listScriptsByThingReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.thingID == "" {
-		return apiutil.ErrMissingThingID
-	}
-
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
-}
-
 type listScriptsByGroupReq struct {
 	token        string
 	groupID      string
@@ -150,34 +132,6 @@ type removeScriptsReq struct {
 func (req removeScriptsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-
-	if len(req.ScriptIDs) < minLen {
-		return apiutil.ErrEmptyList
-	}
-
-	for _, id := range req.ScriptIDs {
-		if id == "" {
-			return apiutil.ErrMissingScriptID
-		}
-	}
-
-	return nil
-}
-
-type thingScriptsReq struct {
-	token     string
-	thingID   string
-	ScriptIDs []string `json:"script_ids"`
-}
-
-func (req thingScriptsReq) validate() error {
-	if req.token == "" {
-		return apiutil.ErrBearerToken
-	}
-
-	if req.thingID == "" {
-		return apiutil.ErrMissingThingID
 	}
 
 	if len(req.ScriptIDs) < minLen {

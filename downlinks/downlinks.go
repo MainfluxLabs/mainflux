@@ -39,6 +39,12 @@ type DownlinksPage struct {
 	Downlinks []Downlink
 }
 
+// DownlinkOrderFields maps API-facing order keys to SQL column expressions for the downlinks table.
+var DownlinkOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 type DownlinkRepository interface {
 	// Save persists multiple downlinks. Downlinks are saved using a transaction.
 	// If one downlink fails then none will be saved.

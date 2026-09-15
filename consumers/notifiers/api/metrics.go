@@ -86,11 +86,11 @@ func (ms *metricsMiddleware) RemoveNotifiersByGroup(ctx context.Context, groupID
 	return ms.svc.RemoveNotifiersByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) ConsumeMessage(subject string, msg protomfx.Message) error {
+func (ms *metricsMiddleware) ConsumeNotification(subject string, notification protomfx.Notification) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "consume_message").Add(1)
-		ms.latency.With("method", "consume_message").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume_notification").Add(1)
+		ms.latency.With("method", "consume_notification").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ConsumeMessage(subject, msg)
+	return ms.svc.ConsumeNotification(subject, notification)
 }

@@ -18,6 +18,12 @@ type (
 	Transformer = domain.Transformer
 )
 
+// ProfileOrderFields maps API-facing order keys to SQL column expressions for the profiles table.
+var ProfileOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 // ProfileRepository specifies a profile persistence API.
 type ProfileRepository interface {
 	// Save persists multiple profiles. Profiles are saved using a transaction. If one profile

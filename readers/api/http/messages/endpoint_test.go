@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -285,7 +286,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and greater-than comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, mfreaders.GreaterThanKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
@@ -295,7 +296,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and greater-than-or-equal comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, readers.GreaterThanEqualKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, mfreaders.GreaterThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
@@ -345,7 +346,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and equal comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v, readers.EqualKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v, mfreaders.EqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
@@ -355,7 +356,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and lower-than comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, mfreaders.LowerThanKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
@@ -365,7 +366,7 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		{
 			desc:   "read page with value and lower-than-or-equal comparator",
-			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, readers.LowerThanEqualKey),
+			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, mfreaders.LowerThanEqualKey),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: senmlPageRes{

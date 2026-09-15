@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	gbmodbus "github.com/goburrow/modbus"
@@ -37,7 +36,6 @@ type PageMetadata struct {
 	Frequency string `json:"frequency,omitempty"`
 }
 
-
 // Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -45,6 +43,10 @@ type PageMetadata struct {
 type Service interface {
 	// CreateClients creates clients for certain thing identified by the thing ID.
 	CreateClients(ctx context.Context, token, thingID string, Clients ...Client) ([]Client, error)
+
+	// CreateClient creates a single client for the thing identified by the thing ID,
+	// with data fields parsed from an uploaded file.
+	CreateClient(ctx context.Context, token, thingID string, client Client) (Client, error)
 
 	// ListClientsByThing retrieves data about a subset of clients
 	// related to a certain thing.
@@ -78,11 +80,16 @@ type Service interface {
 	LoadAndScheduleTasks(ctx context.Context) error
 }
 
+// Publisher specifies the minimal publishing capability the modbus service needs.
+type Publisher interface {
+	messaging.MessageDispatcher
+}
+
 type clientsService struct {
 	things     domain.ThingsClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
-	publisher  messaging.Publisher
+	publisher  Publisher
 	logger     logger.Logger
 	scheduler  *cron.ScheduleManager
 	limiters   map[string]*rate.Limiter
@@ -99,12 +106,16 @@ const (
 	Float32Type = "float32"
 	StringType  = "string"
 
-	maxRegs = 125  // 0x03 and 0x04
+	// Lowered from the protocol max (125): some devices/gateways can't handle
+	// a full-size block read even though the spec allows it. 64 is a common
+	// conservative cap in the wild.
+	maxRegs = 64
 	maxBits = 2000 // 0x01 and 0x02
 )
 
 var _ Service = (*clientsService)(nil)
 var (
+	errReadRegisters  = "failed to read registers"
 	errRateLimiter    = "failed to wait for rate limiter"
 	errFormatPayload  = "failed to format payload"
 	errGetConnection  = "failed to get connection"
@@ -117,7 +128,7 @@ type Block struct {
 	Length uint16
 }
 
-func New(things domain.ThingsClient, pub messaging.Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
 		things:     things,
 		publisher:  pub,
@@ -130,7 +141,7 @@ func New(things domain.ThingsClient, pub messaging.Publisher, clients ClientRepo
 	}
 }
 
-func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
+func (cs *clientsService) createClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
 	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
 		return nil, errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -164,6 +175,19 @@ func (cs *clientsService) CreateClients(ctx context.Context, token, thingID stri
 	}
 
 	return cls, nil
+}
+
+func (cs *clientsService) CreateClients(ctx context.Context, token, thingID string, clients ...Client) ([]Client, error) {
+	return cs.createClients(ctx, token, thingID, clients...)
+}
+
+func (cs *clientsService) CreateClient(ctx context.Context, token, thingID string, client Client) (Client, error) {
+	cls, err := cs.createClients(ctx, token, thingID, client)
+	if err != nil {
+		return Client{}, err
+	}
+
+	return cls[0], nil
 }
 
 func (cs *clientsService) ListClientsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ClientsPage, error) {
@@ -228,15 +252,23 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 }
 
 func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids ...string) error {
+	cls := make([]Client, 0, len(ids))
+	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		client, err := cs.clients.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
-		if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupEditor}); err != nil {
-			return err
-		}
 
+		cls = append(cls, client)
+		thingIDs = append(thingIDs, client.ThingID)
+	}
+
+	if err := cs.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	for _, client := range cls {
 		cs.unscheduleTask(client)
 	}
 
@@ -354,40 +386,68 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 		defer cancel()
 
 		key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
+		logPrefix := fmt.Sprintf("client %s (%s) %s", client.ID, client.Name, key)
+
 		limiter := cs.getLimiter(key)
 		if err := limiter.Wait(ctx); err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s", errRateLimiter, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errRateLimiter, err))
 			return
 		}
 
 		handler, err := cs.connPool.Get(key)
 		if err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s", errGetConnection, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errGetConnection, err))
 			return
 		}
 		handler.SlaveId = client.SlaveID
 
 		data, err := cs.readData(handler, client, blocks)
 		if err != nil {
-			cs.logger.Error(err.Error())
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
 		}
 		if len(data) == 0 {
-			cs.logger.Error(errEmptyResponse)
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, errEmptyResponse))
 			return
 		}
 
 		formattedPayload, err := formatPayload(data, client.DataFields, client.FunctionCode)
 		if err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s", errFormatPayload, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errFormatPayload, err))
 			return
 		}
 
 		if err := cs.publish(config, client.ThingID, formattedPayload); err != nil {
-			cs.logger.Error(err.Error())
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
 		}
+
+		cs.logger.Info(fmt.Sprintf("%s: published %d fields", logPrefix, len(data)))
 	}
+}
+
+func readBlock(mc gbmodbus.Client, funcCode string, start, length uint16) ([]byte, error) {
+	switch funcCode {
+	case ReadCoilsFunc:
+		return mc.ReadCoils(start, length)
+	case ReadDiscreteInputsFunc:
+		return mc.ReadDiscreteInputs(start, length)
+	case ReadInputRegistersFunc:
+		return mc.ReadInputRegisters(start, length)
+	default:
+		return mc.ReadHoldingRegisters(start, length)
+	}
+}
+
+// blockFields returns the client's data fields that fall inside the given block.
+func blockFields(fields []DataField, block Block) []DataField {
+	res := make([]DataField, 0, len(fields))
+	for _, field := range fields {
+		if field.Address >= block.Start && field.Address < block.Start+block.Length {
+			res = append(res, field)
+		}
+	}
+	return res
 }
 
 func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Client, blocks []Block) (map[string][]byte, error) {
@@ -395,34 +455,23 @@ func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Cl
 	data := make(map[string][]byte)
 
 	for _, block := range blocks {
-		var (
-			raw []byte
-			err error
-		)
+		fields := blockFields(client.DataFields, block)
 
-		switch client.FunctionCode {
-		case ReadCoilsFunc:
-			raw, err = mc.ReadCoils(block.Start, block.Length)
-		case ReadDiscreteInputsFunc:
-			raw, err = mc.ReadDiscreteInputs(block.Start, block.Length)
-		case ReadInputRegistersFunc:
-			raw, err = mc.ReadInputRegisters(block.Start, block.Length)
-		default:
-			raw, err = mc.ReadHoldingRegisters(block.Start, block.Length)
-		}
+		raw, err := readBlock(mc, client.FunctionCode, block.Start, block.Length)
 		if err != nil {
-			return nil, err
+			names := make([]string, 0, len(fields))
+			for _, field := range fields {
+				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
+			}
+			return nil, fmt.Errorf("%s: read %s starting at %d, length %d, fields [%s]: %w", errReadRegisters, client.FunctionCode, block.Start, block.Length, strings.Join(names, ", "), err)
 		}
 
-		// extract fields from block
-		for _, field := range client.DataFields {
-			if field.Address >= block.Start && field.Address < block.Start+block.Length {
-				bytes, err := extractFieldBytes(raw, field, block, client.FunctionCode)
-				if err != nil {
-					return nil, err
-				}
-				data[field.Name] = bytes
+		for _, field := range fields {
+			bytes, err := extractFieldBytes(raw, field, block, client.FunctionCode)
+			if err != nil {
+				return nil, fmt.Errorf("field %s@%d: %w", field.Name, field.Address, err)
 			}
+			data[field.Name] = bytes
 		}
 	}
 	return data, nil
@@ -440,7 +489,7 @@ func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string
 		bitIndex := uint(bitOffset % 8)
 
 		if byteIndex >= len(raw) {
-			return nil, fmt.Errorf("out of range coil %s", field.Name)
+			return nil, fmt.Errorf("field %s at address %d: out of range for coil block starting at %d, length %d", field.Name, field.Address, block.Start, block.Length)
 		}
 
 		// extract bit: mask byte and check if bit is set
@@ -458,7 +507,7 @@ func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string
 		lenByte := int(field.Length) * 2
 
 		if startByte+lenByte > len(raw) {
-			return nil, fmt.Errorf("out of range for register %s", field.Name)
+			return nil, fmt.Errorf("field %s at address %d, length %d: out of range for register block starting at %d, length %d", field.Name, field.Address, field.Length, block.Start, block.Length)
 		}
 
 		return raw[startByte : startByte+lenByte], nil
@@ -719,13 +768,7 @@ func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, 
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := cs.publisher.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return cs.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (cs *clientsService) getLimiter(key string) *rate.Limiter {

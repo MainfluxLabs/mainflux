@@ -40,6 +40,12 @@ var msg = protomfx.Message{
 	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
+var cmd = protomfx.Command{
+	Publisher: thingID,
+	Protocol:  protocol,
+	Payload:   []byte(`{"led":"turn_on"}`),
+}
+
 func newService(tc domain.ThingsClient) (ws.Service, mocks.MockPubSub) {
 	pubsub := mocks.NewPubSub()
 	return ws.New(tc, pubsub), pubsub
@@ -237,7 +243,7 @@ func TestSendCommandToThing(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.SendCommandToThing(context.Background(), tc.token, tc.thingID, msg)
+		err := svc.SendCommandToThing(context.Background(), tc.token, tc.thingID, cmd)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -284,7 +290,7 @@ func TestSendCommandToThingByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.SendCommandToThingByKey(context.Background(), tc.thingKey, tc.recipientID, msg)
+		err := svc.SendCommandToThingByKey(context.Background(), tc.thingKey, tc.recipientID, cmd)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -322,7 +328,7 @@ func TestSendCommandToGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.SendCommandToGroup(context.Background(), tc.token, tc.groupID, msg)
+		err := svc.SendCommandToGroup(context.Background(), tc.token, tc.groupID, cmd)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -367,7 +373,7 @@ func TestSendCommandToGroupByKey(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.SendCommandToGroupByKey(context.Background(), tc.thingKey, tc.groupID, msg)
+		err := svc.SendCommandToGroupByKey(context.Background(), tc.thingKey, tc.groupID, cmd)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }

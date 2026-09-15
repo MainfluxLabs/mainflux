@@ -8,4 +8,10 @@ type Client struct {
 	Username string
 	Password []byte
 	Cert     x509.Certificate
+
+	WillFlag    bool
+	WillTopic   string
+	WillMessage []byte
+
+	CleanDisconnect bool
 }

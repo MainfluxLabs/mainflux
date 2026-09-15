@@ -149,20 +149,18 @@ func (rs *readersService) Backup(ctx context.Context, token string) (Backup, err
 		return Backup{}, err
 	}
 
-	json, err := rs.json.Backup(ctx, JSONPageMetadata{
+	backupMeta := MessagesPageMetadata{
 		Limit:  0,
 		Offset: 0,
 		Dir:    apiutil.AscDir,
-	})
+	}
+
+	json, err := rs.json.Backup(ctx, JSONPageMetadata{MessagesPageMetadata: backupMeta})
 	if err != nil {
 		return Backup{}, err
 	}
 
-	senml, err := rs.senml.Backup(ctx, SenMLPageMetadata{
-		Limit:  0,
-		Offset: 0,
-		Dir:    apiutil.AscDir,
-	})
+	senml, err := rs.senml.Backup(ctx, SenMLPageMetadata{MessagesPageMetadata: backupMeta})
 	if err != nil {
 		return Backup{}, err
 	}

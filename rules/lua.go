@@ -1,8 +1,6 @@
 package rules
 
 import (
-	"context"
-	"fmt"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -232,47 +230,4 @@ func toInvocationLimitedLuaFunc(luaFunc lua.Function, maxInvocations uint) lua.F
 	}
 
 	return limitedFunc
-}
-
-// For each passed Lua script, create a new Lua environment and execute the associated script which processes the `msg` Mainflux message.
-// msg.Payload is ignored. parsedPayload represents the entire parsed payload of the associated message.
-// For each of the passed Lua scripts:
-// - If parsedPayload represents a top-level JSON object, it is passed to the Lua script environment in its entirety.
-// - If parsedPayload represents a top-level JSON array, a separate Lua script environment is created for each of its children (which must be JSON objects).
-func (rs *rulesService) processLuaScripts(ctx context.Context, msg *protomfx.Message, parsedPayload any, scripts ...LuaScript) {
-	var payloads []map[string]any
-
-	switch payload := parsedPayload.(type) {
-	case map[string]any:
-		payloads = append(payloads, payload)
-	case []any:
-		for _, subPayload := range payload {
-			subObjPayload, ok := subPayload.(map[string]any)
-			if !ok {
-				rs.logger.Error("malformed payload array")
-				continue
-			}
-
-			payloads = append(payloads, subObjPayload)
-		}
-	}
-
-	for _, script := range scripts {
-		for _, subPayload := range payloads {
-			env, err := NewLuaEnv(rs, &script, msg, subPayload, luaAPISetStandard...)
-			if err != nil {
-				rs.logger.Error(fmt.Sprintf("creating lua environment for script with id %s failed with error: %v", script.ID, err))
-				continue
-			}
-
-			run, err := env.execute()
-			if err != nil {
-				rs.logger.Info(fmt.Sprintf("attempting to execute script with id %s failed with error %v", env.script.ID, err))
-			}
-
-			if _, err := rs.rules.SaveScriptRuns(ctx, run); err != nil {
-				rs.logger.Error(fmt.Sprintf("preserving script run to database failed with error: %v", err))
-			}
-		}
-	}
 }

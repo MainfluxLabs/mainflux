@@ -193,7 +193,7 @@ func (req *listReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.ThingOrderFields)
 }
 
 type listByProfileReq struct {
@@ -211,7 +211,7 @@ func (req listByProfileReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.ThingOrderFields)
 }
 
 type listByGroupReq struct {
@@ -229,7 +229,7 @@ func (req listByGroupReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.ThingOrderFields)
 }
 
 type listByOrgReq struct {
@@ -247,7 +247,7 @@ func (req listByOrgReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, things.ThingOrderFields)
 }
 
 type removeThingsReq struct {

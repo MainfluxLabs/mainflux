@@ -10,20 +10,11 @@ import (
 
 const maxLimitSize = 200
 
-var allowedOrders = map[string]string{
-	"id":          "id",
-	"occurred_at": "occurred_at",
-	"operation":   "operation",
-	"actor_email": "actor_email",
-	"org_id":      "org_id",
-	"group_id":    "group_id",
-}
-
 // validatePageMetadata validates the audit page metadata.
 func validatePageMetadata(pm audit.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
 
-	return common.Validate(maxLimitSize, allowedOrders)
+	return common.Validate(maxLimitSize, audit.EventOrderFields)
 }
 
 type listEventsReq struct {

@@ -31,6 +31,19 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 	return domain.Identity{}, errors.ErrAuthentication
 }
 
+func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string, error) {
+	id, ok := svc.users[token]
+	if !ok {
+		return "", errors.ErrAuthentication
+	}
+
+	return id, nil
+}
+
+func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
+	return nil
+}
+
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
 	if id, ok := svc.users[email]; ok {
 		switch keyType {

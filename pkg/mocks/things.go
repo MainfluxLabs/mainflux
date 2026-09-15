@@ -170,6 +170,10 @@ func (svc *mainfluxThings) CanUserAccessThing(context.Context, things.UserAccess
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) CanUserAccessThings(context.Context, things.UserAccessThingsReq) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) CanUserAccessProfile(context.Context, things.UserAccessReq) error {
 	panic("not implemented")
 }
@@ -203,6 +207,10 @@ func (svc *mainfluxThings) GetGroupIDByThing(context.Context, string) (string, e
 }
 
 func (svc *mainfluxThings) GetGroupIDByProfile(context.Context, string) (string, error) {
+	panic("not implemented")
+}
+
+func (svc *mainfluxThings) GetOrgIDByGroup(context.Context, string) (string, error) {
 	panic("not implemented")
 }
 

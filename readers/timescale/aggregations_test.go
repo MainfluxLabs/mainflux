@@ -6,6 +6,7 @@ package timescale
 import (
 	"testing"
 
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/stretchr/testify/assert"
 )
@@ -70,21 +71,35 @@ func TestTimeBucketExpr(t *testing.T) {
 			intervalVal:  1,
 			intervalUnit: "hour",
 			timeColumn:   "time",
-			resPart:      "time_bucket('1 hour', to_timestamp(time / 1000000000))",
+			resPart:      "time_bucket(3600000000000, time)",
 		},
 		{
 			desc:         "5 minutes on created column",
 			intervalVal:  5,
 			intervalUnit: "minute",
 			timeColumn:   "created",
-			resPart:      "time_bucket('5 minute', to_timestamp(created / 1000000000))",
+			resPart:      "time_bucket(300000000000, created)",
 		},
 		{
 			desc:         "1 day",
 			intervalVal:  1,
 			intervalUnit: "day",
 			timeColumn:   "time",
-			resPart:      "time_bucket('1 day', to_timestamp(time / 1000000000))",
+			resPart:      "time_bucket(86400000000000, time)",
+		},
+		{
+			desc:         "1 month falls back to calendar bucketing",
+			intervalVal:  1,
+			intervalUnit: "month",
+			timeColumn:   "time",
+			resPart:      "time_bucket('1 month', to_timestamp(time / 1000000000))",
+		},
+		{
+			desc:         "1 year falls back to calendar bucketing",
+			intervalVal:  1,
+			intervalUnit: "year",
+			timeColumn:   "time",
+			resPart:      "time_bucket('1 year', to_timestamp(time / 1000000000))",
 		},
 	}
 
@@ -140,6 +155,42 @@ func TestJsonAggExpr(t *testing.T) {
 			aggFields: []string{"sensor.temp"},
 			res:       "AVG(CAST(payload->'sensor'->>'temp' AS FLOAT)) AS agg_value_0",
 		},
+		{
+			desc:      "first picks the earliest payload",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{"temperature"},
+			res:       "first(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload",
+		},
+		{
+			desc:      "last picks the latest payload",
+			aggType:   readers.AggregationLast,
+			aggFields: []string{"temperature"},
+			res:       "last(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload",
+		},
+		{
+			desc:      "first selects the picked row time",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{"temperature"},
+			res:       "first(created, created) AS agg_time",
+		},
+		{
+			desc:      "identity columns come from the picked row",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{"temperature"},
+			res:       "first(publisher, created) AS agg_publisher",
+		},
+		{
+			desc:      "first without agg fields is still valid",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{},
+			res:       "AS agg_payload",
+		},
+		{
+			desc:      "last without agg fields is still valid",
+			aggType:   readers.AggregationLast,
+			aggFields: []string{},
+			res:       "AS agg_time",
+		},
 	}
 
 	for _, tc := range cases {
@@ -158,27 +209,61 @@ func TestJsonAggExpr(t *testing.T) {
 func TestJsonSelectFields(t *testing.T) {
 	cases := []struct {
 		desc      string
+		aggType   string
 		aggFields []string
 		resPart   string
+		timeCol   string
 	}{
 		{
 			desc:      "single field",
+			aggType:   readers.AggregationMax,
 			aggFields: []string{"temperature"},
 			resPart:   "jsonb_build_object('temperature', agg.agg_value_0)",
+			timeCol:   "agg.max_time AS created",
 		},
 		{
 			desc:      "multiple fields",
+			aggType:   readers.AggregationMax,
 			aggFields: []string{"temperature", "humidity"},
 			resPart:   "jsonb_build_object('temperature', agg.agg_value_0, 'humidity', agg.agg_value_1)",
+			timeCol:   "agg.max_time AS created",
+		},
+		{
+			desc:      "first reads the payload of the picked row",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{"temperature"},
+			resPart:   "jsonb_build_object('temperature', agg.agg_payload->'temperature')",
+			timeCol:   "agg.agg_time AS created",
+		},
+		{
+			desc:      "last with multiple fields",
+			aggType:   readers.AggregationLast,
+			aggFields: []string{"temperature", "humidity"},
+			resPart:   "jsonb_build_object('temperature', agg.agg_payload->'temperature', 'humidity', agg.agg_payload->'humidity')",
+			timeCol:   "agg.agg_time AS created",
+		},
+		{
+			desc:      "identity columns come from the picked row",
+			aggType:   readers.AggregationLast,
+			aggFields: []string{"temperature"},
+			resPart:   "agg.agg_publisher AS publisher",
+			timeCol:   "agg.agg_time AS created",
+		},
+		{
+			desc:      "first without agg fields returns the whole payload",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{},
+			resPart:   "agg.agg_payload AS payload",
+			timeCol:   "agg.agg_time AS created",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result, err := jsonSelectFields(tc.aggFields)
+			result, err := jsonSelectFields(tc.aggFields, tc.aggType)
 			assert.NoError(t, err)
 			assert.Contains(t, result, tc.resPart)
-			assert.Contains(t, result, "agg.max_time AS created")
+			assert.Contains(t, result, tc.timeCol)
 		})
 	}
 }
@@ -186,31 +271,56 @@ func TestJsonSelectFields(t *testing.T) {
 func TestJsonHaving(t *testing.T) {
 	cases := []struct {
 		desc      string
+		aggType   string
 		aggFields []string
 		res       string
 	}{
 		{
 			desc:      "no fields",
+			aggType:   readers.AggregationMax,
 			aggFields: []string{},
 			res:       "1=1",
 		},
 		{
 			desc:      "single field",
+			aggType:   readers.AggregationMax,
 			aggFields: []string{"temperature"},
 			res:       "MAX(CAST(payload->>'temperature' AS FLOAT)) IS NOT NULL",
 		},
 		{
 			desc:      "multiple fields",
+			aggType:   readers.AggregationMax,
 			aggFields: []string{"temperature", "humidity"},
 			res:       "MAX(CAST(payload->>'temperature' AS FLOAT)) IS NOT NULL OR MAX(CAST(payload->>'humidity' AS FLOAT)) IS NOT NULL",
+		},
+		{
+			desc:      "first tests presence, not a numeric value",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{"temperature"},
+			res:       "MAX(payload->>'temperature') IS NOT NULL",
+		},
+		{
+			desc:      "last with multiple fields",
+			aggType:   readers.AggregationLast,
+			aggFields: []string{"temperature", "humidity"},
+			res:       "MAX(payload->>'temperature') IS NOT NULL OR MAX(payload->>'humidity') IS NOT NULL",
+		},
+		{
+			desc:      "first with no fields",
+			aggType:   readers.AggregationFirst,
+			aggFields: []string{},
+			res:       "1=1",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result, err := jsonFilterNullFields(tc.aggFields)
+			result, err := jsonFilterNullFields(tc.aggFields, tc.aggType)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.res, result)
+			if isFirstLast(tc.aggType) {
+				assert.NotContains(t, result, "AS FLOAT")
+			}
 		})
 	}
 }
@@ -261,7 +371,13 @@ func TestBaseConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := baseConditions(tc.subtopic, tc.publisher, tc.protocol, tc.from, tc.to, tc.timeColumn)
+			result := mfreaders.BaseConditions(readers.MessagesPageMetadata{
+				Subtopic:  tc.subtopic,
+				Publisher: tc.publisher,
+				Protocol:  tc.protocol,
+				From:      tc.from,
+				To:        tc.to,
+			}, tc.timeColumn)
 			assert.Equal(t, tc.res, result)
 		})
 	}
@@ -269,12 +385,14 @@ func TestBaseConditions(t *testing.T) {
 
 func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
-		Subtopic:  "test",
-		Publisher: "pub1",
-		From:      1000,
+		MessagesPageMetadata: readers.MessagesPageMetadata{
+			Subtopic:  "test",
+			Publisher: "pub1",
+			From:      1000,
+		},
 	}
 
-	result := jsonConditions(pm)
+	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JSONOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
 	assert.Contains(t, result, "publisher = :publisher")
@@ -327,8 +445,97 @@ func TestSenmlConditions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			result := senmlConditions(tc.pm)
+			result := mfreaders.SenMLConditions(tc.pm)
 			assert.Contains(t, result, tc.resPart)
+		})
+	}
+}
+
+func TestIsFirstLast(t *testing.T) {
+	cases := []struct {
+		desc    string
+		aggType string
+		res     bool
+	}{
+		{desc: "first", aggType: readers.AggregationFirst, res: true},
+		{desc: "last", aggType: readers.AggregationLast, res: true},
+		{desc: "max", aggType: readers.AggregationMax, res: false},
+		{desc: "count", aggType: readers.AggregationCount, res: false},
+		{desc: "invalid", aggType: "invalid", res: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.desc, func(t *testing.T) {
+			assert.Equal(t, tc.res, isFirstLast(tc.aggType))
+			// first and last are not scalar SQL functions.
+			if tc.res {
+				assert.Empty(t, sqlAggFunc(tc.aggType))
+			}
+		})
+	}
+}
+
+func TestSenmlFirstLastSubquery(t *testing.T) {
+	bucket := timeBucketExpr(1, "hour", mfreaders.SenMLOrder)
+
+	cases := []struct {
+		desc      string
+		aggType   string
+		condition string
+		resParts  []string
+	}{
+		{
+			desc:    "first picks the earliest row of the bucket",
+			aggType: readers.AggregationFirst,
+			resParts: []string{
+				"first(time, time) AS time",
+				"first(value, time) AS value",
+				"first(string_value, time) AS string_value",
+			},
+		},
+		{
+			desc:    "last picks the latest row of the bucket",
+			aggType: readers.AggregationLast,
+			resParts: []string{
+				"last(time, time) AS time",
+				"last(data_value, time) AS data_value",
+			},
+		},
+		{
+			desc:    "identity columns come from the picked row",
+			aggType: readers.AggregationFirst,
+			resParts: []string{
+				"first(subtopic, time) AS subtopic",
+				"first(publisher, time) AS publisher",
+				"first(protocol, time) AS protocol",
+			},
+		},
+		{
+			desc:    "nullable non-pointer columns are coalesced",
+			aggType: readers.AggregationFirst,
+			resParts: []string{
+				"COALESCE(first(unit, time), '') AS unit",
+				"COALESCE(first(update_time, time), 0) AS update_time",
+			},
+		},
+		{
+			desc:      "carries the where clause and groups by the bucket",
+			aggType:   readers.AggregationFirst,
+			condition: "WHERE publisher = :publisher",
+			resParts: []string{
+				"WHERE publisher = :publisher",
+				"GROUP BY " + bucket,
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.desc, func(t *testing.T) {
+			result := senmlFirstLastSubquery(tc.aggType, tc.condition, bucket)
+			for _, part := range tc.resParts {
+				assert.Contains(t, result, part)
+			}
+			assert.NotContains(t, result, "HAVING")
 		})
 	}
 }

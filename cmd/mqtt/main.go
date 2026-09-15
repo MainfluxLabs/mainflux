@@ -26,7 +26,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	mqttpub "github.com/MainfluxLabs/mainflux/pkg/messaging/mqtt"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	mp "github.com/MainfluxLabs/mainflux/pkg/mproxy/mqtt"
@@ -170,7 +169,7 @@ func main() {
 	tConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer tConn.Close()
 
-	nps, err := brokers.NewPubSub(cfg.brokerURL, "mqtt", logger)
+	nps, err := nats.NewPubSub(cfg.brokerURL, "mqtt", logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -194,13 +193,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
-	np, err := brokers.NewPublisher(cfg.brokerURL)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
-		os.Exit(1)
-	}
-	defer np.Close()
 
 	ac := connectToRedis(cfg.authCacheURL, logger)
 	defer ac.Close()
@@ -232,7 +224,7 @@ func main() {
 	svc := newService(usersAuth, tc, db, cc, dbTracer, logger)
 
 	// Event handler for MQTT hooks
-	h := mqtt.NewHandler(np, tc, svc, cc, logger)
+	h := mqtt.NewHandler(nps, tc, svc, cc, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)

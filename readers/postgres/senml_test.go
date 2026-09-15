@@ -12,6 +12,7 @@ import (
 
 	pwriter "github.com/MainfluxLabs/mainflux/consumers/writers/postgres"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -31,7 +32,6 @@ const (
 	udpProt     = "udp"
 	msgName     = "temperature"
 	jsonCT      = "application/json"
-	jsonTable   = "json"
 	minAgg      = "min"
 	maxAgg      = "max"
 	countAgg    = "count"
@@ -138,7 +138,9 @@ func TestListSenMLMessages(t *testing.T) {
 	}{
 		"read all messages": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit: noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -149,8 +151,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with non-existent subtopic": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:    noLimit,
-				Subtopic: "not-present",
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:    noLimit,
+					Subtopic: "not-present",
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -160,8 +164,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with subtopic": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:    noLimit,
-				Subtopic: subtopic,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:    noLimit,
+					Subtopic: subtopic,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -172,8 +178,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with publisher": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:     noLimit,
-				Publisher: pubID2,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:     noLimit,
+					Publisher: pubID2,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -184,8 +192,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with protocol": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:    noLimit,
-				Protocol: httpProt,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:    noLimit,
+					Protocol: httpProt,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -196,8 +206,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with name": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit: noLimit,
-				Name:  msgName,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
+				Name: msgName,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -208,7 +220,9 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with value": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit: noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				Value: v,
 			},
 			page: readers.SenMLMessagesPage{
@@ -220,9 +234,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with value and equal comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:      noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				Value:      v,
-				Comparator: readers.EqualKey,
+				Comparator: mfreaders.EqualKey,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -233,9 +249,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with value and lower-than comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:      noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				Value:      v + 1,
-				Comparator: readers.LowerThanKey,
+				Comparator: mfreaders.LowerThanKey,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -246,9 +264,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with value and lower-than-or-equal comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:      noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				Value:      v + 1,
-				Comparator: readers.LowerThanEqualKey,
+				Comparator: mfreaders.LowerThanEqualKey,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -259,9 +279,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with value and greater-than comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:      noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				Value:      v - 1,
-				Comparator: readers.GreaterThanKey,
+				Comparator: mfreaders.GreaterThanKey,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -272,9 +294,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with value and greater-than-or-equal comparator": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:      noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				Value:      v - 1,
-				Comparator: readers.GreaterThanEqualKey,
+				Comparator: mfreaders.GreaterThanEqualKey,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -285,7 +309,9 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with boolean value": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:     noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				BoolValue: vb,
 			},
 			page: readers.SenMLMessagesPage{
@@ -297,7 +323,9 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with string value": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:       noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				StringValue: vs,
 			},
 			page: readers.SenMLMessagesPage{
@@ -309,7 +337,9 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with data value": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:     noLimit,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+				},
 				DataValue: vd,
 			},
 			page: readers.SenMLMessagesPage{
@@ -321,8 +351,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with from": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit: noLimit,
-				From:  messages[20].Time,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+					From:  messages[20].Time,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -333,8 +365,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with to": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit: noLimit,
-				To:    messages[20].Time + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+					To:    messages[20].Time + 1,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -345,9 +379,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"read messages with from/to": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit: noLimit,
-				From:  messages[5].Time,
-				To:    messages[0].Time + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit: noLimit,
+					From:  messages[5].Time,
+					To:    messages[0].Time + 1,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -358,8 +394,10 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"count aggregation": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:   noLimit,
-				AggType: countAgg,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:   noLimit,
+					AggType: countAgg,
+				},
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -370,9 +408,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"min aggregation with name filter": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:   noLimit,
-				Name:    msgName,
-				AggType: minAgg,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:   noLimit,
+					AggType: minAgg,
+				},
+				Name: msgName,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -383,9 +423,11 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"max aggregation with name filter": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:   noLimit,
-				Name:    msgName,
-				AggType: maxAgg,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:   noLimit,
+					AggType: maxAgg,
+				},
+				Name: msgName,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -396,10 +438,12 @@ func TestListSenMLMessages(t *testing.T) {
 		},
 		"avg aggregation on sum field": {
 			pageMeta: readers.SenMLPageMetadata{
-				Limit:     noLimit,
-				Name:      msgName,
-				AggType:   avgAgg,
-				AggFields: []string{"sum"},
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Limit:     noLimit,
+					AggType:   avgAgg,
+					AggFields: []string{"sum"},
+				},
+				Name: msgName,
 			},
 			page: readers.SenMLMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -447,36 +491,44 @@ func TestSenMLAggregation(t *testing.T) {
 
 	cases := map[string]readers.SenMLPageMetadata{
 		"max aggregation": {
-			Limit:       noLimit,
-			Publisher:   pubID,
-			AggType:     maxAgg,
-			AggInterval: "hour",
-			AggValue:    1,
-			AggFields:   []string{"value"},
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     maxAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"value"},
+			},
 		},
 		"min aggregation": {
-			Limit:       noLimit,
-			Publisher:   pubID,
-			AggType:     minAgg,
-			AggInterval: "hour",
-			AggValue:    1,
-			AggFields:   []string{"value"},
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     minAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"value"},
+			},
 		},
 		"avg aggregation": {
-			Limit:       noLimit,
-			Publisher:   pubID,
-			AggType:     avgAgg,
-			AggInterval: "hour",
-			AggValue:    1,
-			AggFields:   []string{"value"},
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     avgAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"value"},
+			},
 		},
 		"count aggregation": {
-			Limit:       noLimit,
-			Publisher:   pubID,
-			AggType:     countAgg,
-			AggInterval: "hour",
-			AggValue:    1,
-			AggFields:   []string{"value"},
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Limit:       noLimit,
+				Publisher:   pubID,
+				AggType:     countAgg,
+				AggInterval: "hour",
+				AggValue:    1,
+				AggFields:   []string{"value"},
+			},
 		},
 	}
 
@@ -566,56 +618,68 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	}{
 		"delete senml messages with subtopic": {
 			pageMeta: readers.SenMLPageMetadata{
-				Publisher: pubID2,
-				Subtopic:  subtopic,
-				From:      0,
-				To:        now + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Publisher: pubID2,
+					Subtopic:  subtopic,
+					From:      0,
+					To:        now + 1,
+				},
 			},
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific subtopic",
 		},
 		"delete senml messages with protocol": {
 			pageMeta: readers.SenMLPageMetadata{
-				Publisher: pubID2,
-				Protocol:  httpProt,
-				From:      0,
-				To:        now + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Publisher: pubID2,
+					Protocol:  httpProt,
+					From:      0,
+					To:        now + 1,
+				},
 			},
 			expectedCount: uint64(len(queryMsgs)),
 			description:   "should delete messages with specific protocol",
 		},
 		"delete senml messages with time range from": {
 			pageMeta: readers.SenMLPageMetadata{
-				Publisher: pubID,
-				From:      messages[20].Time,
-				To:        now + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Publisher: pubID,
+					From:      messages[20].Time,
+					To:        now + 1,
+				},
 			},
 			expectedCount: 17,
 			description:   "should delete messages from specific time",
 		},
 		"delete senml messages with time range to": {
 			pageMeta: readers.SenMLPageMetadata{
-				Publisher: pubID,
-				From:      0,
-				To:        messages[20].Time + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Publisher: pubID,
+					From:      0,
+					To:        messages[20].Time + 1,
+				},
 			},
 			expectedCount: 65,
 			description:   "should delete messages to specific time",
 		},
 		"delete senml messages with time range from/to": {
 			pageMeta: readers.SenMLPageMetadata{
-				Publisher: pubID,
-				From:      messages[50].Time,
-				To:        messages[20].Time + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Publisher: pubID,
+					From:      messages[50].Time,
+					To:        messages[20].Time + 1,
+				},
 			},
 			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
 		"delete all senml messages for publisher": {
 			pageMeta: readers.SenMLPageMetadata{
-				Publisher: pubID,
-				From:      0,
-				To:        now + 1,
+				MessagesPageMetadata: readers.MessagesPageMetadata{
+					Publisher: pubID,
+					From:      0,
+					To:        now + 1,
+				},
 			},
 			expectedCount: uint64(msgsNum - len(queryMsgs)),
 			description:   "should delete all messages for specific publisher",
@@ -624,14 +688,18 @@ func TestDeleteSenMLMessages(t *testing.T) {
 
 	for desc, tc := range cases {
 		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
-			Publisher: pubID,
-			From:      0,
-			To:        now + 1,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Publisher: pubID,
+				From:      0,
+				To:        now + 1,
+			},
 		})
 		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
-			Publisher: pubID2,
-			From:      0,
-			To:        now + 1,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Publisher: pubID2,
+				From:      0,
+				To:        now + 1,
+			},
 		})
 
 		for _, m := range messages {
@@ -662,12 +730,14 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		}
 
 		beforePage, err := reader.Retrieve(context.Background(), readers.SenMLPageMetadata{
-			Publisher: tc.pageMeta.Publisher,
-			Subtopic:  tc.pageMeta.Subtopic,
-			Protocol:  tc.pageMeta.Protocol,
-			From:      tc.pageMeta.From,
-			To:        tc.pageMeta.To,
-			Limit:     noLimit,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Publisher: tc.pageMeta.Publisher,
+				Subtopic:  tc.pageMeta.Subtopic,
+				Protocol:  tc.pageMeta.Protocol,
+				From:      tc.pageMeta.From,
+				To:        tc.pageMeta.To,
+				Limit:     noLimit,
+			},
 		})
 
 		require.Nil(t, err)
@@ -677,12 +747,14 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
 
 		afterPage, err := reader.Retrieve(context.Background(), readers.SenMLPageMetadata{
-			Publisher: tc.pageMeta.Publisher,
-			Subtopic:  tc.pageMeta.Subtopic,
-			Protocol:  tc.pageMeta.Protocol,
-			From:      tc.pageMeta.From,
-			To:        tc.pageMeta.To,
-			Limit:     noLimit,
+			MessagesPageMetadata: readers.MessagesPageMetadata{
+				Publisher: tc.pageMeta.Publisher,
+				Subtopic:  tc.pageMeta.Subtopic,
+				Protocol:  tc.pageMeta.Protocol,
+				From:      tc.pageMeta.From,
+				To:        tc.pageMeta.To,
+				Limit:     noLimit,
+			},
 		})
 		require.Nil(t, err)
 		afterCount := afterPage.Total

@@ -179,19 +179,3 @@ func (prm *profileRepositoryMock) BackupAll(_ context.Context) ([]things.Profile
 
 	return prs, nil
 }
-
-func (prm *profileRepositoryMock) BackupByGroups(_ context.Context, groupIDs []string) ([]things.Profile, error) {
-	prm.mu.Lock()
-	defer prm.mu.Unlock()
-
-	var prs []things.Profile
-	for _, grID := range groupIDs {
-		for _, v := range prm.profiles {
-			if v.GroupID == grID {
-				prs = append(prs, v)
-			}
-		}
-	}
-
-	return prs, nil
-}

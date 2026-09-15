@@ -10,6 +10,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
@@ -24,13 +25,6 @@ func escapeFieldName(field string) (string, error) {
 	}
 	return strings.ReplaceAll(field, "'", "''"), nil
 }
-
-const (
-	jsonTable  = "json"
-	jsonOrder  = "created"
-	senmlTable = "senml"
-	senmlOrder = "time"
-)
 
 type aggregationService struct {
 	db dbutil.Database
@@ -51,8 +45,8 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		"to":        rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(jsonConditions(rpm)...)
-	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, jsonOrder)
+	condition := dbutil.BuildWhereClause(mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder)...)
+	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.JSONOrder)
 	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
 	if err != nil {
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
@@ -62,12 +56,12 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 		return []readers.Message{}, 0, nil
 	}
 
-	selectFields, err := jsonSelectFields(rpm.AggFields)
+	selectFields, err := jsonSelectFields(rpm.AggFields, rpm.AggType)
 	if err != nil {
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
-	having, err := jsonFilterNullFields(rpm.AggFields)
+	having, err := jsonFilterNullFields(rpm.AggFields, rpm.AggType)
 	if err != nil {
 		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
 	}
@@ -75,19 +69,29 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 	dir := dbutil.GetDirQuery(rpm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
-	query := fmt.Sprintf(`SELECT %s, COUNT(*) OVER() AS total_count FROM (
-          SELECT %s AS bucket, %s,
-                  MAX(%s) AS max_time,
-                  MAX(CAST(subtopic AS text)) AS subtopic,
-                  MAX(CAST(publisher AS text)) AS publisher,
-                  MAX(CAST(protocol AS text)) AS protocol
+	subquery := fmt.Sprintf(`SELECT %s AS bucket, %s%s
           FROM %s %s
           GROUP BY bucket
-          HAVING %s
-          ORDER BY bucket %s) agg %s;`,
-		selectFields, bucket, aggExpr, jsonOrder, jsonTable, condition, having, dir, olq)
+          HAVING %s`,
+		bucket, aggExpr, jsonBucketColumns(rpm.AggType), mfreaders.JSONTable, condition, having)
 
-	return as.executeAggQuery(ctx, query, params, jsonTable)
+	query := fmt.Sprintf(`SELECT %s FROM (%s ORDER BY bucket %s) agg %s;`, selectFields, subquery, dir, olq)
+
+	messages, err := as.executeAggQuery(ctx, query, params, mfreaders.JSONTable)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	if rpm.NoTotal {
+		return messages, 0, nil
+	}
+
+	total, err := as.countAgg(ctx, subquery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	return messages, total, nil
 }
 
 func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, rpm readers.SenMLPageMetadata) ([]readers.Message, uint64, error) {
@@ -106,94 +110,181 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		"to":           rpm.To,
 	}
 
-	condition := dbutil.BuildWhereClause(senmlConditions(rpm)...)
-	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, senmlOrder)
+	condition := dbutil.BuildWhereClause(mfreaders.SenMLConditions(rpm)...)
+	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.SenMLOrder)
 	aggFunc := sqlAggFunc(rpm.AggType)
-	if aggFunc == "" {
+	if aggFunc == "" && !isFirstLast(rpm.AggType) {
 		return []readers.Message{}, 0, nil
 	}
 	dir := dbutil.GetDirQuery(rpm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(rpm.Limit)
 
-	query := fmt.Sprintf(`SELECT
+	subquery := senmlAggSubquery(aggFunc, condition, bucket)
+	if isFirstLast(rpm.AggType) {
+		subquery = senmlFirstLastSubquery(rpm.AggType, condition, bucket)
+	}
+
+	query := fmt.Sprintf(`%s ORDER BY %s %s %s;`, subquery, bucket, dir, olq)
+
+	messages, err := as.executeAggQuery(ctx, query, params, mfreaders.SenMLTable)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	if rpm.NoTotal {
+		return messages, 0, nil
+	}
+
+	total, err := as.countAgg(ctx, subquery, params)
+	if err != nil {
+		return []readers.Message{}, 0, err
+	}
+
+	return messages, total, nil
+}
+
+func senmlAggSubquery(aggFunc, condition, bucket string) string {
+	return fmt.Sprintf(`SELECT
           MAX(time) AS time, MAX(CAST(subtopic AS text)) AS subtopic,
           MAX(CAST(publisher AS text)) AS publisher, MAX(CAST(protocol AS text)) AS protocol,
           '' AS name, '' AS unit,
           %s(value) AS value,
           CAST(NULL AS text) AS string_value, CAST(NULL AS bool) AS bool_value, CAST(NULL AS text) AS data_value,
-          CAST(NULL AS float) AS sum, MAX(update_time) AS update_time,
-          COUNT(*) OVER() AS total_count
+          CAST(NULL AS float) AS sum, MAX(update_time) AS update_time
           FROM %s %s
           GROUP BY %s
-          HAVING MAX(value) IS NOT NULL
-          ORDER BY %s %s %s;`,
-		aggFunc, senmlTable, condition, bucket, bucket, dir, olq)
-
-	return as.executeAggQuery(ctx, query, params, senmlTable)
+          HAVING MAX(value) IS NOT NULL`,
+		aggFunc, mfreaders.SenMLTable, condition, bucket)
 }
 
-func (as *aggregationService) executeAggQuery(ctx context.Context, query string, params map[string]any, table string) ([]readers.Message, uint64, error) {
+func senmlFirstLastSubquery(aggType, condition, bucket string) string {
+	query := `SELECT
+          first(time, time) AS time,
+          first(subtopic, time) AS subtopic,
+          first(publisher, time) AS publisher,
+          first(protocol, time) AS protocol,
+          first(name, time) AS name,
+          COALESCE(first(unit, time), '') AS unit,
+          first(value, time) AS value,
+          first(string_value, time) AS string_value,
+          first(bool_value, time) AS bool_value,
+          first(data_value, time) AS data_value,
+          first(sum, time) AS sum,
+          COALESCE(first(update_time, time), 0) AS update_time
+          FROM %s %s
+          GROUP BY %s`
+
+	if aggType == readers.AggregationLast {
+		query = `SELECT
+          last(time, time) AS time,
+          last(subtopic, time) AS subtopic,
+          last(publisher, time) AS publisher,
+          last(protocol, time) AS protocol,
+          last(name, time) AS name,
+          COALESCE(last(unit, time), '') AS unit,
+          last(value, time) AS value,
+          last(string_value, time) AS string_value,
+          last(bool_value, time) AS bool_value,
+          last(data_value, time) AS data_value,
+          last(sum, time) AS sum,
+          COALESCE(last(update_time, time), 0) AS update_time
+          FROM %s %s
+          GROUP BY %s`
+	}
+
+	return fmt.Sprintf(query, mfreaders.SenMLTable, condition, bucket)
+}
+
+func (as *aggregationService) countAgg(ctx context.Context, subquery string, params map[string]any) (uint64, error) {
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM (%s) agg;`, subquery)
+	return dbutil.Total(ctx, as.db, cq, params)
+}
+
+func (as *aggregationService) executeAggQuery(ctx context.Context, query string, params map[string]any, table string) ([]readers.Message, error) {
 	rows, err := as.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {
-			return []readers.Message{}, 0, nil
+			return []readers.Message{}, nil
 		}
-		return []readers.Message{}, 0, errors.Wrap(readers.ErrReadMessages, err)
+		return []readers.Message{}, errors.Wrap(readers.ErrReadMessages, err)
 	}
 
 	if rows == nil {
-		return []readers.Message{}, 0, nil
+		return []readers.Message{}, nil
 	}
 	defer rows.Close()
 
 	return scanAggregatedMessages(rows, table)
 }
 
-type aggJSONRow struct {
-	json.Message
-	Total uint64 `db:"total_count"`
-}
-
-type aggSenMLRow struct {
-	senml.Message
-	Total uint64 `db:"total_count"`
-}
-
-func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, uint64, error) {
+func scanAggregatedMessages(rows *sqlx.Rows, table string) ([]readers.Message, error) {
 	messages := []readers.Message{}
-	total := uint64(0)
 
 	switch table {
-	case senmlTable:
+	case mfreaders.SenMLTable:
 		for rows.Next() {
-			row := aggSenMLRow{}
-			if err := rows.StructScan(&row); err != nil {
-				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
+			msg := senml.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			total = row.Total
-			messages = append(messages, row.Message)
+			messages = append(messages, msg)
 		}
 	default:
 		for rows.Next() {
-			row := aggJSONRow{}
-			if err := rows.StructScan(&row); err != nil {
-				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
+			msg := json.Message{}
+			if err := rows.StructScan(&msg); err != nil {
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
-			total = row.Total
-			m, err := row.Message.ToMap()
+			m, err := msg.ToMap()
 			if err != nil {
-				return nil, 0, errors.Wrap(readers.ErrReadMessages, err)
+				return nil, errors.Wrap(readers.ErrReadMessages, err)
 			}
 			messages = append(messages, m)
 		}
 	}
 
-	return messages, total, nil
+	return messages, nil
 }
 
+// timeBucketExpr builds the time_bucket() expression used to group rows.
+// Fixed-duration units bucket directly on the raw nanosecond bigint column
+// using TimescaleDB's integer time_bucket overload, avoiding a per-row
+// to_timestamp() cast and letting Timescale bucket on the native hypertable
+// partitioning column. Calendar units (month/year) have no fixed duration,
+// so they fall back to bucketing on a converted timestamptz.
 func timeBucketExpr(intervalVal uint64, intervalUnit, timeColumn string) string {
+	if widthNs, ok := fixedIntervalNs(intervalVal, intervalUnit); ok {
+		return fmt.Sprintf("time_bucket(%d, %s)", widthNs, timeColumn)
+	}
+
 	interval := fmt.Sprintf("%d %s", intervalVal, intervalUnit)
 	return fmt.Sprintf("time_bucket('%s', to_timestamp(%s / 1000000000))", interval, timeColumn)
+}
+
+func fixedIntervalNs(intervalVal uint64, intervalUnit string) (uint64, bool) {
+	const nanosPerSecond = 1_000_000_000
+
+	var unitNs uint64
+	switch intervalUnit {
+	case mfreaders.MicrosecondInterval:
+		unitNs = 1_000
+	case mfreaders.MillisecondInterval:
+		unitNs = 1_000_000
+	case mfreaders.SecondInterval:
+		unitNs = nanosPerSecond
+	case mfreaders.MinuteInterval:
+		unitNs = 60 * nanosPerSecond
+	case mfreaders.HourInterval:
+		unitNs = 3600 * nanosPerSecond
+	case mfreaders.DayInterval:
+		unitNs = 24 * 3600 * nanosPerSecond
+	case mfreaders.WeekInterval:
+		unitNs = 7 * 24 * 3600 * nanosPerSecond
+	default:
+		return 0, false
+	}
+
+	return intervalVal * unitNs, true
 }
 
 func sqlAggFunc(aggType string) string {
@@ -211,7 +302,41 @@ func sqlAggFunc(aggType string) string {
 	}
 }
 
+func isFirstLast(aggType string) bool {
+	return aggType == readers.AggregationFirst || aggType == readers.AggregationLast
+}
+
+func jsonBucketColumns(aggType string) string {
+	if isFirstLast(aggType) {
+		return ""
+	}
+
+	return fmt.Sprintf(`,
+                  MAX(%s) AS max_time,
+                  MAX(CAST(subtopic AS text)) AS subtopic,
+                  MAX(CAST(publisher AS text)) AS publisher,
+                  MAX(CAST(protocol AS text)) AS protocol`, mfreaders.JSONOrder)
+}
+
 func jsonAggExpr(aggType string, aggFields []string) (string, error) {
+	if aggType == readers.AggregationFirst {
+		jsonFirstAggExpr := `first(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload,
+                  first(created, created) AS agg_time,
+                  first(subtopic, created) AS agg_subtopic,
+                  first(publisher, created) AS agg_publisher,
+                  first(protocol, created) AS agg_protocol`
+		return jsonFirstAggExpr, nil
+	}
+
+	if aggType == readers.AggregationLast {
+		jsonLastAggExpr := `last(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload,
+                  last(created, created) AS agg_time,
+                  last(subtopic, created) AS agg_subtopic,
+                  last(publisher, created) AS agg_publisher,
+                  last(protocol, created) AS agg_protocol`
+		return jsonLastAggExpr, nil
+	}
+
 	fn := sqlAggFunc(aggType)
 	if fn == "" || len(aggFields) == 0 {
 		return "", nil
@@ -224,6 +349,7 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 			return "", err
 
 		}
+
 		if fn == strings.ToUpper(readers.AggregationCount) {
 			exprs = append(exprs, fmt.Sprintf("%s(%s) AS agg_value_%d", fn, jsonPath, i))
 		} else {
@@ -233,7 +359,25 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 	return strings.Join(exprs, ", "), nil
 }
 
-func jsonSelectFields(aggFields []string) (string, error) {
+func jsonSelectFields(aggFields []string, aggType string) (string, error) {
+	if isFirstLast(aggType) {
+		const head = `agg.agg_time AS created, agg.agg_subtopic AS subtopic,
+          agg.agg_publisher AS publisher, agg.agg_protocol AS protocol,`
+		if len(aggFields) == 0 {
+			return head + " agg.agg_payload AS payload", nil
+		}
+
+		var pairs []string
+		for _, field := range aggFields {
+			escaped, err := escapeFieldName(field)
+			if err != nil {
+				return "", err
+			}
+			pairs = append(pairs, fmt.Sprintf("'%s', agg.agg_payload->'%s'", escaped, escaped))
+		}
+		return fmt.Sprintf("%s\n          jsonb_build_object(%s) AS payload", head, strings.Join(pairs, ", ")), nil
+	}
+
 	var pairs []string
 	for i, field := range aggFields {
 		escaped, err := escapeFieldName(field)
@@ -247,7 +391,7 @@ func jsonSelectFields(aggFields []string) (string, error) {
           jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", ")), nil
 }
 
-func jsonFilterNullFields(aggFields []string) (string, error) {
+func jsonFilterNullFields(aggFields []string, aggType string) (string, error) {
 	if len(aggFields) == 0 {
 		return "1=1", nil
 	}
@@ -258,7 +402,13 @@ func jsonFilterNullFields(aggFields []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		conditions = append(conditions, fmt.Sprintf("MAX(CAST(%s AS FLOAT)) IS NOT NULL", jsonPath))
+
+		expr := fmt.Sprintf("CAST(%s AS FLOAT)", jsonPath)
+		if isFirstLast(aggType) {
+			expr = jsonPath
+		}
+
+		conditions = append(conditions, fmt.Sprintf("MAX(%s) IS NOT NULL", expr))
 	}
 	return strings.Join(conditions, " OR "), nil
 }
@@ -285,50 +435,4 @@ func buildJSONPath(field string) (string, error) {
 		}
 	}
 	return path.String(), nil
-}
-
-func jsonConditions(rpm readers.JSONPageMetadata) []string {
-	return baseConditions(rpm.Subtopic, rpm.Publisher, rpm.Protocol, rpm.From, rpm.To, jsonOrder)
-}
-
-func senmlConditions(rpm readers.SenMLPageMetadata) []string {
-	conds := baseConditions(rpm.Subtopic, rpm.Publisher, rpm.Protocol, rpm.From, rpm.To, senmlOrder)
-
-	if rpm.Name != "" {
-		conds = append(conds, "name = :name")
-	}
-	if rpm.Value != 0 {
-		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(rpm.Comparator)))
-	}
-	if rpm.BoolValue {
-		conds = append(conds, "bool_value = :bool_value")
-	}
-	if rpm.StringValue != "" {
-		conds = append(conds, "string_value = :string_value")
-	}
-	if rpm.DataValue != "" {
-		conds = append(conds, "data_value = :data_value")
-	}
-	return conds
-
-}
-
-func baseConditions(subtopic, publisher, protocol string, from, to int64, timeColumn string) []string {
-	var conds []string
-	if subtopic != "" {
-		conds = append(conds, "subtopic = :subtopic")
-	}
-	if publisher != "" {
-		conds = append(conds, "publisher = :publisher")
-	}
-	if protocol != "" {
-		conds = append(conds, "protocol = :protocol")
-	}
-	if from != 0 {
-		conds = append(conds, fmt.Sprintf("%s >= :from", timeColumn))
-	}
-	if to != 0 {
-		conds = append(conds, fmt.Sprintf("%s < :to", timeColumn))
-	}
-	return conds
 }

@@ -17,7 +17,7 @@ var (
 
 type listJSONMessagesRes struct {
 	readers.JSONPageMetadata
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 }
 
@@ -35,7 +35,7 @@ func (res listJSONMessagesRes) Empty() bool {
 
 type listSenMLMessagesRes struct {
 	readers.SenMLPageMetadata
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 }
 
@@ -70,7 +70,7 @@ func (res exportFileRes) Empty() bool {
 type searchJSONMessagesRes []searchJSONResultItem
 
 type searchJSONResultItem struct {
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 	Error    string            `json:"error,omitempty"`
 }
@@ -80,21 +80,13 @@ func (res searchJSONMessagesRes) Headers() map[string]string {
 }
 
 func (res searchJSONMessagesRes) Code() int {
-	errCount := 0
 	for _, r := range res {
 		if r.Error != "" {
-			errCount++
+			return http.StatusMultiStatus
 		}
 	}
 
-	switch {
-	case errCount == 0:
-		return http.StatusOK
-	case errCount < len(res):
-		return http.StatusMultiStatus
-	default:
-		return http.StatusInternalServerError
-	}
+	return http.StatusOK
 }
 
 func (res searchJSONMessagesRes) Empty() bool {
@@ -104,7 +96,7 @@ func (res searchJSONMessagesRes) Empty() bool {
 type searchSenMLMessagesRes []searchSenMLResultItem
 
 type searchSenMLResultItem struct {
-	Total    uint64            `json:"total"`
+	Total    *uint64           `json:"total,omitempty"`
 	Messages []readers.Message `json:"messages"`
 	Error    string            `json:"error,omitempty"`
 }
@@ -114,21 +106,13 @@ func (res searchSenMLMessagesRes) Headers() map[string]string {
 }
 
 func (res searchSenMLMessagesRes) Code() int {
-	errCount := 0
 	for _, r := range res {
 		if r.Error != "" {
-			errCount++
+			return http.StatusMultiStatus
 		}
 	}
 
-	switch {
-	case errCount == 0:
-		return http.StatusOK
-	case errCount < len(res):
-		return http.StatusMultiStatus
-	default:
-		return http.StatusInternalServerError
-	}
+	return http.StatusOK
 }
 
 func (res searchSenMLMessagesRes) Empty() bool {

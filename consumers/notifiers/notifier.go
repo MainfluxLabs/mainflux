@@ -21,6 +21,12 @@ type Notifier struct {
 	Metadata map[string]any
 }
 
+// NotifierOrderFields maps API-facing order keys to SQL column expressions for the notifiers table.
+var NotifierOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 type NotifiersPage struct {
 	Total     uint64
 	Notifiers []Notifier
@@ -28,9 +34,8 @@ type NotifiersPage struct {
 
 // Sender represents an API for sending notification.
 type Sender interface {
-	// Send method is used to send notification for the
-	// received message to the provided list of receivers.
-	Send(to []string, msg protomfx.Message) error
+	// Send method is used to send a notification to the provided list of receivers.
+	Send(to []string, notification protomfx.Notification) error
 
 	// ValidateContacts method is used to validate contacts
 	// to which notifications will be sent.

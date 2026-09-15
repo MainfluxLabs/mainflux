@@ -39,10 +39,14 @@ const (
 	DescDir                = "desc"
 	ContentTypeJSON        = "application/json"
 	ContentTypeOctetStream = "application/octet-stream"
+	ContentTypeMultipart   = "multipart/form-data"
 	DefOffset              = 0
 	DefLimit               = 10
 	ConcurrencyLimit       = 10
 )
+
+// UTF8BOM is the byte-order mark some uploaded files start with.
+var UTF8BOM = []byte{0xef, 0xbb, 0xbf}
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
@@ -83,6 +87,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidOrder),
 			errors.Contains(err, ErrInvalidDirection),
 			errors.Contains(err, ErrEmptyList),
+			errors.Contains(err, ErrEmptyState),
 			errors.Contains(err, ErrMissingSerial),
 			errors.Contains(err, ErrMissingCertData),
 			errors.Contains(err, ErrInvalidContact),
@@ -193,6 +198,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidOrder),
 		errors.Contains(err, ErrInvalidDirection),
 		errors.Contains(err, ErrEmptyList),
+		errors.Contains(err, ErrEmptyState),
 		errors.Contains(err, ErrMissingSerial),
 		errors.Contains(err, ErrMissingCertData),
 		errors.Contains(err, ErrInvalidContact),

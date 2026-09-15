@@ -28,7 +28,7 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 		return out, err
 	}
 
-	group, err := es.Service.ViewGroup(ctx, token, out[0].GroupID)
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, out[0].GroupID)
 	if err != nil {
 		return out, err
 	}
@@ -42,8 +42,8 @@ func (es eventStore) CreateThings(ctx context.Context, token, profileID string, 
 				Name:      th.Name,
 				Metadata:  th.Metadata,
 			},
-			GroupID: group.ID,
-			OrgID:   group.OrgID,
+			GroupID: out[0].GroupID,
+			OrgID:   orgID,
 		})
 	}
 
@@ -56,7 +56,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 		return err
 	}
 
-	group, err := es.Service.ViewGroup(ctx, token, groupID)
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (es eventStore) UpdateThing(ctx context.Context, token string, thing things
 			Metadata:  thing.Metadata,
 		},
 		GroupID: groupID,
-		OrgID:   group.OrgID,
+		OrgID:   orgID,
 	})
 
 	return nil
@@ -86,7 +86,7 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 		return err
 	}
 
-	prevGroup, err := es.Service.ViewGroup(ctx, token, prevGroupID)
+	prevOrgID, err := es.Service.GetOrgIDByGroup(ctx, prevGroupID)
 	if err != nil {
 		return err
 	}
@@ -102,32 +102,42 @@ func (es eventStore) UpdateThingGroupAndProfile(ctx context.Context, token strin
 			GroupID:   thing.GroupID,
 		},
 		GroupID: prevGroupID,
-		OrgID:   prevGroup.OrgID,
+		OrgID:   prevOrgID,
 	})
 
 	return nil
 }
 
 func (es eventStore) RemoveThings(ctx context.Context, token string, ids ...string) error {
+	grIDs := make(map[string]string, len(ids))
+	orgIDs := make(map[string]string)
 	for _, id := range ids {
 		groupID, err := es.Service.GetGroupIDByThing(ctx, id)
 		if err != nil {
 			return err
 		}
+		grIDs[id] = groupID
 
-		group, err := es.Service.ViewGroup(ctx, token, groupID)
+		if _, ok := orgIDs[groupID]; ok {
+			continue
+		}
+
+		orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
 		if err != nil {
 			return err
 		}
+		orgIDs[groupID] = orgID
+	}
 
-		if err := es.Service.RemoveThings(ctx, token, id); err != nil {
-			return err
-		}
+	if err := es.Service.RemoveThings(ctx, token, ids...); err != nil {
+		return err
+	}
 
+	for _, id := range ids {
 		es.pub.Publish(ctx, events.Event{
 			Action:  events.ThingRemoved{ID: id},
-			GroupID: groupID,
-			OrgID:   group.OrgID,
+			GroupID: grIDs[id],
+			OrgID:   orgIDs[grIDs[id]],
 		})
 	}
 
@@ -140,7 +150,7 @@ func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, 
 		return prs, err
 	}
 
-	group, err := es.Service.ViewGroup(ctx, token, groupID)
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
 	if err != nil {
 		return prs, err
 	}
@@ -154,7 +164,7 @@ func (es eventStore) CreateProfiles(ctx context.Context, token, groupID string, 
 				Metadata: pr.Metadata,
 			},
 			GroupID: pr.GroupID,
-			OrgID:   group.OrgID,
+			OrgID:   orgID,
 		})
 	}
 
@@ -171,7 +181,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 		return err
 	}
 
-	group, err := es.Service.ViewGroup(ctx, token, groupID)
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
 	if err != nil {
 		return err
 	}
@@ -184,7 +194,7 @@ func (es eventStore) UpdateProfile(ctx context.Context, token string, profile th
 			Metadata: profile.Metadata,
 		},
 		GroupID: groupID,
-		OrgID:   group.OrgID,
+		OrgID:   orgID,
 	})
 
 	return nil
@@ -197,7 +207,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 			return err
 		}
 
-		group, err := es.Service.ViewGroup(ctx, token, groupID)
+		orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
 		if err != nil {
 			return err
 		}
@@ -209,7 +219,7 @@ func (es eventStore) RemoveProfiles(ctx context.Context, token string, ids ...st
 		es.pub.Publish(ctx, events.Event{
 			Action:  events.ProfileRemoved{ID: id},
 			GroupID: groupID,
-			OrgID:   group.OrgID,
+			OrgID:   orgID,
 		})
 	}
 
@@ -223,8 +233,7 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 			return err
 		}
 
-		// Obtain Org ID of Group
-		group, err := es.Service.ViewGroup(ctx, token, id)
+		orgID, err := es.Service.GetOrgIDByGroup(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -235,7 +244,7 @@ func (es eventStore) RemoveGroups(ctx context.Context, token string, ids ...stri
 
 		es.pub.Publish(ctx, events.Event{
 			Action: events.GroupRemoved{ID: id, ThingIDs: thingIDs},
-			OrgID:  group.OrgID,
+			OrgID:  orgID,
 		})
 	}
 

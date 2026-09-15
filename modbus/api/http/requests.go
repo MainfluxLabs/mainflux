@@ -24,20 +24,16 @@ var (
 	ErrMissingDataFields   = errors.New("missing data fields")
 	ErrInvalidFunctionCode = errors.New("invalid function code")
 	ErrMissingFieldName    = errors.New("missing field name")
+	ErrMissingFieldAddress = errors.New("missing field address")
 	ErrInvalidFieldType    = errors.New("invalid field type")
 	ErrInvalidFieldLength  = errors.New("invalid field length")
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
 )
 
-var allowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
-
 // validatePageMetadata validates the modbus page metadata.
 func validatePageMetadata(pm modbus.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+	if err := common.Validate(maxLimitSize, modbus.ClientOrderFields); err != nil {
 		return err
 	}
 
@@ -54,7 +50,7 @@ type field struct {
 	Unit      string  `json:"unit,omitempty"`
 	Scale     float64 `json:"scale,omitempty"`
 	ByteOrder string  `json:"byte_order"`
-	Address   uint16  `json:"address"`
+	Address   *uint16 `json:"address"`
 	Length    uint16  `json:"length,omitempty"`
 }
 
@@ -130,6 +126,10 @@ func (req client) validate() error {
 	for _, f := range req.DataFields {
 		if f.Name == "" {
 			return ErrMissingFieldName
+		}
+
+		if f.Address == nil {
+			return ErrMissingFieldAddress
 		}
 
 		switch f.Type {
@@ -227,6 +227,24 @@ func (req updateClientReq) validate() error {
 	}
 
 	return nil
+}
+
+type createClientReq struct {
+	token   string
+	thingID string
+	client
+}
+
+func (req createClientReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	return req.client.validate()
 }
 
 type removeClientsReq struct {

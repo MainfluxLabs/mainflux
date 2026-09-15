@@ -76,12 +76,14 @@ func (trm *thingRepositoryMock) UpdateGroupAndProfile(_ context.Context, thing t
 		return dbutil.ErrNotFound
 	}
 
-	existingThing.ProfileID = thing.ProfileID
+	if thing.ProfileID != "" {
+		existingThing.ProfileID = thing.ProfileID
+	}
 	if thing.GroupID != "" {
 		existingThing.GroupID = thing.GroupID
 	}
 
-	trm.things[thing.ID] = thing
+	trm.things[thing.ID] = existingThing
 
 	return nil
 }
@@ -118,6 +120,23 @@ func (trm *thingRepositoryMock) RetrieveByID(_ context.Context, id string) (thin
 	}
 
 	return things.Thing{}, dbutil.ErrNotFound
+}
+
+func (trm *thingRepositoryMock) RetrieveGroupIDsByThings(_ context.Context, ids []string) (map[string]string, error) {
+	trm.mu.Lock()
+	defer trm.mu.Unlock()
+
+	grIDs := make(map[string]string, len(ids))
+	for _, id := range ids {
+		for _, th := range trm.things {
+			if th.ID == id {
+				grIDs[th.ID] = th.GroupID
+				break
+			}
+		}
+	}
+
+	return grIDs, nil
 }
 
 func (trm *thingRepositoryMock) RetrieveByGroups(_ context.Context, groupIDs []string, pm things.PageMetadata) (things.ThingsPage, error) {
@@ -301,20 +320,4 @@ func (trm *thingRepositoryMock) RetrieveAll(_ context.Context, pm things.PageMet
 	}
 
 	return page, nil
-}
-
-func (trm *thingRepositoryMock) BackupByGroups(_ context.Context, groupIDs []string) ([]things.Thing, error) {
-	trm.mu.Lock()
-	defer trm.mu.Unlock()
-
-	var ths []things.Thing
-	for _, grID := range groupIDs {
-		for _, v := range trm.things {
-			if v.GroupID == grID {
-				ths = append(ths, v)
-			}
-		}
-	}
-
-	return ths, nil
 }

@@ -118,11 +118,7 @@ func transformTimeField(payload any, transformer domain.Transformer) (int64, err
 		}
 	}
 
-	t, err := parseTimestamp(transformer.TimeFormat, val, transformer.TimeLocation)
-	if err != nil {
-		return 0, err
-	}
-	return t.UnixNano(), nil
+	return ParseTimestamp(transformer, val)
 }
 
 func extractPayload(payload any, dataField string) any {

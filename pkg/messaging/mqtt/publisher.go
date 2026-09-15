@@ -8,12 +8,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-var _ messaging.Publisher = (*publisher)(nil)
+// Publisher extends the base messaging.Publisher with command publishing capabilities.
+type Publisher interface {
+	messaging.Publisher
+	messaging.CommandPublisher
+}
+
+var _ Publisher = (*publisher)(nil)
 
 type publisher struct {
 	client  mqtt.Client
@@ -21,7 +28,7 @@ type publisher struct {
 }
 
 // NewPublisher returns a new MQTT message publisher.
-func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, error) {
+func NewPublisher(address string, timeout time.Duration) (Publisher, error) {
 	client, err := newClient(address, "mqtt-publisher", timeout)
 	if err != nil {
 		return nil, err
@@ -35,15 +42,37 @@ func NewPublisher(address string, timeout time.Duration) (messaging.Publisher, e
 }
 
 func (pub publisher) Publish(subject string, msg protomfx.Message) error {
-	topic := strings.ReplaceAll(subject, ".", "/")
 	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
 	if err != nil {
-		return err
+		return errors.Wrap(messaging.ErrPublishMessage, err)
 	}
+
+	if err := pub.publish(subject, payload); err != nil {
+		return errors.Wrap(messaging.ErrPublishMessage, err)
+	}
+
+	return nil
+}
+
+func (pub publisher) PublishCommand(subject string, cmd protomfx.Command) error {
+	payload, err := json.Marshal(messaging.ToJSONCommand(cmd))
+	if err != nil {
+		return errors.Wrap(messaging.ErrPublishCommand, err)
+	}
+
+	if err := pub.publish(subject, payload); err != nil {
+		return errors.Wrap(messaging.ErrPublishCommand, err)
+	}
+
+	return nil
+}
+
+func (pub publisher) publish(subject string, payload []byte) error {
+	topic := strings.ReplaceAll(subject, ".", "/")
 
 	token := pub.client.Publish(topic, qos, false, payload)
 	if !token.WaitTimeout(pub.timeout) {
-		return messaging.ErrPublishTimeout
+		return ErrTimeoutReached
 	}
 
 	return token.Error()

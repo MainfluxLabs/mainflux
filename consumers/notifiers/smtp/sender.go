@@ -24,16 +24,16 @@ func New(agent *email.Agent, from string) notifiers.Sender {
 	return &sender{agent: agent, from: from}
 }
 
-func (n *sender) Send(to []string, msg protomfx.Message) error {
-	subject := fmt.Sprintf("New IoT message from Thing %s", msg.Publisher)
-	if msg.Subtopic != "" {
-		subject = fmt.Sprintf("New IoT message on %s from Thing %s", msg.Subtopic, msg.Publisher)
+func (n *sender) Send(to []string, notification protomfx.Notification) error {
+	subject := fmt.Sprintf("New IoT message from Thing %s", notification.ThingId)
+	if notification.Subtopic != "" {
+		subject = fmt.Sprintf("New IoT message on %s from Thing %s", notification.Subtopic, notification.ThingId)
 	}
-	values := string(msg.Payload)
+	values := string(notification.Payload)
 
 	templateData := map[string]any{
-		"PublisherID":    msg.Publisher,
-		"Protocol":       msg.Protocol,
+		"PublisherID":    notification.ThingId,
+		"Protocol":       notification.Protocol,
 		"MessageContent": values,
 	}
 

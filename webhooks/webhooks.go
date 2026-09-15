@@ -19,6 +19,12 @@ type WebhooksPage struct {
 	Webhooks []Webhook
 }
 
+// WebhookOrderFields maps API-facing order keys to SQL column expressions for the webhooks table.
+var WebhookOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 type WebhookRepository interface {
 	// Save persists multiple webhooks. Webhooks are saved using a transaction.
 	// If one webhook fails then none will be saved.

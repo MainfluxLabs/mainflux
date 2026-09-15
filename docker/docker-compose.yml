@@ -16,7 +16,7 @@ volumes:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
   mainfluxlabs-mqtt-db-volume:
-  mainfluxlabs-timescale-volume:
+  mainfluxlabs-timescale-db-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
   mainfluxlabs-seaweedfs-master-volume:
@@ -26,6 +26,7 @@ volumes:
   mainfluxlabs-smtp-notifier-db-volume:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
+  mainfluxlabs-shadows-db-volume:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
@@ -118,6 +119,7 @@ services:
       MF_AUTH_GRPC_PORT: ${MF_AUTH_GRPC_PORT}
       MF_AUTH_SECRET: ${MF_AUTH_SECRET}
       MF_AUTH_LOGIN_TOKEN_DURATION: ${MF_AUTH_LOGIN_TOKEN_DURATION}
+      MF_AUTH_MAX_SESSION_DURATION: ${MF_AUTH_MAX_SESSION_DURATION}
       MF_INVITE_DURATION: ${MF_INVITE_DURATION}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
@@ -466,9 +468,9 @@ services:
       - mainfluxlabs-base-net
 
   ## TIMESCALE DB
-  timescale:
+  timescale-db:
     image: timescale/timescaledb:2.15.3-pg16
-    container_name: mainfluxlabs-timescale
+    container_name: mainfluxlabs-timescale-db
     restart: on-failure
     environment:
       POSTGRES_USER: ${MF_TIMESCALE_WRITER_DB_USER}
@@ -477,19 +479,19 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-timescale-volume:/var/lib/postgresql/data
+      - mainfluxlabs-timescale-db-volume:/var/lib/postgresql/data
 
   timescale-writer:
     image: ${MF_RELEASE_PREFIX}/timescale-writer:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-timescale-writer
     depends_on:
-      - timescale
+      - timescale-db
     restart: on-failure
     environment:
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_TIMESCALE_WRITER_LOG_LEVEL: ${MF_TIMESCALE_WRITER_LOG_LEVEL}
       MF_TIMESCALE_WRITER_PORT: ${MF_TIMESCALE_WRITER_PORT}
-      MF_TIMESCALE_WRITER_DB_HOST: timescale
+      MF_TIMESCALE_WRITER_DB_HOST: ${MF_TIMESCALE_WRITER_DB_HOST}
       MF_TIMESCALE_WRITER_DB_PORT: ${MF_TIMESCALE_WRITER_DB_PORT}
       MF_TIMESCALE_WRITER_DB_USER: ${MF_TIMESCALE_WRITER_DB_USER}
       MF_TIMESCALE_WRITER_DB_PASS: ${MF_TIMESCALE_WRITER_DB_PASS}
@@ -512,7 +514,7 @@ services:
       MF_TIMESCALE_READER_PORT: ${MF_TIMESCALE_READER_PORT}
       MF_TIMESCALE_READER_CLIENT_TLS: ${MF_TIMESCALE_READER_CLIENT_TLS}
       MF_TIMESCALE_READER_CA_CERTS: ${MF_TIMESCALE_READER_CA_CERTS}
-      MF_TIMESCALE_READER_DB_HOST: timescale
+      MF_TIMESCALE_READER_DB_HOST: ${MF_TIMESCALE_READER_DB_HOST}
       MF_TIMESCALE_READER_DB_PORT: ${MF_TIMESCALE_READER_DB_PORT}
       MF_TIMESCALE_READER_DB_USER: ${MF_TIMESCALE_READER_DB_USER}
       MF_TIMESCALE_READER_DB_PASS: ${MF_TIMESCALE_READER_DB_PASS}
@@ -790,6 +792,49 @@ services:
     networks:
       - mainfluxlabs-base-net
 
+  shadows-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-shadows-db
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${MF_SHADOWS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_SHADOWS_DB_PASS}
+      POSTGRES_DB: ${MF_SHADOWS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-shadows-db-volume:/var/lib/postgresql/data
+
+  shadows:
+    image: ${MF_RELEASE_PREFIX}/shadows:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-shadows
+    depends_on:
+      - things
+      - shadows-db
+      - broker
+    restart: on-failure
+    environment:
+      MF_SHADOWS_LOG_LEVEL: ${MF_SHADOWS_LOG_LEVEL}
+      MF_SHADOWS_HTTP_PORT: ${MF_SHADOWS_HTTP_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_SHADOWS_DB_HOST: shadows-db
+      MF_SHADOWS_DB_PORT: ${MF_SHADOWS_DB_PORT}
+      MF_SHADOWS_DB_USER: ${MF_SHADOWS_DB_USER}
+      MF_SHADOWS_DB_PASS: ${MF_SHADOWS_DB_PASS}
+      MF_SHADOWS_DB: ${MF_SHADOWS_DB}
+      MF_SHADOWS_SERVER_CERT: ${MF_SHADOWS_SERVER_CERT}
+      MF_SHADOWS_SERVER_KEY: ${MF_SHADOWS_SERVER_KEY}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_SHADOWS_ES_URL: ${MF_SHADOWS_ES_URL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+    ports:
+      - ${MF_SHADOWS_HTTP_PORT}:${MF_SHADOWS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
   modbus-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-modbus-db
@@ -926,7 +971,6 @@ services:
       MF_RULES_DB_USER: ${MF_RULES_DB_USER}
       MF_RULES_DB_PASS: ${MF_RULES_DB_PASS}
       MF_RULES_DB: ${MF_RULES_DB}
-      MF_RULES_SCRIPTS_ENABLED: ${MF_RULES_SCRIPTS_ENABLED}
       MF_RULES_HTTP_PORT: ${MF_RULES_HTTP_PORT}
       MF_RULES_SERVER_CERT: ${MF_RULES_SERVER_CERT}
       MF_RULES_SERVER_KEY: ${MF_RULES_SERVER_KEY}
@@ -935,8 +979,6 @@ services:
       MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
-      MF_POSTGRES_READER_GRPC_URL: ${MF_POSTGRES_READER_GRPC_URL}
-      MF_POSTGRES_READER_GRPC_TIMEOUT: ${MF_POSTGRES_READER_GRPC_TIMEOUT}
       MF_RULES_ES_URL: ${MF_RULES_ES_URL}
     ports:
       - ${MF_RULES_HTTP_PORT}:${MF_RULES_HTTP_PORT}

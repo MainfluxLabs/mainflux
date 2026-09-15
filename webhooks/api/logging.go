@@ -140,15 +140,15 @@ func (lm *loggingMiddleware) RemoveWebhooksByGroup(ctx context.Context, groupID 
 	return lm.svc.RemoveWebhooksByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {
+func (lm *loggingMiddleware) ConsumeWebhook(subject string, webhook protomfx.Webhook) (err error) {
 	defer func(begin time.Time) {
-		msg := fmt.Sprintf("Method consume_message took %s to complete", time.Since(begin))
+		message := fmt.Sprintf("Method consume_webhook took %s to complete", time.Since(begin))
 		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", msg, err))
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
 		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", msg))
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ConsumeMessage(subject, msg)
+	return lm.svc.ConsumeWebhook(subject, webhook)
 }

@@ -106,11 +106,11 @@ func (ms *metricsMiddleware) RemoveWebhooksByGroup(ctx context.Context, groupID 
 	return ms.svc.RemoveWebhooksByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) ConsumeMessage(subject string, msg protomfx.Message) error {
+func (ms *metricsMiddleware) ConsumeWebhook(subject string, webhook protomfx.Webhook) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "consume_message").Add(1)
-		ms.latency.With("method", "consume_message").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "consume_webhook").Add(1)
+		ms.latency.With("method", "consume_webhook").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ConsumeMessage(subject, msg)
+	return ms.svc.ConsumeWebhook(subject, webhook)
 }

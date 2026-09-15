@@ -82,6 +82,18 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP TABLE json",
 				},
 			},
+			{
+				Id: "messages_2",
+				Up: []string{
+					`ALTER TABLE json DROP CONSTRAINT IF EXISTS json_pkey`,
+					`ALTER TABLE json ADD COLUMN IF NOT EXISTS payload_hash INTEGER`,
+					`CREATE UNIQUE INDEX IF NOT EXISTS idx_json_dedup ON json(created, publisher, subtopic, payload_hash)`,
+				},
+				Down: []string{
+					"DROP INDEX IF EXISTS idx_json_dedup",
+					"ALTER TABLE json DROP COLUMN IF EXISTS payload_hash",
+				},
+			},
 		},
 	}
 

@@ -377,6 +377,82 @@ func TestRemoveThing(t *testing.T) {
 	}
 }
 
+func TestRemoveThings(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	prID := prs[0].ID
+
+	otherGrs, err := svc.CreateGroups(context.Background(), token, orgID, things.Group{Name: "other-test-group"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	otherGrID := otherGrs[0].ID
+
+	otherPrs, err := svc.CreateProfiles(context.Background(), token, otherGrID, things.Profile{Name: "other-test-profile"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	otherPrID := otherPrs[0].ID
+
+	sths, err := svc.CreateThings(context.Background(), token, prID, things.Thing{Name: "a"}, things.Thing{Name: "b"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+
+	otherSths, err := svc.CreateThings(context.Background(), token, otherPrID, things.Thing{Name: "c"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+
+	ids := []string{sths[0].ID, sths[1].ID, otherSths[0].ID}
+
+	svc = withEventStore(t, svc)
+
+	err = svc.RemoveThings(context.Background(), token, ids...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	expected := []map[string]any{
+		{
+			"id":           sths[0].ID,
+			"operation":    mfevents.ThingRemove,
+			"evt_org_id":   orgID,
+			"evt_group_id": grID,
+		},
+		{
+			"id":           sths[1].ID,
+			"operation":    mfevents.ThingRemove,
+			"evt_org_id":   orgID,
+			"evt_group_id": grID,
+		},
+		{
+			"id":           otherSths[0].ID,
+			"operation":    mfevents.ThingRemove,
+			"evt_org_id":   orgID,
+			"evt_group_id": otherGrID,
+		},
+	}
+
+	lastID := "0"
+	for i, exp := range expected {
+		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
+			Streams: []string{mfevents.ThingsStream, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		require.NotEmpty(t, streams, fmt.Sprintf("event %d: expected an event, got none", i))
+		require.NotEmpty(t, streams[0].Messages, fmt.Sprintf("event %d: expected an event, got none", i))
+
+		msg := streams[0].Messages[0]
+		event := msg.Values
+		lastID = msg.ID
+
+		assert.NotEmpty(t, event["occurred_at"], fmt.Sprintf("event %d", i))
+		delete(event, "occurred_at")
+
+		assert.Equal(t, exp, event, fmt.Sprintf("event %d: expected %v got %v\n", i, exp, event))
+	}
+}
+
 func TestCreateProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 

@@ -19,6 +19,13 @@ type (
 	ThingKey = domain.ThingKey
 )
 
+// ThingOrderFields maps API-facing order keys to SQL column expressions for the things table.
+var ThingOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+	"type": "type",
+}
+
 const (
 	KeyTypeInternal = domain.KeyTypeInternal
 	KeyTypeExternal = domain.KeyTypeExternal
@@ -51,6 +58,9 @@ type ThingRepository interface {
 
 	// RetrieveByKey returns thing ID for given thing key based on its type.
 	RetrieveByKey(ctx context.Context, key ThingKey) (string, error)
+
+	// RetrieveGroupIDsByThings returns the group ID of each of the given things.
+	RetrieveGroupIDsByThings(ctx context.Context, ids []string) (map[string]string, error)
 
 	// RetrieveByGroups retrieves the subset of things specified by given group ids.
 	RetrieveByGroups(ctx context.Context, groupIDs []string, pm PageMetadata) (ThingsPage, error)

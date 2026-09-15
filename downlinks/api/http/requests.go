@@ -29,15 +29,10 @@ var (
 	ErrInvalidFilterValue    = errors.New("invalid time filter value")
 )
 
-var allowedOrders = map[string]string{
-	"id":   "id",
-	"name": "name",
-}
-
 // validatePageMetadata validates the downlinks page metadata.
 func validatePageMetadata(pm downlinks.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+	if err := common.Validate(maxLimitSize, downlinks.DownlinkOrderFields); err != nil {
 		return err
 	}
 

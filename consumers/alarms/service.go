@@ -149,14 +149,18 @@ func (as *alarmService) UpdateAlarmStatus(ctx context.Context, token, id, status
 }
 
 func (as *alarmService) RemoveAlarms(ctx context.Context, token string, ids ...string) error {
+	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		alarm, err := as.alarms.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
-		if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: alarm.ThingID, Action: domain.GroupEditor}); err != nil {
-			return errors.Wrap(errors.ErrAuthorization, err)
-		}
+
+		thingIDs = append(thingIDs, alarm.ThingID)
+	}
+
+	if err := as.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	return as.alarms.Remove(ctx, ids...)

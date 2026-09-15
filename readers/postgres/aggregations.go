@@ -11,19 +11,13 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/MainfluxLabs/mainflux/readers"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
-)
-
-const (
-	jsonTable  = "json"
-	jsonOrder  = "created"
-	senmlTable = "senml"
-	senmlOrder = "time"
 )
 
 // queryParams holds parameters for building aggregation SQL queries.
@@ -58,6 +52,7 @@ type aggInput struct {
 	params     map[string]any
 	qp         queryParams
 	conditions []string
+	noTotal    bool
 }
 
 func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
@@ -72,8 +67,8 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 			"to":        rpm.To,
 		},
 		qp: queryParams{
-			table:       jsonTable,
-			timeColumn:  jsonOrder,
+			table:       mfreaders.JSONTable,
+			timeColumn:  mfreaders.JSONOrder,
 			aggFields:   rpm.AggFields,
 			aggInterval: rpm.AggInterval,
 			aggValue:    rpm.AggValue,
@@ -81,7 +76,8 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 			limit:       rpm.Limit,
 			dir:         rpm.Dir,
 		},
-		conditions: jsonConditions(rpm),
+		conditions: mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder),
+		noTotal:    rpm.NoTotal,
 	}
 
 	return as.readAggregatedMessages(ctx, input)
@@ -104,8 +100,8 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 			"to":           rpm.To,
 		},
 		qp: queryParams{
-			table:       senmlTable,
-			timeColumn:  senmlOrder,
+			table:       mfreaders.SenMLTable,
+			timeColumn:  mfreaders.SenMLOrder,
 			aggFields:   rpm.AggFields,
 			aggInterval: rpm.AggInterval,
 			aggValue:    rpm.AggValue,
@@ -113,7 +109,8 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 			limit:       rpm.Limit,
 			dir:         rpm.Dir,
 		},
-		conditions: senmlConditions(rpm),
+		conditions: mfreaders.SenMLConditions(rpm),
+		noTotal:    rpm.NoTotal,
 	}
 
 	return as.readAggregatedMessages(ctx, input)
@@ -147,6 +144,10 @@ func (as *aggregationService) readAggregatedMessages(ctx context.Context, input 
 	messages, err := as.scanAggregatedMessages(rows, qp.table)
 	if err != nil {
 		return []readers.Message{}, 0, err
+	}
+
+	if input.noTotal {
+		return messages, 0, nil
 	}
 
 	cq := buildAggCountQuery(qp)
@@ -248,7 +249,7 @@ type firstStrategy struct{}
 
 func (s firstStrategy) aggregateExpr(qp queryParams) string {
 	col := qp.timeColumn
-	if qp.table == senmlTable {
+	if qp.table == mfreaders.SenMLTable {
 		return buildSenMLFirstLastExpr(col, "ASC")
 	}
 	return fmt.Sprintf(`
@@ -267,7 +268,7 @@ type lastStrategy struct{}
 
 func (s lastStrategy) aggregateExpr(qp queryParams) string {
 	col := qp.timeColumn
-	if qp.table == senmlTable {
+	if qp.table == mfreaders.SenMLTable {
 		return buildSenMLFirstLastExpr(col, "DESC")
 	}
 	return fmt.Sprintf(`
@@ -281,7 +282,7 @@ func (s lastStrategy) selectedFields(qp queryParams) string {
 }
 
 func firstLastSelectedFields(qp queryParams) string {
-	if qp.table == senmlTable {
+	if qp.table == mfreaders.SenMLTable {
 		return senmlFirstLastSelected()
 	}
 	if len(qp.aggFields) == 0 {
@@ -316,7 +317,7 @@ func senmlFirstLastSelected() string {
 }
 
 func (f sqlAggFunc) selectedFields(qp queryParams) string {
-	if qp.table == senmlTable {
+	if qp.table == mfreaders.SenMLTable {
 		return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol,
 		'' as name, '' as unit,
 		ia.agg_value as value,
@@ -334,7 +335,7 @@ func (f sqlAggFunc) aggregateExpr(qp queryParams) string {
 	fn := string(f)
 	var exprs []string
 	switch qp.table {
-	case senmlTable:
+	case mfreaders.SenMLTable:
 		exprs = append(exprs, fmt.Sprintf("%s(m.value) as agg_value", fn))
 	default:
 		for i, field := range qp.aggFields {
@@ -392,7 +393,7 @@ func (as *aggregationService) scanAggregatedMessages(rows *sqlx.Rows, format str
 	var messages []readers.Message
 
 	switch format {
-	case senmlTable:
+	case mfreaders.SenMLTable:
 		for rows.Next() {
 			msg := senml.Message{}
 			if err := rows.StructScan(&msg); err != nil {
@@ -434,51 +435,6 @@ func buildJSONPath(field string) string {
 		}
 	}
 	return path.String()
-}
-
-func baseConditions(subtopic, publisher, protocol string, from, to int64, timeColumn string) []string {
-	var conds []string
-	if subtopic != "" {
-		conds = append(conds, "subtopic = :subtopic")
-	}
-	if publisher != "" {
-		conds = append(conds, "publisher = :publisher")
-	}
-	if protocol != "" {
-		conds = append(conds, "protocol = :protocol")
-	}
-	if from != 0 {
-		conds = append(conds, fmt.Sprintf("%s >= :from", timeColumn))
-	}
-	if to != 0 {
-		conds = append(conds, fmt.Sprintf("%s < :to", timeColumn))
-	}
-	return conds
-}
-
-func jsonConditions(pm readers.JSONPageMetadata) []string {
-	return baseConditions(pm.Subtopic, pm.Publisher, pm.Protocol, pm.From, pm.To, jsonOrder)
-}
-
-func senmlConditions(pm readers.SenMLPageMetadata) []string {
-	conds := baseConditions(pm.Subtopic, pm.Publisher, pm.Protocol, pm.From, pm.To, senmlOrder)
-
-	if pm.Name != "" {
-		conds = append(conds, "name = :name")
-	}
-	if pm.Value != 0 {
-		conds = append(conds, fmt.Sprintf("value %s :value", readers.ComparatorSymbol(pm.Comparator)))
-	}
-	if pm.BoolValue {
-		conds = append(conds, "bool_value = :bool_value")
-	}
-	if pm.StringValue != "" {
-		conds = append(conds, "string_value = :string_value")
-	}
-	if pm.DataValue != "" {
-		conds = append(conds, "data_value = :data_value")
-	}
-	return conds
 }
 
 func buildJSONSelect(aggFields []string) string {

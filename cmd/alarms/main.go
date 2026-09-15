@@ -153,7 +153,7 @@ func main() {
 
 	svc := newService(things, dbTracer, db, logger)
 
-	if err = consumers.Start(svcName, consumers.Alarms(pubSub, svc)); err != nil {
+	if err = consumers.Alarms(svcName, pubSub, svc); err != nil {
 		logger.Error(fmt.Sprintf("Failed to subscribe to alarms: %s", err))
 	}
 

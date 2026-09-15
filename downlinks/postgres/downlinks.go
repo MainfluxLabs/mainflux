@@ -75,7 +75,7 @@ func (dr downlinkRepository) RetrieveByThing(ctx context.Context, thingID string
 		return downlinks.DownlinksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, downlinks.DownlinkOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	urlq, url := dbutil.GetLikeQuery("url", pm.URL)
@@ -120,7 +120,7 @@ func (dr downlinkRepository) RetrieveByGroup(ctx context.Context, groupID string
 		return downlinks.DownlinksPage{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, downlinks.DownlinkOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	nq, name := dbutil.GetNameQuery(pm.Name)
 	urlq, url := dbutil.GetLikeQuery("url", pm.URL)

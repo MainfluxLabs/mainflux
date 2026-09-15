@@ -216,20 +216,6 @@ func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID st
 	return lm.svc.CreateScripts(ctx, token, groupID, scripts...)
 }
 
-func (lm loggingMiddleware) ListScriptsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.LuaScriptsPage, err error) {
-	defer func(begin time.Time) {
-		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method list_scripts_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListScriptsByThing(ctx, token, thingID, pm)
-}
-
 func (lm loggingMiddleware) ListScriptsByGroup(ctx context.Context, token, groupID string, pm rules.PageMetadata) (_ rules.LuaScriptsPage, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
@@ -242,20 +228,6 @@ func (lm loggingMiddleware) ListScriptsByGroup(ctx context.Context, token, group
 	}(time.Now())
 
 	return lm.svc.ListScriptsByGroup(ctx, token, groupID, pm)
-}
-
-func (lm loggingMiddleware) ListThingIDsByScript(ctx context.Context, token, scriptID string) (_ []string, err error) {
-	defer func(begin time.Time) {
-		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method list_thing_ids_by_script by user %s, script id %s took %s to complete", email, scriptID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.ListThingIDsByScript(ctx, token, scriptID)
 }
 
 func (lm loggingMiddleware) ViewScript(ctx context.Context, token, id string) (_ rules.LuaScript, err error) {
@@ -311,47 +283,6 @@ func (lm loggingMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID st
 	}(time.Now())
 
 	return lm.svc.RemoveScriptsByGroup(ctx, groupID)
-}
-
-func (lm loggingMiddleware) AssignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) (err error) {
-	defer func(begin time.Time) {
-		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method assign_scripts by user %s, thing id %s and script ids %v took %s to complete", email, thingID, scriptIDs, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.AssignScripts(ctx, token, thingID, scriptIDs...)
-}
-
-func (lm loggingMiddleware) UnassignScripts(ctx context.Context, token, thingID string, scriptIDs ...string) (err error) {
-	defer func(begin time.Time) {
-		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method unassign_scripts by user %s, thing id %s and script ids %v took %s to complete", email, thingID, scriptIDs, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.UnassignScripts(ctx, token, thingID, scriptIDs...)
-}
-
-func (lm loggingMiddleware) UnassignScriptsFromThing(ctx context.Context, thingID string) (err error) {
-	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method unassign_scripts_from_thing for thing id %s took %s to complete", thingID, time.Since(begin))
-		if err != nil {
-			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
-			return
-		}
-		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
-	}(time.Now())
-
-	return lm.svc.UnassignScriptsFromThing(ctx, thingID)
 }
 
 func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.ScriptRunsPage, err error) {

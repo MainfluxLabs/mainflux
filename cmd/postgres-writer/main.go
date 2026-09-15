@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/writers/postgres"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/brokers"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
@@ -74,7 +73,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pubSub, err := brokers.NewPubSub(cfg.brokerURL, svcName, logger)
+	pubSub, err := nats.NewPubSub(cfg.brokerURL, svcName, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to message broker: %s", err))
 		os.Exit(1)
@@ -87,7 +86,7 @@ func main() {
 	repo := newService(db, logger)
 
 	subjects := []string{nats.SubjectMessages, nats.SubjectMessagesWithSubtopic}
-	if err = consumers.Start(svcName, consumers.Messages(pubSub, repo, subjects...)); err != nil {
+	if err = consumers.Messages(svcName, pubSub, repo, subjects...); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create Postgres writer: %s", err))
 	}
 

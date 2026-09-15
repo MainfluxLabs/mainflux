@@ -4,25 +4,29 @@
 package mocks
 
 import (
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
+// Publisher covers the methods this mock's callers (http/mqtt/modbus/downlinks,
+// pkg/sdk tests) use.
+type Publisher interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+}
+
 type mockPublisher struct{}
 
 // NewPublisher returns mock message publisher.
-func NewPublisher() messaging.Publisher {
+func NewPublisher() Publisher {
 	return mockPublisher{}
-}
-
-func (pub mockPublisher) Publish(_ string, msg protomfx.Message) error {
-	return nil
 }
 
 func (pub mockPublisher) PublishCommand(_ string, cmd protomfx.Command) error {
 	return nil
 }
 
-func (pub mockPublisher) Close() error {
+func (pub mockPublisher) Dispatch(_ protomfx.Message, _ *domain.ProfileConfig) error {
 	return nil
 }

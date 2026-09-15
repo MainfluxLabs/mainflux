@@ -25,6 +25,7 @@ type grpcClient struct {
 	getPubConfigByKey      endpoint.Endpoint
 	getConfigByThing       endpoint.Endpoint
 	canUserAccessThing     endpoint.Endpoint
+	canUserAccessThings    endpoint.Endpoint
 	canUserAccessProfile   endpoint.Endpoint
 	canUserAccessGroup     endpoint.Endpoint
 	canThingAccessGroup    endpoint.Endpoint
@@ -67,6 +68,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"CanUserAccessThing",
 			encodeUserAccessThingRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
+		canUserAccessThings: kitot.TraceClient(tracer, "can_user_access_things")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"CanUserAccessThings",
+			encodeUserAccessThingsRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
@@ -212,6 +221,13 @@ func (client grpcClient) GetConfigByThing(ctx context.Context, thingID string) (
 func (client grpcClient) CanUserAccessThing(ctx context.Context, ar domain.UserAccessReq) error {
 	r := userAccessThingReq{accessReq: accessReq{token: ar.Token, action: ar.Action}, id: ar.ID}
 	_, err := client.canUserAccessThing(ctx, r)
+
+	return err
+}
+
+func (client grpcClient) CanUserAccessThings(ctx context.Context, ar domain.UserAccessThingsReq) error {
+	r := userAccessThingsReq{accessReq: accessReq{token: ar.Token, action: ar.Action}, ids: ar.IDs, groupID: ar.GroupID}
+	_, err := client.canUserAccessThings(ctx, r)
 
 	return err
 }
@@ -377,6 +393,11 @@ func encodeUserAccessThingRequest(_ context.Context, grpcReq any) (any, error) {
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
 }
 
+func encodeUserAccessThingsRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(userAccessThingsReq)
+	return &protomfx.UserAccessThingsReq{Token: req.token, Ids: req.ids, GroupId: req.groupID, Action: req.action}, nil
+}
+
 func encodeUserAccessProfileRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(userAccessProfileReq)
 	return &protomfx.UserAccessReq{Token: req.token, Id: req.id, Action: req.action}, nil
@@ -394,12 +415,12 @@ func encodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 
 func encodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingCommandReq)
-	return &protomfx.ThingCommandReq{PublisherID: req.publisherID, RecipientID: req.recipientID}, nil
+	return &protomfx.ThingCommandReq{PublisherId: req.publisherID, RecipientId: req.recipientID}, nil
 }
 
 func encodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingGroupCommandReq)
-	return &protomfx.ThingGroupCommandReq{PublisherID: req.publisherID, GroupID: req.groupID}, nil
+	return &protomfx.ThingGroupCommandReq{PublisherId: req.publisherID, GroupId: req.groupID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -441,8 +462,8 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 	for _, memb := range req.memberships {
 		protoReq.Memberships = append(protoReq.Memberships, &protomfx.GroupMembership{
-			UserID:  memb.userID,
-			GroupID: memb.groupID,
+			UserId:  memb.userID,
+			GroupId: memb.groupID,
 			Role:    memb.role,
 		})
 	}
@@ -452,7 +473,7 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 
 func encodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(getGroupReq)
-	return &protomfx.GetGroupReq{GroupID: req.groupID}, nil
+	return &protomfx.GetGroupReq{GroupId: req.groupID}, nil
 }
 
 func decodeIdentityResponse(_ context.Context, grpcRes any) (any, error) {
@@ -465,7 +486,7 @@ func decodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 
 	return pubConfigByKeyRes{
 		PubConfigInfo: domain.PubConfigInfo{
-			PublisherID:   res.GetPublisherID(),
+			PublisherID:   res.GetPublisherId(),
 			ProfileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
 		},
 	}, nil
@@ -502,7 +523,7 @@ func decodeGetGroupResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.Group)
 	return groupRes{
 		id:    res.GetId(),
-		orgID: res.GetOrgID(),
+		orgID: res.GetOrgId(),
 		name:  res.GetName(),
 	}, nil
 }

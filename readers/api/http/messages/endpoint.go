@@ -27,9 +27,14 @@ func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var total *uint64
+		if !req.pageMeta.NoTotal {
+			total = &page.Total
+		}
+
 		return listJSONMessagesRes{
 			JSONPageMetadata: req.pageMeta,
-			Total:            page.Total,
+			Total:            total,
 			Messages:         page.Messages,
 		}, nil
 	}
@@ -47,9 +52,14 @@ func listSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
+		var total *uint64
+		if !req.pageMeta.NoTotal {
+			total = &page.Total
+		}
+
 		return listSenMLMessagesRes{
 			SenMLPageMetadata: req.pageMeta,
-			Total:             page.Total,
+			Total:             total,
 			Messages:          page.Messages,
 		}, nil
 	}
@@ -73,14 +83,17 @@ func searchJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 				defer wg.Done()
 				defer func() { <-sem }()
 
-				var item searchJSONResultItem
-				if page, err := svc.ListJSONMessages(ctx, req.token, domain.ThingKey{}, pm); err != nil {
-					item.Error = err.Error()
-				} else {
-					item.Total = page.Total
-					item.Messages = page.Messages
+				page, err := svc.ListJSONMessages(ctx, req.token, domain.ThingKey{}, pm)
+				if err != nil {
+					results[idx] = searchJSONResultItem{Error: err.Error()}
+					return
 				}
-				results[idx] = item
+
+				var total *uint64
+				if !pm.NoTotal {
+					total = &page.Total
+				}
+				results[idx] = searchJSONResultItem{Total: total, Messages: page.Messages}
 			}(i, search)
 		}
 
@@ -107,14 +120,17 @@ func searchSenMLMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 				defer wg.Done()
 				defer func() { <-sem }()
 
-				var item searchSenMLResultItem
-				if page, err := svc.ListSenMLMessages(ctx, req.token, domain.ThingKey{}, pm); err != nil {
-					item.Error = err.Error()
-				} else {
-					item.Total = page.Total
-					item.Messages = page.Messages
+				page, err := svc.ListSenMLMessages(ctx, req.token, domain.ThingKey{}, pm)
+				if err != nil {
+					results[idx] = searchSenMLResultItem{Error: err.Error()}
+					return
 				}
-				results[idx] = item
+
+				var total *uint64
+				if !pm.NoTotal {
+					total = &page.Total
+				}
+				results[idx] = searchSenMLResultItem{Total: total, Messages: page.Messages}
 			}(i, search)
 		}
 

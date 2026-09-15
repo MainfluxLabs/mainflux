@@ -40,6 +40,20 @@ func (lm *loggingMiddleware) CreateClients(ctx context.Context, token, thingID s
 	return lm.svc.CreateClients(ctx, token, thingID, clients...)
 }
 
+func (lm *loggingMiddleware) CreateClient(ctx context.Context, token, thingID string, client modbus.Client) (response modbus.Client, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method create_client by user %s, client %v took %s to complete", email, response, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.CreateClient(ctx, token, thingID, client)
+}
+
 func (lm *loggingMiddleware) ListClientsByThing(ctx context.Context, token, thingID string, pm modbus.PageMetadata) (response modbus.ClientsPage, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

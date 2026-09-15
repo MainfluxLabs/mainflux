@@ -5,6 +5,7 @@ package mqtt
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -18,6 +19,14 @@ import (
 const (
 	username = "mainflux-mqtt"
 	qos      = 2
+)
+
+var (
+	// ErrConnect indicates that connection to the MQTT broker failed.
+	ErrConnect = errors.New("failed to connect to MQTT broker")
+
+	// ErrTimeoutReached indicates that the broker did not acknowledge the publish before the timeout.
+	ErrTimeoutReached = errors.New("timeout reached")
 )
 
 var _ messaging.PubSub = (*pubsub)(nil)
@@ -66,6 +75,11 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 
+	var cancelFn func() error
+	if c, ok := handler.(messaging.Canceler); ok {
+		cancelFn = c.Cancel
+	}
+
 	s, ok := ps.subscriptions[id]
 	// If the client exists, check if it's subscribed to the topic and unsubscribe if needed.
 	switch ok {
@@ -83,7 +97,7 @@ func (ps *pubsub) Subscribe(id, topic string, handler messaging.MessageHandler) 
 		s = subscription{
 			client: client,
 			topics: []string{},
-			cancel: handler.Cancel,
+			cancel: cancelFn,
 		}
 	}
 	s.topics = append(s.topics, topic)
@@ -159,7 +173,7 @@ func newClient(address, id string, timeout time.Duration) (mqtt.Client, error) {
 
 	ok := token.WaitTimeout(timeout)
 	if !ok {
-		return nil, messaging.ErrConnect
+		return nil, ErrConnect
 	}
 
 	if token.Error() != nil {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gogo/protobuf/proto"
@@ -25,22 +26,13 @@ const (
 	commandsSuffix = "commands"
 )
 
-// Publisher extends the base messaging.Publisher with alarm and command publishing capabilities.
-type Publisher interface {
-	messaging.Publisher
-	messaging.AlarmPublisher
-	messaging.CommandPublisher
-}
-
-var _ Publisher = (*publisher)(nil)
-
 type publisher struct {
 	conn *broker.Conn
 	js   broker.JetStreamContext
 }
 
 // NewPublisher returns NATS message Publisher.
-func NewPublisher(url string) (Publisher, error) {
+func NewPublisher(url string) (*publisher, error) {
 	conn, js, err := connect(url)
 	if err != nil {
 		return nil, err
@@ -55,15 +47,38 @@ func NewPublisher(url string) (Publisher, error) {
 }
 
 func (pub *publisher) Publish(subject string, msg protomfx.Message) error {
-	return pub.publish(subject, &msg)
+	if err := pub.publish(subject, &msg); err != nil {
+		return errors.Wrap(messaging.ErrPublishMessage, err)
+	}
+	return nil
 }
 
 func (pub *publisher) PublishAlarm(subject string, alarm protomfx.Alarm) error {
-	return pub.publish(subject, &alarm)
+	if err := pub.publish(subject, &alarm); err != nil {
+		return errors.Wrap(messaging.ErrPublishAlarm, err)
+	}
+	return nil
 }
 
 func (pub *publisher) PublishCommand(subject string, cmd protomfx.Command) error {
-	return pub.publish(subject, &cmd)
+	if err := pub.publish(subject, &cmd); err != nil {
+		return errors.Wrap(messaging.ErrPublishCommand, err)
+	}
+	return nil
+}
+
+func (pub *publisher) PublishNotification(subject string, notification protomfx.Notification) error {
+	if err := pub.publish(subject, &notification); err != nil {
+		return errors.Wrap(messaging.ErrPublishNotification, err)
+	}
+	return nil
+}
+
+func (pub *publisher) PublishWebhook(subject string, webhook protomfx.Webhook) error {
+	if err := pub.publish(subject, &webhook); err != nil {
+		return errors.Wrap(messaging.ErrPublishWebhook, err)
+	}
+	return nil
 }
 
 func (pub *publisher) publish(subject string, msg proto.Message) error {
@@ -101,23 +116,32 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// GetPublishSubjects returns the NATS subjects a message should be published to
-// based on the dispatcher flags in the profile config.
-func GetPublishSubjects(thingID, subtopic string, pc *domain.ProfileConfig) []string {
+// Dispatch publishes msg to every subject enabled by pc's dispatcher flags.
+func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
 	}
 
-	var subjects []string
 	if pc.WriteEnabled {
-		subjects = append(subjects, GetMessagesSubject(thingID, subtopic))
-	}
-	if pc.WebhookEnabled {
-		subjects = append(subjects, SubjectWebhooks)
+		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+			return err
+		}
 	}
 	if pc.RuleEnabled {
-		subjects = append(subjects, SubjectRules)
+		if err := pub.Publish(SubjectRules, msg); err != nil {
+			return err
+		}
+	}
+	if pc.WebhookEnabled {
+		webhook := protomfx.Webhook{
+			ThingId: msg.Publisher,
+			Payload: msg.Payload,
+			Created: msg.Created,
+		}
+		if err := pub.PublishWebhook(SubjectWebhooks, webhook); err != nil {
+			return err
+		}
 	}
 
-	return subjects
+	return nil
 }

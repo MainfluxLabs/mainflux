@@ -17,6 +17,7 @@ const (
 	updateThingGroupAndProfile = "update_thing_group_and_profile"
 	retrieveThingByID          = "retrieve_thing_by_id"
 	retrieveThingByKey         = "retrieve_thing_by_key"
+	retrieveGroupIDsByThings   = "retrieve_group_ids_by_things"
 	retrieveThingsByProfile    = "retrieve_things_by_profile"
 	retrieveThingsByGroups     = "retrieve_things_by_groups"
 	removeThing                = "remove_thing"
@@ -80,6 +81,14 @@ func (trm thingRepositoryMiddleware) RetrieveByKey(ctx context.Context, key thin
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return trm.repo.RetrieveByKey(ctx, key)
+}
+
+func (trm thingRepositoryMiddleware) RetrieveGroupIDsByThings(ctx context.Context, ids []string) (map[string]string, error) {
+	span := dbutil.CreateSpan(ctx, trm.tracer, retrieveGroupIDsByThings)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return trm.repo.RetrieveGroupIDsByThings(ctx, ids)
 }
 
 func (trm thingRepositoryMiddleware) RetrieveByGroups(ctx context.Context, ids []string, pm things.PageMetadata) (things.ThingsPage, error) {

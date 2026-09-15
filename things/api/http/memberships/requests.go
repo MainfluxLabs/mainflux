@@ -5,6 +5,7 @@ package memberships
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
 )
@@ -29,7 +30,7 @@ func (req listGroupMembershipsReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, domain.UserOrderFields)
 }
 
 type createGroupMembershipsReq struct {

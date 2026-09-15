@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/api/http/keys"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/memberships"
 	"github.com/MainfluxLabs/mainflux/auth/api/http/orgs"
+	"github.com/MainfluxLabs/mainflux/auth/api/http/sessions"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
@@ -26,6 +27,7 @@ func MakeHandler(svc auth.Service, ac auth.Authn, tracer opentracing.Tracer, log
 	mux = memberships.MakeHandler(svc, ac, mux, tracer, logger)
 	mux = invites.MakeHandler(svc, ac, mux, tracer, logger)
 	mux = backup.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = sessions.MakeHandler(svc, mux, tracer, logger)
 
 	mux.GetFunc("/health", mainflux.Health("auth"))
 	mux.Handle("/metrics", promhttp.Handler())

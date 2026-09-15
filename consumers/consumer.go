@@ -18,50 +18,44 @@ type AlarmConsumer interface {
 	ConsumeAlarm(subject string, alarm protomfx.Alarm) error
 }
 
-// Subscription is a self-contained function that registers a consumer for a given id.
-type Subscription func(id string) error
-
-// Messages returns a Subscription that subscribes consumer to the given subjects as a MessageConsumer.
-func Messages(sub messaging.Subscriber, c MessageConsumer, subjects ...string) Subscription {
-	return func(id string) error {
-		for _, subject := range subjects {
-			if err := sub.Subscribe(id, subject, &messageAdapter{c}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
+// NotificationConsumer specifies an API for consuming protomfx.Notification.
+type NotificationConsumer interface {
+	ConsumeNotification(subject string, notification protomfx.Notification) error
 }
 
-// Alarms returns a Subscription that subscribes consumer as an AlarmConsumer.
-func Alarms(sub messaging.AlarmSubscriber, c AlarmConsumer) Subscription {
-	return func(id string) error {
-		return sub.SubscribeAlarms(id, &alarmAdapter{c})
-	}
+// WebhookConsumer specifies an API for consuming protomfx.Webhook.
+type WebhookConsumer interface {
+	ConsumeWebhook(subject string, webhook protomfx.Webhook) error
 }
 
-// Start wires all provided subscriptions for the given id.
-func Start(id string, subs ...Subscription) error {
-	for _, s := range subs {
-		if err := s(id); err != nil {
+// Messages subscribes the given MessageConsumer to the given subjects.
+func Messages(id string, sub messaging.Subscriber, c MessageConsumer, subjects ...string) error {
+	for _, subject := range subjects {
+		if err := sub.Subscribe(id, subject, messageHandlerFunc(c.ConsumeMessage)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-type messageAdapter struct{ c MessageConsumer }
-
-func (a *messageAdapter) Handle(subject string, msg protomfx.Message) error {
-	return a.c.ConsumeMessage(subject, msg)
+// Alarms subscribes the given AlarmConsumer to alarms.
+func Alarms(id string, sub messaging.AlarmSubscriber, c AlarmConsumer) error {
+	return sub.SubscribeAlarms(id, c.ConsumeAlarm)
 }
 
-func (a *messageAdapter) Cancel() error { return nil }
-
-type alarmAdapter struct{ c AlarmConsumer }
-
-func (a *alarmAdapter) Handle(subject string, alarm protomfx.Alarm) error {
-	return a.c.ConsumeAlarm(subject, alarm)
+// Notifications subscribes the given NotificationConsumer to the given subject.
+func Notifications(id string, sub messaging.NotificationSubscriber, c NotificationConsumer, subject string) error {
+	return sub.SubscribeNotifications(id, subject, c.ConsumeNotification)
 }
 
-func (a *alarmAdapter) Cancel() error { return nil }
+// Webhooks subscribes the given WebhookConsumer to webhook forwarding.
+func Webhooks(id string, sub messaging.WebhookSubscriber, c WebhookConsumer) error {
+	return sub.SubscribeWebhooks(id, c.ConsumeWebhook)
+}
+
+// messageHandlerFunc adapts a ConsumeMessage-shaped function to messaging.MessageHandler.
+type messageHandlerFunc func(subject string, msg protomfx.Message) error
+
+func (f messageHandlerFunc) Handle(subject string, msg protomfx.Message) error {
+	return f(subject, msg)
+}

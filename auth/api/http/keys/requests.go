@@ -20,14 +20,12 @@ type issueKeyReq struct {
 	Duration time.Duration `json:"duration,omitempty"`
 }
 
-// It is not possible to issue Reset key using HTTP API.
 func (req issueKeyReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.Type != auth.LoginKey &&
-		req.Type != auth.RecoveryKey &&
+	if req.Type != auth.RecoveryKey &&
 		req.Type != auth.APIKey {
 		return apiutil.ErrInvalidAPIKey
 	}

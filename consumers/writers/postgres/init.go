@@ -115,6 +115,17 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP INDEX IF EXISTS idx_senml_publisher_time",
 				},
 			},
+			{
+				Id: "messages_7",
+				Up: []string{
+					`ALTER TABLE json ADD COLUMN IF NOT EXISTS payload_hash INTEGER`,
+					`CREATE UNIQUE INDEX IF NOT EXISTS idx_json_dedup ON json(created, publisher, subtopic, payload_hash)`,
+				},
+				Down: []string{
+					"DROP INDEX IF EXISTS idx_json_dedup",
+					"ALTER TABLE json DROP COLUMN IF EXISTS payload_hash",
+				},
+			},
 		},
 	}
 

@@ -15,7 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"golang.org/x/time/rate"
@@ -33,7 +32,6 @@ type PageMetadata struct {
 	URL       string `json:"url,omitempty"`
 	Frequency string `json:"frequency,omitempty"`
 }
-
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -81,12 +79,17 @@ type Service interface {
 	Restore(ctx context.Context, token string, downlinks []Downlink) error
 }
 
+// Publisher specifies the minimal publishing capability the downlinks service needs.
+type Publisher interface {
+	messaging.MessageDispatcher
+}
+
 type downlinksService struct {
 	things     domain.ThingsClient
 	auth       domain.AuthClient
 	downlinks  DownlinkRepository
 	idProvider uuid.IDProvider
-	publisher  messaging.Publisher
+	publisher  Publisher
 	logger     logger.Logger
 	scheduler  *cron.ScheduleManager
 	limiters   map[string]*rate.Limiter
@@ -113,7 +116,7 @@ var (
 
 var _ Service = (*downlinksService)(nil)
 
-func New(things domain.ThingsClient, auth domain.AuthClient, pub messaging.Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, auth domain.AuthClient, pub Publisher, downlinks DownlinkRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &downlinksService{
 		things:     things,
 		auth:       auth,
@@ -219,15 +222,23 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 }
 
 func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, ids ...string) error {
+	dls := make([]Downlink, 0, len(ids))
+	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		downlink, err := ds.downlinks.RetrieveByID(ctx, id)
 		if err != nil {
 			return err
 		}
-		if err := ds.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: downlink.ThingID, Action: domain.GroupEditor}); err != nil {
-			return err
-		}
 
+		dls = append(dls, downlink)
+		thingIDs = append(thingIDs, downlink.ThingID)
+	}
+
+	if err := ds.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	for _, downlink := range dls {
 		ds.unscheduleTask(downlink)
 	}
 
@@ -438,13 +449,7 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, config) {
-		if err := ds.publisher.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return ds.publisher.Dispatch(msg, config)
 }
 
 func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {

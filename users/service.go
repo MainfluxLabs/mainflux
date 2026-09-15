@@ -87,6 +87,10 @@ type Service interface {
 	// identified by the non-nil error values in the response.
 	Login(ctx context.Context, user User) (string, error)
 
+	// RefreshToken issues a new access token to the bearer of a still-valid one,
+	// extending the session without re-sending credentials.
+	RefreshToken(ctx context.Context, token string) (string, error)
+
 	// OAuthLogin returns the URL to initiate OAuth login.
 	OAuthLogin(provider string) (data OAuthLoginData, err error)
 
@@ -429,6 +433,15 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
+}
+
+func (svc usersService) RefreshToken(ctx context.Context, token string) (string, error) {
+	t, err := svc.auth.RefreshToken(ctx, token)
+	if err != nil {
+		return "", errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	return t, nil
 }
 
 func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err error) {
@@ -828,7 +841,11 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	if err != nil {
 		return err
 	}
-	return svc.users.UpdatePassword(ctx, ir.email, password)
+	if err := svc.users.UpdatePassword(ctx, ir.email, password); err != nil {
+		return err
+	}
+
+	return svc.auth.RevokeSessions(ctx, ir.id)
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
@@ -837,7 +854,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
 
-	var userEmail string
+	var userEmail, userID string
 
 	switch {
 	// Admin changes password for another user
@@ -845,9 +862,13 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		if err := svc.isAdmin(ctx, token); err != nil {
 			return err
 		}
+		u, err := svc.users.RetrieveByEmail(ctx, email)
+		if err != nil {
+			return err
+		}
 		userEmail = email
+		userID = u.ID
 
-	// User changes their own password
 	case oldPassword != "" && email == "":
 		u := User{
 			Email:    ir.email,
@@ -857,6 +878,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 			return errors.ErrInvalidPassword
 		}
 		userEmail = ir.email
+		userID = ir.id
 
 	default:
 		return errors.ErrAuthentication
@@ -867,7 +889,11 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return err
 	}
 
-	return svc.users.UpdatePassword(ctx, userEmail, hashedPassword)
+	if err := svc.users.UpdatePassword(ctx, userEmail, hashedPassword); err != nil {
+		return err
+	}
+
+	return svc.auth.RevokeSessions(ctx, userID)
 }
 
 func (svc usersService) SendPasswordReset(_ context.Context, redirectPath, email, token string) error {
@@ -886,7 +912,8 @@ func (svc usersService) DisableUser(ctx context.Context, token, id string) error
 	if err := svc.changeStatus(ctx, token, id, DisabledStatusKey); err != nil {
 		return err
 	}
-	return nil
+
+	return svc.auth.RevokeSessions(ctx, id)
 }
 
 func (svc usersService) changeStatus(ctx context.Context, token, id, status string) error {

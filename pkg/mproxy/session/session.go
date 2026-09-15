@@ -103,6 +103,22 @@ func (s *Session) authorize(pkt packets.ControlPacket) error {
 		p.ClientIdentifier = s.Client.ID
 		p.Username = s.Client.Username
 		p.Password = s.Client.Password
+
+		// A Will is a deferred publish, so it must clear the same authorization a
+		// live publish would. Without this an unauthorized Will topic reaches the
+		// broker, which publishes it on abnormal termination with no check at all.
+		//
+		// Authorize before recording the Will on the Client: a failure here tears
+		// the connection down, and Disconnect must not then mirror an unauthorized
+		// Will onto the internal bus.
+		if p.WillFlag {
+			if err := s.handler.AuthPublish(&s.Client, &p.WillTopic, &p.WillMessage); err != nil {
+				return err
+			}
+			s.Client.WillFlag = true
+			s.Client.WillTopic = p.WillTopic
+			s.Client.WillMessage = p.WillMessage
+		}
 		return nil
 	case *packets.PublishPacket:
 		return s.handler.AuthPublish(&s.Client, &p.TopicName, &p.Payload)
@@ -118,11 +134,18 @@ func (s *Session) notify(pkt packets.ControlPacket) {
 	case *packets.ConnectPacket:
 		s.handler.Connect(&s.Client)
 	case *packets.PublishPacket:
+		// If this publish is a retransmission, don't copy it onto the internal bus.
+		// The packet itself is already forwarded to the broker.
+		if p.Dup {
+			return
+		}
 		s.handler.Publish(&s.Client, &p.TopicName, &p.Payload)
 	case *packets.SubscribePacket:
 		s.handler.Subscribe(&s.Client, &p.Topics)
 	case *packets.UnsubscribePacket:
 		s.handler.Unsubscribe(&s.Client, &p.Topics)
+	case *packets.DisconnectPacket:
+		s.Client.CleanDisconnect = true
 	default:
 		return
 	}

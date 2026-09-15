@@ -33,11 +33,12 @@ func NewOrgMembershipsRepo(db dbutil.Database) auth.OrgMembershipsRepository {
 
 func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID string, pm auth.PageMetadata) (auth.OrgMembershipsPage, error) {
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
-	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships 
-					  WHERE org_id = :org_id %s`, olq)
+	whereClause := dbutil.BuildWhereClause("org_id = :org_id", roleQuery(pm.Role))
+	q := fmt.Sprintf(`SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships %s %s`, whereClause, olq)
 
 	params := map[string]any{
 		"org_id": orgID,
+		"role":   pm.Role,
 		"limit":  pm.Limit,
 		"offset": pm.Offset,
 	}
@@ -58,7 +59,7 @@ func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID str
 		oms = append(oms, toOrgMembership(dbm))
 	}
 
-	cq := `SELECT COUNT(*) FROM org_memberships WHERE org_id = :org_id;`
+	cq := fmt.Sprintf(`SELECT COUNT(*) FROM org_memberships %s;`, whereClause)
 
 	total, err := dbutil.Total(ctx, omr.db, cq, params)
 	if err != nil {
@@ -220,28 +221,12 @@ func (omr orgMembershipsRepository) BackupAll(ctx context.Context) ([]auth.OrgMe
 	return oms, nil
 }
 
-func (omr orgMembershipsRepository) BackupByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
-	q := `SELECT org_id, member_id, role, created_at, updated_at FROM org_memberships WHERE org_id = :org_id;`
-
-	rows, err := omr.db.NamedQueryContext(ctx, q, map[string]any{
-		"org_id": orgID,
-	})
-	if err != nil {
-		return []auth.OrgMembership{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-	defer rows.Close()
-
-	var oms []auth.OrgMembership
-	for rows.Next() {
-		dbom := dbOrgMembership{}
-		if err := rows.StructScan(&dbom); err != nil {
-			return []auth.OrgMembership{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-		}
-
-		oms = append(oms, toOrgMembership(dbom))
+func roleQuery(role string) string {
+	if role == "" {
+		return ""
 	}
 
-	return oms, nil
+	return "role = :role"
 }
 
 type dbOrgMembership struct {

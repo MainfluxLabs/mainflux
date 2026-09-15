@@ -105,7 +105,7 @@ func (req listOrgInvitesByUserReq) validate() error {
 		return apiutil.ErrMissingUserID
 	}
 
-	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize, auth.OrgInviteOrderFields)
 }
 
 type listOrgInvitesByOrgReq struct {
@@ -123,5 +123,5 @@ func (req listOrgInvitesByOrgReq) validate() error {
 		return apiutil.ErrMissingOrgID
 	}
 
-	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pm, maxLimitSize, maxNameSize, auth.OrgInviteOrderFields)
 }

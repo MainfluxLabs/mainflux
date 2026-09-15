@@ -12,8 +12,8 @@ import (
 var errForward = errors.New("failed to forward message")
 
 type Forwarder interface {
-	// Forward method is used to forward the received message to a certain url
-	Forward(ctx context.Context, message protomfx.Message, wh Webhook) error
+	// Forward method is used to forward the received webhook message to a certain url
+	Forward(ctx context.Context, webhook protomfx.Webhook, wh Webhook) error
 }
 
 var _ Forwarder = (*forwarder)(nil)
@@ -24,8 +24,8 @@ func NewForwarder() Forwarder {
 	return &forwarder{}
 }
 
-func (fw *forwarder) Forward(_ context.Context, msg protomfx.Message, wh Webhook) error {
-	if _, err := clientshttp.SendRequest(http.MethodPost, wh.Url, msg.Payload, wh.Headers); err != nil {
+func (fw *forwarder) Forward(_ context.Context, webhook protomfx.Webhook, wh Webhook) error {
+	if _, err := clientshttp.SendRequest(http.MethodPost, wh.Url, webhook.Payload, wh.Headers); err != nil {
 		return errors.Wrap(errForward, err)
 	}
 

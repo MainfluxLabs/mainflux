@@ -30,22 +30,29 @@ type Service interface {
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
 
 	// SendCommandToThing publishes a command to the specified thing, authorized by publisher thing key (M2M).
-	SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error
+	SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error
 
 	// SendCommandToGroup publishes a command to a group, authorized by publisher thing key (M2M).
-	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error
+	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
+}
+
+// PubSub specifies the minimal publish/subscribe capability the CoAP adapter needs.
+type PubSub interface {
+	messaging.CommandPublisher
+	messaging.MessageDispatcher
+	messaging.Subscriber
 }
 
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
 	things  domain.ThingsClient
-	pubsub  messaging.PubSub
+	pubsub  PubSub
 	obsLock sync.Mutex
 }
 
 // New instantiates the CoAP adapter implementation.
-func New(things domain.ThingsClient, pubsub messaging.PubSub) Service {
+func New(things domain.ThingsClient, pubsub PubSub) Service {
 	as := &adapterService{
 		things:  things,
 		pubsub:  pubsub,
@@ -65,13 +72,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return err
 	}
 
-	for _, subject := range nats.GetPublishSubjects(msg.Publisher, msg.Subtopic, pc.ProfileConfig) {
-		if err := svc.pubsub.Publish(subject, msg); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return svc.pubsub.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {
@@ -82,7 +83,7 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
 }
 
-func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, msg protomfx.Message) error {
+func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {
 	res, err := svc.things.Identify(ctx, key)
 	if err != nil {
 		return err
@@ -92,10 +93,12 @@ func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.Th
 		return err
 	}
 
-	return svc.pubsub.Publish(nats.GetThingCommandsSubject(thingID, msg.Subtopic), msg)
+	cmd.Publisher = res
+	cmd.RecipientId = thingID
+	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
 
-func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, msg protomfx.Message) error {
+func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error {
 	thingID, err := svc.things.Identify(ctx, key)
 	if err != nil {
 		return err
@@ -105,7 +108,8 @@ func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.Th
 		return err
 	}
 
-	return svc.pubsub.Publish(nats.GetGroupCommandsSubject(groupID, msg.Subtopic), msg)
+	cmd.Publisher = thingID
+	return svc.pubsub.PublishCommand(nats.GetGroupCommandsSubject(groupID, cmd.Subtopic), cmd)
 }
 
 func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error {

@@ -59,7 +59,7 @@ func (req listOrgsReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, auth.OrgOrderFields)
 }
 
 type orgReq struct {

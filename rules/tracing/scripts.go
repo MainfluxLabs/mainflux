@@ -11,15 +11,10 @@ import (
 const (
 	saveScript                = "save_script"
 	retrieveScriptByID        = "retrieve_script_by_id"
-	retrieveScriptsByThing    = "retrieve_scripts_by_thing"
 	retrieveScriptsByGroup    = "retrieve_scripts_by_group"
-	retrieveThingIDsByScript  = "retrieve_thing_ids_by_script"
 	updateScript              = "update_script"
 	removeScripts             = "remove_scripts"
 	removeScriptsByGroup      = "remove_scripts_by_group"
-	assignScripts             = "assign_scripts"
-	unassignScripts           = "unassign_scripts"
-	unassignScriptsFromThing  = "unassign_scripts_from_thing"
 	saveScriptRuns            = "save_script_runs"
 	retrieveScriptRunsByThing = "retrieve_script_runs_by_thing"
 	removeScriptRuns          = "remove_script_runs"
@@ -42,28 +37,12 @@ func (rpm ruleRepositoryMiddleware) RetrieveScriptByID(ctx context.Context, id s
 	return rpm.repo.RetrieveScriptByID(ctx, id)
 }
 
-func (rpm ruleRepositoryMiddleware) RetrieveScriptsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveScriptsByThing)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.RetrieveScriptsByThing(ctx, thingID, pm)
-}
-
 func (rpm ruleRepositoryMiddleware) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveScriptsByGroup)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.RetrieveScriptsByGroup(ctx, groupID, pm)
-}
-
-func (rpm ruleRepositoryMiddleware) RetrieveThingIDsByScript(ctx context.Context, scriptID string) ([]string, error) {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveThingIDsByScript)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.RetrieveThingIDsByScript(ctx, scriptID)
 }
 
 func (rpm ruleRepositoryMiddleware) UpdateScript(ctx context.Context, script rules.LuaScript) error {
@@ -88,30 +67,6 @@ func (rpm ruleRepositoryMiddleware) RemoveScriptsByGroup(ctx context.Context, gr
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.RemoveScriptsByGroup(ctx, groupID)
-}
-
-func (rpm ruleRepositoryMiddleware) AssignScripts(ctx context.Context, thingID string, scriptIDs ...string) error {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, assignScripts)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.AssignScripts(ctx, thingID, scriptIDs...)
-}
-
-func (rpm ruleRepositoryMiddleware) UnassignScriptsFromThing(ctx context.Context, thingID string) error {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, unassignScriptsFromThing)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.UnassignScriptsFromThing(ctx, thingID)
-}
-
-func (rpm ruleRepositoryMiddleware) UnassignScripts(ctx context.Context, thingID string, scriptIDs ...string) error {
-	span := dbutil.CreateSpan(ctx, rpm.tracer, unassignScripts)
-	defer span.Finish()
-	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	return rpm.repo.UnassignScripts(ctx, thingID, scriptIDs...)
 }
 
 func (rpm ruleRepositoryMiddleware) SaveScriptRuns(ctx context.Context, runs ...rules.ScriptRun) ([]rules.ScriptRun, error) {

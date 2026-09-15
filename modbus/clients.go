@@ -49,6 +49,12 @@ type ClientsPage struct {
 	Clients []Client
 }
 
+// ClientOrderFields maps API-facing order keys to SQL column expressions for the modbus clients table.
+var ClientOrderFields = map[string]string{
+	"id":   "id",
+	"name": "LOWER(name)",
+}
+
 type ClientRepository interface {
 	// Save persists multiple Modbus clients.
 	// Clients are saved using a transaction.

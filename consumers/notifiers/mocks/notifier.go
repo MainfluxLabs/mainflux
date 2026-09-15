@@ -38,7 +38,7 @@ func NewNotifierRepository() notifiers.NotifierRepository {
 	return &notifierRepositoryMock{notifiers: make(map[string]notifiers.Notifier)}
 }
 
-func (n notifier) Send(to []string, _ protomfx.Message) error {
+func (n notifier) Send(to []string, _ protomfx.Notification) error {
 	if len(to) < 1 {
 		return notifiers.ErrNotify
 	}

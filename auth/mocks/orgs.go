@@ -9,7 +9,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
-	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
 
 var _ auth.OrgRepository = (*orgRepositoryMock)(nil)
@@ -109,19 +108,27 @@ func (orm *orgRepositoryMock) RetrieveByMember(ctx context.Context, memberID str
 	defer orm.mu.Unlock()
 
 	members, _ := orm.memberships.BackupAll(ctx)
-	orgs := []auth.Org{}
 
-	first := uint64(pm.Offset) + 1
-	last := first + pm.Limit
+	memberOrgs := make(map[string]bool)
 	for _, m := range members {
-		for _, o := range orm.orgs {
-			if m.MemberID == memberID && m.OrgID == o.ID {
-				id := uuid.ParseID(o.ID)
-				if id >= first && id < last {
-					orgs = append(orgs, orm.orgs[m.OrgID])
-				}
+		if m.MemberID == memberID {
+			memberOrgs[m.OrgID] = true
+		}
+	}
+
+	// Page by position within a stable ID ordering, the way RetrieveByOwner
+	// does, rather than by the numeric value of the ID. The latter only works
+	// while org IDs happen to start at 1, which stops holding as soon as
+	// anything else draws from the same id provider first.
+	orgs := []auth.Org{}
+	i := uint64(0)
+	for _, k := range sortOrgsByID(orm.orgs) {
+		if i >= pm.Offset && i < pm.Offset+pm.Limit {
+			if memberOrgs[k] {
+				orgs = append(orgs, orm.orgs[k])
 			}
 		}
+		i++
 	}
 
 	if pm.Name != "" {

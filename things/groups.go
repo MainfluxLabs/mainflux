@@ -12,6 +12,14 @@ type (
 	GroupPage = domain.GroupPage
 )
 
+// GroupOrderFields maps API-facing order keys to SQL column expressions for the groups table.
+var GroupOrderFields = map[string]string{
+	"id":         "id",
+	"name":       "LOWER(name)",
+	"created_at": "created_at",
+	"updated_at": "updated_at",
+}
+
 // GroupRepository specifies a group persistence API.
 type GroupRepository interface {
 	// Save persists groups.
@@ -99,6 +107,12 @@ type GroupCache interface {
 
 	// RetrieveGroupIDsByMember returns group IDs for given memberID.
 	RetrieveGroupIDsByMember(context.Context, string) ([]string, error)
+
+	// SaveOrg stores org ID by given group ID.
+	SaveOrg(context.Context, string, string) error
+
+	// ViewOrg returns org ID by given group ID.
+	ViewOrg(context.Context, string) (string, error)
 }
 
 func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error) {
@@ -320,8 +334,12 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 		return err
 	}
 
+	return ts.canMemberAccessGroup(ctx, token, user.ID, groupID, action)
+}
+
+func (ts *thingsService) canMemberAccessGroup(ctx context.Context, token, memberID, groupID, action string) error {
 	gm := GroupMembership{
-		MemberID: user.ID,
+		MemberID: memberID,
 		GroupID:  groupID,
 	}
 

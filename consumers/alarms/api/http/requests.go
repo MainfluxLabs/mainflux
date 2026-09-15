@@ -14,17 +14,10 @@ const (
 	maxAlarmLevel = 5
 )
 
-var allowedOrders = map[string]string{
-	"id":      "id",
-	"created": "created",
-	"level":   "level",
-	"status":  "status",
-}
-
 // validatePageMetadata validates the alarms page metadata.
 func validatePageMetadata(pm alarms.PageMetadata) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, allowedOrders); err != nil {
+	if err := common.Validate(maxLimitSize, alarms.AlarmOrderFields); err != nil {
 		return err
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
@@ -92,9 +93,15 @@ func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {
 	return err
 }
 
+type jsonRow struct {
+	mfjson.Message
+	PayloadHash int32 `db:"payload_hash"`
+}
+
 func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
-	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload)
-          VALUES (:created, :subtopic, :publisher, :protocol, :payload);`
+	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload, payload_hash)
+          VALUES (:created, :subtopic, :publisher, :protocol, :payload, :payload_hash)
+          ON CONFLICT (created, publisher, subtopic, payload_hash) DO NOTHING;`
 
 	tx, err := pr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
@@ -116,7 +123,8 @@ func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
 	for _, msg := range msgs {
 		dbmsg := messaging.ToJSONMessage(msg)
 
-		if _, err := tx.NamedExec(q, dbmsg); err != nil {
+		row := jsonRow{Message: dbmsg, PayloadHash: messaging.PayloadHash(dbmsg.Payload)}
+		if _, err := tx.NamedExec(q, row); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
 				switch pgErr.Code {

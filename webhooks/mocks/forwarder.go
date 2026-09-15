@@ -15,6 +15,6 @@ func NewForwarder() webhooks.Forwarder {
 	return &forwarder{}
 }
 
-func (mf *forwarder) Forward(context.Context, protomfx.Message, webhooks.Webhook) error {
+func (mf *forwarder) Forward(context.Context, protomfx.Webhook, webhooks.Webhook) error {
 	return nil
 }

@@ -5,47 +5,43 @@ package mocks
 
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
-	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	"github.com/MainfluxLabs/mainflux/rules"
 )
 
-var _ nats.Publisher = (*mockPublisher)(nil)
+var _ rules.Publisher = (*mockPublisher)(nil)
 
 type mockPublisher struct {
 	fail bool
 }
 
 // NewPublisher returns a mock Publisher that succeeds by default.
-func NewPublisher() nats.Publisher {
+func NewPublisher() rules.Publisher {
 	return &mockPublisher{}
 }
 
 // NewFailingPublisher returns a mock Publisher whose Publish always fails.
-func NewFailingPublisher() nats.Publisher {
+func NewFailingPublisher() rules.Publisher {
 	return &mockPublisher{fail: true}
-}
-
-func (ps *mockPublisher) Publish(string, protomfx.Message) error {
-	if ps.fail {
-		return messaging.ErrPublishMessage
-	}
-	return nil
 }
 
 func (ps *mockPublisher) PublishAlarm(string, protomfx.Alarm) error {
 	if ps.fail {
-		return messaging.ErrPublishMessage
+		return messaging.ErrPublishAlarm
 	}
 	return nil
 }
 
-func (ps *mockPublisher) PublishCommand(string, protomfx.Command) error {
+func (ps *mockPublisher) PublishNotification(string, protomfx.Notification) error {
 	if ps.fail {
-		return messaging.ErrPublishMessage
+		return messaging.ErrPublishNotification
 	}
 	return nil
 }
 
-func (ps *mockPublisher) Close() error {
+func (ps *mockPublisher) PublishWebhook(string, protomfx.Webhook) error {
+	if ps.fail {
+		return messaging.ErrPublishWebhook
+	}
 	return nil
 }

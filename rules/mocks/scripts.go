@@ -34,34 +34,6 @@ func (rrm *ruleRepositoryMock) RetrieveScriptByID(_ context.Context, id string) 
 	return s, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveScriptsByThing(_ context.Context, thingID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	scriptIDs := rrm.scriptAssignments[thingID]
-	var all, items []rules.LuaScript
-
-	first := uint64(pm.Offset) + 1
-	last := first + pm.Limit
-
-	for _, sID := range scriptIDs {
-		s, ok := rrm.scripts[sID]
-		if !ok {
-			continue
-		}
-		all = append(all, s)
-		id := uuid.ParseID(s.ID)
-		if pm.Limit == 0 || (id >= first && id < last) {
-			items = append(items, s)
-		}
-	}
-
-	return rules.LuaScriptsPage{
-		Total:   uint64(len(all)),
-		Scripts: items,
-	}, nil
-}
-
 func (rrm *ruleRepositoryMock) RetrieveScriptsByGroup(_ context.Context, groupID string, pm rules.PageMetadata) (rules.LuaScriptsPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
@@ -84,23 +56,6 @@ func (rrm *ruleRepositoryMock) RetrieveScriptsByGroup(_ context.Context, groupID
 		Total:   uint64(len(all)),
 		Scripts: items,
 	}, nil
-}
-
-func (rrm *ruleRepositoryMock) RetrieveThingIDsByScript(_ context.Context, scriptID string) ([]string, error) {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	var thingIDs []string
-	for thingID, sIDs := range rrm.scriptAssignments {
-		for _, sID := range sIDs {
-			if sID == scriptID {
-				thingIDs = append(thingIDs, thingID)
-				break
-			}
-		}
-	}
-
-	return thingIDs, nil
 }
 
 func (rrm *ruleRepositoryMock) UpdateScript(_ context.Context, script rules.LuaScript) error {
@@ -136,53 +91,6 @@ func (rrm *ruleRepositoryMock) RemoveScriptsByGroup(_ context.Context, groupID s
 			delete(rrm.scripts, id)
 		}
 	}
-
-	return nil
-}
-
-func (rrm *ruleRepositoryMock) AssignScripts(_ context.Context, thingID string, scriptIDs ...string) error {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	existing := make(map[string]struct{})
-	for _, id := range rrm.scriptAssignments[thingID] {
-		existing[id] = struct{}{}
-	}
-
-	for _, id := range scriptIDs {
-		if _, ok := existing[id]; !ok {
-			rrm.scriptAssignments[thingID] = append(rrm.scriptAssignments[thingID], id)
-		}
-	}
-
-	return nil
-}
-
-func (rrm *ruleRepositoryMock) UnassignScripts(_ context.Context, thingID string, scriptIDs ...string) error {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	remove := make(map[string]struct{})
-	for _, id := range scriptIDs {
-		remove[id] = struct{}{}
-	}
-
-	var remaining []string
-	for _, id := range rrm.scriptAssignments[thingID] {
-		if _, ok := remove[id]; !ok {
-			remaining = append(remaining, id)
-		}
-	}
-	rrm.scriptAssignments[thingID] = remaining
-
-	return nil
-}
-
-func (rrm *ruleRepositoryMock) UnassignScriptsFromThing(_ context.Context, thingID string) error {
-	rrm.mu.Lock()
-	defer rrm.mu.Unlock()
-
-	delete(rrm.scriptAssignments, thingID)
 
 	return nil
 }

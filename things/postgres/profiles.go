@@ -144,7 +144,7 @@ func (pr profileRepository) BackupAll(ctx context.Context) ([]things.Profile, er
 }
 
 func (pr profileRepository) RetrieveAll(ctx context.Context, pm things.PageMetadata) (things.ProfilesPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, things.ProfileOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	nq, name := dbutil.GetNameQuery(pm.Name)
@@ -235,7 +235,7 @@ func (pr profileRepository) RetrieveByGroups(ctx context.Context, groupIDs []str
 		return things.ProfilesPage{}, nil
 	}
 
-	oq := dbutil.GetOrderQuery(pm.Order)
+	oq := dbutil.GetOrderQuery(pm.Order, things.ProfileOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 	giq := dbutil.GetGroupIDsQuery(groupIDs)

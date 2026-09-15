@@ -31,10 +31,10 @@ func sendCommandToThingEndpoint(svc http.Service) endpoint.Endpoint {
 		}
 
 		if req.thingKey.Value != "" {
-			return nil, svc.SendCommandToThingByKey(ctx, req.thingKey, req.id, req.msg)
+			return nil, svc.SendCommandToThingByKey(ctx, req.thingKey, req.id, req.cmd)
 		}
 
-		return nil, svc.SendCommandToThing(ctx, req.token, req.id, req.msg)
+		return nil, svc.SendCommandToThing(ctx, req.token, req.id, req.cmd)
 	}
 }
 
@@ -47,9 +47,9 @@ func sendCommandToGroupEndpoint(svc http.Service) endpoint.Endpoint {
 		}
 
 		if req.thingKey.Value != "" {
-			return nil, svc.SendCommandToGroupByKey(ctx, req.thingKey, req.id, req.msg)
+			return nil, svc.SendCommandToGroupByKey(ctx, req.thingKey, req.id, req.cmd)
 		}
 
-		return nil, svc.SendCommandToGroup(ctx, req.token, req.id, req.msg)
+		return nil, svc.SendCommandToGroup(ctx, req.token, req.id, req.cmd)
 	}
 }
