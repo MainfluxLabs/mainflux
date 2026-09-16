@@ -27,7 +27,7 @@ var (
 	// ErrFailedHandleMessage indicates that the message couldn't be handled.
 	errFailedHandleMessage = errors.New("failed to handle mainflux message")
 
-	pubID                                      = "pid"
+	thingID                                    = "pid"
 	clientID1, clientID2, clientID3, clientID4 = "cid1", "cid2", "cid3", "cid4"
 	data                                       = []byte(`{"test":"payload"}`)
 )
@@ -36,7 +36,7 @@ func TestPublisher(t *testing.T) {
 	msgChan := make(chan []byte)
 
 	// Subscribing with topic, and with subtopic, so that we can publish messages.
-	client, err := newClient(address, pubID, brokerTimeout)
+	client, err := newClient(address, thingID, brokerTimeout)
 	assert.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	token := client.Subscribe(topic, qos, func(c mqtt.Client, m mqtt.Message) {
@@ -86,7 +86,7 @@ func TestPublisher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		msg := protomfx.Message{
-			ThingID: pubID,
+			ThingID: thingID,
 			Payload: tc.payload,
 		}
 
@@ -176,7 +176,7 @@ func TestSubscribe(t *testing.T) {
 
 		if tc.err == nil {
 			msg := protomfx.Message{
-				ThingID:  pubID,
+				ThingID:  thingID,
 				Subtopic: subtopic,
 				Payload:  data,
 			}
@@ -251,7 +251,7 @@ func TestPubSub(t *testing.T) {
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
 			msg := protomfx.Message{
-				ThingID:  pubID,
+				ThingID:  thingID,
 				Subtopic: subtopic,
 				Payload:  data,
 			}
@@ -416,13 +416,13 @@ func TestUnsubscribe(t *testing.T) {
 }
 
 type handler struct {
-	fail      bool
-	publisher string
-	msgChan   chan protomfx.Message
+	fail    bool
+	thingID string
+	msgChan chan protomfx.Message
 }
 
 func (h handler) Handle(_ string, msg protomfx.Message) error {
-	if msg.ThingID != h.publisher {
+	if msg.ThingID != h.thingID {
 		h.msgChan <- msg
 	}
 	return nil
