@@ -38,7 +38,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m := protomfx.Message{
-		ThingID:     id1,
+		ThingId:     id1,
 		Subtopic:    subtopic,
 		Protocol:    coapProt,
 		Payload:     payload,
@@ -64,7 +64,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m2 := protomfx.Message{
-		ThingID:     id2,
+		ThingId:     id2,
 		Subtopic:    subtopic,
 		Protocol:    udpProt,
 		Payload:     payload2,
@@ -153,7 +153,7 @@ func toMap(msg protomfx.Message) (map[string]any, error) {
 	return map[string]any{
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
-		"publisher": msg.ThingID,
+		"publisher": msg.ThingId,
 		"protocol":  msg.Protocol,
 		"payload":   payload,
 	}, nil

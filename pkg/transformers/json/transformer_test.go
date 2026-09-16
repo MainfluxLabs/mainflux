@@ -42,7 +42,7 @@ func TestTransformJSON(t *testing.T) {
 
 	msg := protomfx.Message{
 		Subtopic: subtopic,
-		ThingID:  "publisher-1",
+		ThingId:  "publisher-1",
 		Protocol: "protocol",
 		Payload:  []byte(validPayload),
 		Created:  now,
@@ -79,7 +79,7 @@ func TestTransformJSON(t *testing.T) {
 	msgs := []protomfx.Message{
 		{
 			Subtopic: subtopic,
-			ThingID:  msg.ThingID,
+			ThingId:  msg.ThingId,
 			Protocol: msg.Protocol,
 			Created:  msg.Created,
 			Payload:  payload,
@@ -89,7 +89,7 @@ func TestTransformJSON(t *testing.T) {
 	tsMsgs := []protomfx.Message{
 		{
 			Subtopic: subtopic,
-			ThingID:  msg.ThingID,
+			ThingId:  msg.ThingId,
 			Protocol: msg.Protocol,
 			Created:  int64(1638310819000000000),
 			Payload:  payload,
@@ -99,7 +99,7 @@ func TestTransformJSON(t *testing.T) {
 	microsMsgs := []protomfx.Message{
 		{
 			Subtopic: subtopic,
-			ThingID:  msg.ThingID,
+			ThingId:  msg.ThingId,
 			Protocol: msg.Protocol,
 			Created:  int64(1638310819000000000),
 			Payload:  payload,
@@ -109,14 +109,14 @@ func TestTransformJSON(t *testing.T) {
 	listMsgs := []protomfx.Message{
 		{
 			Subtopic: subtopic,
-			ThingID:  msg.ThingID,
+			ThingId:  msg.ThingId,
 			Protocol: msg.Protocol,
 			Created:  msg.Created,
 			Payload:  payload,
 		},
 		{
 			Subtopic: subtopic,
-			ThingID:  msg.ThingID,
+			ThingId:  msg.ThingId,
 			Protocol: msg.Protocol,
 			Created:  msg.Created,
 			Payload:  payload,

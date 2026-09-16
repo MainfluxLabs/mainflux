@@ -35,7 +35,7 @@ const (
 )
 
 var msg = protomfx.Message{
-	ThingID:  thingID,
+	ThingId:  thingID,
 	Protocol: protocol,
 	Payload:  []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }

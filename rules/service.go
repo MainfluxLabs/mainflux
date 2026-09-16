@@ -396,7 +396,7 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		return err
 	}
 
-	page, err := rs.rules.RetrieveByThing(ctx, msg.ThingID, PageMetadata{InputType: InputTypeMessage})
+	page, err := rs.rules.RetrieveByThing(ctx, msg.ThingId, PageMetadata{InputType: InputTypeMessage})
 	if err != nil {
 		return err
 	}
@@ -436,7 +436,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 	}
 
 	msg := protomfx.Message{
-		ThingID:  alarm.ThingId,
+		ThingId:  alarm.ThingId,
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Created:  alarm.Created,
@@ -463,7 +463,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			case ActionTypeSMTP, ActionTypeSMPP:
 				subject := fmt.Sprintf("%s.%s", action.Type, action.ID)
 				notification := protomfx.Notification{
-					ThingId:  msg.ThingID,
+					ThingId:  msg.ThingId,
 					Subtopic: msg.Subtopic,
 					Protocol: msg.Protocol,
 					Payload:  msg.Payload,
@@ -472,7 +472,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:
 				webhook := protomfx.Webhook{
-					ThingId: msg.ThingID,
+					ThingId: msg.ThingId,
 					Payload: msg.Payload,
 					Created: msg.Created,
 				}

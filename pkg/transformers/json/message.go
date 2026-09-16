@@ -38,7 +38,7 @@ func (msg Message) ToProtoMessage() protomfx.Message {
 	return protomfx.Message{
 		Created:  msg.Created,
 		Subtopic: msg.Subtopic,
-		ThingID:  msg.Publisher,
+		ThingId:  msg.Publisher,
 		Protocol: msg.Protocol,
 		Payload:  msg.Payload,
 	}

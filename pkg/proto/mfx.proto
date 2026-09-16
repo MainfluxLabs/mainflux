@@ -8,7 +8,7 @@ package protomfx;
 import "google/protobuf/empty.proto";
 
 message Message {
-    string thingID      = 1;
+    string thing_id     = 1;
     string subtopic     = 2;
     bytes payload       = 3;
     string content_type = 4;

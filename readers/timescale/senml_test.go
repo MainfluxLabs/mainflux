@@ -114,7 +114,7 @@ func TestListSenMLMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			ThingID:     m.Publisher,
+			ThingId:     m.Publisher,
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,

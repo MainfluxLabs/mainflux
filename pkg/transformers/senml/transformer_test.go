@@ -26,7 +26,7 @@ func TestTransformJSON(t *testing.T) {
 
 	msg := protomfx.Message{
 		Subtopic:    "subtopic",
-		ThingID:     "publisher",
+		ThingId:     "publisher",
 		Protocol:    "protocol",
 		Payload:     jsonBytes,
 		ContentType: senml.JSON,
@@ -51,7 +51,7 @@ func TestTransformJSON(t *testing.T) {
 	msgs := []protomfx.Message{
 		{
 			Subtopic:    "subtopic",
-			ThingID:     "publisher",
+			ThingId:     "publisher",
 			Protocol:    "protocol",
 			Payload:     payload,
 			ContentType: senml.JSON,
@@ -91,7 +91,7 @@ func TestTransformCBOR(t *testing.T) {
 
 	msg := protomfx.Message{
 		Subtopic:    "subtopic",
-		ThingID:     "publisher",
+		ThingId:     "publisher",
 		Protocol:    "protocol",
 		Payload:     cborBytes,
 		ContentType: senml.CBOR,
@@ -121,7 +121,7 @@ func TestTransformCBOR(t *testing.T) {
 	msgs := []protomfx.Message{
 		{
 			Subtopic:    "subtopic",
-			ThingID:     "publisher",
+			ThingId:     "publisher",
 			Protocol:    "protocol",
 			Payload:     payload,
 			ContentType: senml.CBOR,

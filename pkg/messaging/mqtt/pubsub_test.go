@@ -86,7 +86,7 @@ func TestPublisher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		msg := protomfx.Message{
-			ThingID: thingID,
+			ThingId: thingID,
 			Payload: tc.payload,
 		}
 
@@ -176,7 +176,7 @@ func TestSubscribe(t *testing.T) {
 
 		if tc.err == nil {
 			msg := protomfx.Message{
-				ThingID:  thingID,
+				ThingId:  thingID,
 				Subtopic: subtopic,
 				Payload:  data,
 			}
@@ -251,7 +251,7 @@ func TestPubSub(t *testing.T) {
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
 			msg := protomfx.Message{
-				ThingID:  thingID,
+				ThingId:  thingID,
 				Subtopic: subtopic,
 				Payload:  data,
 			}
@@ -422,7 +422,7 @@ type handler struct {
 }
 
 func (h handler) Handle(_ string, msg protomfx.Message) error {
-	if msg.ThingID != h.thingID {
+	if msg.ThingId != h.thingID {
 		h.msgChan <- msg
 	}
 	return nil

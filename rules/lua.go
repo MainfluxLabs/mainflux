@@ -173,7 +173,7 @@ func (env *luaEnv) execute() (ScriptRun, error) {
 	run := ScriptRun{
 		ID:        id,
 		ScriptID:  env.script.ID,
-		ThingID:   env.message.ThingID,
+		ThingID:   env.message.ThingId,
 		StartedAt: time.Now(),
 		Status:    ScriptRunStatusSuccess,
 	}
@@ -201,7 +201,7 @@ func pushMfxMessageTable(ls *lua.State, message *protomfx.Message, payload map[s
 	msgTable := map[string]any{
 		"subtopic":     message.Subtopic,
 		"created":      message.Created,
-		"publisher_id": message.ThingID,
+		"publisher_id": message.ThingId,
 		"payload":      payload,
 	}
 

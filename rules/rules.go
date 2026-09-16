@@ -87,7 +87,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 				return err
 			}
 			if err := rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
-				ThingId:  msg.ThingID,
+				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Created:  msg.Created,
@@ -99,7 +99,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			}
 		case ActionTypeSMTP, ActionTypeSMPP:
 			notification := protomfx.Notification{
-				ThingId:  msg.ThingID,
+				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Payload:  msg.Payload,
@@ -110,7 +110,7 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 			}
 		case ActionTypeWebhook:
 			webhook := protomfx.Webhook{
-				ThingId: msg.ThingID,
+				ThingId: msg.ThingId,
 				Payload: msg.Payload,
 				Created: msg.Created,
 			}

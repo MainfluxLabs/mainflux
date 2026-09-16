@@ -118,7 +118,7 @@ func TestListSenMLMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			ThingID:     m.Publisher,
+			ThingId:     m.Publisher,
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
@@ -481,7 +481,7 @@ func TestSenMLAggregation(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		err = writer.ConsumeMessage(subject, protomfx.Message{
-			ThingID:     pubID,
+			ThingId:     pubID,
 			Protocol:    mqttProt,
 			ContentType: senml.JSON,
 			Payload:     payload,
@@ -600,7 +600,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			ThingID:     m.Publisher,
+			ThingId:     m.Publisher,
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
@@ -718,7 +718,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 			pm := protomfx.Message{
-				ThingID:     m.Publisher,
+				ThingId:     m.Publisher,
 				Subtopic:    m.Subtopic,
 				Protocol:    m.Protocol,
 				ContentType: senml.JSON,
