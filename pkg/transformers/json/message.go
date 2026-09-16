@@ -36,10 +36,10 @@ func (msg Message) ToMap() (map[string]any, error) {
 
 func (msg Message) ToProtoMessage() protomfx.Message {
 	return protomfx.Message{
-		Created:   msg.Created,
-		Subtopic:  msg.Subtopic,
-		Publisher: msg.Publisher,
-		Protocol:  msg.Protocol,
-		Payload:   msg.Payload,
+		Created:  msg.Created,
+		Subtopic: msg.Subtopic,
+		ThingID:  msg.Publisher,
+		Protocol: msg.Protocol,
+		Payload:  msg.Payload,
 	}
 }

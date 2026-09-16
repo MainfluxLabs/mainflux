@@ -35,9 +35,9 @@ const (
 )
 
 var msg = protomfx.Message{
-	Publisher: thingID,
-	Protocol:  protocol,
-	Payload:   []byte(`[{"n":"current","t":-5,"v":1.2}]`),
+	ThingID:  thingID,
+	Protocol: protocol,
+	Payload:  []byte(`[{"n":"current","t":-5,"v":1.2}]`),
 }
 
 var cmd = protomfx.Command{

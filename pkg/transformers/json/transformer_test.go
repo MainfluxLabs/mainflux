@@ -41,11 +41,11 @@ func TestTransformJSON(t *testing.T) {
 	now := time.Now().UnixNano()
 
 	msg := protomfx.Message{
-		Subtopic:  subtopic,
-		Publisher: "publisher-1",
-		Protocol:  "protocol",
-		Payload:   []byte(validPayload),
-		Created:   now,
+		Subtopic: subtopic,
+		ThingID:  "publisher-1",
+		Protocol: "protocol",
+		Payload:  []byte(validPayload),
+		Created:  now,
 	}
 	invalid := msg
 	invalid.Payload = []byte(invalidPayload)
@@ -78,48 +78,48 @@ func TestTransformJSON(t *testing.T) {
 
 	msgs := []protomfx.Message{
 		{
-			Subtopic:  subtopic,
-			Publisher: msg.Publisher,
-			Protocol:  msg.Protocol,
-			Created:   msg.Created,
-			Payload:   payload,
+			Subtopic: subtopic,
+			ThingID:  msg.ThingID,
+			Protocol: msg.Protocol,
+			Created:  msg.Created,
+			Payload:  payload,
 		},
 	}
 
 	tsMsgs := []protomfx.Message{
 		{
-			Subtopic:  subtopic,
-			Publisher: msg.Publisher,
-			Protocol:  msg.Protocol,
-			Created:   int64(1638310819000000000),
-			Payload:   payload,
+			Subtopic: subtopic,
+			ThingID:  msg.ThingID,
+			Protocol: msg.Protocol,
+			Created:  int64(1638310819000000000),
+			Payload:  payload,
 		},
 	}
 
 	microsMsgs := []protomfx.Message{
 		{
-			Subtopic:  subtopic,
-			Publisher: msg.Publisher,
-			Protocol:  msg.Protocol,
-			Created:   int64(1638310819000000000),
-			Payload:   payload,
+			Subtopic: subtopic,
+			ThingID:  msg.ThingID,
+			Protocol: msg.Protocol,
+			Created:  int64(1638310819000000000),
+			Payload:  payload,
 		},
 	}
 
 	listMsgs := []protomfx.Message{
 		{
-			Subtopic:  subtopic,
-			Publisher: msg.Publisher,
-			Protocol:  msg.Protocol,
-			Created:   msg.Created,
-			Payload:   payload,
+			Subtopic: subtopic,
+			ThingID:  msg.ThingID,
+			Protocol: msg.Protocol,
+			Created:  msg.Created,
+			Payload:  payload,
 		},
 		{
-			Subtopic:  subtopic,
-			Publisher: msg.Publisher,
-			Protocol:  msg.Protocol,
-			Created:   msg.Created,
-			Payload:   payload,
+			Subtopic: subtopic,
+			ThingID:  msg.ThingID,
+			Protocol: msg.Protocol,
+			Created:  msg.Created,
+			Payload:  payload,
 		},
 	}
 

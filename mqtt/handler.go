@@ -259,7 +259,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
 	cmd := protomfx.Command{
-		Publisher:   msg.Publisher,
+		Publisher:   msg.ThingID,
 		Subtopic:    msg.Subtopic,
 		Payload:     msg.Payload,
 		RecipientId: extractRecipient(subject),

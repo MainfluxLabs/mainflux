@@ -105,7 +105,7 @@ func TestConsumeMessage(t *testing.T) {
 			conditions: defaultConditions,
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(30)}),
 				ContentType: "application/json",
 			},
@@ -116,7 +116,7 @@ func TestConsumeMessage(t *testing.T) {
 			conditions: defaultConditions,
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(20)}),
 				ContentType: "application/json",
 			},
@@ -127,7 +127,7 @@ func TestConsumeMessage(t *testing.T) {
 			conditions: defaultConditions,
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher: thingID,
+				ThingID: thingID,
 				Payload: mustMarshal(t, []any{
 					map[string]any{"temperature": float64(30)},
 					map[string]any{"temperature": float64(10)},
@@ -141,7 +141,7 @@ func TestConsumeMessage(t *testing.T) {
 			conditions: defaultConditions,
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher: thingID,
+				ThingID: thingID,
 				Payload: mustMarshal(t, []any{
 					map[string]any{"name": "temperature", "value": float64(30)},
 				}),
@@ -158,7 +158,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(10)}),
 				ContentType: "application/json",
 			},
@@ -172,7 +172,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(10)}),
 				ContentType: "application/json",
 			},
@@ -186,7 +186,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorOR,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(10)}),
 				ContentType: "application/json",
 			},
@@ -200,7 +200,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorOR,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(25)}),
 				ContentType: "application/json",
 			},
@@ -214,7 +214,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25)}),
 				ContentType: "application/json",
 			},
@@ -227,7 +227,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25)}),
 				ContentType: "application/json",
 			},
@@ -240,7 +240,7 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				Publisher:   thingID,
+				ThingID:     thingID,
 				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25)}),
 				ContentType: "application/json",
 			},

@@ -150,7 +150,7 @@ func encodeListSenMLMessagesResponse(_ context.Context, grpcRes any) (any, error
 			continue
 		}
 		msgs = append(msgs, &protomfx.Message{
-			Publisher:   sm.Publisher,
+			ThingID:     sm.Publisher,
 			Subtopic:    sm.Subtopic,
 			Protocol:    sm.Protocol,
 			Payload:     payload,

@@ -63,7 +63,7 @@ func TestSaveSenML(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			Publisher:   pubid.String(),
+			ThingID:     pubid.String(),
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
 			Payload:     payload,
@@ -96,7 +96,7 @@ func TestSaveJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pm := protomfx.Message{
-		Publisher:   pubid.String(),
+		ThingID:     pubid.String(),
 		Created:     time.Now().Unix(),
 		Subtopic:    subtopic,
 		Protocol:    mqttProt,

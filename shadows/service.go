@@ -114,21 +114,21 @@ func (ss *shadowsService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	}
 
 	ctx := context.Background()
-	current, err := ss.shadows.RetrieveByThing(ctx, msg.Publisher)
+	current, err := ss.shadows.RetrieveByThing(ctx, msg.ThingID)
 	if err != nil {
 		return err
 	}
 
 	merged, changed := mergeState(current.Reported, patch)
 	if changed {
-		if err := ss.shadows.UpsertReportedState(ctx, msg.Publisher, merged, time.Now().Unix()); err != nil {
+		if err := ss.shadows.UpsertReportedState(ctx, msg.ThingID, merged, time.Now().Unix()); err != nil {
 			return err
 		}
 	}
 
 	if delta := computeDelta(current.Desired, merged); len(delta) > 0 {
-		if err := ss.publish(msg.Publisher, delta); err != nil {
-			ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", msg.Publisher, err))
+		if err := ss.publish(msg.ThingID, delta); err != nil {
+			ss.logger.Warn(fmt.Sprintf("failed to push delta to thing %s: %s", msg.ThingID, err))
 		}
 	}
 

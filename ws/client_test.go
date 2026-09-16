@@ -73,7 +73,7 @@ func TestHandle(t *testing.T) {
 	}{
 		{
 			desc:            "handling with different id from ws.Client",
-			publisher:       msg.Publisher,
+			publisher:       msg.ThingID,
 			expectedPayload: msg.Payload,
 			expectMsg:       true,
 		},
@@ -86,7 +86,7 @@ func TestHandle(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		msg.Publisher = tc.publisher
+		msg.ThingID = tc.publisher
 		err = c.Handle(subject, msg)
 		assert.Nil(t, err, fmt.Sprintf("expected nil error from handle, got: %s", err))
 		receivedMsg := []byte{}

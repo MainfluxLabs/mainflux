@@ -86,8 +86,8 @@ func TestPublisher(t *testing.T) {
 	}
 	for _, tc := range cases {
 		msg := protomfx.Message{
-			Publisher: pubID,
-			Payload:   tc.payload,
+			ThingID: pubID,
+			Payload: tc.payload,
 		}
 
 		err := pubsub.Publish(tc.subject, msg)
@@ -176,9 +176,9 @@ func TestSubscribe(t *testing.T) {
 
 		if tc.err == nil {
 			msg := protomfx.Message{
-				Publisher: pubID,
-				Subtopic:  subtopic,
-				Payload:   data,
+				ThingID:  pubID,
+				Subtopic: subtopic,
+				Payload:  data,
 			}
 			expectedJSON := messaging.ToJSONMessage(msg)
 			payload, err := json.Marshal(expectedJSON)
@@ -251,9 +251,9 @@ func TestPubSub(t *testing.T) {
 		if tc.err == nil {
 			// Use pubsub to subscribe to a topic, and then publish messages to that topic.
 			msg := protomfx.Message{
-				Publisher: pubID,
-				Subtopic:  subtopic,
-				Payload:   data,
+				ThingID:  pubID,
+				Subtopic: subtopic,
+				Payload:  data,
 			}
 
 			err := pubsub.Publish(topic, msg)
@@ -422,7 +422,7 @@ type handler struct {
 }
 
 func (h handler) Handle(_ string, msg protomfx.Message) error {
-	if msg.Publisher != h.publisher {
+	if msg.ThingID != h.publisher {
 		h.msgChan <- msg
 	}
 	return nil

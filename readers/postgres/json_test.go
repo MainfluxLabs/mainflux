@@ -43,7 +43,7 @@ func TestListJSONMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m := protomfx.Message{
-		Publisher:   id1,
+		ThingID:     id1,
 		Subtopic:    subtopic,
 		Protocol:    coapProt,
 		Payload:     payload,
@@ -69,7 +69,7 @@ func TestListJSONMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m2 := protomfx.Message{
-		Publisher:   id2,
+		ThingID:     id2,
 		Subtopic:    subtopic,
 		Protocol:    udpProt,
 		Payload:     payload2,
@@ -161,7 +161,7 @@ func TestJSONAggregation(t *testing.T) {
 	now := time.Now().Unix()
 	for i := 0; i < 10; i++ {
 		msg := protomfx.Message{
-			Publisher:   pubID,
+			ThingID:     pubID,
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
 			Payload:     payload,
@@ -253,7 +253,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m := protomfx.Message{
-		Publisher:   id1,
+		ThingID:     id1,
 		Subtopic:    subtopic,
 		Protocol:    coapProt,
 		Payload:     payload,
@@ -279,7 +279,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	m2 := protomfx.Message{
-		Publisher:   id2,
+		ThingID:     id2,
 		Subtopic:    subtopic,
 		Protocol:    udpProt,
 		Payload:     payload2,
@@ -439,7 +439,7 @@ func toMap(msg protomfx.Message) (map[string]any, error) {
 	return map[string]any{
 		"created":   msg.Created,
 		"subtopic":  msg.Subtopic,
-		"publisher": msg.Publisher,
+		"publisher": msg.ThingID,
 		"protocol":  msg.Protocol,
 		"payload":   payload,
 	}, nil
