@@ -161,6 +161,21 @@ func migrateDB(db *sqlx.DB) error {
 					);`,
 				},
 			},
+			{
+				// Backfills the "type" field on conditions created before script conditions
+				// existed, when every condition was implicitly a threshold condition.
+				Id: "rules_9",
+				Up: []string{
+					`UPDATE rules
+					 SET conditions = (
+						 SELECT jsonb_agg(elem || jsonb_build_object('type', COALESCE(elem->>'type', 'threshold')))
+						 FROM jsonb_array_elements(conditions) AS elem
+					 )
+					 WHERE EXISTS (
+						 SELECT 1 FROM jsonb_array_elements(conditions) AS elem WHERE NOT (elem ? 'type')
+					 )`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
