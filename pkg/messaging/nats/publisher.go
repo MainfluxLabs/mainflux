@@ -123,7 +123,7 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 	}
 
 	if pc.WriteEnabled {
-		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+		if err := pub.Publish(GetMessagesSubject(msg.ThingId, msg.Subtopic), msg); err != nil {
 			return err
 		}
 	}
@@ -134,7 +134,7 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 	}
 	if pc.WebhookEnabled {
 		webhook := protomfx.Webhook{
-			ThingId: msg.Publisher,
+			ThingId: msg.ThingId,
 			Payload: msg.Payload,
 			Created: msg.Created,
 		}

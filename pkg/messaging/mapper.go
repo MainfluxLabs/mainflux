@@ -24,7 +24,7 @@ const (
 var ErrInvalidContentType = errors.New("invalid content type")
 
 func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
-	msg.Publisher = pc.PublisherID
+	msg.ThingId = pc.PublisherID
 	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {
@@ -58,7 +58,7 @@ func ToJSONMessage(message protomfx.Message) mfjson.Message {
 	return mfjson.Message{
 		Created:   created,
 		Subtopic:  message.Subtopic,
-		Publisher: message.Publisher,
+		Publisher: message.ThingId,
 		Protocol:  message.Protocol,
 		Payload:   payload,
 	}
@@ -103,7 +103,7 @@ func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
 		return senml.Message{}, err
 	}
 
-	msg.Publisher = message.Publisher
+	msg.Publisher = message.ThingId
 	msg.Subtopic = message.Subtopic
 	msg.Protocol = message.Protocol
 
