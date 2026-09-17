@@ -59,6 +59,14 @@ type Service interface {
 	// ViewClient retrieves data about a client identified with the provided ID.
 	ViewClient(ctx context.Context, token, id string) (Client, error)
 
+	// ReadClient performs an immediate, one-off read of a client's configured
+	// data fields over Modbus and returns the decoded values, bypassing the scheduler.
+	ReadClient(ctx context.Context, token, id string) (map[string]any, error)
+
+	// WriteClient performs an immediate, one-off write of a single register or coil
+	// on the client's device, bypassing the scheduler.
+	WriteClient(ctx context.Context, token, id string, req WriteRequest) error
+
 	// UpdateClient updates client identified by the provided ID.
 	UpdateClient(ctx context.Context, token string, client Client) error
 
@@ -121,6 +129,9 @@ var (
 	errGetConnection  = "failed to get connection"
 	errEmptyResponse  = "empty response payload"
 	errNotEnoughBytes = "not enough bytes to read"
+
+	errInvalidWriteValue    = "invalid write value"
+	errUnsupportedWriteType = "unsupported write type"
 )
 
 type Block struct {
@@ -227,6 +238,67 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 	}
 
 	return client, nil
+}
+
+func (cs *clientsService) ReadClient(ctx context.Context, token, id string) (map[string]any, error) {
+	client, handler, err := cs.connectAuthorized(ctx, token, id, domain.GroupViewer)
+	if err != nil {
+		return nil, err
+	}
+
+	maxLen := getBlockMaxLen(client.FunctionCode)
+	blocks := createBlocks(client.DataFields, maxLen)
+
+	data, err := cs.readData(handler, client, blocks)
+	if err != nil {
+		return nil, err
+	}
+	if len(data) == 0 {
+		return nil, errors.New(errEmptyResponse)
+	}
+
+	return buildFieldValues(data, client.DataFields, client.FunctionCode)
+}
+
+func (cs *clientsService) WriteClient(ctx context.Context, token, id string, req WriteRequest) error {
+	_, handler, err := cs.connectAuthorized(ctx, token, id, domain.GroupEditor)
+	if err != nil {
+		return err
+	}
+
+	mc := gbmodbus.NewClient(handler)
+	return writeField(mc, req)
+}
+
+// connectAuthorized retrieves the client, authorizes token against its thing for the
+// given action, and returns a rate-limited, connected handler ready for immediate I/O.
+func (cs *clientsService) connectAuthorized(ctx context.Context, token, id, action string) (Client, *gbmodbus.TCPClientHandler, error) {
+	client, err := cs.clients.RetrieveByID(ctx, id)
+	if err != nil {
+		return Client{}, nil, err
+	}
+
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: action}); err != nil {
+		return Client{}, nil, err
+	}
+
+	key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
+
+	waitCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	limiter := cs.getLimiter(key)
+	if err := limiter.Wait(waitCtx); err != nil {
+		return Client{}, nil, fmt.Errorf("%s: %w", errRateLimiter, err)
+	}
+
+	handler, err := cs.connPool.Get(key)
+	if err != nil {
+		return Client{}, nil, fmt.Errorf("%s: %w", errGetConnection, err)
+	}
+	handler.SlaveId = client.SlaveID
+
+	return client, handler, nil
 }
 
 func (cs *clientsService) UpdateClient(ctx context.Context, token string, client Client) error {
@@ -426,6 +498,90 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 	}
 }
 
+func writeField(mc gbmodbus.Client, req WriteRequest) error {
+	switch req.Type {
+	case BoolType:
+		v, ok := req.Value.(bool)
+		if !ok {
+			return fmt.Errorf("%s: expected bool value for type %s", errInvalidWriteValue, req.Type)
+		}
+
+		coilValue := uint16(0x0000)
+		if v {
+			coilValue = 0xFF00
+		}
+
+		_, err := mc.WriteSingleCoil(req.Address, coilValue)
+		return err
+	case Int16Type, Uint16Type:
+		value, ok := toFloat64(req.Value)
+		if !ok {
+			return fmt.Errorf("%s: expected numeric value for type %s", errInvalidWriteValue, req.Type)
+		}
+
+		raw, err := encodeNumericField(value, req.Type, req.Scale)
+		if err != nil {
+			return err
+		}
+
+		_, err = mc.WriteSingleRegister(req.Address, binary.BigEndian.Uint16(raw))
+		return err
+	case Int32Type, Uint32Type, Float32Type:
+		value, ok := toFloat64(req.Value)
+		if !ok {
+			return fmt.Errorf("%s: expected numeric value for type %s", errInvalidWriteValue, req.Type)
+		}
+
+		raw, err := encodeNumericField(value, req.Type, req.Scale)
+		if err != nil {
+			return err
+		}
+
+		_, err = mc.WriteMultipleRegisters(req.Address, 2, reorderBytes(raw, req.ByteOrder))
+		return err
+	default:
+		return fmt.Errorf("%s: %s", errUnsupportedWriteType, req.Type)
+	}
+}
+
+// encodeNumericField converts an engineering-unit value back into raw big-endian
+// device bytes, undoing the scale applied by readNumericField.
+func encodeNumericField(value float64, typ string, scale float64) ([]byte, error) {
+	if scale != 0 {
+		value /= scale
+	}
+
+	switch typ {
+	case Int16Type:
+		b := make([]byte, 2)
+		binary.BigEndian.PutUint16(b, uint16(int16(math.Round(value))))
+		return b, nil
+	case Uint16Type:
+		b := make([]byte, 2)
+		binary.BigEndian.PutUint16(b, uint16(math.Round(value)))
+		return b, nil
+	case Int32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, uint32(int32(math.Round(value))))
+		return b, nil
+	case Uint32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, uint32(math.Round(value)))
+		return b, nil
+	case Float32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, math.Float32bits(float32(value)))
+		return b, nil
+	default:
+		return nil, fmt.Errorf("%s: %s", errUnsupportedWriteType, typ)
+	}
+}
+
+func toFloat64(v any) (float64, bool) {
+	f, ok := v.(float64)
+	return f, ok
+}
+
 func readBlock(mc gbmodbus.Client, funcCode string, start, length uint16) ([]byte, error) {
 	switch funcCode {
 	case ReadCoilsFunc:
@@ -569,15 +725,24 @@ func getBlockMaxLen(funcCode string) (maxLen int) {
 }
 
 func formatPayload(data map[string][]byte, fields []DataField, funcCode string) ([]byte, error) {
+	result, err := buildFieldValues(data, fields, funcCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(result)
+}
+
+func buildFieldValues(data map[string][]byte, fields []DataField, funcCode string) (map[string]any, error) {
 	switch funcCode {
 	case ReadCoilsFunc, ReadDiscreteInputsFunc:
-		return formatCoilsPayload(data, fields)
+		return buildCoilValues(data, fields)
 	default:
-		return formatRegistersPayload(data, fields)
+		return buildRegisterValues(data, fields)
 	}
 }
 
-func formatRegistersPayload(data map[string][]byte, fields []DataField) ([]byte, error) {
+func buildRegisterValues(data map[string][]byte, fields []DataField) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for _, f := range fields {
@@ -621,10 +786,10 @@ func formatRegistersPayload(data map[string][]byte, fields []DataField) ([]byte,
 		result[f.Name] = createEntry(value, f.Unit)
 	}
 
-	return json.Marshal(result)
+	return result, nil
 }
 
-func formatCoilsPayload(dataMap map[string][]byte, fields []DataField) ([]byte, error) {
+func buildCoilValues(dataMap map[string][]byte, fields []DataField) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for _, f := range fields {
@@ -638,7 +803,7 @@ func formatCoilsPayload(dataMap map[string][]byte, fields []DataField) ([]byte, 
 		result[f.Name] = bit
 	}
 
-	return json.Marshal(result)
+	return result, nil
 }
 
 func calcFieldLengths(fields []DataField) []DataField {

@@ -175,6 +175,76 @@ func TestListClientsByThing(t *testing.T) {
 	}
 }
 
+func TestReadClient(t *testing.T) {
+	svc := newService()
+
+	cls, err := svc.CreateClients(context.Background(), token, thingID, client)
+	require.Nil(t, err, fmt.Sprintf("unexpected error creating clients: %s", err))
+	require.Equal(t, 1, len(cls))
+	clID := cls[0].ID
+
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{
+			desc:  "read client with invalid ID",
+			token: token,
+			id:    wrongID,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "read client with invalid token",
+			token: wrongToken,
+			id:    clID,
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.ReadClient(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestWriteClient(t *testing.T) {
+	svc := newService()
+
+	cls, err := svc.CreateClients(context.Background(), token, thingID, client)
+	require.Nil(t, err, fmt.Sprintf("unexpected error creating clients: %s", err))
+	require.Equal(t, 1, len(cls))
+	clID := cls[0].ID
+
+	req := modbus.WriteRequest{Address: 100, Type: modbus.Uint16Type, Value: float64(42)}
+
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{
+			desc:  "write client with invalid ID",
+			token: token,
+			id:    wrongID,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "write client with invalid token",
+			token: wrongToken,
+			id:    clID,
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.WriteClient(context.Background(), tc.token, tc.id, req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
 func TestListClientsByGroup(t *testing.T) {
 	svc := newService()
 

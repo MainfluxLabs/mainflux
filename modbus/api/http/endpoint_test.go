@@ -554,6 +554,162 @@ func TestViewClient(t *testing.T) {
 	}
 }
 
+func TestReadClient(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	cls, err := svc.CreateClients(context.Background(), token, thingID, testClient)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	clID := cls[0].ID
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status int
+	}{
+		{
+			desc:   "read client with non-existent ID",
+			token:  token,
+			id:     wrongID,
+			status: http.StatusNotFound,
+		},
+		{
+			desc:   "read client with wrong token",
+			token:  wrongToken,
+			id:     clID,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "read client with empty token",
+			token:  emptyValue,
+			id:     clID,
+			status: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    fmt.Sprintf("%s/clients/%s/read", ts.URL, tc.id),
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestWriteClient(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	cls, err := svc.CreateClients(context.Background(), token, thingID, testClient)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	clID := cls[0].ID
+
+	validBody := `{"address":100,"type":"uint16","value":42}`
+
+	cases := []struct {
+		desc        string
+		token       string
+		id          string
+		body        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "write client without content type",
+			token:       token,
+			id:          clID,
+			body:        validBody,
+			contentType: emptyValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "write client with invalid JSON",
+			token:       token,
+			id:          clID,
+			body:        `}{`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write client missing address",
+			token:       token,
+			id:          clID,
+			body:        `{"type":"uint16","value":42}`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write client missing value",
+			token:       token,
+			id:          clID,
+			body:        `{"address":100,"type":"uint16"}`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write client with invalid type",
+			token:       token,
+			id:          clID,
+			body:        `{"address":100,"type":"unknown","value":42}`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write client with invalid byte order",
+			token:       token,
+			id:          clID,
+			body:        `{"address":100,"type":"int32","byte_order":"ZZZZ","value":42}`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write client with non-existent ID",
+			token:       token,
+			id:          wrongID,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "write client with wrong token",
+			token:       wrongToken,
+			id:          clID,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "write client with empty token",
+			token:       emptyValue,
+			id:          clID,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/clients/%s/write", ts.URL, tc.id),
+			token:       tc.token,
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestUpdateClient(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)

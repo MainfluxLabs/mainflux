@@ -28,6 +28,8 @@ var (
 	ErrInvalidFieldType    = errors.New("invalid field type")
 	ErrInvalidFieldLength  = errors.New("invalid field length")
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
+	ErrMissingAddress      = errors.New("missing address")
+	ErrMissingValue        = errors.New("missing value")
 )
 
 // validatePageMetadata validates the modbus page metadata.
@@ -202,6 +204,50 @@ func (req viewClientReq) validate() error {
 
 	if req.id == "" {
 		return ErrMissingID
+	}
+
+	return nil
+}
+
+type writeClientReq struct {
+	token     string
+	id        string
+	Address   *uint16 `json:"address"`
+	Type      string  `json:"type"`
+	ByteOrder string  `json:"byte_order,omitempty"`
+	Scale     float64 `json:"scale,omitempty"`
+	Value     any     `json:"value"`
+}
+
+func (req writeClientReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.id == "" {
+		return ErrMissingID
+	}
+
+	if req.Address == nil {
+		return ErrMissingAddress
+	}
+
+	if req.Value == nil {
+		return ErrMissingValue
+	}
+
+	switch req.Type {
+	case modbus.BoolType, modbus.Int16Type, modbus.Uint16Type, modbus.Int32Type, modbus.Uint32Type, modbus.Float32Type:
+	default:
+		return ErrInvalidFieldType
+	}
+
+	if req.ByteOrder != "" {
+		switch req.ByteOrder {
+		case modbus.ByteOrderABCD, modbus.ByteOrderDCBA, modbus.ByteOrderCDAB, modbus.ByteOrderBADC:
+		default:
+			return ErrInvalidByteOrder
+		}
 	}
 
 	return nil

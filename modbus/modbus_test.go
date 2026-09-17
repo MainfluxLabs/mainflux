@@ -10,9 +10,36 @@ import (
 	"math"
 	"testing"
 
+	gbmodbus "github.com/goburrow/modbus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// fakeModbusClient records the last write call made through it, so tests
+// can assert on address/value/quantity without a real Modbus device.
+type fakeModbusClient struct {
+	gbmodbus.Client
+	lastAddress  uint16
+	lastValue    uint16
+	lastQuantity uint16
+	lastBytes    []byte
+	err          error
+}
+
+func (f *fakeModbusClient) WriteSingleCoil(address, value uint16) ([]byte, error) {
+	f.lastAddress, f.lastValue = address, value
+	return nil, f.err
+}
+
+func (f *fakeModbusClient) WriteSingleRegister(address, value uint16) ([]byte, error) {
+	f.lastAddress, f.lastValue = address, value
+	return nil, f.err
+}
+
+func (f *fakeModbusClient) WriteMultipleRegisters(address, quantity uint16, value []byte) ([]byte, error) {
+	f.lastAddress, f.lastQuantity, f.lastBytes = address, quantity, value
+	return nil, f.err
+}
 
 func TestReorderBytes(t *testing.T) {
 	cases := []struct {
@@ -612,7 +639,7 @@ func TestFormatRegistersPayload(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		raw, err := formatRegistersPayload(tc.data, tc.fields)
+		raw, err := formatPayload(tc.data, tc.fields, ReadHoldingRegistersFunc)
 		if tc.wantErr {
 			assert.Error(t, err, fmt.Sprintf("%s: expected error", tc.desc))
 			continue
@@ -653,13 +680,95 @@ func TestFormatCoilsPayload(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		raw, err := formatCoilsPayload(tc.data, tc.fields)
+		raw, err := formatPayload(tc.data, tc.fields, ReadCoilsFunc)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 
 		var result map[string]any
 		require.Nil(t, json.Unmarshal(raw, &result))
 		assert.Equal(t, tc.want, result, fmt.Sprintf("%s: unexpected result", tc.desc))
 	}
+}
+
+func TestEncodeNumericField(t *testing.T) {
+	cases := []struct {
+		desc    string
+		value   float64
+		typ     string
+		scale   float64
+		want    []byte
+		wantErr bool
+	}{
+		{desc: "int16 positive", value: 100, typ: Int16Type, want: []byte{0x00, 0x64}},
+		{desc: "int16 negative", value: -100, typ: Int16Type, want: []byte{0xFF, 0x9C}},
+		{desc: "uint16", value: 256, typ: Uint16Type, want: []byte{0x01, 0x00}},
+		{desc: "int32", value: 100000, typ: Int32Type, want: []byte{0x00, 0x01, 0x86, 0xA0}},
+		{desc: "uint32", value: 100000, typ: Uint32Type, want: []byte{0x00, 0x01, 0x86, 0xA0}},
+		{desc: "float32", value: 1.5, typ: Float32Type, want: float32ToBytes(1.5)},
+		{desc: "int16 with scale divides value before encoding", value: 10.0, typ: Int16Type, scale: 0.1, want: []byte{0x00, 0x64}},
+		{desc: "unsupported type returns error", value: 1, typ: StringType, wantErr: true},
+	}
+
+	for _, tc := range cases {
+		got, err := encodeNumericField(tc.value, tc.typ, tc.scale)
+		if tc.wantErr {
+			assert.Error(t, err, fmt.Sprintf("%s: expected error", tc.desc))
+			continue
+		}
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
+	}
+}
+
+func TestWriteField(t *testing.T) {
+	t.Run("bool true writes coil ON", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 10, Type: BoolType, Value: true})
+		require.Nil(t, err)
+		assert.Equal(t, uint16(10), mc.lastAddress)
+		assert.Equal(t, uint16(0xFF00), mc.lastValue)
+	})
+
+	t.Run("bool false writes coil OFF", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 10, Type: BoolType, Value: false})
+		require.Nil(t, err)
+		assert.Equal(t, uint16(0x0000), mc.lastValue)
+	})
+
+	t.Run("bool with non-bool value returns error", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 10, Type: BoolType, Value: "true"})
+		assert.Error(t, err)
+	})
+
+	t.Run("uint16 writes single register", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, Value: float64(256)})
+		require.Nil(t, err)
+		assert.Equal(t, uint16(100), mc.lastAddress)
+		assert.Equal(t, uint16(256), mc.lastValue)
+	})
+
+	t.Run("numeric with non-numeric value returns error", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, Value: "256"})
+		assert.Error(t, err)
+	})
+
+	t.Run("float32 writes two registers with byte order applied", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 200, Type: Float32Type, ByteOrder: ByteOrderDCBA, Value: 1.5})
+		require.Nil(t, err)
+		assert.Equal(t, uint16(200), mc.lastAddress)
+		assert.Equal(t, uint16(2), mc.lastQuantity)
+		assert.Equal(t, reorderBytes(float32ToBytes(1.5), ByteOrderDCBA), mc.lastBytes)
+	})
+
+	t.Run("unsupported type returns error", func(t *testing.T) {
+		mc := &fakeModbusClient{}
+		err := writeField(mc, WriteRequest{Address: 100, Type: StringType, Value: "abc"})
+		assert.Error(t, err)
+	})
 }
 
 // float32ToBytes converts a float32 to its big-endian byte representation.

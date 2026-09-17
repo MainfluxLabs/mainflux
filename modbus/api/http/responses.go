@@ -73,6 +73,22 @@ func (res clientsRes) Empty() bool {
 	return false
 }
 
+type readClientRes struct {
+	Values map[string]any `json:"values"`
+}
+
+func (res readClientRes) Code() int {
+	return http.StatusOK
+}
+
+func (res readClientRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res readClientRes) Empty() bool {
+	return false
+}
+
 type clientsPageRes struct {
 	pageRes
 	Clients []clientResponse `json:"clients"`
