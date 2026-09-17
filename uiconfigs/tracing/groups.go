@@ -13,7 +13,7 @@ const (
 	saveGroupConfigs            = "save_group_configs"
 	retrieveGroupConfigsByGroup = "retrieve_group_configs_by_group"
 	retrieveAllGroupConfigs     = "retrieve_all_group_configs"
-	updateGroupConfig           = "update_group_configs"
+	updateGroupConfig           = "update_group_config"
 	removeGroupConfig           = "remove_group_config"
 	backupAllGroupConfigs       = "backup_all_group_configs"
 )
@@ -59,7 +59,7 @@ func (uirm groupConfigRepositoryMiddleware) RetrieveAll(ctx context.Context, pm 
 	return uirm.repo.RetrieveAll(ctx, pm)
 }
 
-func (uirm groupConfigRepositoryMiddleware) Update(ctx context.Context, d uiconfigs.GroupConfig) (uiconfigs.GroupConfig, error) {
+func (uirm groupConfigRepositoryMiddleware) Update(ctx context.Context, d uiconfigs.GroupConfig) error {
 	span := dbutil.CreateSpan(ctx, uirm.tracer, updateGroupConfig)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

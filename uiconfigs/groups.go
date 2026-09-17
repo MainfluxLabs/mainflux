@@ -34,7 +34,7 @@ type GroupConfigRepository interface {
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (GroupConfigPage, error)
 
 	// Update performs an update to the existing group config.
-	Update(ctx context.Context, gc GroupConfig) (GroupConfig, error)
+	Update(ctx context.Context, gc GroupConfig) error
 
 	// Remove removes the group configs with the provided identifier.
 	Remove(ctx context.Context, groupID string) error

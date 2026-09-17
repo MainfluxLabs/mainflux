@@ -127,14 +127,14 @@ func (gr groupConfigRepository) RetrieveAll(ctx context.Context, pm apiutil.Page
 	}, nil
 }
 
-func (gr groupConfigRepository) Update(ctx context.Context, g uiconfigs.GroupConfig) (uiconfigs.GroupConfig, error) {
+func (gr groupConfigRepository) Update(ctx context.Context, g uiconfigs.GroupConfig) error {
 	q := `UPDATE group_configs
       	  SET config = :config
           WHERE group_id = :group_id`
 
 	dbGc, err := toDBGroupConfig(g)
 	if err != nil {
-		return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := gr.db.NamedExecContext(ctx, q, dbGc)
@@ -143,38 +143,25 @@ func (gr groupConfigRepository) Update(ctx context.Context, g uiconfigs.GroupCon
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationWarning:
-				return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
-		return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return gr.Save(ctx, g)
+		_, err := gr.Save(ctx, g)
+		return err
 	}
 
-	qSelect := `SELECT group_id, config
-	            FROM group_configs
-				WHERE group_id = $1;`
-
-	var dbRes dbGroupConfig
-	if err := gr.db.GetContext(ctx, &dbRes, qSelect, g.GroupID); err != nil {
-		return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	updated, err := toGroupConfig(dbRes)
-	if err != nil {
-		return uiconfigs.GroupConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	return updated, nil
+	return nil
 }
 
 func (gr groupConfigRepository) Remove(ctx context.Context, groupID string) error {

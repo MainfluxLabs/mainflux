@@ -337,12 +337,11 @@ func (svc *configService) UpdateGroupConfig(ctx context.Context, token string, g
 		return GroupConfig{}, errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	updated, err := svc.groupConfigs.Update(ctx, groupConfig)
-	if err != nil {
+	if err := svc.groupConfigs.Update(ctx, groupConfig); err != nil {
 		return GroupConfig{}, err
 	}
 
-	return updated, nil
+	return groupConfig, nil
 }
 
 func (svc *configService) RemoveGroupConfig(ctx context.Context, groupID string) error {
