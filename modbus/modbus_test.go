@@ -612,7 +612,7 @@ func TestFormatRegistersPayload(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		raw, err := formatRegistersPayload(tc.data, tc.fields)
+		raw, err := formatPayload(tc.data, tc.fields, ReadHoldingRegistersFunc)
 		if tc.wantErr {
 			assert.Error(t, err, fmt.Sprintf("%s: expected error", tc.desc))
 			continue
@@ -653,7 +653,7 @@ func TestFormatCoilsPayload(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		raw, err := formatCoilsPayload(tc.data, tc.fields)
+		raw, err := formatPayload(tc.data, tc.fields, ReadCoilsFunc)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 
 		var result map[string]any

@@ -103,6 +103,15 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 		encodeResponse,
 		opts...,
 	))
+	r.Get("/clients/:id/read", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "read_client"),
+			withIdentity,
+		)(readClientEndpoint(svc)),
+		decodeRequest,
+		encodeResponse,
+		opts...,
+	))
 	r.Put("/clients/:id", kithttp.NewServer(
 		endpoint.Chain(
 			kitot.TraceServer(tracer, "update_client"),

@@ -554,6 +554,54 @@ func TestViewClient(t *testing.T) {
 	}
 }
 
+func TestReadClient(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	cls, err := svc.CreateClients(context.Background(), token, thingID, testClient)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	clID := cls[0].ID
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status int
+	}{
+		{
+			desc:   "read client with non-existent ID",
+			token:  token,
+			id:     wrongID,
+			status: http.StatusNotFound,
+		},
+		{
+			desc:   "read client with wrong token",
+			token:  wrongToken,
+			id:     clID,
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "read client with empty token",
+			token:  emptyValue,
+			id:     clID,
+			status: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    fmt.Sprintf("%s/clients/%s/read", ts.URL, tc.id),
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestUpdateClient(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)

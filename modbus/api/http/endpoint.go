@@ -129,6 +129,22 @@ func viewClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	}
 }
 
+func readClientEndpoint(svc modbus.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(viewClientReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		values, err := svc.ReadClient(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		return readClientRes{Values: values}, nil
+	}
+}
+
 func updateClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateClientReq)
