@@ -44,6 +44,16 @@ type DataField struct {
 	Length    uint16  `json:"length"`
 }
 
+// WriteRequest targets a register or coil directly; unlike Client.FunctionCode
+// (read-only), the function code here is derived from Type.
+type WriteRequest struct {
+	Address   uint16
+	Type      string
+	ByteOrder string
+	Scale     float64
+	Value     any
+}
+
 type ClientsPage struct {
 	PageMetadata
 	Clients []Client

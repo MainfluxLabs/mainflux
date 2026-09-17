@@ -145,6 +145,29 @@ func readClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	}
 }
 
+func writeClientEndpoint(svc modbus.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(writeClientReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		wr := modbus.WriteRequest{
+			Address:   *req.Address,
+			Type:      req.Type,
+			ByteOrder: req.ByteOrder,
+			Scale:     req.Scale,
+			Value:     req.Value,
+		}
+
+		if err := svc.WriteClient(ctx, req.token, req.id, wr); err != nil {
+			return nil, err
+		}
+
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
+	}
+}
+
 func updateClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateClientReq)

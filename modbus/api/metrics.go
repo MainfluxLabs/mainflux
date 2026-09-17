@@ -84,6 +84,15 @@ func (ms *metricsMiddleware) ReadClient(ctx context.Context, token, id string) (
 	return ms.svc.ReadClient(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) WriteClient(ctx context.Context, token, id string, req modbus.WriteRequest) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "write_client").Add(1)
+		ms.latency.With("method", "write_client").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.WriteClient(ctx, token, id, req)
+}
+
 func (ms *metricsMiddleware) UpdateClient(ctx context.Context, token string, client modbus.Client) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client").Add(1)

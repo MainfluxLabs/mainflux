@@ -63,6 +63,10 @@ type Service interface {
 	// data fields over Modbus and returns the decoded values, bypassing the scheduler.
 	ReadClient(ctx context.Context, token, id string) (map[string]any, error)
 
+	// WriteClient performs an immediate, one-off write of a single register or coil
+	// on the client's device, bypassing the scheduler.
+	WriteClient(ctx context.Context, token, id string, req WriteRequest) error
+
 	// UpdateClient updates client identified by the provided ID.
 	UpdateClient(ctx context.Context, token string, client Client) error
 
@@ -125,6 +129,9 @@ var (
 	errGetConnection  = "failed to get connection"
 	errEmptyResponse  = "empty response payload"
 	errNotEnoughBytes = "not enough bytes to read"
+
+	errInvalidWriteValue    = "invalid write value"
+	errUnsupportedWriteType = "unsupported write type"
 )
 
 type Block struct {
@@ -271,6 +278,36 @@ func (cs *clientsService) ReadClient(ctx context.Context, token, id string) (map
 	}
 
 	return buildFieldValues(data, client.DataFields, client.FunctionCode)
+}
+
+func (cs *clientsService) WriteClient(ctx context.Context, token, id string, req WriteRequest) error {
+	client, err := cs.clients.RetrieveByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
+
+	writeCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	limiter := cs.getLimiter(key)
+	if err := limiter.Wait(writeCtx); err != nil {
+		return fmt.Errorf("%s: %w", errRateLimiter, err)
+	}
+
+	handler, err := cs.connPool.Get(key)
+	if err != nil {
+		return fmt.Errorf("%s: %w", errGetConnection, err)
+	}
+	handler.SlaveId = client.SlaveID
+
+	mc := gbmodbus.NewClient(handler)
+	return writeField(mc, req)
 }
 
 func (cs *clientsService) UpdateClient(ctx context.Context, token string, client Client) error {
@@ -468,6 +505,90 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 
 		cs.logger.Info(fmt.Sprintf("%s: published %d fields", logPrefix, len(data)))
 	}
+}
+
+func writeField(mc gbmodbus.Client, req WriteRequest) error {
+	switch req.Type {
+	case BoolType:
+		v, ok := req.Value.(bool)
+		if !ok {
+			return fmt.Errorf("%s: expected bool value for type %s", errInvalidWriteValue, req.Type)
+		}
+
+		coilValue := uint16(0x0000)
+		if v {
+			coilValue = 0xFF00
+		}
+
+		_, err := mc.WriteSingleCoil(req.Address, coilValue)
+		return err
+	case Int16Type, Uint16Type:
+		value, ok := toFloat64(req.Value)
+		if !ok {
+			return fmt.Errorf("%s: expected numeric value for type %s", errInvalidWriteValue, req.Type)
+		}
+
+		raw, err := encodeNumericField(value, req.Type, req.Scale)
+		if err != nil {
+			return err
+		}
+
+		_, err = mc.WriteSingleRegister(req.Address, binary.BigEndian.Uint16(raw))
+		return err
+	case Int32Type, Uint32Type, Float32Type:
+		value, ok := toFloat64(req.Value)
+		if !ok {
+			return fmt.Errorf("%s: expected numeric value for type %s", errInvalidWriteValue, req.Type)
+		}
+
+		raw, err := encodeNumericField(value, req.Type, req.Scale)
+		if err != nil {
+			return err
+		}
+
+		_, err = mc.WriteMultipleRegisters(req.Address, 2, reorderBytes(raw, req.ByteOrder))
+		return err
+	default:
+		return fmt.Errorf("%s: %s", errUnsupportedWriteType, req.Type)
+	}
+}
+
+// encodeNumericField converts an engineering-unit value back into raw big-endian
+// device bytes, undoing the scale applied by readNumericField.
+func encodeNumericField(value float64, typ string, scale float64) ([]byte, error) {
+	if scale != 0 {
+		value /= scale
+	}
+
+	switch typ {
+	case Int16Type:
+		b := make([]byte, 2)
+		binary.BigEndian.PutUint16(b, uint16(int16(math.Round(value))))
+		return b, nil
+	case Uint16Type:
+		b := make([]byte, 2)
+		binary.BigEndian.PutUint16(b, uint16(math.Round(value)))
+		return b, nil
+	case Int32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, uint32(int32(math.Round(value))))
+		return b, nil
+	case Uint32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, uint32(math.Round(value)))
+		return b, nil
+	case Float32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, math.Float32bits(float32(value)))
+		return b, nil
+	default:
+		return nil, fmt.Errorf("%s: %s", errUnsupportedWriteType, typ)
+	}
+}
+
+func toFloat64(v any) (float64, bool) {
+	f, ok := v.(float64)
+	return f, ok
 }
 
 func readBlock(mc gbmodbus.Client, funcCode string, start, length uint16) ([]byte, error) {

@@ -112,6 +112,15 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 		encodeResponse,
 		opts...,
 	))
+	r.Post("/clients/:id/write", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "write_client"),
+			withIdentity,
+		)(writeClientEndpoint(svc)),
+		decodeWriteClient,
+		encodeResponse,
+		opts...,
+	))
 	r.Put("/clients/:id", kithttp.NewServer(
 		endpoint.Chain(
 			kitot.TraceServer(tracer, "update_client"),
@@ -302,6 +311,22 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeWriteClient(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := writeClientReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, idKey),
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func decodeUpdateClient(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -364,7 +389,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrMissingFieldAddress,
 		err == ErrInvalidFieldType,
 		err == ErrInvalidByteOrder,
-		err == ErrInvalidFieldLength:
+		err == ErrInvalidFieldLength,
+		err == ErrMissingAddress,
+		err == ErrMissingValue:
 		w.WriteHeader(http.StatusBadRequest)
 	default:
 		apiutil.EncodeError(err, w)
