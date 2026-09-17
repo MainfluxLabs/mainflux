@@ -241,33 +241,13 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 }
 
 func (cs *clientsService) ReadClient(ctx context.Context, token, id string) (map[string]any, error) {
-	client, err := cs.clients.RetrieveByID(ctx, id)
+	client, handler, err := cs.connectAuthorized(ctx, token, id, domain.GroupViewer)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupViewer}); err != nil {
 		return nil, err
 	}
 
 	maxLen := getBlockMaxLen(client.FunctionCode)
 	blocks := createBlocks(client.DataFields, maxLen)
-
-	key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
-
-	readCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-
-	limiter := cs.getLimiter(key)
-	if err := limiter.Wait(readCtx); err != nil {
-		return nil, fmt.Errorf("%s: %w", errRateLimiter, err)
-	}
-
-	handler, err := cs.connPool.Get(key)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", errGetConnection, err)
-	}
-	handler.SlaveId = client.SlaveID
 
 	data, err := cs.readData(handler, client, blocks)
 	if err != nil {
@@ -281,33 +261,44 @@ func (cs *clientsService) ReadClient(ctx context.Context, token, id string) (map
 }
 
 func (cs *clientsService) WriteClient(ctx context.Context, token, id string, req WriteRequest) error {
-	client, err := cs.clients.RetrieveByID(ctx, id)
+	_, handler, err := cs.connectAuthorized(ctx, token, id, domain.GroupEditor)
 	if err != nil {
 		return err
 	}
 
-	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: domain.GroupEditor}); err != nil {
-		return err
+	mc := gbmodbus.NewClient(handler)
+	return writeField(mc, req)
+}
+
+// connectAuthorized retrieves the client, authorizes token against its thing for the
+// given action, and returns a rate-limited, connected handler ready for immediate I/O.
+func (cs *clientsService) connectAuthorized(ctx context.Context, token, id, action string) (Client, *gbmodbus.TCPClientHandler, error) {
+	client, err := cs.clients.RetrieveByID(ctx, id)
+	if err != nil {
+		return Client{}, nil, err
+	}
+
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: client.ThingID, Action: action}); err != nil {
+		return Client{}, nil, err
 	}
 
 	key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
 
-	writeCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	waitCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	limiter := cs.getLimiter(key)
-	if err := limiter.Wait(writeCtx); err != nil {
-		return fmt.Errorf("%s: %w", errRateLimiter, err)
+	if err := limiter.Wait(waitCtx); err != nil {
+		return Client{}, nil, fmt.Errorf("%s: %w", errRateLimiter, err)
 	}
 
 	handler, err := cs.connPool.Get(key)
 	if err != nil {
-		return fmt.Errorf("%s: %w", errGetConnection, err)
+		return Client{}, nil, fmt.Errorf("%s: %w", errGetConnection, err)
 	}
 	handler.SlaveId = client.SlaveID
 
-	mc := gbmodbus.NewClient(handler)
-	return writeField(mc, req)
+	return client, handler, nil
 }
 
 func (cs *clientsService) UpdateClient(ctx context.Context, token string, client Client) error {
