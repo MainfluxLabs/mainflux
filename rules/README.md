@@ -139,20 +139,21 @@ return spread <= 2.0
 
 Every condition evaluation is recorded as a script run: outcome, logs, and any runtime error.
 
-| Field         | Description                                  |
-| ------------- | -------------------------------------------- |
-| `id`          | Unique run identifier (UUID)                 |
-| `script_id`   | ID of the script that was executed           |
-| `thing_id`    | ID of the thing that triggered the execution |
-| `logs`        | Log lines written via `mfx.log()`            |
-| `started_at`  | Execution start timestamp (RFC 3339)         |
-| `finished_at` | Execution end timestamp (RFC 3339)           |
-| `status`      | `success` or `fail`                          |
-| `error`       | Runtime error message, if any                |
+| Field         | Description                                      |
+| ------------- | ------------------------------------------------ |
+| `id`          | Unique run identifier (UUID)                     |
+| `script_id`   | ID of the script that was executed               |
+| `rule_id`     | ID of the rule whose condition triggered the run |
+| `thing_id`    | ID of the thing that triggered the execution     |
+| `logs`        | Log lines written via `mfx.log()`                |
+| `started_at`  | Execution start timestamp (RFC 3339)             |
+| `finished_at` | Execution end timestamp (RFC 3339)               |
+| `status`      | `success` or `fail`                              |
+| `error`       | Runtime error message, if any                    |
 
 `status` reflects only whether the script ran without a Lua runtime error — it does not reflect whether the script's return value counted as the condition being met.
 
-Run records are retrievable per thing and can be bulk-deleted via the API.
+Run records are retrievable per rule or per thing, and can be bulk-deleted via the API.
 
 ## Configuration
 

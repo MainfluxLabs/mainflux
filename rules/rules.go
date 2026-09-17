@@ -204,7 +204,7 @@ func (rs *rulesService) evaluateMessageConditions(ctx context.Context, msg *prot
 
 	for i, condition := range rule.Conditions {
 		if condition.Type == ConditionTypeScript {
-			results[i] = rs.runScriptCondition(ctx, msg, payload, condition.ScriptID)
+			results[i] = rs.runScriptCondition(ctx, msg, payload, rule.ID, condition.ScriptID)
 			continue
 		}
 

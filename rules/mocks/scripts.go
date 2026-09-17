@@ -142,6 +142,30 @@ func (rrm *ruleRepositoryMock) RetrieveScriptRunsByThing(_ context.Context, thin
 	}, nil
 }
 
+func (rrm *ruleRepositoryMock) RetrieveScriptRunsByRule(_ context.Context, ruleID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	var all, items []rules.ScriptRun
+	first := uint64(pm.Offset) + 1
+	last := first + pm.Limit
+
+	for _, run := range rrm.scriptRuns {
+		if run.RuleID == ruleID {
+			all = append(all, run)
+			id := uuid.ParseID(run.ID)
+			if pm.Limit == 0 || (id >= first && id < last) {
+				items = append(items, run)
+			}
+		}
+	}
+
+	return rules.ScriptRunsPage{
+		Total: uint64(len(all)),
+		Runs:  items,
+	}, nil
+}
+
 func (rrm *ruleRepositoryMock) RemoveScriptRuns(_ context.Context, ids ...string) error {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
