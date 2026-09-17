@@ -328,6 +328,29 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /rules/{ruleId}/runs:
+    get:
+      summary: Retrieve Script runs for a Rule.
+      description: Retrieve a list of script run history for a specific Rule identified by the provided ID.
+      tags:
+        - script-runs
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListScriptRunsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Rule does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /runs:
     patch:
       summary: Removes script runs
@@ -561,6 +584,10 @@ components:
           type: string
           format: uuid
           example: "456e4567-e89b-12d3-a456-426614174abc"
+        rule_id:
+          type: string
+          format: uuid
+          example: "789e4567-e89b-12d3-a456-426614174abc"
         thing_id:
           type: string
           format: uuid

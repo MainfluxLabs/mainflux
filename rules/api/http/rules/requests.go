@@ -210,6 +210,24 @@ func (req removeRulesReq) validate() error {
 	return nil
 }
 
+type listScriptRunsByRuleReq struct {
+	token        string
+	ruleID       string
+	pageMetadata rules.PageMetadata
+}
+
+func (req listScriptRunsByRuleReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.ruleID == "" {
+		return apiutil.ErrMissingRuleID
+	}
+
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+}
+
 func validateThingIDs(ids []string) error {
 	if len(ids) < minLen || len(ids) > maxThingIDs {
 		return apiutil.ErrThingIDsSize

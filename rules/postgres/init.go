@@ -176,6 +176,17 @@ func migrateDB(db *sqlx.DB) error {
 					 )`,
 				},
 			},
+			{
+				Id: "rules_10",
+				Up: []string{
+					`ALTER TABLE lua_script_runs ADD COLUMN IF NOT EXISTS rule_id UUID NULL REFERENCES rules (id) ON DELETE CASCADE`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_rule_id ON lua_script_runs(rule_id)`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_lua_script_runs_rule_id`,
+					`ALTER TABLE lua_script_runs DROP COLUMN IF EXISTS rule_id`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
