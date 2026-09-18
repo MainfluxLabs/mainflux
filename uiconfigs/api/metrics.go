@@ -150,7 +150,7 @@ func (ms *metricsMiddleware) ListGroupsConfigs(ctx context.Context, token string
 	return ms.svc.ListGroupsConfigs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) UpdateGroupConfig(ctx context.Context, token string, groupConfig uiconfigs.GroupConfig) (uiconfigs.GroupConfig, error) {
+func (ms *metricsMiddleware) UpdateGroupConfig(ctx context.Context, token string, groupConfig uiconfigs.GroupConfig) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_group_config").Add(1)
 		ms.latency.With("method", "update_group_config").Observe(time.Since(begin).Seconds())

@@ -208,7 +208,7 @@ func (lm *loggingMiddleware) ListGroupsConfigs(ctx context.Context, token string
 	return lm.svc.ListGroupsConfigs(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) UpdateGroupConfig(ctx context.Context, token string, groupConfig uiconfigs.GroupConfig) (response uiconfigs.GroupConfig, err error) {
+func (lm *loggingMiddleware) UpdateGroupConfig(ctx context.Context, token string, groupConfig uiconfigs.GroupConfig) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_group_config by user %s, group %v took %s to complete", email, groupConfig.GroupID, time.Since(begin))

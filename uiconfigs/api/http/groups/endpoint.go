@@ -57,8 +57,7 @@ func updateGroupConfigEndpoint(svc uiconfigs.Service) endpoint.Endpoint {
 			Config:  req.Config,
 		}
 
-		_, err := svc.UpdateGroupConfig(ctx, req.token, groupConfig)
-		if err != nil {
+		if err := svc.UpdateGroupConfig(ctx, req.token, groupConfig); err != nil {
 			return nil, err
 		}
 

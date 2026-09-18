@@ -62,7 +62,7 @@ type Service interface {
 	ListGroupsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupConfigPage, error)
 
 	// UpdateGroupConfig updates an existing group config for the authenticated user.
-	UpdateGroupConfig(ctx context.Context, token string, groupConfig GroupConfig) (GroupConfig, error)
+	UpdateGroupConfig(ctx context.Context, token string, groupConfig GroupConfig) error
 
 	// RemoveGroupConfig removes the group config by group id.
 	RemoveGroupConfig(ctx context.Context, groupID string) error
@@ -327,21 +327,17 @@ func (svc *configService) ListGroupsConfigs(ctx context.Context, token string, p
 	}, nil
 }
 
-func (svc *configService) UpdateGroupConfig(ctx context.Context, token string, groupConfig GroupConfig) (GroupConfig, error) {
+func (svc *configService) UpdateGroupConfig(ctx context.Context, token string, groupConfig GroupConfig) error {
 	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
-		return GroupConfig{}, err
+		return err
 	}
 
 	if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupConfig.GroupID, Action: domain.GroupEditor}); err != nil {
-		return GroupConfig{}, errors.Wrap(errors.ErrAuthorization, err)
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
-	if err := svc.groupConfigs.Update(ctx, groupConfig); err != nil {
-		return GroupConfig{}, err
-	}
-
-	return groupConfig, nil
+	return svc.groupConfigs.Update(ctx, groupConfig)
 }
 
 func (svc *configService) RemoveGroupConfig(ctx context.Context, groupID string) error {
