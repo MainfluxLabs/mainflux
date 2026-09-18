@@ -30,7 +30,7 @@ func NewThingsRepository() *ThingsRepository {
 }
 
 func thingKey(thingID string, fi filestore.FileInfo) string {
-	return thingID + "|" + fi.Class + "|" + fi.Format + "|" + fi.Name
+	return thingID + "/" + fi.Class + "/" + fi.Format + "/" + fi.Name
 }
 
 func (r *ThingsRepository) Save(_ context.Context, thingID, groupID string, fi filestore.FileInfo) error {
