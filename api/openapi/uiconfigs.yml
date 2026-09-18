@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Mainflux UI configs service
-  description: HTTP API for managing UI configuration settings scoped per organization and per thing.
+  description: HTTP API for managing UI configuration settings scoped per organization, per group, and per thing.
   version: 1.0.0
 
 paths:
@@ -63,6 +63,73 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/ListOrgsConfigsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/{groupId}/configs:
+    get:
+      summary: View group config
+      description: Retrieves the UI configuration for the group identified by the provided ID.
+      tags:
+        - group configs
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        '200':
+          $ref: "#/components/responses/GroupConfigRes"
+        '400':
+          description: Failed due to malformed request.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Group config does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    put:
+      summary: Update group config
+      description: Updates the UI configuration for the group identified by the provided ID.
+      tags:
+        - group configs
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateGroupConfigReq"
+      responses:
+        '200':
+          description: Group config updated.
+        '400':
+          description: Failed due to malformed JSON.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /groups/configs:
+    get:
+      summary: List group configs
+      description: Retrieves a list of UI configurations for all groups accessible to the authenticated user.
+      tags:
+        - group configs
+      parameters:
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListGroupsConfigsRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -142,7 +209,7 @@ paths:
   /backup:
     get:
       summary: Backup all configs
-      description: Downloads a backup file containing all org and thing configs accessible to the authenticated user.
+      description: Downloads a backup file containing all org, group, and thing configs accessible to the authenticated user.
       tags:
         - backup
       responses:
@@ -156,7 +223,7 @@ paths:
   /restore:
     post:
       summary: Restore configs from backup
-      description: Restores org and thing configs from a previously exported backup file.
+      description: Restores org, group, and thing configs from a previously exported backup file.
       tags:
         - backup
       requestBody:
@@ -190,6 +257,21 @@ components:
             language: "en"
             dashboard_layout: "grid"
       required: [org_id, config]
+
+    GroupConfig:
+      type: object
+      properties:
+        group_id:
+          type: string
+          format: uuid
+          example: "321e4567-e89b-12d3-a456-426614174def"
+        config:
+          type: object
+          additionalProperties: true
+          example:
+            dashboard_layout: "grid"
+            widgets: ["chart", "kpi", "map"]
+      required: [group_id, config]
 
     ThingConfig:
       type: object
@@ -229,6 +311,24 @@ components:
             $ref: '#/components/schemas/OrgConfig'
       required: [total, offset, limit, orgs_configs]
 
+    GroupsConfigsPageRes:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        groups_configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupConfig'
+      required: [total, offset, limit, groups_configs]
+
     ThingsConfigsPageRes:
       type: object
       properties:
@@ -257,6 +357,15 @@ components:
         type: string
         format: uuid
       example: "aabbccdd-1122-3344-5566-778899aabbcc"
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Unique group identifier.
+      schema:
+        type: string
+        format: uuid
+      example: "321e4567-e89b-12d3-a456-426614174def"
     ThingId:
       name: thingId
       in: path
@@ -303,6 +412,23 @@ components:
               theme: "dark"
               language: "en"
               dashboard_layout: "grid"
+    UpdateGroupConfigReq:
+      description: JSON-formatted document describing the group UI configuration to set.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              config:
+                type: object
+                additionalProperties: true
+            required:
+              - config
+          example:
+            config:
+              dashboard_layout: "grid"
+              widgets: ["chart", "kpi", "map"]
     UpdateThingConfigReq:
       description: JSON-formatted document describing the thing UI configuration to set.
       required: true
@@ -361,6 +487,32 @@ components:
                 config:
                   theme: "light"
                   language: "de"
+    GroupConfigRes:
+      description: Group config retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GroupConfig"
+          example:
+            group_id: "321e4567-e89b-12d3-a456-426614174def"
+            config:
+              dashboard_layout: "grid"
+              widgets: ["chart", "kpi", "map"]
+    ListGroupsConfigsRes:
+      description: Group configs retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GroupsConfigsPageRes"
+          example:
+            total: 1
+            offset: 0
+            limit: 10
+            groups_configs:
+              - group_id: "321e4567-e89b-12d3-a456-426614174def"
+                config:
+                  dashboard_layout: "grid"
+                  widgets: ["chart", "kpi", "map"]
     ThingConfigRes:
       description: Thing config retrieved.
       content:

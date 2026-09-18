@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/uiconfigs"
+	groups "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/groups"
 	orgs "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/orgs"
 	things "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/things"
 	"github.com/go-kit/kit/endpoint"
@@ -54,6 +55,7 @@ func buildBackupResponse(b uiconfigs.Backup, fileName string) (apiutil.ViewFileR
 	views := backupResponse{
 		OrgsConfigs:   make([]orgs.OrgConfigResponse, 0, len(b.OrgsConfigs)),
 		ThingsConfigs: make([]things.ThingConfigResponse, 0, len(b.ThingsConfigs)),
+		GroupsConfigs: make([]groups.GroupConfigResponse, 0, len(b.GroupsConfigs)),
 	}
 
 	for _, oc := range b.OrgsConfigs {
@@ -68,6 +70,13 @@ func buildBackupResponse(b uiconfigs.Backup, fileName string) (apiutil.ViewFileR
 			ThingID: tc.ThingID,
 			GroupID: tc.GroupID,
 			Config:  tc.Config,
+		})
+	}
+
+	for _, gc := range b.GroupsConfigs {
+		views.GroupsConfigs = append(views.GroupsConfigs, groups.GroupConfigResponse{
+			GroupID: gc.GroupID,
+			Config:  gc.Config,
 		})
 	}
 
@@ -95,6 +104,13 @@ func buildBackup(req restoreReq) (backup uiconfigs.Backup) {
 			ThingID: tc.ThingID,
 			GroupID: tc.GroupID,
 			Config:  tc.Config,
+		})
+	}
+
+	for _, gc := range req.GroupsConfigs {
+		backup.GroupsConfigs = append(backup.GroupsConfigs, uiconfigs.GroupConfig{
+			GroupID: gc.GroupID,
+			Config:  gc.Config,
 		})
 	}
 
