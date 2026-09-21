@@ -26,6 +26,9 @@ func (h *eventHandler) Handle(ctx context.Context, event events.Event) error {
 	case events.OrgRemoved:
 		return h.svc.RemoveOrgConfig(ctx, e.ID)
 	case events.GroupRemoved:
+		if err := h.svc.RemoveGroupConfig(ctx, e.ID); err != nil {
+			return err
+		}
 		return h.svc.RemoveThingConfigByGroup(ctx, e.ID)
 	}
 	return nil

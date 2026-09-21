@@ -264,8 +264,10 @@ func newService(ts domain.ThingsClient, ac domain.AuthClient, dbTracer opentraci
 	orgConfigsRepo = tracing.OrgConfigRepositoryMiddleware(dbTracer, orgConfigsRepo)
 	thingConfigsRepo := postgres.NewThingConfigRepository(database)
 	thingConfigsRepo = tracing.ThingConfigRepositoryMiddleware(dbTracer, thingConfigsRepo)
+	groupConfigsRepo := postgres.NewGroupConfigRepository(database)
+	groupConfigsRepo = tracing.GroupConfigRepositoryMiddleware(dbTracer, groupConfigsRepo)
 	idProvider := uuid.New()
-	svc := uiconfigs.New(orgConfigsRepo, thingConfigsRepo, ts, ac, idProvider, logger)
+	svc := uiconfigs.New(orgConfigsRepo, thingConfigsRepo, groupConfigsRepo, ts, ac, idProvider, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
