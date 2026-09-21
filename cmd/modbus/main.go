@@ -149,7 +149,7 @@ func main() {
 	}
 	defer pub.Close()
 
-	svc := newService(things, pub, dbTracer, db, logger)
+	svc := newService(auth, things, pub, dbTracer, db, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
@@ -270,12 +270,12 @@ func subscribeToThingsES(ctx context.Context, svc modbus.Service, cfg config, lo
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts domain.ThingsClient, pub modbus.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) modbus.Service {
+func newService(auth domain.AuthClient, ts domain.ThingsClient, pub modbus.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) modbus.Service {
 	database := dbutil.NewDatabase(db)
 	clientsRepo := postgres.NewClientRepository(database)
 	clientsRepo = tracing.ClientRepositoryMiddleware(dbTracer, clientsRepo)
 	idProvider := uuid.New()
-	svc := modbus.New(ts, pub, clientsRepo, idProvider, logger)
+	svc := modbus.New(auth, ts, pub, clientsRepo, idProvider, logger)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
