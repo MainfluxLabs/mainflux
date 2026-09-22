@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Mainflux modbus service
-  description: HTTP API for managing Modbus TCP clients that poll device registers and publish readings to the platform.
+  description: HTTP API for managing Modbus TCP clients that poll device registers and publish readings to the platform, plus ad hoc register/coil reads and writes.
   version: 1.0.0
 
 paths:
@@ -167,36 +167,34 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /clients/{clientId}/read:
-    get:
-      summary: Read a Modbus client's registers
-      description: Reads the client's configured data fields from the device and returns the decoded values.
+  /read:
+    post:
+      summary: Read Modbus registers
+      description: Reads the given data fields from a device over Modbus and returns the decoded values. No client is created or looked up; connection info is supplied in the request, and the caller only needs a valid user token.
       tags:
-        - clients
-      parameters:
-        - $ref: "#/components/parameters/ClientId"
+        - registers
+      requestBody:
+        $ref: "#/components/requestBodies/ReadRegistersReq"
       responses:
         '200':
-          $ref: "#/components/responses/ReadClientRes"
+          $ref: "#/components/responses/ReadRegistersRes"
         '400':
-          description: Failed due to malformed request.
+          description: Failed due to malformed JSON or invalid field.
         '401':
           description: Missing or invalid access token provided.
-        '404':
-          description: Client does not exist.
+        '415':
+          description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /clients/{clientId}/write:
+  /write:
     post:
       summary: Write a register or coil
-      description: Writes a single register or coil on the client's device. The write function code is derived from "type", not from the client's configured function_code.
+      description: Writes a single register or coil on a device over Modbus. No client is created or looked up; connection info is supplied in the request, and the caller only needs a valid user token. The write function code is derived from "type".
       tags:
-        - clients
-      parameters:
-        - $ref: "#/components/parameters/ClientId"
+        - registers
       requestBody:
-        $ref: "#/components/requestBodies/WriteClientReq"
+        $ref: "#/components/requestBodies/WriteRegisterReq"
       responses:
         '200':
           description: Value written.
@@ -204,8 +202,6 @@ paths:
           description: Failed due to malformed JSON or invalid field.
         '401':
           description: Missing or invalid access token provided.
-        '404':
-          description: Client does not exist.
         '415':
           description: Missing or invalid content type.
         '500':
@@ -547,14 +543,66 @@ components:
                 scale: 0.1
                 byte_order: "ABCD"
                 address: 0
-    WriteClientReq:
-      description: JSON-formatted document describing the register or coil write.
+    ReadRegistersReq:
+      description: JSON-formatted document describing the device connection and the data fields to read. No client is created or referenced.
       required: true
       content:
         application/json:
           schema:
             type: object
             properties:
+              ip_address:
+                type: string
+                example: "192.168.1.100"
+              port:
+                type: string
+                example: "502"
+              slave_id:
+                type: integer
+                minimum: 0
+                maximum: 255
+                example: 1
+              function_code:
+                type: string
+                enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+                example: "ReadHoldingRegisters"
+              data_fields:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataField"
+                minItems: 1
+            required: [ip_address, port, function_code, data_fields]
+          example:
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
+            function_code: "ReadHoldingRegisters"
+            data_fields:
+              - name: "temperature"
+                type: "float32"
+                unit: "°C"
+                scale: 0.1
+                byte_order: "ABCD"
+                address: 0
+    WriteRegisterReq:
+      description: JSON-formatted document describing the device connection and the register or coil write. No client is created or referenced.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ip_address:
+                type: string
+                example: "192.168.1.100"
+              port:
+                type: string
+                example: "502"
+              slave_id:
+                type: integer
+                minimum: 0
+                maximum: 255
+                example: 1
               address:
                 type: integer
                 example: 100
@@ -579,8 +627,11 @@ components:
                   - type: number
                   - type: boolean
                 example: 42
-            required: [address, type, value]
+            required: [ip_address, port, address, type, value]
           example:
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
             address: 100
             type: "uint16"
             value: 42
@@ -719,7 +770,7 @@ components:
                     scale: 0.1
                     byte_order: "ABCD"
                     address: 0
-    ReadClientRes:
+    ReadRegistersRes:
       description: Client's data fields read and decoded.
       content:
         application/json:
