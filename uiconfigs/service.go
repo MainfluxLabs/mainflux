@@ -29,7 +29,7 @@ type Service interface {
 	ListOrgsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgConfigPage, error)
 
 	// UpdateOrgConfig updates an existing org config for the authenticated user.
-	UpdateOrgConfig(ctx context.Context, token string, orgConfig OrgConfig) (OrgConfig, error)
+	UpdateOrgConfig(ctx context.Context, token string, orgConfig OrgConfig) error
 
 	// RemoveOrgConfig removes the org config by org id.
 	RemoveOrgConfig(ctx context.Context, orgID string) error
@@ -44,7 +44,7 @@ type Service interface {
 	ListThingsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingConfigPage, error)
 
 	// UpdateThingConfig updates an existing thing config for the authenticated user.
-	UpdateThingConfig(ctx context.Context, token string, thingConfig ThingConfig) (ThingConfig, error)
+	UpdateThingConfig(ctx context.Context, token string, thingConfig ThingConfig) error
 
 	// RemoveThingConfig removes the thing config by thing id.
 	RemoveThingConfig(ctx context.Context, thingID string) error
@@ -73,7 +73,7 @@ type Service interface {
 	// Backup retrieves all org, thing and group configs.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds all orgs, things and groups configs from a backup.
+	// Restore adds all orgs, things and groups configs from a backup. Admin only.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -141,22 +141,17 @@ func (svc *configService) ListOrgsConfigs(ctx context.Context, token string, pm 
 	}, nil
 }
 
-func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, orgConfig OrgConfig) (OrgConfig, error) {
+func (svc *configService) UpdateOrgConfig(ctx context.Context, token string, orgConfig OrgConfig) error {
 	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
-		return OrgConfig{}, err
+		return err
 	}
 
 	if err := svc.canAccessOrg(ctx, token, orgConfig.OrgID, domain.OrgSub, domain.OrgEditor); err != nil {
-		return OrgConfig{}, err
+		return err
 	}
 
-	updated, err := svc.orgConfigs.Update(ctx, orgConfig)
-	if err != nil {
-		return OrgConfig{}, err
-	}
-
-	return updated, nil
+	return svc.orgConfigs.Update(ctx, orgConfig)
 }
 
 func (svc *configService) RemoveOrgConfig(ctx context.Context, orgID string) error {
@@ -228,29 +223,24 @@ func (svc *configService) ListThingsConfigs(ctx context.Context, token string, p
 	}, nil
 }
 
-func (svc *configService) UpdateThingConfig(ctx context.Context, token string, thingConfig ThingConfig) (ThingConfig, error) {
+func (svc *configService) UpdateThingConfig(ctx context.Context, token string, thingConfig ThingConfig) error {
 	_, err := svc.auth.Identify(ctx, token)
 	if err != nil {
-		return ThingConfig{}, err
+		return err
 	}
 
 	if err := svc.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingConfig.ThingID, Action: domain.GroupViewer}); err != nil {
-		return ThingConfig{}, errors.Wrap(errors.ErrAuthorization, err)
+		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
 	groupID, err := svc.things.GetGroupIDByThing(ctx, thingConfig.ThingID)
 	if err != nil {
-		return ThingConfig{}, err
+		return err
 	}
 
 	thingConfig.GroupID = groupID
 
-	updated, err := svc.thingConfigs.Update(ctx, thingConfig)
-	if err != nil {
-		return ThingConfig{}, err
-	}
-
-	return updated, nil
+	return svc.thingConfigs.Update(ctx, thingConfig)
 }
 
 func (svc *configService) RemoveThingConfig(ctx context.Context, thingID string) error {
@@ -394,6 +384,10 @@ func (svc *configService) Backup(ctx context.Context, token string) (Backup, err
 }
 
 func (svc *configService) Restore(ctx context.Context, token string, backup Backup) error {
+	if err := svc.isAdmin(ctx, token); err != nil {
+		return err
+	}
+
 	for _, orgConfig := range backup.OrgsConfigs {
 		if _, err := svc.orgConfigs.Save(ctx, orgConfig); err != nil {
 			return err
