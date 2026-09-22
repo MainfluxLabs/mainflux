@@ -296,7 +296,7 @@ func (rr ruleRepository) RetrieveScriptRunsByRule(ctx context.Context, ruleID st
 }
 
 func (rr ruleRepository) retrieveScriptRuns(ctx context.Context, col, val string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
+	oq := dbutil.GetOrderQuery(pm.Order, rules.ScriptRunOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
