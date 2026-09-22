@@ -57,7 +57,7 @@ func (lm *loggingMiddleware) ListOrgsConfigs(ctx context.Context, token string, 
 	return lm.svc.ListOrgsConfigs(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) UpdateOrgConfig(ctx context.Context, token string, orgConfig uiconfigs.OrgConfig) (response uiconfigs.OrgConfig, err error) {
+func (lm *loggingMiddleware) UpdateOrgConfig(ctx context.Context, token string, orgConfig uiconfigs.OrgConfig) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_org_config by user %s, org %v took %s to complete", email, orgConfig.OrgID, time.Since(begin))
@@ -126,7 +126,7 @@ func (lm *loggingMiddleware) ListThingsConfigs(ctx context.Context, token string
 	return lm.svc.ListThingsConfigs(ctx, token, pm)
 }
 
-func (lm *loggingMiddleware) UpdateThingConfig(ctx context.Context, token string, thingConfig uiconfigs.ThingConfig) (response uiconfigs.ThingConfig, err error) {
+func (lm *loggingMiddleware) UpdateThingConfig(ctx context.Context, token string, thingConfig uiconfigs.ThingConfig) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_thing_config by user %s, thing %v took %s to complete", email, thingConfig.ThingID, time.Since(begin))
