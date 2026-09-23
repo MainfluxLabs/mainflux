@@ -27,7 +27,7 @@ var (
 	// ErrFailedHandleMessage indicates that the message couldn't be handled.
 	errFailedHandleMessage = errors.New("failed to handle mainflux message")
 
-	thingID                                    = "pid"
+	thingID                                    = "tid"
 	clientID1, clientID2, clientID3, clientID4 = "cid1", "cid2", "cid3", "cid4"
 	data                                       = []byte(`{"test":"payload"}`)
 )

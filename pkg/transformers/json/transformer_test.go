@@ -42,7 +42,7 @@ func TestTransformJSON(t *testing.T) {
 
 	msg := protomfx.Message{
 		Subtopic: subtopic,
-		ThingId:  "publisher-1",
+		ThingId:  "thing-1",
 		Protocol: "protocol",
 		Payload:  []byte(validPayload),
 		Created:  now,

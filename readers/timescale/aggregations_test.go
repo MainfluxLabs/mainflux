@@ -344,7 +344,7 @@ func TestBaseConditions(t *testing.T) {
 		{
 			desc:       "all fields",
 			subtopic:   "sub",
-			thingID:    "pub",
+			thingID:    "thing",
 			protocol:   "mqtt",
 			from:       1000,
 			to:         2000,
@@ -359,7 +359,7 @@ func TestBaseConditions(t *testing.T) {
 		},
 		{
 			desc:       "partial fields",
-			thingID:    "pub",
+			thingID:    "thing",
 			from:       1000,
 			timeColumn: "created",
 			res: []string{
@@ -387,7 +387,7 @@ func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
 		MessagesPageMetadata: readers.MessagesPageMetadata{
 			Subtopic:  "test",
-			Publisher: "pub1",
+			Publisher: "thing1",
 			From:      1000,
 		},
 	}
