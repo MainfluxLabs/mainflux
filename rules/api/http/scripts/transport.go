@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -17,17 +16,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
 	"github.com/opentracing/opentracing-go"
-)
-
-const (
-	statusKey = "status"
-	fromKey   = "from"
-	toKey     = "to"
 )
 
 // MakeHandler returns a HTTP handler for script API endpoints.
@@ -195,51 +189,15 @@ func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error) {
-	base, err := apiutil.BuildPageMetadata(r)
+	pm, err := api.BuildScriptRunsPageMetadata(r)
 	if err != nil {
 		return nil, err
-	}
-
-	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	status, err := apiutil.ReadStringQuery(r, statusKey, "")
-	if err != nil {
-		return nil, err
-	}
-	fromMs, err := apiutil.ReadIntQuery(r, fromKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	toMs, err := apiutil.ReadIntQuery(r, toKey, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	var from, to time.Time
-	if fromMs > 0 {
-		from = time.UnixMilli(fromMs)
-	}
-	if toMs > 0 {
-		to = time.UnixMilli(toMs)
 	}
 
 	req := listScriptRunsByThingReq{
-		token:   apiutil.ExtractBearerToken(r),
-		thingID: bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: rules.PageMetadata{
-			Offset: base.Offset,
-			Limit:  base.Limit,
-			Order:  base.Order,
-			Dir:    base.Dir,
-			Name:   name,
-			Status: status,
-			From:   from,
-			To:     to,
-		},
+		token:        apiutil.ExtractBearerToken(r),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
 	}
 	return req, nil
 }

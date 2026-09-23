@@ -5,16 +5,15 @@ package scripts
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 )
 
 var (
 	_ apiutil.Response = (*scriptRes)(nil)
 	_ apiutil.Response = (*scriptsRes)(nil)
 	_ apiutil.Response = (*scriptsPageRes)(nil)
-	_ apiutil.Response = (*scriptRunRes)(nil)
 	_ apiutil.Response = (*scriptRunsPageRes)(nil)
 )
 
@@ -86,32 +85,9 @@ func (res scriptsPageRes) Empty() bool {
 	return false
 }
 
-type scriptRunRes struct {
-	ID         string    `json:"id"`
-	ScriptID   string    `json:"script_id"`
-	ThingID    string    `json:"thing_id"`
-	Logs       []string  `json:"logs"`
-	StartedAt  time.Time `json:"started_at"`
-	FinishedAt time.Time `json:"finished_at"`
-	Status     string    `json:"status"`
-	Error      string    `json:"error,omitempty"`
-}
-
-func (res scriptRunRes) Code() int {
-	return http.StatusOK
-}
-
-func (res scriptRunRes) Headers() map[string]string {
-	return map[string]string{}
-}
-
-func (res scriptRunRes) Empty() bool {
-	return false
-}
-
 type scriptRunsPageRes struct {
 	pageRes
-	Runs []scriptRunRes `json:"runs"`
+	Runs []api.ScriptRunRes `json:"runs"`
 }
 
 func (res scriptRunsPageRes) Code() int {

@@ -3,7 +3,7 @@
 ```sql
 CREATE TABLE IF NOT EXISTS rules (
     id          UUID PRIMARY KEY,
-    group_id    UUID NOT NULL, 
+    group_id    UUID NOT NULL,
     name        VARCHAR(254) NOT NULL,
     description VARCHAR(1024),
     conditions  JSONB NOT NULL,
@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS lua_scripts (
 CREATE TABLE IF NOT EXISTS lua_script_runs (
     id          UUID NOT NULL,
     script_id   UUID NOT NULL,
+    rule_id     UUID NULL,
     thing_id    UUID NOT NULL,
     logs        JSONB NOT NULL,
     started_at  TIMESTAMPTZ NOT NULL,
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS lua_script_runs (
     status      TEXT NOT NULL,
     error       TEXT NULL,
     PRIMARY KEY (id),
-    FOREIGN KEY (script_id) REFERENCES lua_scripts (id)
+    FOREIGN KEY (script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE,
+    FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
 );
 ```
