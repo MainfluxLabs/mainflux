@@ -1,6 +1,6 @@
 # UI Configs Service
 
-The UI Configs service persists and manages UI configuration settings scoped per organization and per thing. Configuration payloads are arbitrary JSON objects — the service imposes no schema on the values stored, giving the frontend full flexibility over what it persists. The service also supports full **backup and restore** of all configs.
+The UI Configs service persists and manages UI configuration settings scoped per organization, per group, and per thing. Configuration payloads are arbitrary JSON objects — the service imposes no schema on the values stored, giving the frontend full flexibility over what it persists. The service also supports full **backup and restore** of all configs.
 
 ## Org Config
 
@@ -10,6 +10,15 @@ An org config stores frontend settings at the organization level (e.g. theme, la
 |----------|----------------------------------------------------------------|
 | `org_id` | ID of the organization the config belongs to                   |
 | `config` | Arbitrary JSON object containing the UI configuration settings |
+
+## Group Config
+
+A group config stores frontend settings at the group level.
+
+| Field      | Description                                                    |
+|------------|--------------------------------------------------------------|
+| `group_id` | ID of the group the config belongs to                         |
+| `config`   | Arbitrary JSON object containing the UI configuration settings |
 
 ## Thing Config
 

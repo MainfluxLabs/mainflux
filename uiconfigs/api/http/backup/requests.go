@@ -6,6 +6,7 @@ package backup
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 
+	groups "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/groups"
 	orgs "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/orgs"
 	things "github.com/MainfluxLabs/mainflux/uiconfigs/api/http/things"
 )
@@ -26,13 +27,14 @@ type restoreReq struct {
 	token         string
 	OrgsConfigs   []orgs.OrgConfigResponse     `json:"orgs_configs"`
 	ThingsConfigs []things.ThingConfigResponse `json:"things_configs"`
+	GroupsConfigs []groups.GroupConfigResponse `json:"groups_configs"`
 }
 
 func (req *restoreReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if len(req.OrgsConfigs) == 0 && len(req.ThingsConfigs) == 0 {
+	if len(req.OrgsConfigs) == 0 && len(req.ThingsConfigs) == 0 && len(req.GroupsConfigs) == 0 {
 		return apiutil.ErrEmptyList
 	}
 

@@ -68,6 +68,9 @@ type ServiceScripts interface {
 	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
 	ListScriptRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ScriptRunsPage, error)
 
+	// ListScriptRunsByRule retrieves a list of Script Runs associated with a specific Rule.
+	ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (ScriptRunsPage, error)
+
 	// RemoveScriptRuns removes the Runs identified by the provided IDs.
 	RemoveScriptRuns(ctx context.Context, token string, ids ...string) error
 }
@@ -153,6 +156,10 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 	for i := range rules {
 		rules[i].GroupID = groupID
 
+		if err := rs.authorizeScripts(ctx, groupID, rules[i].Conditions); err != nil {
+			return []Rule{}, err
+		}
+
 		id, err := rs.idProvider.ID()
 		if err != nil {
 			return []Rule{}, err
@@ -161,6 +168,27 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 	}
 
 	return rs.rules.Save(ctx, rules...)
+}
+
+// authorizeScripts checks that every script condition references a script that
+// exists and belongs to groupID (the rule's group).
+func (rs *rulesService) authorizeScripts(ctx context.Context, groupID string, conditions []Condition) error {
+	for _, c := range conditions {
+		if c.Type != ConditionTypeScript {
+			continue
+		}
+
+		script, err := rs.rules.RetrieveScriptByID(ctx, c.ScriptID)
+		if err != nil {
+			return err
+		}
+
+		if script.GroupID != groupID {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return nil
 }
 
 func (rs *rulesService) ListRulesByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RulesPage, error) {
@@ -224,6 +252,10 @@ func (rs *rulesService) UpdateRule(ctx context.Context, token string, rule Rule)
 	}
 
 	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: r.GroupID, Action: domain.GroupEditor}); err != nil {
+		return err
+	}
+
+	if err := rs.authorizeScripts(ctx, r.GroupID, rule.Conditions); err != nil {
 		return err
 	}
 
@@ -370,6 +402,19 @@ func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingI
 	return rs.rules.RetrieveScriptRunsByThing(ctx, thingID, pm)
 }
 
+func (rs *rulesService) ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (ScriptRunsPage, error) {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return ScriptRunsPage{}, err
+	}
+
+	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupViewer}); err != nil {
+		return ScriptRunsPage{}, err
+	}
+
+	return rs.rules.RetrieveScriptRunsByRule(ctx, ruleID, pm)
+}
+
 func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids ...string) error {
 	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
@@ -405,7 +450,7 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != msg.Subtopic {
 			continue
 		}
-		if err := rs.processRule(&msg, payload, rule); err != nil {
+		if err := rs.runRule(ctx, &msg, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
 	}
@@ -448,7 +493,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			continue
 		}
 
-		triggered, err := processPayload(body, rule.Conditions, rule.Operator, messaging.JSONContentType)
+		triggered, err := evaluateAlarmPayload(body, rule.Conditions, rule.Operator, messaging.JSONContentType)
 		if err != nil {
 			rs.logger.Error(fmt.Sprintf("evaluating alarm rule with id %s failed with error: %v", rule.ID, err))
 			continue
@@ -521,6 +566,9 @@ type RepositoryScripts interface {
 
 	// RetrieveScriptRunsByThing retrieves a list of Script runs by Thing ID.
 	RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm PageMetadata) (ScriptRunsPage, error)
+
+	// RetrieveScriptRunsByRule retrieves a list of Script runs by Rule ID.
+	RetrieveScriptRunsByRule(ctx context.Context, ruleID string, pm PageMetadata) (ScriptRunsPage, error)
 
 	// RemoveScriptRuns removes one or more Script runs by IDs.
 	RemoveScriptRuns(ctx context.Context, ids ...string) error

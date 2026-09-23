@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -68,10 +69,15 @@ const (
 	ComparatorLTE = "<="
 	ComparatorGT  = ">"
 	ComparatorLT  = "<"
+
+	// ConditionTypeThreshold compares a payload field against a numeric threshold.
+	ConditionTypeThreshold = "threshold"
+	// ConditionTypeScript runs a Lua script and uses its boolean return value.
+	ConditionTypeScript = "script"
 )
 
-func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, rule Rule) error {
-	triggered, err := processPayload(parsedPayload, rule.Conditions, rule.Operator, msg.ContentType)
+func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, parsedPayload any, rule Rule) error {
+	triggered, err := rs.evaluateMessagePayload(ctx, msg, parsedPayload, rule)
 	if err != nil {
 		return err
 	}
@@ -123,7 +129,8 @@ func (rs *rulesService) processRule(msg *protomfx.Message, parsedPayload any, ru
 	return nil
 }
 
-func processPayload(payload any, conditions []Condition, operator string, contentType string) (bool, error) {
+// evaluateAlarmPayload evaluates an alarm-input rule's conditions against payload
+func evaluateAlarmPayload(payload any, conditions []Condition, operator string, contentType string) (bool, error) {
 	switch data := payload.(type) {
 	case []any:
 		for _, item := range data {
@@ -131,7 +138,7 @@ func processPayload(payload any, conditions []Condition, operator string, conten
 			if !ok {
 				continue
 			}
-			triggered, err := checkConditionsMet(obj, conditions, operator, contentType)
+			triggered, err := evaluateAlarmConditions(obj, conditions, operator, contentType)
 			if err != nil {
 				return false, err
 			}
@@ -141,65 +148,129 @@ func processPayload(payload any, conditions []Condition, operator string, conten
 		}
 		return false, nil
 	case map[string]any:
-		return checkConditionsMet(data, conditions, operator, contentType)
+		return evaluateAlarmConditions(data, conditions, operator, contentType)
 	default:
 		return false, errors.ErrInvalidPayload
 	}
 }
 
-func checkConditionsMet(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
+// evaluateAlarmConditions evaluates every condition of an alarm-input rule against a single
+// payload object and reduces the results under the rule's operator.
+func evaluateAlarmConditions(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
 	results := make([]bool, len(conditions))
 
 	for i, condition := range conditions {
-		value := findPayloadParam(payloadMap, condition.Field, contentType)
-		if value == nil {
-			results[i] = false
-			continue
+		r, err := evaluateThreshold(payloadMap, condition, contentType)
+		if err != nil {
+			return false, err
 		}
+		results[i] = r
+	}
 
-		var payloadValue float64
-		switch v := value.(type) {
-		case string:
-			val, err := strconv.ParseFloat(v, 64)
+	return evaluateOperator(results, operator), nil
+}
+
+// evaluateMessagePayload evaluates a message-input rule's conditions against parsedPayload,
+// which may run script conditions.
+func (rs *rulesService) evaluateMessagePayload(ctx context.Context, msg *protomfx.Message, parsedPayload any, rule Rule) (bool, error) {
+	switch data := parsedPayload.(type) {
+	case []any:
+		for _, item := range data {
+			obj, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			triggered, err := rs.evaluateMessageConditions(ctx, msg, obj, rule)
 			if err != nil {
 				return false, err
 			}
-			payloadValue = val
-		case float64:
-			payloadValue = v
-		case int:
-			payloadValue = float64(v)
-		case int32:
-			payloadValue = float64(v)
-		case int64:
-			payloadValue = float64(v)
-		case uint:
-			payloadValue = float64(v)
-		case uint64:
-			payloadValue = float64(v)
-		default:
-			results[i] = false
-			continue
-		}
-
-		results[i] = isConditionMet(condition.Comparator, payloadValue, *condition.Threshold)
-	}
-
-	if operator == OperatorOR {
-		for _, r := range results {
-			if r {
+			if triggered {
 				return true, nil
 			}
 		}
 		return false, nil
+	case map[string]any:
+		return rs.evaluateMessageConditions(ctx, msg, data, rule)
+	default:
+		return false, errors.ErrInvalidPayload
+	}
+}
+
+// evaluateMessageConditions evaluates every condition of a message-input rule against a
+// single payload object, running script conditions along the way, and reduces the results
+// under the rule's operator.
+func (rs *rulesService) evaluateMessageConditions(ctx context.Context, msg *protomfx.Message, payload map[string]any, rule Rule) (bool, error) {
+	results := make([]bool, len(rule.Conditions))
+
+	for i, condition := range rule.Conditions {
+		if condition.Type == ConditionTypeScript {
+			results[i] = rs.runScriptCondition(ctx, msg, payload, rule.ID, condition.ScriptID)
+			continue
+		}
+
+		r, err := evaluateThreshold(payload, condition, msg.ContentType)
+		if err != nil {
+			return false, err
+		}
+		results[i] = r
+	}
+
+	return evaluateOperator(results, rule.Operator), nil
+}
+
+// evaluateThreshold evaluates a single threshold condition against payload. A missing or
+// non-numeric field is not met (false, nil); a field present but unparsable as a number
+// is an error.
+func evaluateThreshold(payload map[string]any, condition Condition, contentType string) (bool, error) {
+	value := findPayloadParam(payload, condition.Field, contentType)
+	if value == nil {
+		return false, nil
+	}
+
+	var payloadValue float64
+	switch v := value.(type) {
+	case string:
+		val, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return false, err
+		}
+		payloadValue = val
+	case float64:
+		payloadValue = v
+	case int:
+		payloadValue = float64(v)
+	case int32:
+		payloadValue = float64(v)
+	case int64:
+		payloadValue = float64(v)
+	case uint:
+		payloadValue = float64(v)
+	case uint64:
+		payloadValue = float64(v)
+	default:
+		return false, nil
+	}
+
+	return isConditionMet(condition.Comparator, payloadValue, *condition.Threshold), nil
+}
+
+// evaluateOperator combines per-condition results under the rule's operator (AND if unset).
+func evaluateOperator(results []bool, operator string) bool {
+	if operator == OperatorOR {
+		for _, r := range results {
+			if r {
+				return true
+			}
+		}
+		return false
 	}
 
 	for _, r := range results {
 		if !r {
-			return false, nil
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 func isConditionMet(comparator string, val1, val2 float64) bool {
@@ -262,4 +333,12 @@ func findParam(payload map[string]any, param string) any {
 var RuleOrderFields = map[string]string{
 	"id":   "id",
 	"name": "LOWER(name)",
+}
+
+// ScriptRunOrderFields maps API-facing order keys to SQL column expressions for the lua_script_runs table.
+var ScriptRunOrderFields = map[string]string{
+	"id":          "id",
+	"started_at":  "started_at",
+	"finished_at": "finished_at",
+	"status":      "status",
 }

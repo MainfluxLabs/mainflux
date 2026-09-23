@@ -51,7 +51,7 @@ func (ms *metricsMiddleware) ListOrgsConfigs(ctx context.Context, token string, 
 	return ms.svc.ListOrgsConfigs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) UpdateOrgConfig(ctx context.Context, token string, orgConfig uiconfigs.OrgConfig) (uiconfigs.OrgConfig, error) {
+func (ms *metricsMiddleware) UpdateOrgConfig(ctx context.Context, token string, orgConfig uiconfigs.OrgConfig) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_org_config").Add(1)
 		ms.latency.With("method", "update_org_config").Observe(time.Since(begin).Seconds())
@@ -96,7 +96,7 @@ func (ms *metricsMiddleware) ListThingsConfigs(ctx context.Context, token string
 	return ms.svc.ListThingsConfigs(ctx, token, pm)
 }
 
-func (ms *metricsMiddleware) UpdateThingConfig(ctx context.Context, token string, thingConfig uiconfigs.ThingConfig) (uiconfigs.ThingConfig, error) {
+func (ms *metricsMiddleware) UpdateThingConfig(ctx context.Context, token string, thingConfig uiconfigs.ThingConfig) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_thing_config").Add(1)
 		ms.latency.With("method", "update_thing_config").Observe(time.Since(begin).Seconds())
@@ -130,6 +130,51 @@ func (ms *metricsMiddleware) BackupThingsConfigs(ctx context.Context, token stri
 	}(time.Now())
 
 	return ms.svc.BackupThingsConfigs(ctx, token)
+}
+
+func (ms *metricsMiddleware) ViewGroupConfig(ctx context.Context, token, groupID string) (uiconfigs.GroupConfig, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "view_group_config").Add(1)
+		ms.latency.With("method", "view_group_config").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ViewGroupConfig(ctx, token, groupID)
+}
+
+func (ms *metricsMiddleware) ListGroupsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (uiconfigs.GroupConfigPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_groups_configs").Add(1)
+		ms.latency.With("method", "list_groups_configs").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListGroupsConfigs(ctx, token, pm)
+}
+
+func (ms *metricsMiddleware) UpdateGroupConfig(ctx context.Context, token string, groupConfig uiconfigs.GroupConfig) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "update_group_config").Add(1)
+		ms.latency.With("method", "update_group_config").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UpdateGroupConfig(ctx, token, groupConfig)
+}
+
+func (ms *metricsMiddleware) RemoveGroupConfig(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "remove_group_config").Add(1)
+		ms.latency.With("method", "remove_group_config").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveGroupConfig(ctx, groupID)
+}
+
+func (ms *metricsMiddleware) BackupGroupsConfigs(ctx context.Context, token string) (uiconfigs.GroupConfigBackup, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "backup_groups_configs").Add(1)
+		ms.latency.With("method", "backup_groups_configs").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.BackupGroupsConfigs(ctx, token)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (uiconfigs.Backup, error) {

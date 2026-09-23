@@ -328,6 +328,29 @@ paths:
           description: Database can't process request.
         '500':
           $ref: "#/components/responses/ServiceError"
+  /rules/{ruleId}/runs:
+    get:
+      summary: Retrieve Script runs for a Rule.
+      description: Retrieve a list of script run history for a specific Rule identified by the provided ID.
+      tags:
+        - script-runs
+      parameters:
+        - $ref: "#/components/parameters/RuleId"
+      responses:
+        '200':
+          $ref: "#/components/responses/ListScriptRunsRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Rule does not exist.
+        '422':
+          description: Database can't process request.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /runs:
     patch:
       summary: Removes script runs
@@ -387,7 +410,16 @@ components:
       required: [type]
     Condition:
       type: object
+      description: |
+        `type` selects how the condition is evaluated. "threshold": `field`, `comparator`,
+        and `threshold` are required. "script": `script_id` is required instead, referencing
+        a script whose boolean return value is the condition's result. Script conditions
+        are only supported on message-input rules.
       properties:
+        type:
+          type: string
+          enum: [threshold, script]
+          example: "threshold"
         field:
           type: string
           example: "temperature"
@@ -397,7 +429,11 @@ components:
         threshold:
           type: number
           example: 45
-      required: [field, comparator, threshold]
+        script_id:
+          type: string
+          format: uuid
+          example: "456e4567-e89b-12d3-a456-426614174abc"
+      required: [type]
     Action:
       type: object
       properties:
@@ -548,6 +584,10 @@ components:
           type: string
           format: uuid
           example: "456e4567-e89b-12d3-a456-426614174abc"
+        rule_id:
+          type: string
+          format: uuid
+          example: "789e4567-e89b-12d3-a456-426614174abc"
         thing_id:
           type: string
           format: uuid
@@ -593,6 +633,9 @@ components:
 
           mfx.log(string.format("temp=%.1f  hum=%.1f%%  dew_point=%.1f  spread=%.1f",
             temp, hum, dew_point, spread))
+
+          -- condensation risk if the surface is within 2°C of the dew point
+          return spread <= 2.0
 
           -- Condensation risk: surface is near or below dew point
           if spread <= 2.0 then
@@ -713,16 +756,30 @@ components:
                   thing_ids:
                     - "123e4567-e89b-12d3-a456-426614174000"
                 conditions:
-                  - field: "temperature"
+                  - type: "threshold"
+                    field: "temperature"
                     comparator: ">"
                     threshold: 45
-                  - field: "humidity"
+                  - type: "threshold"
+                    field: "humidity"
                     comparator: "<"
                     threshold: 20
                 operator: "AND"
                 actions:
                   - type: "smtp"
                     id: "513e2557-e09b-42d3-s456-425614175403"
+                  - type: "alarm"
+                    level: 3
+              - name: "Condensation Risk Alert"
+                description: "Runs a script condition to flag condensation risk from temperature and humidity"
+                input:
+                  type: "message"
+                  thing_ids:
+                    - "123e4567-e89b-12d3-a456-426614174000"
+                conditions:
+                  - type: "script"
+                    script_id: "456e4567-e89b-12d3-a456-426614174abc"
+                actions:
                   - type: "alarm"
                     level: 3
     UpdateRuleReq:
@@ -738,7 +795,8 @@ components:
             input:
               type: "message"
             conditions:
-              - field: "temperature"
+              - type: "threshold"
+                field: "temperature"
                 comparator: ">"
                 threshold: 50
             actions:
@@ -878,10 +936,12 @@ components:
                   thing_ids:
                     - "123e4567-e89b-12d3-a456-426614174000"
                 conditions:
-                  - field: "temperature"
+                  - type: "threshold"
+                    field: "temperature"
                     comparator: ">"
                     threshold: 45
-                  - field: "humidity"
+                  - type: "threshold"
+                    field: "humidity"
                     comparator: "<"
                     threshold: 20
                 operator: "AND"
@@ -906,7 +966,8 @@ components:
               thing_ids:
                 - "123e4567-e89b-12d3-a456-426614174000"
             conditions:
-              - field: "temperature"
+              - type: "threshold"
+                field: "temperature"
                 comparator: ">"
                 threshold: 45
             actions:
@@ -948,7 +1009,8 @@ components:
                   thing_ids:
                     - "123e4567-e89b-12d3-a456-426614174000"
                 conditions:
-                  - field: "temperature"
+                  - type: "threshold"
+                    field: "temperature"
                     comparator: ">"
                     threshold: 45
                 actions:
