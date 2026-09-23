@@ -38,6 +38,10 @@ const (
 	editorEmail = "editor@example.com"
 	editorToken = editorEmail
 
+	unauthID    = "unauth-id"
+	unauthEmail = "unauth@example.com"
+	unauthToken = unauthEmail
+
 	orgID   = "9325aef3-5a2b-448c-bae1-5d45f86ba2aa"
 	thingID = "fe6b4e92-cc98-425e-b0aa-000000000001"
 	groupID = "574106f7-030e-4881-8ab0-151195c29f94"
@@ -46,6 +50,7 @@ const (
 var usersList = []domain.User{
 	{ID: adminID, Email: adminEmail},
 	{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
+	{ID: unauthID, Email: unauthEmail},
 }
 
 type testRequest struct {
@@ -151,6 +156,12 @@ func TestBackup(t *testing.T) {
 			token:  adminToken,
 			status: http.StatusOK,
 			size:   1,
+		},
+		{
+			desc:   "backup as unauthorized user",
+			token:  unauthToken,
+			status: http.StatusOK,
+			size:   0,
 		},
 		{
 			desc:   "backup with invalid token",

@@ -42,9 +42,9 @@ const (
 	viewerEmail = "viewer@example.com"
 	viewerToken = viewerEmail
 
-	noRoleID    = "no-role-id"
-	noRoleEmail = "no-role@example.com"
-	noRoleToken = noRoleEmail
+	unauthID    = "unauth-id"
+	unauthEmail = "unauth@example.com"
+	unauthToken = unauthEmail
 
 	orgID = "9325aef3-5a2b-448c-bae1-5d45f86ba2aa"
 )
@@ -53,7 +53,7 @@ var usersList = []domain.User{
 	{ID: adminID, Email: adminEmail},
 	{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
 	{ID: viewerID, Email: viewerEmail, Role: domain.OrgViewer},
-	{ID: noRoleID, Email: noRoleEmail},
+	{ID: unauthID, Email: unauthEmail},
 }
 
 type testRequest struct {
@@ -151,9 +151,9 @@ func TestViewOrgConfig(t *testing.T) {
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "view org config with insufficient permissions",
+			desc:   "view org config as unauthorized user",
 			id:     orgID,
-			token:  noRoleToken,
+			token:  unauthToken,
 			status: http.StatusForbidden,
 		},
 		{

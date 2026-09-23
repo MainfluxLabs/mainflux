@@ -36,9 +36,9 @@ const (
 	viewerEmail = "viewer@example.com"
 	viewerToken = viewerEmail
 
-	noRoleID    = "no-role-id"
-	noRoleEmail = "no-role@example.com"
-	noRoleToken = noRoleEmail
+	unauthID    = "unauth-id"
+	unauthEmail = "unauth@example.com"
+	unauthToken = unauthEmail
 
 	orgID = "9325aef3-5a2b-448c-bae1-5d45f86ba2aa"
 
@@ -60,7 +60,7 @@ func newService() uiconfigs.Service {
 		{ID: adminID, Email: adminEmail},
 		{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
 		{ID: viewerID, Email: viewerEmail, Role: domain.OrgViewer},
-		{ID: noRoleID, Email: noRoleEmail},
+		{ID: unauthID, Email: unauthEmail},
 	}
 	authClient := pkgmocks.NewAuthService(adminID, usersList, nil)
 
@@ -103,8 +103,8 @@ func TestViewOrgConfig(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "view org config with insufficient permissions",
-			token: noRoleToken,
+			desc:  "view org config as unauthorized user",
+			token: unauthToken,
 			orgID: orgID,
 			err:   errors.ErrAuthorization,
 		},
@@ -186,8 +186,8 @@ func TestListOrgsConfigs(t *testing.T) {
 			total: 2,
 		},
 		{
-			desc:  "user without an org role sees no org configs",
-			token: noRoleToken,
+			desc:  "unauthorized user sees no org configs",
+			token: unauthToken,
 			total: 0,
 		},
 	}
@@ -321,8 +321,8 @@ func TestListThingsConfigs(t *testing.T) {
 			total: 1,
 		},
 		{
-			desc:  "user without access to any thing sees none",
-			token: noRoleToken,
+			desc:  "unauthorized user sees no thing configs",
+			token: unauthToken,
 			total: 0,
 		},
 	}
@@ -480,8 +480,8 @@ func TestListGroupsConfigs(t *testing.T) {
 			size:  1,
 		},
 		{
-			desc:  "user without access to any group sees none",
-			token: noRoleToken,
+			desc:  "unauthorized user sees no group configs",
+			token: unauthToken,
 			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 0,
 			size:  0,
@@ -535,7 +535,7 @@ func TestBackup(t *testing.T) {
 	assert.Len(t, backup.ThingsConfigs, 1)
 	assert.Len(t, backup.GroupsConfigs, 1)
 
-	backup, err = svc.Backup(context.Background(), noRoleToken)
+	backup, err = svc.Backup(context.Background(), unauthToken)
 	require.Nil(t, err)
 	assert.Empty(t, backup.OrgsConfigs)
 	assert.Empty(t, backup.ThingsConfigs)
