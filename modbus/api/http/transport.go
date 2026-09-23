@@ -103,6 +103,24 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 		encodeResponse,
 		opts...,
 	))
+	r.Post("/read", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "read_registers"),
+			withIdentity,
+		)(readRegistersEndpoint(svc)),
+		decodeReadRegisters,
+		encodeResponse,
+		opts...,
+	))
+	r.Post("/write", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "write_register"),
+			withIdentity,
+		)(writeRegisterEndpoint(svc)),
+		decodeWriteRegister,
+		encodeResponse,
+		opts...,
+	))
 	r.Put("/clients/:id", kithttp.NewServer(
 		endpoint.Chain(
 			kitot.TraceServer(tracer, "update_client"),
@@ -293,6 +311,32 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeReadRegisters(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := readRegistersReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
+func decodeWriteRegister(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := writeRegisterReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
+}
+
 func decodeUpdateClient(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
@@ -355,7 +399,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrMissingFieldAddress,
 		err == ErrInvalidFieldType,
 		err == ErrInvalidByteOrder,
-		err == ErrInvalidFieldLength:
+		err == ErrInvalidFieldLength,
+		err == ErrMissingValue:
 		w.WriteHeader(http.StatusBadRequest)
 	default:
 		apiutil.EncodeError(err, w)
