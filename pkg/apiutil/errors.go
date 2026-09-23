@@ -192,6 +192,9 @@ var (
 	// ErrInvalidInputType indicates an invalid rule input type
 	ErrInvalidInputType = errors.New("missing or invalid input type")
 
+	// ErrInvalidConditionType indicates an invalid condition type
+	ErrInvalidConditionType = errors.New("missing or invalid condition type")
+
 	// ErrInviteExpired indicates that an invite has expired
 	ErrInviteExpired = errors.New("invite expired")
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -178,6 +179,42 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 
 		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
 	}
+}
+
+func listScriptRunsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(listScriptRunsByRuleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		page, err := svc.ListScriptRunsByRule(ctx, req.token, req.ruleID, req.pageMetadata)
+		if err != nil {
+			return nil, err
+		}
+
+		return buildScriptRunsPageResponse(page, req.pageMetadata), nil
+	}
+}
+
+func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadata) scriptRunsPageRes {
+	res := scriptRunsPageRes{
+		pageRes: pageRes{
+			Total:  page.Total,
+			Offset: pm.Offset,
+			Limit:  pm.Limit,
+			Order:  pm.Order,
+			Dir:    pm.Dir,
+			Name:   pm.Name,
+		},
+		Runs: []api.ScriptRunRes{},
+	}
+
+	for _, run := range page.Runs {
+		res.Runs = append(res.Runs, api.ToScriptRunRes(run))
+	}
+
+	return res
 }
 
 func toRuleResponse(r rules.Rule) ruleResponse {

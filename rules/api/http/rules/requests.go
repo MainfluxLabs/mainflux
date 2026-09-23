@@ -71,7 +71,7 @@ func (req createRule) validate() error {
 		return err
 	}
 
-	if err := validateConditions(req.Conditions, req.Operator); err != nil {
+	if err := validateConditions(req.Conditions, req.Operator, req.Input.Type); err != nil {
 		return err
 	}
 
@@ -110,7 +110,7 @@ func (req listRulesByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleOrderFields)
 }
 
 type listRulesByGroupReq struct {
@@ -128,7 +128,7 @@ func (req listRulesByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleOrderFields)
 }
 
 type updateRuleInput struct {
@@ -164,7 +164,7 @@ func (req updateRuleReq) validate() error {
 		return err
 	}
 
-	if err := validateConditions(req.Conditions, req.Operator); err != nil {
+	if err := validateConditions(req.Conditions, req.Operator, req.Input.Type); err != nil {
 		return err
 	}
 
@@ -210,6 +210,24 @@ func (req removeRulesReq) validate() error {
 	return nil
 }
 
+type listScriptRunsByRuleReq struct {
+	token        string
+	ruleID       string
+	pageMetadata rules.PageMetadata
+}
+
+func (req listScriptRunsByRuleReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.ruleID == "" {
+		return apiutil.ErrMissingRuleID
+	}
+
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.ScriptRunOrderFields)
+}
+
 func validateThingIDs(ids []string) error {
 	if len(ids) < minLen || len(ids) > maxThingIDs {
 		return apiutil.ErrThingIDsSize
@@ -231,21 +249,33 @@ func validateInputType(inputType string) error {
 	}
 }
 
-func validateConditions(conditions []rules.Condition, operator string) error {
+func validateConditions(conditions []rules.Condition, operator, inputType string) error {
 	if len(conditions) < minLen {
 		return apiutil.ErrEmptyList
 	}
 	for _, condition := range conditions {
-		if condition.Field == "" {
-			return apiutil.ErrMissingConditionField
-		}
-		switch condition.Comparator {
-		case rules.ComparatorEQ, rules.ComparatorGT, rules.ComparatorLT, rules.ComparatorGTE, rules.ComparatorLTE:
+		switch condition.Type {
+		case rules.ConditionTypeThreshold:
+			if condition.Field == "" {
+				return apiutil.ErrMissingConditionField
+			}
+			switch condition.Comparator {
+			case rules.ComparatorEQ, rules.ComparatorGT, rules.ComparatorLT, rules.ComparatorGTE, rules.ComparatorLTE:
+			default:
+				return apiutil.ErrInvalidConditionComparator
+			}
+			if condition.Threshold == nil {
+				return apiutil.ErrMissingConditionThreshold
+			}
+		case rules.ConditionTypeScript:
+			if inputType == rules.InputTypeAlarm {
+				return apiutil.ErrInvalidConditionType
+			}
+			if condition.ScriptID == "" {
+				return apiutil.ErrMissingScriptID
+			}
 		default:
-			return apiutil.ErrInvalidConditionComparator
-		}
-		if condition.Threshold == nil {
-			return apiutil.ErrMissingConditionThreshold
+			return apiutil.ErrInvalidConditionType
 		}
 	}
 	if len(conditions) > minLen {

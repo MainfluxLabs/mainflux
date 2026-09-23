@@ -161,6 +161,32 @@ func migrateDB(db *sqlx.DB) error {
 					);`,
 				},
 			},
+			{
+				// Backfills the "type" field on conditions created before script conditions
+				// existed, when every condition was implicitly a threshold condition.
+				Id: "rules_9",
+				Up: []string{
+					`UPDATE rules
+					 SET conditions = (
+						 SELECT jsonb_agg(elem || jsonb_build_object('type', COALESCE(elem->>'type', 'threshold')))
+						 FROM jsonb_array_elements(conditions) AS elem
+					 )
+					 WHERE EXISTS (
+						 SELECT 1 FROM jsonb_array_elements(conditions) AS elem WHERE NOT (elem ? 'type')
+					 )`,
+				},
+			},
+			{
+				Id: "rules_10",
+				Up: []string{
+					`ALTER TABLE lua_script_runs ADD COLUMN IF NOT EXISTS rule_id UUID NULL REFERENCES rules (id) ON DELETE CASCADE`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_rule_id ON lua_script_runs(rule_id)`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_lua_script_runs_rule_id`,
+					`ALTER TABLE lua_script_runs DROP COLUMN IF EXISTS rule_id`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

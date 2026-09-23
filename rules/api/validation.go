@@ -8,10 +8,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
-// ValidatePageMetadata validates the rules page metadata.
-func ValidatePageMetadata(pm rules.PageMetadata, maxLimitSize, maxNameSize int) error {
+// ValidatePageMetadata validates the page metadata against the given set of allowed order fields.
+func ValidatePageMetadata(pm rules.PageMetadata, maxLimitSize, maxNameSize int, orderFields map[string]string) error {
 	common := apiutil.PageMetadata{Offset: pm.Offset, Limit: pm.Limit, Order: pm.Order, Dir: pm.Dir}
-	if err := common.Validate(maxLimitSize, rules.RuleOrderFields); err != nil {
+	if err := common.Validate(maxLimitSize, orderFields); err != nil {
 		return err
 	}
 
