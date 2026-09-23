@@ -93,7 +93,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 				return err
 			}
 			if err := rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
-				ThingId:  msg.Publisher,
+				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Created:  msg.Created,
@@ -105,7 +105,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 			}
 		case ActionTypeSMTP, ActionTypeSMPP:
 			notification := protomfx.Notification{
-				ThingId:  msg.Publisher,
+				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Payload:  msg.Payload,
@@ -116,7 +116,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 			}
 		case ActionTypeWebhook:
 			webhook := protomfx.Webhook{
-				ThingId: msg.Publisher,
+				ThingId: msg.ThingId,
 				Payload: msg.Payload,
 				Created: msg.Created,
 			}

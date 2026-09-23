@@ -329,7 +329,7 @@ func TestBaseConditions(t *testing.T) {
 	cases := []struct {
 		desc       string
 		subtopic   string
-		publisher  string
+		thingID    string
 		protocol   string
 		from       int64
 		to         int64
@@ -344,7 +344,7 @@ func TestBaseConditions(t *testing.T) {
 		{
 			desc:       "all fields",
 			subtopic:   "sub",
-			publisher:  "pub",
+			thingID:    "thing",
 			protocol:   "mqtt",
 			from:       1000,
 			to:         2000,
@@ -359,7 +359,7 @@ func TestBaseConditions(t *testing.T) {
 		},
 		{
 			desc:       "partial fields",
-			publisher:  "pub",
+			thingID:    "thing",
 			from:       1000,
 			timeColumn: "created",
 			res: []string{
@@ -373,7 +373,7 @@ func TestBaseConditions(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			result := mfreaders.BaseConditions(readers.MessagesPageMetadata{
 				Subtopic:  tc.subtopic,
-				Publisher: tc.publisher,
+				Publisher: tc.thingID,
 				Protocol:  tc.protocol,
 				From:      tc.from,
 				To:        tc.to,
@@ -387,7 +387,7 @@ func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
 		MessagesPageMetadata: readers.MessagesPageMetadata{
 			Subtopic:  "test",
-			Publisher: "pub1",
+			Publisher: "thing1",
 			From:      1000,
 		},
 	}
