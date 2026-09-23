@@ -15,6 +15,10 @@ import (
 func saveFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(saveFileReq)
+		if req.file != nil {
+			defer req.file.Close()
+		}
+
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -79,16 +83,12 @@ func viewFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		f, err := svc.ViewFile(ctx, req.key.Value, fi)
+		rc, err := svc.ViewFile(ctx, req.key.Value, fi)
 		if err != nil {
 			return nil, err
 		}
 
-		res := viewFileRes{
-			file: f,
-		}
-
-		return res, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -117,6 +117,10 @@ func removeFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 func saveGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(saveGroupFileReq)
+		if req.file != nil {
+			defer req.file.Close()
+		}
+
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -181,16 +185,12 @@ func viewGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		f, err := svc.ViewGroupFile(ctx, req.token, req.groupID, fi)
+		rc, err := svc.ViewGroupFile(ctx, req.token, req.groupID, fi)
 		if err != nil {
 			return nil, err
 		}
 
-		res := viewFileRes{
-			file: f,
-		}
-
-		return res, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -207,16 +207,12 @@ func viewGroupFileByKeyEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		f, err := svc.ViewGroupFileByKey(ctx, req.key.Value, fi)
+		rc, err := svc.ViewGroupFileByKey(ctx, req.key.Value, fi)
 		if err != nil {
 			return nil, err
 		}
 
-		res := viewFileRes{
-			file: f,
-		}
-
-		return res, nil
+		return streamFileRes{reader: rc, name: req.name}, nil
 	}
 }
 
@@ -253,6 +249,7 @@ func buildListFilesResponse(pm filestore.PageMetadata, files []filestore.FileInf
 		},
 		FilesInfo: []fileInfo{},
 	}
+
 	for _, file := range files {
 		f := fileInfo{
 			Name:     file.Name,
