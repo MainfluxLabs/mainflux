@@ -40,8 +40,8 @@ var (
 	To int64 = 0
 	// Dir sort direction query parameter (asc/desc)
 	Dir string = ""
-	// Filter query parameter (JSON messages)
-	Filter string = ""
+	// Key JSON payload key query parameter
+	Key string = ""
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
 	// AggValue aggregation value
@@ -134,7 +134,7 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 		Protocol:    Protocol,
 		From:        From,
 		To:          To,
-		Filter:      Filter,
+		Key:         Key,
 		AggInterval: AggInterval,
 		AggValue:    uint64(AggValue),
 		AggType:     AggType,

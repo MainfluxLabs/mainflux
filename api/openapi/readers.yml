@@ -607,7 +607,7 @@ components:
           type: integer
           format: int64
           description: End time in nanoseconds.
-        filter:
+        key:
           type: string
         agg_interval:
           type: string

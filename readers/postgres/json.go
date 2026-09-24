@@ -120,14 +120,14 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
 	conds := mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder)
-	if rpm.Filter != "" {
-		conds = append(conds, fmt.Sprintf("%s IS NOT NULL", buildPayloadFilterPath(rpm.Filter)))
+	if rpm.Key != "" {
+		conds = append(conds, fmt.Sprintf("%s IS NOT NULL", buildPayloadKeyPath(rpm.Key)))
 	}
 
 	return dbutil.BuildWhereClause(conds...)
 }
 
-func buildPayloadFilterPath(field string) string {
+func buildPayloadKeyPath(field string) string {
 	parts := strings.Split(field, ".")
 	if len(parts) == 1 {
 		return fmt.Sprintf("payload->>'%s'", parts[0])

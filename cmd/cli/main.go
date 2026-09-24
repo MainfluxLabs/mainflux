@@ -234,10 +234,10 @@ func main() {
 	)
 
 	rootCmd.PersistentFlags().StringVar(
-		&cli.Filter,
-		"filter",
+		&cli.Key,
+		"key",
 		"",
-		"Filter query parameter (JSON messages)",
+		"JSON payload key",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
