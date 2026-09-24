@@ -35,14 +35,17 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	if err := migrateDB(db); err != nil {
+	if err := MigrateDB(db); err != nil {
 		return nil, err
 	}
 
 	return db, nil
 }
 
-func migrateDB(db *sqlx.DB) error {
+// MigrateDB applies any unapplied database migrations for the senml/json
+// schema. It is exported so the timescale-reader's tests can provision the
+// same schema against their own dockertest database.
+func MigrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
