@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 
+	writertimescale "github.com/MainfluxLabs/mainflux/consumers/writers/timescale"
 	"github.com/MainfluxLabs/mainflux/readers/timescale"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
@@ -63,6 +64,10 @@ func TestMain(m *testing.M) {
 
 	if db, err = timescale.Connect(dbConfig); err != nil {
 		log.Fatalf("Could not setup test DB connection: %s", err)
+	}
+
+	if err = writertimescale.MigrateDB(db); err != nil {
+		log.Fatalf("Could not migrate test DB: %s", err)
 	}
 
 	code := m.Run()
