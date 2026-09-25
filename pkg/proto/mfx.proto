@@ -319,20 +319,22 @@ message Group {
 }
 
 message ListJSONMessagesReq {
-    ThingKey        thing_key    = 1;
-    uint64          offset       = 2;
-    uint64          limit        = 3;
-    string          subtopic     = 4;
-    string          publisher    = 5;
-    string          protocol     = 6;
-    int64           from         = 7;
-    int64           to           = 8;
-    string          filter       = 9;
-    string          agg_interval = 10;
-    uint64          agg_value    = 11;
-    string          agg_type     = 12;
-    repeated string agg_fields   = 13;
-    string          dir          = 14;
+    ThingKey        thing_key     = 1;
+    uint64          offset        = 2;
+    uint64          limit         = 3;
+    string          subtopic      = 4;
+    string          publisher     = 5;
+    string          protocol      = 6;
+    int64           from          = 7;
+    int64           to            = 8;
+    string          payload_key   = 9;
+    string          payload_value = 10;
+    string          comparator    = 11;
+    string          agg_interval  = 12;
+    uint64          agg_value     = 13;
+    string          agg_type      = 14;
+    repeated string agg_fields    = 15;
+    string          dir           = 16;
 }
 
 message ListJSONMessagesRes {

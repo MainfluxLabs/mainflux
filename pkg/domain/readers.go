@@ -57,7 +57,9 @@ type SenMLPageMetadata struct {
 // JSONPageMetadata represents the parameters used to create database queries.
 type JSONPageMetadata struct {
 	MessagesPageMetadata
-	Filter string `json:"filter,omitempty"`
+	PayloadKey   string `json:"payload_key,omitempty"`
+	PayloadValue string `json:"payload_value,omitempty"`
+	Comparator   string `json:"comparator,omitempty"`
 }
 
 // ReadersClient specifies the API for querying messages from the readers service via gRPC.
