@@ -5,8 +5,11 @@ package readers
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const (
@@ -25,6 +28,10 @@ const (
 	GreaterThanKey = "gt"
 	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
 	GreaterThanEqualKey = "ge"
+	// StartsWithKey represents the case-insensitive starts-with comparison operator key.
+	StartsWithKey = "starts_with"
+	// ContainsKey represents the case-insensitive contains comparison operator key.
+	ContainsKey = "contains"
 
 	// MicrosecondInterval represents the microsecond aggregation interval unit.
 	MicrosecondInterval = "microsecond"
@@ -44,6 +51,20 @@ const (
 	MonthInterval = "month"
 	// YearInterval represents the year aggregation interval unit.
 	YearInterval = "year"
+)
+
+const (
+	payloadKeyPath  = "CAST(:payload_key_path AS text[])"
+	jsonScalarTypes = "('string', 'number', 'boolean')"
+)
+
+var (
+	// ErrInvalidPayloadKey indicates a malformed JSON payload key.
+	ErrInvalidPayloadKey = errors.New("invalid payload key")
+
+	payloadKeyPartRegexp  = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[\d+\])*)$`)
+	payloadKeyIndexRegexp = regexp.MustCompile(`\d+`)
+	likeEscaper           = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 )
 
 func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string {
@@ -76,6 +97,89 @@ func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 		"protocol":  pm.Protocol,
 		"from":      pm.From,
 		"to":        pm.To,
+	}
+}
+
+// JSONConditions returns the SQL predicates common to every JSON read.
+func JSONConditions(pm domain.JSONPageMetadata) []string {
+	conds := BaseConditions(pm.MessagesPageMetadata, JSONOrder)
+
+	switch {
+	case pm.PayloadKey != "" && pm.PayloadValue != "":
+		keyNode := fmt.Sprintf("(payload #> %s)", payloadKeyPath)
+		valueCond := payloadValueCondition(keyNode, pm.Comparator)
+		return append(conds, valueCond)
+	case pm.PayloadKey != "":
+		keyCond := fmt.Sprintf("payload #>> %s IS NOT NULL", payloadKeyPath)
+		return append(conds, keyCond)
+	case pm.PayloadValue != "":
+		valueCond := payloadValueCondition("node", pm.Comparator)
+		anyNodeCond := fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, 'strict $.**') AS node WHERE %s)", valueCond)
+		return append(conds, anyNodeCond)
+	default:
+		return conds
+	}
+}
+
+// JSONQueryParams returns the named parameters referenced by JSONConditions.
+func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
+	params := BaseQueryParams(pm.MessagesPageMetadata)
+
+	if pm.PayloadKey != "" {
+		keyPath, _ := ParsePayloadKey(pm.PayloadKey)
+		params["payload_key_path"] = keyPath
+	}
+
+	if pm.PayloadValue != "" {
+		params["payload_value"] = payloadValueParam(pm.PayloadValue, pm.Comparator)
+	}
+
+	return params
+}
+
+// ParsePayloadKey splits a dot-separated JSON payload key with optional array indexes.
+func ParsePayloadKey(key string) ([]string, error) {
+	var segments []string
+
+	for _, part := range strings.Split(key, ".") {
+		matches := payloadKeyPartRegexp.FindStringSubmatch(part)
+		if matches == nil {
+			return nil, ErrInvalidPayloadKey
+		}
+
+		name := matches[1]
+		indexes := payloadKeyIndexRegexp.FindAllString(matches[2], -1)
+
+		segments = append(segments, name)
+		segments = append(segments, indexes...)
+	}
+
+	return segments, nil
+}
+
+// payloadValueCondition matches a jsonb node against :payload_value when the node is a scalar.
+func payloadValueCondition(node, comparator string) string {
+	scalarCond := fmt.Sprintf("jsonb_typeof(%s) IN %s", node, jsonScalarTypes)
+	nodeText := fmt.Sprintf("%s #>> '{}'", node)
+
+	valueCond := fmt.Sprintf("%s = :payload_value", nodeText)
+	if comparator == StartsWithKey || comparator == ContainsKey {
+		valueCond = fmt.Sprintf("LOWER(%s) LIKE :payload_value", nodeText)
+	}
+
+	return fmt.Sprintf("%s AND %s", scalarCond, valueCond)
+}
+
+func payloadValueParam(value, comparator string) string {
+	pattern := likeEscaper.Replace(strings.ToLower(value))
+
+	switch comparator {
+	case StartsWithKey:
+		return pattern + "%"
+	case ContainsKey:
+		return "%" + pattern + "%"
+	default:
+		return value
 	}
 }
 

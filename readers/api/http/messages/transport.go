@@ -34,7 +34,8 @@ const (
 	fromKey                = "from"
 	toKey                  = "to"
 	convertKey             = "convert"
-	keyKey                 = "key"
+	payloadKeyKey          = "payload_key"
+	payloadValueKey        = "payload_value"
 	aggIntervalKey         = "agg_interval"
 	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
@@ -169,7 +170,17 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	key, err := apiutil.ReadStringQuery(r, keyKey, "")
+	payloadKey, err := apiutil.ReadStringQuery(r, payloadKeyKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	payloadValue, err := apiutil.ReadStringQuery(r, payloadValueKey, "")
+	if err != nil {
+		return nil, err
+	}
+
+	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +198,9 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
 	pageMeta.Publisher = publisher
-	pageMeta.Key = key
+	pageMeta.PayloadKey = payloadKey
+	pageMeta.PayloadValue = payloadValue
+	pageMeta.Comparator = comparator
 
 	return listJSONMessagesReq{
 		token:    apiutil.ExtractBearerToken(r),

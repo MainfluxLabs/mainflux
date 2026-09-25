@@ -234,10 +234,17 @@ func main() {
 	)
 
 	rootCmd.PersistentFlags().StringVar(
-		&cli.Key,
-		"key",
+		&cli.PayloadKey,
+		"payload-key",
 		"",
 		"JSON payload key",
+	)
+
+	rootCmd.PersistentFlags().StringVar(
+		&cli.PayloadValue,
+		"payload-value",
+		"",
+		"JSON payload value",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
@@ -286,7 +293,7 @@ func main() {
 		&cli.Comparator,
 		"comparator",
 		"",
-		"Comparison operator (eq, lt, le, gt, ge)",
+		"Comparison operator (SenML: eq, lt, le, gt, ge; JSON: eq, starts_with, contains)",
 	)
 
 	rootCmd.PersistentFlags().BoolVar(

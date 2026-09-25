@@ -12,6 +12,7 @@ import (
 
 	pwriter "github.com/MainfluxLabs/mainflux/consumers/writers/postgres"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
+	mfreaders "github.com/MainfluxLabs/mainflux/pkg/readers"
 	"github.com/MainfluxLabs/mainflux/readers"
 	preader "github.com/MainfluxLabs/mainflux/readers/postgres"
 	"github.com/stretchr/testify/assert"
@@ -419,6 +420,214 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 		actualDeleted := beforeCount - afterCount
 		assert.Equal(t, tc.expectedCount, actualDeleted, fmt.Sprintf("%s: %s - expected %d deleted, got %d", desc, tc.description, tc.expectedCount, actualDeleted))
+	}
+}
+
+func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
+	reader := preader.NewJSONRepository(db)
+	writer := pwriter.New(db)
+
+	pubID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	pyd := map[string]any{
+		"field_1": 123.0,
+		"field_2": "value",
+		"field_3": false,
+		"field_4": 12.344,
+		"field_5": map[string]any{
+			"field_1": "value",
+			"field_2": 42.0,
+		},
+	}
+	pyd2 := map[string]any{
+		"field_1":     "other_value",
+		"false_value": false,
+		"field_pi":    3.14159265,
+		"field_array": []any{
+			map[string]any{
+				"field_1": "value_1",
+			},
+			map[string]any{
+				"field_1": "value_2",
+			},
+		},
+	}
+
+	var msgs []map[string]any
+	created := time.Now().Unix()
+	for i, p := range []map[string]any{pyd, pyd2} {
+		payload, err := json.Marshal(p)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		msg := protomfx.Message{
+			ThingId:     pubID,
+			Subtopic:    subtopic,
+			Protocol:    mqttProt,
+			Payload:     payload,
+			ContentType: jsonCT,
+			Created:     created + int64(i),
+		}
+		err = writer.ConsumeMessage(subject, msg)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		mapped, err := toMap(msg)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		msgs = append(msgs, mapped)
+	}
+
+	pageMeta := readers.MessagesPageMetadata{
+		Limit:     noLimit,
+		Publisher: pubID,
+	}
+
+	cases := map[string]struct {
+		pageMeta readers.JSONPageMetadata
+		page     readers.JSONMessagesPage
+	}{
+		"read messages with nested payload key": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_5.field_2",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
+		"read messages with payload key containing a quote": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "it's",
+			},
+			page: readers.JSONMessagesPage{},
+		},
+		"read messages with array index payload key": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_array[1].field_1",
+				PayloadValue:         "value_2",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+		"read messages with payload key and exact value": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_5.field_1",
+				PayloadValue:         "value",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
+		"read messages with payload key and value in different case": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_5.field_1",
+				PayloadValue:         "VALUE",
+			},
+			page: readers.JSONMessagesPage{},
+		},
+		"read messages with payload key and value prefix": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_1",
+				PayloadValue:         "OTHER",
+				Comparator:           mfreaders.StartsWithKey,
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+		"read messages with payload key and value substring": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_1",
+				PayloadValue:         "her_va",
+				Comparator:           mfreaders.ContainsKey,
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+		"read messages with payload key and underscore not used as wildcard": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_1",
+				PayloadValue:         "othe_",
+				Comparator:           mfreaders.StartsWithKey,
+			},
+			page: readers.JSONMessagesPage{},
+		},
+		"read messages with payload key and number value": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_1",
+				PayloadValue:         "123",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
+		"read messages with payload key and value at object": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadKey:           "field_5",
+				PayloadValue:         "value",
+				Comparator:           mfreaders.ContainsKey,
+			},
+			page: readers.JSONMessagesPage{},
+		},
+		"read messages with payload value in nested fields": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadValue:         "42",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
+		"read messages with payload value in array element": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				PayloadValue:         "value_2",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+	}
+
+	for desc, tc := range cases {
+		result, err := reader.Retrieve(context.Background(), tc.pageMeta)
+		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %s", desc, err))
+		assert.ElementsMatch(t, tc.page.Messages, result.Messages, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Messages, result.Messages))
+		assert.Equal(t, tc.page.Total, result.Total, fmt.Sprintf("%s: expected %v got %v", desc, tc.page.Total, result.Total))
 	}
 }
 

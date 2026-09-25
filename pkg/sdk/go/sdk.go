@@ -90,19 +90,21 @@ type PageMetadata struct {
 
 // JSONPageMetadata represents query parameters for JSON message endpoints.
 type JSONPageMetadata struct {
-	Offset      uint64   `json:"offset"`
-	Limit       uint64   `json:"limit"`
-	Subtopic    string   `json:"subtopic,omitempty"`
-	Publisher   string   `json:"publisher,omitempty"`
-	Protocol    string   `json:"protocol,omitempty"`
-	From        int64    `json:"from,omitempty"`
-	To          int64    `json:"to,omitempty"`
-	Key         string   `json:"key,omitempty"`
-	AggInterval string   `json:"agg_interval,omitempty"`
-	AggValue    uint64   `json:"agg_value,omitempty"`
-	AggType     string   `json:"agg_type,omitempty"`
-	AggFields   []string `json:"agg_fields,omitempty"`
-	Dir         string   `json:"dir,omitempty"`
+	Offset       uint64   `json:"offset"`
+	Limit        uint64   `json:"limit"`
+	Subtopic     string   `json:"subtopic,omitempty"`
+	Publisher    string   `json:"publisher,omitempty"`
+	Protocol     string   `json:"protocol,omitempty"`
+	From         int64    `json:"from,omitempty"`
+	To           int64    `json:"to,omitempty"`
+	PayloadKey   string   `json:"payload_key,omitempty"`
+	PayloadValue string   `json:"payload_value,omitempty"`
+	Comparator   string   `json:"comparator,omitempty"`
+	AggInterval  string   `json:"agg_interval,omitempty"`
+	AggValue     uint64   `json:"agg_value,omitempty"`
+	AggType      string   `json:"agg_type,omitempty"`
+	AggFields    []string `json:"agg_fields,omitempty"`
+	Dir          string   `json:"dir,omitempty"`
 }
 
 // SenMLPageMetadata represents query parameters for SenML message endpoints.

@@ -72,6 +72,10 @@ func (req listJSONMessagesReq) validate() error {
 		return err
 	}
 
+	if err := validatePayloadFilter(req.pageMeta); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -210,6 +214,10 @@ func (req searchJSONMessagesReq) validate() error {
 		if err := validateSearchParams(req.jsonPageMetadatas[i].MessagesPageMetadata); err != nil {
 			return err
 		}
+
+		if err := validatePayloadFilter(req.jsonPageMetadatas[i]); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -272,6 +280,29 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 		return nil
 	default:
 		return apiutil.ErrInvalidAggType
+	}
+}
+
+func validatePayloadFilter(pm readers.JSONPageMetadata) error {
+	if pm.PayloadKey != "" {
+		if _, err := mfreaders.ParsePayloadKey(pm.PayloadKey); err != nil {
+			return apiutil.ErrInvalidQueryParams
+		}
+	}
+
+	if pm.PayloadValue == "" {
+		if pm.Comparator != "" {
+			return apiutil.ErrInvalidQueryParams
+		}
+
+		return nil
+	}
+
+	switch pm.Comparator {
+	case "", mfreaders.EqualKey, mfreaders.StartsWithKey, mfreaders.ContainsKey:
+		return nil
+	default:
+		return apiutil.ErrInvalidComparator
 	}
 }
 

@@ -6,7 +6,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -119,36 +118,11 @@ func (jr *jsonRepository) scanMessages(rows *sqlx.Rows) ([]readers.Message, erro
 }
 
 func (jr *jsonRepository) fmtCondition(rpm readers.JSONPageMetadata) string {
-	conds := mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder)
-	if rpm.Key != "" {
-		conds = append(conds, fmt.Sprintf("%s IS NOT NULL", buildPayloadKeyPath(rpm.Key)))
-	}
-
-	return dbutil.BuildWhereClause(conds...)
-}
-
-func buildPayloadKeyPath(field string) string {
-	parts := strings.Split(field, ".")
-	if len(parts) == 1 {
-		return fmt.Sprintf("payload->>'%s'", parts[0])
-	}
-
-	var path strings.Builder
-	path.WriteString("payload")
-
-	for i, part := range parts {
-		if i == len(parts)-1 {
-			fmt.Fprintf(&path, "->>'%s'", part)
-		} else {
-			fmt.Fprintf(&path, "->'%s'", part)
-		}
-	}
-
-	return path.String()
+	return dbutil.BuildWhereClause(mfreaders.JSONConditions(rpm)...)
 }
 
 func (jr *jsonRepository) buildQueryParams(rpm readers.JSONPageMetadata) map[string]any {
-	return mfreaders.BaseQueryParams(rpm.MessagesPageMetadata)
+	return mfreaders.JSONQueryParams(rpm)
 }
 
 func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetadata) (readers.JSONMessagesPage, error) {

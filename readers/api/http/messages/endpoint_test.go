@@ -691,6 +691,18 @@ func TestListJSONMessages(t *testing.T) {
 				Messages: messages[0:10],
 			},
 		},
+		{
+			desc:   "read JSON messages with invalid payload key",
+			url:    fmt.Sprintf("%s/json?payload_key=items..value", ts.URL),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with invalid comparator",
+			url:    fmt.Sprintf("%s/json?payload_key=code&payload_value=VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
+			token:  adminToken,
+			status: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range cases {

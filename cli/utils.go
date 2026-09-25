@@ -40,8 +40,10 @@ var (
 	To int64 = 0
 	// Dir sort direction query parameter (asc/desc)
 	Dir string = ""
-	// Key JSON payload key query parameter
-	Key string = ""
+	// PayloadKey JSON payload key query parameter
+	PayloadKey string = ""
+	// PayloadValue JSON payload value query parameter
+	PayloadValue string = ""
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
 	// AggValue aggregation value
@@ -54,7 +56,7 @@ var (
 	SenMLName string = ""
 	// SenMLValue SenML numeric value filter
 	SenMLValue float64 = 0
-	// Comparator comparison operator (eq, lt, le, gt, ge)
+	// Comparator comparison operator (SenML: eq, lt, le, gt, ge; JSON: eq, starts_with, contains)
 	Comparator string = ""
 	// BoolValue SenML boolean value filter
 	BoolValue bool = false
@@ -127,19 +129,21 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 	}
 
 	return mfxsdk.JSONPageMetadata{
-		Offset:      uint64(Offset),
-		Limit:       uint64(Limit),
-		Subtopic:    Subtopic,
-		Publisher:   Publisher,
-		Protocol:    Protocol,
-		From:        From,
-		To:          To,
-		Key:         Key,
-		AggInterval: AggInterval,
-		AggValue:    uint64(AggValue),
-		AggType:     AggType,
-		AggFields:   aggFields,
-		Dir:         Dir,
+		Offset:       uint64(Offset),
+		Limit:        uint64(Limit),
+		Subtopic:     Subtopic,
+		Publisher:    Publisher,
+		Protocol:     Protocol,
+		From:         From,
+		To:           To,
+		PayloadKey:   PayloadKey,
+		PayloadValue: PayloadValue,
+		Comparator:   Comparator,
+		AggInterval:  AggInterval,
+		AggValue:     uint64(AggValue),
+		AggType:      AggType,
+		AggFields:    aggFields,
+		Dir:          Dir,
 	}
 }
 

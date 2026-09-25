@@ -26,6 +26,9 @@ paths:
         - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/PayloadKey"
+        - $ref: "#/components/parameters/PayloadValue"
+        - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
         - $ref: "#/components/parameters/AggField"
@@ -607,8 +610,15 @@ components:
           type: integer
           format: int64
           description: End time in nanoseconds.
-        key:
+        payload_key:
           type: string
+          description: Dot-separated JSON payload key.
+        payload_value:
+          type: string
+          description: JSON payload value to match.
+        comparator:
+          type: string
+          enum: [eq, starts_with, contains]
         agg_interval:
           type: string
           enum: [microsecond, millisecond, second, minute, hour, day, week, month, year]
@@ -757,6 +767,20 @@ components:
       schema:
         type: string
       required: false
+    PayloadKey:
+      name: payload_key
+      description: Dot-separated JSON payload key.
+      in: query
+      schema:
+        type: string
+      required: false
+    PayloadValue:
+      name: payload_value
+      description: JSON payload value to match.
+      in: query
+      schema:
+        type: string
+      required: false
     Subtopic:
       name: subtopic
       description: Message subtopic.
@@ -801,7 +825,9 @@ components:
       required: false
     Comparator:
       name: comparator
-      description: Value comparison operator.
+      description: |
+        Value comparison operator. SenML messages support `eq`, `lt`, `le`, `gt` and `ge`.
+        JSON messages support `eq`, `starts_with` and `contains`.
       in: query
       schema:
         type: string
@@ -812,6 +838,8 @@ components:
           - le
           - gt
           - ge
+          - starts_with
+          - contains
       required: false
     From:
       name: from
