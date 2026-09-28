@@ -8,6 +8,7 @@ package coap
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -43,6 +44,11 @@ type PubSub interface {
 	messaging.Subscriber
 }
 
+const (
+	subjectPrefixThings = "things"
+	subjectPrefixGroups = "groups"
+)
+
 var _ Service = (*adapterService)(nil)
 
 type adapterService struct {
@@ -76,11 +82,51 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {
-	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
+	thingID, err := svc.things.Identify(ctx, key)
+	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
+	if err := svc.authorizeSubscribe(ctx, thingID, subtopic); err != nil {
+		return err
+	}
+
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
+}
+
+// authorizeSubscribe restricts observation of thing and group subjects to the
+// observing thing's own ID and its group, like the MQTT adapter does for its
+// custom topics. Outside of those subjects, wildcards are rejected so that a
+// thing cannot observe every subject on the broker.
+func (svc *adapterService) authorizeSubscribe(ctx context.Context, thingID, subject string) error {
+	elems := strings.Split(subject, ".")
+
+	if len(elems) >= 2 {
+		switch elems[0] {
+		case subjectPrefixThings:
+			if elems[1] != thingID {
+				return errors.ErrAuthorization
+			}
+			return nil
+		case subjectPrefixGroups:
+			groupID, err := svc.things.GetGroupIDByThing(ctx, thingID)
+			if err != nil {
+				return errors.Wrap(errors.ErrAuthorization, err)
+			}
+			if elems[1] != groupID {
+				return errors.ErrAuthorization
+			}
+			return nil
+		}
+	}
+
+	for _, elem := range elems {
+		if elem == "*" || elem == ">" {
+			return errors.ErrAuthorization
+		}
+	}
+
+	return nil
 }
 
 func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {
