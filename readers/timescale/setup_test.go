@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 
+	twriter "github.com/MainfluxLabs/mainflux/consumers/writers/timescale"
 	"github.com/MainfluxLabs/mainflux/readers/timescale"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
@@ -60,6 +61,12 @@ func TestMain(m *testing.M) {
 		SSLKey:      "",
 		SSLRootCert: "",
 	}
+
+	wdb, err := twriter.Connect(twriter.Config(dbConfig))
+	if err != nil {
+		log.Fatalf("Could not migrate test DB: %s", err)
+	}
+	wdb.Close()
 
 	if db, err = timescale.Connect(dbConfig); err != nil {
 		log.Fatalf("Could not setup test DB connection: %s", err)
