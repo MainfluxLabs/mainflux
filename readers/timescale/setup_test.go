@@ -62,12 +62,14 @@ func TestMain(m *testing.M) {
 		SSLRootCert: "",
 	}
 
+	wdb, err := writertimescale.Connect(writertimescale.Config(dbConfig))
+	if err != nil {
+		log.Fatalf("Could not migrate test DB: %s", err)
+	}
+	wdb.Close()
+
 	if db, err = timescale.Connect(dbConfig); err != nil {
 		log.Fatalf("Could not setup test DB connection: %s", err)
-	}
-
-	if err = writertimescale.MigrateDB(db); err != nil {
-		log.Fatalf("Could not migrate test DB: %s", err)
 	}
 
 	code := m.Run()

@@ -35,16 +35,14 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	if err := MigrateDB(db); err != nil {
+	if err := migrateDB(db); err != nil {
 		return nil, err
 	}
 
 	return db, nil
 }
 
-// MigrateDB applies any unapplied database migrations for the senml/json
-// schema.
-func MigrateDB(db *sqlx.DB) error {
+func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
