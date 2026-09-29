@@ -55,7 +55,7 @@ const (
 )
 
 const (
-	payloadKey      = "CAST(:payload_key AS jsonpath)"
+	keyPath         = "CAST(:key AS jsonpath)"
 	anyPayloadPath  = "'strict $.**'"
 	jsonScalarTypes = "('string', 'number', 'boolean')"
 	// unwrapArrayFilter is a no-op filter; in lax mode it unwraps an array at the end of the key into its items.
@@ -63,11 +63,11 @@ const (
 )
 
 var (
-	// ErrInvalidPayloadKey indicates a malformed JSON payload key.
-	ErrInvalidPayloadKey = errors.New("invalid payload key")
+	// ErrInvalidKey indicates a malformed JSON payload key.
+	ErrInvalidKey = errors.New("invalid key")
 
-	payloadKeyPartRegexp = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[\d+\])*)$`)
-	likeEscaper          = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	keyPartRegexp = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[\d+\])*)$`)
+	likeEscaper   = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 )
 
 func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string {
@@ -108,15 +108,15 @@ func JSONConditions(pm domain.JSONPageMetadata) []string {
 	conds := BaseConditions(pm.MessagesPageMetadata, JSONOrder)
 
 	switch {
-	case pm.PayloadKey != "" && pm.PayloadValue != "":
-		valueCond := payloadValueCondition(pm.Comparator)
-		keyValueCond := anyPayloadNodeCondition(payloadKey, valueCond)
+	case pm.Key != "" && pm.Value != "":
+		valueCond := valueCondition(pm.Comparator)
+		keyValueCond := anyPayloadNodeCondition(keyPath, valueCond)
 		return append(conds, keyValueCond)
-	case pm.PayloadKey != "":
-		keyCond := anyPayloadNodeCondition(payloadKey, "jsonb_typeof(node) <> 'null'")
+	case pm.Key != "":
+		keyCond := anyPayloadNodeCondition(keyPath, "jsonb_typeof(node) <> 'null'")
 		return append(conds, keyCond)
-	case pm.PayloadValue != "":
-		valueCond := payloadValueCondition(pm.Comparator)
+	case pm.Value != "":
+		valueCond := valueCondition(pm.Comparator)
 		anyValueCond := anyPayloadNodeCondition(anyPayloadPath, valueCond)
 		return append(conds, anyValueCond)
 	default:
@@ -128,26 +128,26 @@ func JSONConditions(pm domain.JSONPageMetadata) []string {
 func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 	params := BaseQueryParams(pm.MessagesPageMetadata)
 
-	if pm.PayloadKey != "" {
-		params["payload_key"] = payloadKeyParam(pm.PayloadKey, pm.PayloadValue)
+	if pm.Key != "" {
+		params["key"] = keyParam(pm.Key, pm.Value)
 	}
 
-	if pm.PayloadValue != "" {
-		params["payload_value"] = payloadValueParam(pm.PayloadValue, pm.Comparator)
+	if pm.Value != "" {
+		params["value"] = valueParam(pm.Value, pm.Comparator)
 	}
 
 	return params
 }
 
-// ParsePayloadKey converts a dot-separated JSON payload key into a JSON path.
-func ParsePayloadKey(key string) (string, error) {
+// ParseKey converts a dot-separated JSON payload key into a JSON path.
+func ParseKey(key string) (string, error) {
 	var path strings.Builder
 	path.WriteString("lax $")
 
 	for _, part := range strings.Split(key, ".") {
-		matches := payloadKeyPartRegexp.FindStringSubmatch(part)
+		matches := keyPartRegexp.FindStringSubmatch(part)
 		if matches == nil {
-			return "", ErrInvalidPayloadKey
+			return "", ErrInvalidKey
 		}
 
 		name, _ := json.Marshal(matches[1])
@@ -160,9 +160,9 @@ func ParsePayloadKey(key string) (string, error) {
 	return path.String(), nil
 }
 
-// payloadKeyParam returns the JSON path bound as :payload_key.
-func payloadKeyParam(key, value string) any {
-	path, err := ParsePayloadKey(key)
+// keyParam returns the JSON path bound as :key.
+func keyParam(key, value string) any {
+	path, err := ParseKey(key)
 	if err != nil {
 		return nil
 	}
@@ -180,19 +180,19 @@ func anyPayloadNodeCondition(path, nodeCond string) string {
 	return fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, %s) AS node WHERE %s)", path, nodeCond)
 }
 
-// payloadValueCondition matches node against :payload_value when node is a scalar.
-func payloadValueCondition(comparator string) string {
+// valueCondition matches node against :value when node is a scalar.
+func valueCondition(comparator string) string {
 	scalarCond := fmt.Sprintf("jsonb_typeof(node) IN %s", jsonScalarTypes)
 
-	valueCond := "node #>> '{}' = :payload_value"
+	valueCond := "node #>> '{}' = :value"
 	if comparator == StartsWithKey || comparator == ContainsKey {
-		valueCond = "LOWER(node #>> '{}') LIKE :payload_value"
+		valueCond = "LOWER(node #>> '{}') LIKE :value"
 	}
 
 	return fmt.Sprintf("%s AND %s", scalarCond, valueCond)
 }
 
-func payloadValueParam(value, comparator string) string {
+func valueParam(value, comparator string) string {
 	if comparator != StartsWithKey && comparator != ContainsKey {
 		return value
 	}

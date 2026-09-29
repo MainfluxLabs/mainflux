@@ -26,8 +26,8 @@ paths:
         - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
-        - $ref: "#/components/parameters/PayloadKey"
-        - $ref: "#/components/parameters/PayloadValue"
+        - $ref: "#/components/parameters/Key"
+        - $ref: "#/components/parameters/Value"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
@@ -177,10 +177,10 @@ paths:
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/Protocol"
-        - $ref: "#/components/parameters/Value"
-        - $ref: "#/components/parameters/BoolValue"
-        - $ref: "#/components/parameters/StringValue"
-        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/V"
+        - $ref: "#/components/parameters/VB"
+        - $ref: "#/components/parameters/VS"
+        - $ref: "#/components/parameters/VD"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -361,10 +361,10 @@ paths:
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/Protocol"
-        - $ref: "#/components/parameters/Value"
-        - $ref: "#/components/parameters/BoolValue"
-        - $ref: "#/components/parameters/StringValue"
-        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/V"
+        - $ref: "#/components/parameters/VB"
+        - $ref: "#/components/parameters/VS"
+        - $ref: "#/components/parameters/VD"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -610,10 +610,10 @@ components:
           type: integer
           format: int64
           description: End time in nanoseconds.
-        payload_key:
+        key:
           type: string
           description: Dot-separated JSON payload key.
-        payload_value:
+        value:
           type: string
           description: JSON payload value to match.
         comparator:
@@ -767,15 +767,15 @@ components:
       schema:
         type: string
       required: false
-    PayloadKey:
-      name: payload_key
+    Key:
+      name: key
       description: Dot-separated JSON payload key.
       in: query
       schema:
         type: string
       required: false
-    PayloadValue:
-      name: payload_value
+    Value:
+      name: value
       description: JSON payload value to match.
       in: query
       schema:
@@ -795,28 +795,28 @@ components:
       schema:
         type: string
       required: false
-    Value:
+    V:
       name: v
       description: SenML message value (numeric).
       in: query
       schema:
         type: number
       required: false
-    BoolValue:
+    VB:
       name: vb
       description: SenML message bool value.
       in: query
       schema:
         type: boolean
       required: false
-    StringValue:
+    VS:
       name: vs
       description: SenML message string value.
       in: query
       schema:
         type: string
       required: false
-    DataValue:
+    VD:
       name: vd
       description: SenML message data value.
       in: query

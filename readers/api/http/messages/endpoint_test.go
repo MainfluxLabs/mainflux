@@ -692,14 +692,14 @@ func TestListJSONMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read JSON messages with invalid payload key",
-			url:    fmt.Sprintf("%s/json?payload_key=items..value", ts.URL),
+			desc:   "read JSON messages with invalid key",
+			url:    fmt.Sprintf("%s/json?key=items..value", ts.URL),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with invalid comparator",
-			url:    fmt.Sprintf("%s/json?payload_key=code&payload_value=VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
+			url:    fmt.Sprintf("%s/json?key=code&value=VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
 			token:  adminToken,
 			status: http.StatusBadRequest,
 		},

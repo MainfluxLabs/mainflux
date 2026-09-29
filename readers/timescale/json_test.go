@@ -137,7 +137,7 @@ func TestListAllMessagesJSON(t *testing.T) {
 	}
 }
 
-func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
+func TestListJSONMessagesByKeyValue(t *testing.T) {
 	reader := treader.NewJSONRepository(db)
 	writer := twriter.New(db)
 
@@ -199,10 +199,10 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 		pageMeta readers.JSONPageMetadata
 		page     readers.JSONMessagesPage
 	}{
-		"read messages with nested payload key": {
+		"read messages with nested key": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_5.field_2",
+				Key:                  "field_5.field_2",
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -211,18 +211,18 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload key containing a quote": {
+		"read messages with key containing a quote": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "it's",
+				Key:                  "it's",
 			},
 			page: readers.JSONMessagesPage{},
 		},
-		"read messages with array index payload key": {
+		"read messages with array index key": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_array[1].field_1",
-				PayloadValue:         "value_2",
+				Key:                  "field_array[1].field_1",
+				Value:                "value_2",
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -231,11 +231,11 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload key and exact value": {
+		"read messages with key and exact value": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_5.field_1",
-				PayloadValue:         "value",
+				Key:                  "field_5.field_1",
+				Value:                "value",
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -244,19 +244,19 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload key and value in different case": {
+		"read messages with key and value in different case": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_5.field_1",
-				PayloadValue:         "VALUE",
+				Key:                  "field_5.field_1",
+				Value:                "VALUE",
 			},
 			page: readers.JSONMessagesPage{},
 		},
-		"read messages with payload key and value prefix": {
+		"read messages with key and value prefix": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_1",
-				PayloadValue:         "OTHER",
+				Key:                  "field_1",
+				Value:                "OTHER",
 				Comparator:           mfreaders.StartsWithKey,
 			},
 			page: readers.JSONMessagesPage{
@@ -266,11 +266,11 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload key and value substring": {
+		"read messages with key and value substring": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_1",
-				PayloadValue:         "her_va",
+				Key:                  "field_1",
+				Value:                "her_va",
 				Comparator:           mfreaders.ContainsKey,
 			},
 			page: readers.JSONMessagesPage{
@@ -280,20 +280,20 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload key and underscore not used as wildcard": {
+		"read messages with key and underscore not used as wildcard": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_1",
-				PayloadValue:         "othe_",
+				Key:                  "field_1",
+				Value:                "othe_",
 				Comparator:           mfreaders.StartsWithKey,
 			},
 			page: readers.JSONMessagesPage{},
 		},
-		"read messages with payload key and number value": {
+		"read messages with key and number value": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_1",
-				PayloadValue:         "123",
+				Key:                  "field_1",
+				Value:                "123",
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -302,19 +302,19 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload key and value at object": {
+		"read messages with key and value at object": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadKey:           "field_5",
-				PayloadValue:         "value",
+				Key:                  "field_5",
+				Value:                "value",
 				Comparator:           mfreaders.ContainsKey,
 			},
 			page: readers.JSONMessagesPage{},
 		},
-		"read messages with payload value in nested fields": {
+		"read messages with value in nested fields": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadValue:         "42",
+				Value:                "42",
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -323,10 +323,10 @@ func TestListJSONMessagesByPayloadKeyValue(t *testing.T) {
 				},
 			},
 		},
-		"read messages with payload value in array element": {
+		"read messages with value in array element": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				PayloadValue:         "value_2",
+				Value:                "value_2",
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{

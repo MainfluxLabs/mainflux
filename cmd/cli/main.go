@@ -234,15 +234,15 @@ func main() {
 	)
 
 	rootCmd.PersistentFlags().StringVar(
-		&cli.PayloadKey,
-		"payload-key",
+		&cli.Key,
+		"key",
 		"",
 		"JSON payload key",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
-		&cli.PayloadValue,
-		"payload-value",
+		&cli.Value,
+		"value",
 		"",
 		"JSON payload value",
 	)

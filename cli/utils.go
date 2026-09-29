@@ -40,10 +40,10 @@ var (
 	To int64 = 0
 	// Dir sort direction query parameter (asc/desc)
 	Dir string = ""
-	// PayloadKey JSON payload key query parameter
-	PayloadKey string = ""
-	// PayloadValue JSON payload value query parameter
-	PayloadValue string = ""
+	// Key JSON payload key query parameter
+	Key string = ""
+	// Value JSON payload value query parameter
+	Value string = ""
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
 	// AggValue aggregation value
@@ -129,21 +129,21 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 	}
 
 	return mfxsdk.JSONPageMetadata{
-		Offset:       uint64(Offset),
-		Limit:        uint64(Limit),
-		Subtopic:     Subtopic,
-		Publisher:    Publisher,
-		Protocol:     Protocol,
-		From:         From,
-		To:           To,
-		PayloadKey:   PayloadKey,
-		PayloadValue: PayloadValue,
-		Comparator:   Comparator,
-		AggInterval:  AggInterval,
-		AggValue:     uint64(AggValue),
-		AggType:      AggType,
-		AggFields:    aggFields,
-		Dir:          Dir,
+		Offset:      uint64(Offset),
+		Limit:       uint64(Limit),
+		Subtopic:    Subtopic,
+		Publisher:   Publisher,
+		Protocol:    Protocol,
+		From:        From,
+		To:          To,
+		Key:         Key,
+		Value:       Value,
+		Comparator:  Comparator,
+		AggInterval: AggInterval,
+		AggValue:    uint64(AggValue),
+		AggType:     AggType,
+		AggFields:   aggFields,
+		Dir:         Dir,
 	}
 }
 

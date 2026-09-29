@@ -284,13 +284,13 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 }
 
 func validatePayloadFilter(pm readers.JSONPageMetadata) error {
-	if pm.PayloadKey != "" {
-		if _, err := mfreaders.ParsePayloadKey(pm.PayloadKey); err != nil {
+	if pm.Key != "" {
+		if _, err := mfreaders.ParseKey(pm.Key); err != nil {
 			return apiutil.ErrInvalidQueryParams
 		}
 	}
 
-	if pm.PayloadValue == "" {
+	if pm.Value == "" {
 		if pm.Comparator != "" {
 			return apiutil.ErrInvalidQueryParams
 		}

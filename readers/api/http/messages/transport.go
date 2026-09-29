@@ -26,16 +26,16 @@ const (
 	octetStreamContentType = "application/octet-stream"
 	subtopicKey            = "subtopic"
 	protocolKey            = "protocol"
-	valueKey               = "v"
-	stringValueKey         = "vs"
-	dataValueKey           = "vd"
-	boolValueKey           = "vb"
+	vKey                   = "v"
+	vsKey                  = "vs"
+	vdKey                  = "vd"
+	vbKey                  = "vb"
 	comparatorKey          = "comparator"
 	fromKey                = "from"
 	toKey                  = "to"
 	convertKey             = "convert"
-	payloadKeyKey          = "payload_key"
-	payloadValueKey        = "payload_value"
+	keyKey                 = "key"
+	valueKey               = "value"
 	aggIntervalKey         = "agg_interval"
 	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
@@ -170,12 +170,12 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	payloadKey, err := apiutil.ReadStringQuery(r, payloadKeyKey, "")
+	key, err := apiutil.ReadStringQuery(r, keyKey, "")
 	if err != nil {
 		return nil, err
 	}
 
-	payloadValue, err := apiutil.ReadStringQuery(r, payloadValueKey, "")
+	value, err := apiutil.ReadStringQuery(r, valueKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +198,8 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
 	pageMeta.Publisher = publisher
-	pageMeta.PayloadKey = payloadKey
-	pageMeta.PayloadValue = payloadValue
+	pageMeta.Key = key
+	pageMeta.Value = value
 	pageMeta.Comparator = comparator
 
 	return listJSONMessagesReq{
@@ -610,7 +610,7 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	v, err := apiutil.ReadFloatQuery(r, valueKey, 0)
+	v, err := apiutil.ReadFloatQuery(r, vKey, 0)
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
@@ -620,17 +620,17 @@ func BuildSenMLPageMetadata(r *http.Request) (readers.SenMLPageMetadata, error) 
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	vs, err := apiutil.ReadStringQuery(r, stringValueKey, "")
+	vs, err := apiutil.ReadStringQuery(r, vsKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	vd, err := apiutil.ReadStringQuery(r, dataValueKey, "")
+	vd, err := apiutil.ReadStringQuery(r, vdKey, "")
 	if err != nil {
 		return readers.SenMLPageMetadata{}, err
 	}
 
-	vb, err := apiutil.ReadBoolQuery(r, boolValueKey, false)
+	vb, err := apiutil.ReadBoolQuery(r, vbKey, false)
 	if err != nil && err != apiutil.ErrNotFoundParam {
 		return readers.SenMLPageMetadata{}, err
 	}
