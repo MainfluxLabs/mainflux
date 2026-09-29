@@ -160,7 +160,7 @@ func TestBackup(t *testing.T) {
 		{
 			desc:   "backup as unauthorized user",
 			token:  unauthToken,
-			status: http.StatusOK,
+			status: http.StatusForbidden,
 			size:   0,
 		},
 		{

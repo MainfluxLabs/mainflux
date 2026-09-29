@@ -36,6 +36,10 @@ const (
 	viewerEmail = "viewer@example.com"
 	viewerToken = viewerEmail
 
+	otherID    = "other-id"
+	otherEmail = "other@example.com"
+	otherToken = otherEmail
+
 	unauthID    = "unauth-id"
 	unauthEmail = "unauth@example.com"
 	unauthToken = unauthEmail
@@ -60,6 +64,7 @@ func newService() uiconfigs.Service {
 		{ID: adminID, Email: adminEmail},
 		{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
 		{ID: viewerID, Email: viewerEmail, Role: domain.OrgViewer},
+		{ID: otherID, Email: otherEmail},
 		{ID: unauthID, Email: unauthEmail},
 	}
 	authClient := pkgmocks.NewAuthService(adminID, usersList, nil)
@@ -67,12 +72,12 @@ func newService() uiconfigs.Service {
 	things := map[string]domain.Thing{
 		editorToken:  {ID: thingID, GroupID: groupID},
 		thingID:      {ID: thingID, GroupID: groupID},
-		viewerToken:  {ID: otherThingID, GroupID: otherGroupID},
+		otherToken:   {ID: otherThingID, GroupID: otherGroupID},
 		otherThingID: {ID: otherThingID, GroupID: otherGroupID},
 	}
 	groupsByToken := map[string]domain.Group{
 		editorToken: {ID: groupID, OrgID: orgID},
-		viewerToken: {ID: otherGroupID, OrgID: orgID},
+		otherToken:  {ID: otherGroupID, OrgID: orgID},
 	}
 	thingsClient := pkgmocks.NewThingsServiceClient(map[string]domain.Profile{}, things, groupsByToken)
 
@@ -173,29 +178,45 @@ func TestListOrgsConfigs(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
+		pm    apiutil.PageMetadata
 		total uint64
+		size  int
 	}{
 		{
 			desc:  "admin lists all org configs",
 			token: adminToken,
+			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 2,
+			size:  2,
 		},
 		{
 			desc:  "member with an org role lists all org configs",
 			token: editorToken,
+			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 2,
+			size:  2,
 		},
 		{
 			desc:  "unauthorized user sees no org configs",
 			token: unauthToken,
+			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 0,
+			size:  0,
+		},
+		{
+			desc:  "admin lists org configs with offset beyond available",
+			token: adminToken,
+			pm:    apiutil.PageMetadata{Limit: 20, Offset: 10},
+			total: 2,
+			size:  0,
 		},
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListOrgsConfigs(context.Background(), tc.token, apiutil.PageMetadata{Limit: 10})
+		page, err := svc.ListOrgsConfigs(context.Background(), tc.token, tc.pm)
 		require.Nil(t, err, tc.desc)
 		assert.Equal(t, tc.total, page.Total, tc.desc)
+		assert.Equal(t, tc.size, len(page.OrgsConfigs), tc.desc)
 	}
 
 	_, err := svc.ListOrgsConfigs(context.Background(), wrongValue, apiutil.PageMetadata{Limit: 10})
@@ -241,7 +262,7 @@ func TestViewThingConfig(t *testing.T) {
 		},
 		{
 			desc:    "view thing config without access to the thing",
-			token:   viewerToken,
+			token:   otherToken,
 			thingID: thingID,
 			err:     errors.ErrAuthorization,
 		},
@@ -285,7 +306,7 @@ func TestUpdateThingConfig(t *testing.T) {
 		},
 		{
 			desc:        "update thing config without access to the thing",
-			token:       viewerToken,
+			token:       otherToken,
 			thingConfig: uiconfigs.ThingConfig{ThingID: thingID, Config: testConfig},
 			err:         errors.ErrAuthorization,
 		},
@@ -302,35 +323,51 @@ func TestListThingsConfigs(t *testing.T) {
 
 	err := svc.UpdateThingConfig(context.Background(), editorToken, uiconfigs.ThingConfig{ThingID: thingID, Config: testConfig})
 	require.Nil(t, err)
-	err = svc.UpdateThingConfig(context.Background(), viewerToken, uiconfigs.ThingConfig{ThingID: otherThingID, Config: testConfig})
+	err = svc.UpdateThingConfig(context.Background(), otherToken, uiconfigs.ThingConfig{ThingID: otherThingID, Config: testConfig})
 	require.Nil(t, err)
 
 	cases := []struct {
 		desc  string
 		token string
+		pm    apiutil.PageMetadata
 		total uint64
+		size  int
 	}{
 		{
 			desc:  "admin lists all thing configs",
 			token: adminToken,
+			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 2,
+			size:  2,
 		},
 		{
 			desc:  "user only sees things it can access",
 			token: editorToken,
+			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 1,
+			size:  1,
 		},
 		{
 			desc:  "unauthorized user sees no thing configs",
 			token: unauthToken,
+			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 0,
+			size:  0,
+		},
+		{
+			desc:  "admin lists thing configs with offset beyond available",
+			token: adminToken,
+			pm:    apiutil.PageMetadata{Limit: 20, Offset: 10},
+			total: 2,
+			size:  0,
 		},
 	}
 
 	for _, tc := range cases {
-		page, err := svc.ListThingsConfigs(context.Background(), tc.token, apiutil.PageMetadata{Limit: 10})
+		page, err := svc.ListThingsConfigs(context.Background(), tc.token, tc.pm)
 		require.Nil(t, err, tc.desc)
 		assert.Equal(t, tc.total, page.Total, tc.desc)
+		assert.Equal(t, tc.size, len(page.ThingsConfigs), tc.desc)
 	}
 }
 
@@ -353,7 +390,7 @@ func TestRemoveThingConfigByGroup(t *testing.T) {
 
 	err := svc.UpdateThingConfig(context.Background(), editorToken, uiconfigs.ThingConfig{ThingID: thingID, Config: testConfig})
 	require.Nil(t, err)
-	err = svc.UpdateThingConfig(context.Background(), viewerToken, uiconfigs.ThingConfig{ThingID: otherThingID, Config: testConfig})
+	err = svc.UpdateThingConfig(context.Background(), otherToken, uiconfigs.ThingConfig{ThingID: otherThingID, Config: testConfig})
 	require.Nil(t, err)
 
 	err = svc.RemoveThingConfigByGroup(context.Background(), groupID)
@@ -363,7 +400,7 @@ func TestRemoveThingConfigByGroup(t *testing.T) {
 	require.Nil(t, err)
 	assert.Empty(t, tc.Config, "config for a thing in the removed group should be gone")
 
-	otherTc, err := svc.ViewThingConfig(context.Background(), viewerToken, otherThingID)
+	otherTc, err := svc.ViewThingConfig(context.Background(), otherToken, otherThingID)
 	require.Nil(t, err)
 	assert.Equal(t, testConfig, otherTc.Config, "config for a thing in a different group should remain")
 }
@@ -393,7 +430,7 @@ func TestViewGroupConfig(t *testing.T) {
 		},
 		{
 			desc:    "view group config without access to the group",
-			token:   viewerToken,
+			token:   otherToken,
 			groupID: groupID,
 			err:     errors.ErrAuthorization,
 		},
@@ -434,7 +471,7 @@ func TestUpdateGroupConfig(t *testing.T) {
 		},
 		{
 			desc:        "update group config without access to the group",
-			token:       viewerToken,
+			token:       otherToken,
 			groupConfig: uiconfigs.GroupConfig{GroupID: groupID, Config: testConfig},
 			err:         errors.ErrAuthorization,
 		},
@@ -455,7 +492,7 @@ func TestListGroupsConfigs(t *testing.T) {
 
 	err := svc.UpdateGroupConfig(context.Background(), editorToken, uiconfigs.GroupConfig{GroupID: groupID, Config: testConfig})
 	require.Nil(t, err)
-	err = svc.UpdateGroupConfig(context.Background(), viewerToken, uiconfigs.GroupConfig{GroupID: otherGroupID, Config: testConfig})
+	err = svc.UpdateGroupConfig(context.Background(), otherToken, uiconfigs.GroupConfig{GroupID: otherGroupID, Config: testConfig})
 	require.Nil(t, err)
 
 	cases := []struct {
@@ -535,11 +572,8 @@ func TestBackup(t *testing.T) {
 	assert.Len(t, backup.ThingsConfigs, 1)
 	assert.Len(t, backup.GroupsConfigs, 1)
 
-	backup, err = svc.Backup(context.Background(), unauthToken)
-	require.Nil(t, err)
-	assert.Empty(t, backup.OrgsConfigs)
-	assert.Empty(t, backup.ThingsConfigs)
-	assert.Empty(t, backup.GroupsConfigs)
+	_, err = svc.Backup(context.Background(), unauthToken)
+	assert.True(t, errors.Contains(err, errors.ErrAuthorization), fmt.Sprintf("expected %s got %s", errors.ErrAuthorization, err))
 }
 
 func TestRestore(t *testing.T) {

@@ -38,9 +38,9 @@ const (
 	editorEmail = "editor@example.com"
 	editorToken = editorEmail
 
-	viewerID    = "viewer-id"
-	viewerEmail = "viewer@example.com"
-	viewerToken = viewerEmail
+	otherID    = "other-id"
+	otherEmail = "other@example.com"
+	otherToken = otherEmail
 
 	thingID      = "fe6b4e92-cc98-425e-b0aa-000000000001"
 	otherThingID = "fe6b4e92-cc98-425e-b0aa-000000000002"
@@ -52,7 +52,7 @@ const (
 var usersList = []domain.User{
 	{ID: adminID, Email: adminEmail},
 	{ID: editorID, Email: editorEmail},
-	{ID: viewerID, Email: viewerEmail},
+	{ID: otherID, Email: otherEmail},
 }
 
 type testRequest struct {
@@ -91,7 +91,7 @@ func newService() uiconfigs.Service {
 	things := map[string]domain.Thing{
 		editorToken:  {ID: thingID, GroupID: groupID},
 		thingID:      {ID: thingID, GroupID: groupID},
-		viewerToken:  {ID: otherThingID, GroupID: otherGroupID},
+		otherToken:   {ID: otherThingID, GroupID: otherGroupID},
 		otherThingID: {ID: otherThingID, GroupID: otherGroupID},
 	}
 	thingsClient := pkgmocks.NewThingsServiceClient(map[string]domain.Profile{}, things, nil)
@@ -160,7 +160,7 @@ func TestViewThingConfig(t *testing.T) {
 		{
 			desc:   "view thing config without access to the thing",
 			id:     thingID,
-			token:  viewerToken,
+			token:  otherToken,
 			status: http.StatusForbidden,
 		},
 		{
@@ -221,7 +221,7 @@ func TestUpdateThingConfig(t *testing.T) {
 			id:     thingID,
 			req:    data,
 			ct:     contentType,
-			token:  viewerToken,
+			token:  otherToken,
 			status: http.StatusForbidden,
 		},
 		{

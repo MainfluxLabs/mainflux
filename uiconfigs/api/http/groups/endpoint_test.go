@@ -38,9 +38,9 @@ const (
 	editorEmail = "editor@example.com"
 	editorToken = editorEmail
 
-	viewerID    = "viewer-id"
-	viewerEmail = "viewer@example.com"
-	viewerToken = viewerEmail
+	otherID    = "other-id"
+	otherEmail = "other@example.com"
+	otherToken = otherEmail
 
 	groupID      = "574106f7-030e-4881-8ab0-151195c29f94"
 	otherGroupID = "574106f7-030e-4881-8ab0-151195c29f95"
@@ -49,7 +49,7 @@ const (
 var usersList = []domain.User{
 	{ID: adminID, Email: adminEmail},
 	{ID: editorID, Email: editorEmail},
-	{ID: viewerID, Email: viewerEmail},
+	{ID: otherID, Email: otherEmail},
 }
 
 type testRequest struct {
@@ -87,7 +87,7 @@ func newService() uiconfigs.Service {
 
 	groupsByToken := map[string]domain.Group{
 		editorToken: {ID: groupID},
-		viewerToken: {ID: otherGroupID},
+		otherToken:  {ID: otherGroupID},
 	}
 	thingsClient := pkgmocks.NewThingsServiceClient(map[string]domain.Profile{}, nil, groupsByToken)
 
@@ -154,7 +154,7 @@ func TestViewGroupConfig(t *testing.T) {
 		{
 			desc:   "view group config without access to the group",
 			id:     groupID,
-			token:  viewerToken,
+			token:  otherToken,
 			status: http.StatusForbidden,
 		},
 		{
@@ -215,7 +215,7 @@ func TestUpdateGroupConfig(t *testing.T) {
 			id:     groupID,
 			req:    data,
 			ct:     contentType,
-			token:  viewerToken,
+			token:  otherToken,
 			status: http.StatusForbidden,
 		},
 		{
