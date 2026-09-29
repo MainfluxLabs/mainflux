@@ -99,7 +99,7 @@ func (r *ThingsRepository) RemoveByThing(_ context.Context, thingID string) erro
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for k := range r.byKey {
-		if len(k) > len(thingID) && k[:len(thingID)+1] == thingID+"|" {
+		if len(k) > len(thingID) && k[:len(thingID)+1] == thingID+"/" {
 			delete(r.byKey, k)
 		}
 	}
