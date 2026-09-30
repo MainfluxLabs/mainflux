@@ -83,9 +83,10 @@ const (
 	imagePrefix            = "image/"
 	applicationPrefix      = "application/"
 	applicationPDFPrefix   = "application/pdf"
+	maxUploadBytes         = 1024 << 20
 )
 
-func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger, maxUploadBytes int64) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -97,7 +98,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
-		decodeSaveFile(maxUploadBytes),
+		decodeSaveFile,
 		encodeResponse,
 		opts...,
 	))
@@ -130,7 +131,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 			kitot.TraceServer(tracer, "save_group_file"),
 			withIdentity,
 		)(saveGroupFileEndpoint(svc)),
-		decodeSaveGroupFile(maxUploadBytes),
+		decodeSaveGroupFile,
 		encodeResponse,
 		opts...,
 	))
@@ -183,30 +184,28 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 	return r
 }
 
-func decodeSaveFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		if r.ContentLength > maxUploadBytes {
-			return nil, apiutil.ErrLimitSize
-		}
-		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
-
-		fip, err := getFileInfoParams(r)
-		if err != nil {
-			return nil, err
-		}
-
-		req := saveFileReq{
-			key:      apiutil.ExtractThingKey(r),
-			fileInfo: fip.fileInfo,
-			file:     fip.file,
-		}
-
-		return req, nil
+func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	if r.ContentLength > maxUploadBytes {
+		return nil, apiutil.ErrLimitSize
+	}
+	r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
+
+	fip, err := getFileInfoParams(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := saveFileReq{
+		key:      apiutil.ExtractThingKey(r),
+		fileInfo: fip.fileInfo,
+		file:     fip.file,
+	}
+
+	return req, nil
 }
 
 func decodeUpdateFile(_ context.Context, r *http.Request) (any, error) {
@@ -276,31 +275,29 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSaveGroupFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		if r.ContentLength > maxUploadBytes {
-			return nil, apiutil.ErrLimitSize
-		}
-		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
-
-		fip, err := getFileInfoParams(r)
-		if err != nil {
-			return nil, err
-		}
-
-		req := saveGroupFileReq{
-			token:    apiutil.ExtractBearerToken(r),
-			groupID:  bone.GetValue(r, idKey),
-			fileInfo: fip.fileInfo,
-			file:     fip.file,
-		}
-
-		return req, nil
+func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	if r.ContentLength > maxUploadBytes {
+		return nil, apiutil.ErrLimitSize
+	}
+	r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
+
+	fip, err := getFileInfoParams(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := saveGroupFileReq{
+		token:    apiutil.ExtractBearerToken(r),
+		groupID:  bone.GetValue(r, idKey),
+		fileInfo: fip.fileInfo,
+		file:     fip.file,
+	}
+
+	return req, nil
 }
 
 func decodeUpdateGroupFile(_ context.Context, r *http.Request) (any, error) {

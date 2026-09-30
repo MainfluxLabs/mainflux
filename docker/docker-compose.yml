@@ -593,7 +593,7 @@ services:
       seaweedfs-volume:
         condition: service_healthy
     restart: on-failure
-    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_MAX_UPLOAD_MB}"
+    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888"
     expose:
       - 8888
     networks:
@@ -619,7 +619,6 @@ services:
     restart: on-failure
     environment:
       MF_FILESTORE_LOG_LEVEL: ${MF_FILESTORE_LOG_LEVEL}
-      MF_FILESTORE_MAX_UPLOAD_MB: ${MF_FILESTORE_MAX_UPLOAD_MB}
       MF_FILESTORE_DB_HOST: ${MF_FILESTORE_DB_HOST}
       MF_FILESTORE_DB_PORT: ${MF_FILESTORE_DB_PORT}
       MF_FILESTORE_DB_USER: ${MF_FILESTORE_DB_USER}
