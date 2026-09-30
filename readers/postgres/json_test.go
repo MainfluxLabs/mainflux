@@ -588,6 +588,19 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 				},
 			},
 		},
+		"read messages with key and number value in different format": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				Key:                  "field_4",
+				Value:                "12.3440",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
 		"read messages with key and value at object": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,

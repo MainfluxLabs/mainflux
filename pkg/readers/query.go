@@ -67,6 +67,7 @@ var (
 	ErrInvalidKey = errors.New("invalid key")
 
 	keyPartRegexp = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[\d+\])*)$`)
+	numberRegexp  = regexp.MustCompile(`^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d{1,4})?$`)
 	likeEscaper   = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 )
 
@@ -109,14 +110,14 @@ func JSONConditions(pm domain.JSONPageMetadata) []string {
 
 	switch {
 	case pm.Key != "" && pm.Value != "":
-		valueCond := valueCondition(pm.Comparator)
+		valueCond := valueCondition(pm.Comparator, pm.Value)
 		keyValueCond := anyPayloadNodeCondition(keyPath, valueCond)
 		return append(conds, keyValueCond)
 	case pm.Key != "":
 		keyCond := anyPayloadNodeCondition(keyPath, "jsonb_typeof(node) <> 'null'")
 		return append(conds, keyCond)
 	case pm.Value != "":
-		valueCond := valueCondition(pm.Comparator)
+		valueCond := valueCondition(pm.Comparator, pm.Value)
 		anyValueCond := anyPayloadNodeCondition(anyPayloadPath, valueCond)
 		return append(conds, anyValueCond)
 	default:
@@ -180,13 +181,22 @@ func anyPayloadNodeCondition(path, nodeCond string) string {
 	return fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, %s) AS node WHERE %s)", path, nodeCond)
 }
 
-// valueCondition matches node against :value when node is a scalar.
-func valueCondition(comparator string) string {
+// valueCondition matches node against :value when node is a scalar. For an
+// exact match on a numeric value, number nodes are also compared numerically.
+func valueCondition(comparator, value string) string {
 	scalarCond := fmt.Sprintf("jsonb_typeof(node) IN %s", jsonScalarTypes)
 
-	valueCond := "node #>> '{}' = :value"
-	if comparator == StartsWithKey || comparator == ContainsKey {
+	textEqualCond := "node #>> '{}' = :value"
+	numberEqualCond := "jsonb_typeof(node) = 'number' AND CAST(node #>> '{}' AS numeric) = CAST(:value AS numeric)"
+
+	var valueCond string
+	switch {
+	case comparator == StartsWithKey || comparator == ContainsKey:
 		valueCond = "LOWER(node #>> '{}') LIKE :value"
+	case numberRegexp.MatchString(value):
+		valueCond = fmt.Sprintf("(%s OR (%s))", textEqualCond, numberEqualCond)
+	default:
+		valueCond = textEqualCond
 	}
 
 	return fmt.Sprintf("%s AND %s", scalarCond, valueCond)
