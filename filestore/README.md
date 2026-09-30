@@ -58,6 +58,7 @@ default values.
 | `MF_FILESTORE_SEAWEED_URL`      | SeaweedFS filer base URL (http/https)                                      | http://localhost:8888    |
 | `MF_FILESTORE_SEAWEED_PREFIX`   | Key prefix prepended to all objects on the filer                           | filestore                |
 | `MF_FILESTORE_SEAWEED_TIMEOUT`  | Per-phase HTTP timeout (dial / TLS / response-header); body not capped     | 30s                      |
+| `MF_FILESTORE_SEAWEED_CHUNK_SIZE` | SeaweedFS chunk size in MiB (1..1024); also sets the filer `-maxMB` flag  | 4                        |
 
 ## Deployment
 

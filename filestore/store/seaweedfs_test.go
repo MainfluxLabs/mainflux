@@ -24,6 +24,7 @@ import (
 const (
 	swPrefix  = "filestore"
 	swTimeout = 5 * time.Second
+	swChunkMB = 4
 )
 
 type fakeFiler struct {
@@ -85,7 +86,7 @@ func newSeaweed(t *testing.T) (store.FileStore, *fakeFiler, *httptest.Server) {
 	t.Helper()
 	f := newFakeFiler()
 	srv := httptest.NewServer(f.handler())
-	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout)
+	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout, swChunkMB)
 	require.Nil(t, err, fmt.Sprintf("new seaweedfs failed: %s", err))
 	return s, f, srv
 }

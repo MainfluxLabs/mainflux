@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ const (
 type seaweedFS struct {
 	baseURL *url.URL
 	prefix  string
+	chunkMB int
 	client  *http.Client
 }
 
@@ -39,7 +41,7 @@ type seaweedFS struct {
 // connect, TLS handshake, and response-header phases; the overall request
 // deadline is driven by the caller's context so body transfers of large
 // objects are not capped by a single whole-request timeout.
-func NewSeaweedFS(rawURL, prefix string, timeout time.Duration) (FileStore, error) {
+func NewSeaweedFS(rawURL, prefix string, timeout time.Duration, chunkMB int) (FileStore, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse seaweedfs url: %w", err)
@@ -67,6 +69,7 @@ func NewSeaweedFS(rawURL, prefix string, timeout time.Duration) (FileStore, erro
 	return &seaweedFS{
 		baseURL: u,
 		prefix:  strings.Trim(prefix, "/"),
+		chunkMB: chunkMB,
 		client:  &http.Client{Transport: tr},
 	}, nil
 }
@@ -90,7 +93,13 @@ func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, e
 		pw.CloseWithError(err)
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.objectURL(key), pr)
+	u, err := url.Parse(s.objectURL(key))
+	if err != nil {
+		return "", err
+	}
+	u.RawQuery = url.Values{"maxMB": {strconv.Itoa(s.chunkMB)}}.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), pr)
 	if err != nil {
 		return "", err
 	}

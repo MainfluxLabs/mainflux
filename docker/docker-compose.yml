@@ -593,7 +593,7 @@ services:
       seaweedfs-volume:
         condition: service_healthy
     restart: on-failure
-    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888"
+    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_SEAWEED_CHUNK_SIZE}"
     expose:
       - 8888
     networks:
@@ -639,6 +639,7 @@ services:
       MF_FILESTORE_SEAWEED_URL: ${MF_FILESTORE_SEAWEED_URL}
       MF_FILESTORE_SEAWEED_PREFIX: ${MF_FILESTORE_SEAWEED_PREFIX}
       MF_FILESTORE_SEAWEED_TIMEOUT: ${MF_FILESTORE_SEAWEED_TIMEOUT}
+      MF_FILESTORE_SEAWEED_CHUNK_SIZE: ${MF_FILESTORE_SEAWEED_CHUNK_SIZE}
       MF_FILESTORE_FILES_PATH: ${MF_FILESTORE_FILES_PATH}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}

@@ -72,6 +72,8 @@ const (
 	defSeaweedURL     = "http://localhost:8888"
 	defSeaweedPrefix  = "filestore"
 	defSeaweedTimeout = "30s"
+	defSeaweedChunkMB = "4"
+	maxSeaweedChunkMB = 1024
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -95,6 +97,7 @@ const (
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
 	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
+	envSeaweedChunkMB    = "MF_FILESTORE_SEAWEED_CHUNK_SIZE"
 	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
 	envBackend           = "MF_FILESTORE_BACKEND"
 	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
@@ -248,7 +251,12 @@ func buildStore() store.FileStore {
 			log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
 		}
 
-		fs, err := store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to)
+		chunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
+		if err != nil || chunkMB <= 0 || chunkMB > maxSeaweedChunkMB {
+			log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxSeaweedChunkMB)
+		}
+
+		fs, err := store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to, chunkMB)
 		if err != nil {
 			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
 		}
