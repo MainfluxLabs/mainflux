@@ -83,17 +83,9 @@ const (
 	imagePrefix            = "image/"
 	applicationPrefix      = "application/"
 	applicationPDFPrefix   = "application/pdf"
-
-	defaultMaxUploadBytes = 1024 << 20
-	maxAllowedUploadBytes = 1 << 40
 )
 
 func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger, maxUploadBytes int64) http.Handler {
-	if maxUploadBytes <= 0 || maxUploadBytes > maxAllowedUploadBytes {
-		logger.Warn(fmt.Sprintf("Upload limit of %d bytes is out of range, falling back to %d bytes", maxUploadBytes, defaultMaxUploadBytes))
-		maxUploadBytes = defaultMaxUploadBytes
-	}
-
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
