@@ -400,7 +400,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrInvalidFieldType,
 		err == ErrInvalidByteOrder,
 		err == ErrInvalidFieldLength,
-		err == ErrMissingValue:
+		err == ErrMissingValue,
+		errors.Contains(err, modbus.ErrInvalidWriteValue),
+		errors.Contains(err, modbus.ErrValueOutOfRange):
 		w.WriteHeader(http.StatusBadRequest)
 	default:
 		apiutil.EncodeError(err, w)

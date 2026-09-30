@@ -10,6 +10,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	gbmodbus "github.com/goburrow/modbus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -753,6 +754,22 @@ func TestWriteField(t *testing.T) {
 		mc := &modbusClientMock{}
 		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, Value: "256"})
 		assert.Error(t, err)
+		assert.True(t, errors.Contains(err, ErrInvalidWriteValue))
+	})
+
+	t.Run("uint16 applies byte order before writing single register", func(t *testing.T) {
+		mc := &modbusClientMock{}
+		// 256 = 0x0100 -> big-endian bytes [0x01, 0x00]; DCBA reverses to [0x00, 0x01] = 1.
+		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, ByteOrder: ByteOrderDCBA, Value: float64(256)})
+		require.Nil(t, err)
+		assert.Equal(t, uint16(1), mc.lastValue)
+	})
+
+	t.Run("int16 out of range returns error", func(t *testing.T) {
+		mc := &modbusClientMock{}
+		err := writeField(mc, WriteRequest{Address: 100, Type: Int16Type, Value: float64(100000)})
+		assert.Error(t, err)
+		assert.True(t, errors.Contains(err, ErrValueOutOfRange))
 	})
 
 	t.Run("float32 writes two registers with byte order applied", func(t *testing.T) {
