@@ -114,6 +114,7 @@ type config struct {
 	thingsConfig      clients.Config
 	authConfig        clients.Config
 	esURL             string
+	store             store.FileStore
 }
 
 func main() {
@@ -157,7 +158,7 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("filestore_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(thingsAuth, dbTracer, db, logger)
+	svc := newService(thingsAuth, dbTracer, db, cfg.store, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
@@ -230,20 +231,7 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
-	return config{
-		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsAuthTimeout: thingsAuthTimeout,
-		authGRPCTimeout:   authGRPCTimeout,
-		dbConfig:          dbConfig,
-		httpConfig:        httpConfig,
-		thingsConfig:      thingsConfig,
-		authConfig:        authConfig,
-		esURL:             mainflux.Env(envESURL, defESURL),
-	}
-}
-
-func buildStore() store.FileStore {
+	var fs store.FileStore
 	switch mainflux.Env(envBackend, defBackend) {
 	case "seaweedfs":
 		to, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
@@ -256,14 +244,25 @@ func buildStore() store.FileStore {
 			log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxSeaweedChunkMB)
 		}
 
-		fs, err := store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to, chunkMB)
+		fs, err = store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to, chunkMB)
 		if err != nil {
 			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
 		}
-
-		return fs
 	default:
-		return store.NewLocal(mainflux.Env(envFilesPath, defFilesPath))
+		fs = store.NewLocal(mainflux.Env(envFilesPath, defFilesPath))
+	}
+
+	return config{
+		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
+		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsAuthTimeout: thingsAuthTimeout,
+		authGRPCTimeout:   authGRPCTimeout,
+		dbConfig:          dbConfig,
+		httpConfig:        httpConfig,
+		thingsConfig:      thingsConfig,
+		authConfig:        authConfig,
+		esURL:             mainflux.Env(envESURL, defESURL),
+		store:             fs,
 	}
 }
 
@@ -297,12 +296,11 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
+func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, fs store.FileStore, logger logger.Logger) filestore.Service {
 	thRepo := postgres.NewThingsRepository(db)
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
-	fs := buildStore()
 	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
