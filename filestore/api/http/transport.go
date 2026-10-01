@@ -83,7 +83,8 @@ const (
 	imagePrefix            = "image/"
 	applicationPrefix      = "application/"
 	applicationPDFPrefix   = "application/pdf"
-	maxUploadBytes         = 1024 << 20
+	MaxUploadSizeMB        = 1024
+	maxUploadBytes         = MaxUploadSizeMB << 20
 )
 
 func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {

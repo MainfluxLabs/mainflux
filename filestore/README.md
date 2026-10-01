@@ -55,10 +55,11 @@ default values.
 | `MF_FILESTORE_EVENT_CONSUMER`     | Event store consumer name                                                  | filestore                |
 | `MF_FILESTORE_BACKEND`            | Object-store backend: `local` or `seaweedfs`                               | local                    |
 | `MF_FILESTORE_FILES_PATH`         | Root directory used by the `local` backend                                 | files                    |
+| `MF_FILESTORE_MAX_UPLOAD_SIZE`    | Max upload size in MiB (1..1024); also sets nginx `client_max_body_size`   | 1024                     |
 | `MF_FILESTORE_SEAWEED_URL`        | SeaweedFS filer base URL (http/https)                                      | http://localhost:8888    |
 | `MF_FILESTORE_SEAWEED_PREFIX`     | Key prefix prepended to all objects on the filer                           | filestore                |
 | `MF_FILESTORE_SEAWEED_TIMEOUT`    | Per-phase HTTP timeout (dial / TLS / response-header); body not capped     | 30s                      |
-| `MF_FILESTORE_SEAWEED_CHUNK_SIZE` | SeaweedFS chunk size in MiB (1..1024); also sets the filer `-maxMB` flag   | 4                        |
+| `MF_FILESTORE_SEAWEED_CHUNK_SIZE` | Chunk size in MiB (1..256, at most max upload size); sets filer `-maxMB`   | 4                        |
 
 ## Deployment
 

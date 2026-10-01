@@ -67,13 +67,14 @@ const (
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
+	defMaxUploadSizeMB   = "1024"
 
 	defBackend        = "local"
 	defSeaweedURL     = "http://localhost:8888"
 	defSeaweedPrefix  = "filestore"
 	defSeaweedTimeout = "30s"
 	defSeaweedChunkMB = "4"
-	maxSeaweedChunkMB = 1024
+	maxSeaweedChunkMB = 256
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -102,6 +103,7 @@ const (
 	envBackend           = "MF_FILESTORE_BACKEND"
 	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
 	envFilesPath         = "MF_FILESTORE_FILES_PATH"
+	envMaxUploadSizeMB   = "MF_FILESTORE_MAX_UPLOAD_SIZE"
 )
 
 type config struct {
@@ -240,14 +242,20 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	maxUploadSizeMB, err := strconv.Atoi(mainflux.Env(envMaxUploadSizeMB, defMaxUploadSizeMB))
+	if err != nil || maxUploadSizeMB <= 0 || maxUploadSizeMB > httpapi.MaxUploadSizeMB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envMaxUploadSizeMB, httpapi.MaxUploadSizeMB)
+	}
+
 	seaweedTimeout, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
 	}
 
 	seaweedChunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
-	if err != nil || seaweedChunkMB <= 0 || seaweedChunkMB > maxSeaweedChunkMB {
-		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxSeaweedChunkMB)
+	maxChunkMB := min(maxSeaweedChunkMB, maxUploadSizeMB)
+	if err != nil || seaweedChunkMB <= 0 || seaweedChunkMB > maxChunkMB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxChunkMB)
 	}
 
 	storeConfig := storeConfig{
@@ -273,12 +281,13 @@ func loadConfig() config {
 	}
 }
 
-func buildStore(cfg storeConfig) store.FileStore {
+func buildStore(cfg storeConfig, logger logger.Logger) store.FileStore {
 	switch cfg.backend {
 	case "seaweedfs":
 		fs, err := store.NewSeaweedFS(cfg.seaweedURL, cfg.seaweedPrefix, cfg.seaweedTimeout, cfg.seaweedChunkMB)
 		if err != nil {
-			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
+			logger.Error(fmt.Sprintf("Failed to init SeaweedFS backend: %s", err))
+			os.Exit(1)
 		}
 		return fs
 	default:
@@ -321,7 +330,7 @@ func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db 
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
-	fs := buildStore(storeCfg)
+	fs := buildStore(storeCfg, logger)
 	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
