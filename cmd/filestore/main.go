@@ -114,7 +114,16 @@ type config struct {
 	thingsConfig      clients.Config
 	authConfig        clients.Config
 	esURL             string
-	store             store.FileStore
+	store             storeConfig
+}
+
+type storeConfig struct {
+	backend        string
+	filesPath      string
+	seaweedURL     string
+	seaweedPrefix  string
+	seaweedTimeout time.Duration
+	seaweedChunkMB int
 }
 
 func main() {
@@ -231,25 +240,23 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
-	var fs store.FileStore
-	switch mainflux.Env(envBackend, defBackend) {
-	case "seaweedfs":
-		to, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
-		if err != nil {
-			log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
-		}
+	seaweedTimeout, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
+	}
 
-		chunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
-		if err != nil || chunkMB <= 0 || chunkMB > maxSeaweedChunkMB {
-			log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxSeaweedChunkMB)
-		}
+	seaweedChunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
+	if err != nil || seaweedChunkMB <= 0 || seaweedChunkMB > maxSeaweedChunkMB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxSeaweedChunkMB)
+	}
 
-		fs, err = store.NewSeaweedFS(mainflux.Env(envSeaweedURL, defSeaweedURL), mainflux.Env(envSeaweedPrefix, defSeaweedPrefix), to, chunkMB)
-		if err != nil {
-			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
-		}
-	default:
-		fs = store.NewLocal(mainflux.Env(envFilesPath, defFilesPath))
+	storeConfig := storeConfig{
+		backend:        mainflux.Env(envBackend, defBackend),
+		filesPath:      mainflux.Env(envFilesPath, defFilesPath),
+		seaweedURL:     mainflux.Env(envSeaweedURL, defSeaweedURL),
+		seaweedPrefix:  mainflux.Env(envSeaweedPrefix, defSeaweedPrefix),
+		seaweedTimeout: seaweedTimeout,
+		seaweedChunkMB: seaweedChunkMB,
 	}
 
 	return config{
@@ -262,7 +269,20 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
-		store:             fs,
+		store:             storeConfig,
+	}
+}
+
+func buildStore(cfg storeConfig) store.FileStore {
+	switch cfg.backend {
+	case "seaweedfs":
+		fs, err := store.NewSeaweedFS(cfg.seaweedURL, cfg.seaweedPrefix, cfg.seaweedTimeout, cfg.seaweedChunkMB)
+		if err != nil {
+			log.Fatalf("Failed to init SeaweedFS backend: %s", err)
+		}
+		return fs
+	default:
+		return store.NewLocal(cfg.filesPath)
 	}
 }
 
@@ -296,11 +316,12 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, fs store.FileStore, logger logger.Logger) filestore.Service {
+func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, storeCfg storeConfig, logger logger.Logger) filestore.Service {
 	thRepo := postgres.NewThingsRepository(db)
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
+	fs := buildStore(storeCfg)
 	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
