@@ -612,7 +612,7 @@ components:
           description: End time in nanoseconds.
         key:
           type: string
-          description: Dot-separated JSON payload key.
+          description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
         value:
           type: string
           description: JSON payload value to match.
@@ -769,7 +769,7 @@ components:
       required: false
     Key:
       name: key
-      description: Dot-separated JSON payload key.
+      description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
       in: query
       schema:
         type: string

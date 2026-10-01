@@ -517,6 +517,27 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 				},
 			},
 		},
+		"read messages with key through array wildcard": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				Key:                  "field_array[*].field_1",
+				Value:                "value_2",
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+		"read messages with key through array without index": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				Key:                  "field_array.field_1",
+				Value:                "value_2",
+			},
+			page: readers.JSONMessagesPage{},
+		},
 		"read messages with key and exact value": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,

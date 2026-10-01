@@ -58,15 +58,13 @@ const (
 	keyPath         = "CAST(:key AS jsonpath)"
 	anyPayloadPath  = "'strict $.**'"
 	jsonScalarTypes = "('string', 'number', 'boolean')"
-	// unwrapArrayFilter is a no-op filter; in lax mode it unwraps an array at the end of the key into its items.
-	unwrapArrayFilter = " ? (1 == 1)"
 )
 
 var (
 	// ErrInvalidKey indicates a malformed JSON payload key.
 	ErrInvalidKey = errors.New("invalid key")
 
-	keyPartRegexp = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[\d+\])*)$`)
+	keyPartRegexp = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[(?:\d+|\*)\])*)$`)
 	numberRegexp  = regexp.MustCompile(`^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d{1,4})?$`)
 	likeEscaper   = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 )
@@ -130,7 +128,7 @@ func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 	params := BaseQueryParams(pm.MessagesPageMetadata)
 
 	if pm.Key != "" {
-		params["key"] = keyParam(pm.Key, pm.Value)
+		params["key"] = keyParam(pm.Key)
 	}
 
 	if pm.Value != "" {
@@ -140,10 +138,11 @@ func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 	return params
 }
 
-// ParseKey converts a dot-separated JSON payload key into a JSON path.
+// ParseKey converts a dot-separated JSON payload key into a strict JSON path.
+// Arrays are only entered through an index: [n] for one item or [*] for any item.
 func ParseKey(key string) (string, error) {
 	var path strings.Builder
-	path.WriteString("lax $")
+	path.WriteString("strict $")
 
 	for _, part := range strings.Split(key, ".") {
 		matches := keyPartRegexp.FindStringSubmatch(part)
@@ -162,23 +161,19 @@ func ParseKey(key string) (string, error) {
 }
 
 // keyParam returns the JSON path bound as :key.
-func keyParam(key, value string) any {
+func keyParam(key string) any {
 	path, err := ParseKey(key)
 	if err != nil {
 		return nil
 	}
 
-	if value == "" {
-		return path
-	}
-
-	return path + unwrapArrayFilter
+	return path
 }
 
 // anyPayloadNodeCondition matches messages where any jsonb node returned by
 // the path satisfies nodeCond.
 func anyPayloadNodeCondition(path, nodeCond string) string {
-	return fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, %s) AS node WHERE %s)", path, nodeCond)
+	return fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, %s, '{}', true) AS node WHERE %s)", path, nodeCond)
 }
 
 // valueCondition matches node against :value when node is a scalar. For an
