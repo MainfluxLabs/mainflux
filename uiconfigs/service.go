@@ -159,28 +159,11 @@ func (svc *configService) RemoveOrgConfig(ctx context.Context, orgID string) err
 }
 
 func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.orgConfigs.BackupAll(ctx)
-	}
-
-	if _, err := svc.auth.Identify(ctx, token); err != nil {
+	if err := svc.isAdmin(ctx, token); err != nil {
 		return OrgConfigBackup{}, err
 	}
 
-	all, err := svc.orgConfigs.BackupAll(ctx)
-	if err != nil {
-		return OrgConfigBackup{}, err
-	}
-
-	orgsConfigs := make([]OrgConfig, 0, len(all.OrgsConfigs))
-	for _, t := range all.OrgsConfigs {
-		if err := svc.canAccessOrg(ctx, token, t.OrgID, domain.OrgSub, domain.OrgViewer); err == nil {
-			orgsConfigs = append(orgsConfigs, t)
-		}
-	}
-	return OrgConfigBackup{
-		OrgsConfigs: orgsConfigs,
-	}, nil
+	return svc.orgConfigs.BackupAll(ctx)
 }
 
 func (svc *configService) ViewThingConfig(ctx context.Context, token, thingID string) (ThingConfig, error) {
@@ -229,7 +212,7 @@ func (svc *configService) UpdateThingConfig(ctx context.Context, token string, t
 		return err
 	}
 
-	if err := svc.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingConfig.ThingID, Action: domain.GroupViewer}); err != nil {
+	if err := svc.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingConfig.ThingID, Action: domain.GroupEditor}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
@@ -252,29 +235,11 @@ func (svc *configService) RemoveThingConfigByGroup(ctx context.Context, groupID 
 }
 
 func (svc *configService) BackupThingsConfigs(ctx context.Context, token string) (ThingConfigBackup, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.thingConfigs.BackupAll(ctx)
-	}
-
-	if _, err := svc.auth.Identify(ctx, token); err != nil {
+	if err := svc.isAdmin(ctx, token); err != nil {
 		return ThingConfigBackup{}, err
 	}
 
-	all, err := svc.thingConfigs.BackupAll(ctx)
-	if err != nil {
-		return ThingConfigBackup{}, err
-	}
-
-	thingsConfigs := make([]ThingConfig, 0, len(all.ThingsConfigs))
-	for _, t := range all.ThingsConfigs {
-		if err := svc.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: t.ThingID, Action: domain.GroupViewer}); err == nil {
-			thingsConfigs = append(thingsConfigs, t)
-		}
-	}
-
-	return ThingConfigBackup{
-		ThingsConfigs: thingsConfigs,
-	}, nil
+	return svc.thingConfigs.BackupAll(ctx)
 }
 
 func (svc *configService) ViewGroupConfig(ctx context.Context, token, groupID string) (GroupConfig, error) {
@@ -335,29 +300,11 @@ func (svc *configService) RemoveGroupConfig(ctx context.Context, groupID string)
 }
 
 func (svc *configService) BackupGroupsConfigs(ctx context.Context, token string) (GroupConfigBackup, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return svc.groupConfigs.BackupAll(ctx)
-	}
-
-	if _, err := svc.auth.Identify(ctx, token); err != nil {
+	if err := svc.isAdmin(ctx, token); err != nil {
 		return GroupConfigBackup{}, err
 	}
 
-	all, err := svc.groupConfigs.BackupAll(ctx)
-	if err != nil {
-		return GroupConfigBackup{}, err
-	}
-
-	groupsConfigs := make([]GroupConfig, 0, len(all.GroupsConfigs))
-	for _, g := range all.GroupsConfigs {
-		if err := svc.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: g.GroupID, Action: domain.GroupViewer}); err == nil {
-			groupsConfigs = append(groupsConfigs, g)
-		}
-	}
-
-	return GroupConfigBackup{
-		GroupsConfigs: groupsConfigs,
-	}, nil
+	return svc.groupConfigs.BackupAll(ctx)
 }
 
 func (svc *configService) Backup(ctx context.Context, token string) (Backup, error) {
