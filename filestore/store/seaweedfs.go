@@ -171,7 +171,10 @@ func (s *seaweedFS) DeletePrefix(ctx context.Context, prefix string) error {
 
 	u := *s.baseURL
 	u.Path = path.Join(u.Path, s.prefix, clean) + "/"
-	u.RawQuery = "recursive=true&ignoreRecursiveError=true"
+	q := u.Query()
+	q.Set("recursive", "true")
+	q.Set("ignoreRecursiveError", "true")
+	u.RawQuery = q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, u.String(), nil)
 	if err != nil {
