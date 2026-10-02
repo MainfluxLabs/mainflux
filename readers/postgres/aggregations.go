@@ -57,15 +57,7 @@ type aggInput struct {
 
 func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
 	input := aggInput{
-		params: map[string]any{
-			"limit":     rpm.Limit,
-			"offset":    rpm.Offset,
-			"subtopic":  rpm.Subtopic,
-			"publisher": rpm.Publisher,
-			"protocol":  rpm.Protocol,
-			"from":      rpm.From,
-			"to":        rpm.To,
-		},
+		params: mfreaders.JSONQueryParams(rpm),
 		qp: queryParams{
 			table:       mfreaders.JSONTable,
 			timeColumn:  mfreaders.JSONOrder,
@@ -76,7 +68,7 @@ func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rp
 			limit:       rpm.Limit,
 			dir:         rpm.Dir,
 		},
-		conditions: mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder),
+		conditions: mfreaders.JSONConditions(rpm),
 		noTotal:    rpm.NoTotal,
 	}
 

@@ -40,8 +40,10 @@ var (
 	To int64 = 0
 	// Dir sort direction query parameter (asc/desc)
 	Dir string = ""
-	// Filter query parameter (JSON messages)
-	Filter string = ""
+	// Key JSON payload key query parameter
+	Key string = ""
+	// Value JSON payload value query parameter
+	Value string = ""
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
 	// AggValue aggregation value
@@ -54,7 +56,7 @@ var (
 	SenMLName string = ""
 	// SenMLValue SenML numeric value filter
 	SenMLValue float64 = 0
-	// Comparator comparison operator (eq, lt, le, gt, ge)
+	// Comparator comparison operator (SenML: eq, lt, le, gt, ge; JSON: eq, starts_with, contains)
 	Comparator string = ""
 	// BoolValue SenML boolean value filter
 	BoolValue bool = false
@@ -134,7 +136,9 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 		Protocol:    Protocol,
 		From:        From,
 		To:          To,
-		Filter:      Filter,
+		Key:         Key,
+		Value:       Value,
+		Comparator:  Comparator,
 		AggInterval: AggInterval,
 		AggValue:    uint64(AggValue),
 		AggType:     AggType,

@@ -35,17 +35,8 @@ func newAggregationService(db dbutil.Database) *aggregationService {
 }
 
 func (as *aggregationService) readAggregatedJSONMessages(ctx context.Context, rpm readers.JSONPageMetadata) ([]readers.Message, uint64, error) {
-	params := map[string]any{
-		"limit":     rpm.Limit,
-		"offset":    rpm.Offset,
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
-	}
-
-	condition := dbutil.BuildWhereClause(mfreaders.BaseConditions(rpm.MessagesPageMetadata, mfreaders.JSONOrder)...)
+	params := mfreaders.JSONQueryParams(rpm)
+	condition := dbutil.BuildWhereClause(mfreaders.JSONConditions(rpm)...)
 	bucket := timeBucketExpr(rpm.AggValue, rpm.AggInterval, mfreaders.JSONOrder)
 	aggExpr, err := jsonAggExpr(rpm.AggType, rpm.AggFields)
 	if err != nil {

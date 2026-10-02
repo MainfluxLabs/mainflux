@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -98,7 +99,9 @@ func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.JSONPageMetadata{
 			MessagesPageMetadata: decodeMessagesPageMetadata(req),
-			Filter:               req.GetFilter(),
+			Key:                  req.GetKey(),
+			Value:                req.GetValue(),
+			Comparator:           req.GetComparator(),
 		},
 	}, nil
 }
@@ -172,6 +175,9 @@ func encodeError(err error) error {
 	switch {
 	case err == nil:
 		return nil
+	case err == apiutil.ErrInvalidQueryParams,
+		err == apiutil.ErrInvalidComparator:
+		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())
 	case errors.Contains(err, errors.ErrAuthorization):

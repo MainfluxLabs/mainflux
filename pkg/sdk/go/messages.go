@@ -368,8 +368,16 @@ func (pm JSONPageMetadata) query() string {
 		q.Add("to", strconv.FormatInt(pm.To, 10))
 	}
 
-	if pm.Filter != "" {
-		q.Add("filter", pm.Filter)
+	if pm.Key != "" {
+		q.Add("key", pm.Key)
+	}
+
+	if pm.Value != "" {
+		q.Add("value", pm.Value)
+	}
+
+	if pm.Comparator != "" {
+		q.Add("comparator", pm.Comparator)
 	}
 
 	if pm.AggInterval != "" {
