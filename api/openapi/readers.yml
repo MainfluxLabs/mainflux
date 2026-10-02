@@ -615,7 +615,7 @@ components:
           description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
         value:
           type: string
-          description: JSON payload value to match.
+          description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
         comparator:
           type: string
           enum: [eq, starts_with, contains]
@@ -776,7 +776,7 @@ components:
       required: false
     Value:
       name: value
-      description: JSON payload value to match.
+      description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
       in: query
       schema:
         type: string

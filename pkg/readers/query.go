@@ -225,7 +225,7 @@ func valueCondition(comparator, value string) string {
 	var valueCond string
 	switch {
 	case comparator == StartsWithKey || comparator == ContainsKey:
-		valueCond = "LOWER(node #>> '{}') LIKE :value"
+		valueCond = "node #>> '{}' ILIKE :value"
 	case isNumber(value):
 		valueCond = fmt.Sprintf("(%s OR (%s))", textEqualCond, numberEqualCond)
 	default:
@@ -252,8 +252,7 @@ func valueParam(value, comparator string) string {
 		return value
 	}
 
-	lowerValue := strings.ToLower(value)
-	pattern := likeEscaper.Replace(lowerValue)
+	pattern := likeEscaper.Replace(value)
 
 	if comparator == StartsWithKey {
 		return pattern + "%"

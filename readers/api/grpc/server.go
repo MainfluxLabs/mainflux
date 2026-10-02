@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -174,6 +175,9 @@ func encodeError(err error) error {
 	switch {
 	case err == nil:
 		return nil
+	case err == apiutil.ErrInvalidQueryParams,
+		err == apiutil.ErrInvalidComparator:
+		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication):
 		return status.Error(codes.Unauthenticated, err.Error())
 	case errors.Contains(err, errors.ErrAuthorization):
