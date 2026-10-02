@@ -17,6 +17,8 @@ type ThingsRepository interface {
 	Save(ctx context.Context, thingID, groupID string, fi FileInfo) error
 	// Update updates path in filestore
 	Update(ctx context.Context, thingID string, fi FileInfo) error
+	// UpdateChecksum sets the stored object's checksum on an existing row
+	UpdateChecksum(ctx context.Context, thingID string, fi FileInfo) error
 	// Retrieve retrieves path from filestore
 	Retrieve(ctx context.Context, thingID string, fi FileInfo) (FileInfo, error)
 	// RetrieveByThing retrieves files from filestore by thing
