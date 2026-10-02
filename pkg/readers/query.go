@@ -6,7 +6,7 @@ package readers
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -64,9 +64,7 @@ var (
 	// ErrInvalidKey indicates a malformed JSON payload key.
 	ErrInvalidKey = errors.New("invalid key")
 
-	keyPartRegexp = regexp.MustCompile(`^([^\[\]\x00]+)((?:\[(?:\d+|\*)\])*)$`)
-	numberRegexp  = regexp.MustCompile(`^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d{1,4})?$`)
-	likeEscaper   = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 )
 
 func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string {
@@ -145,19 +143,59 @@ func ParseKey(key string) (string, error) {
 	path.WriteString("strict $")
 
 	for _, part := range strings.Split(key, ".") {
-		matches := keyPartRegexp.FindStringSubmatch(part)
-		if matches == nil {
-			return "", ErrInvalidKey
+		name, indexes, err := parseKeyPart(part)
+		if err != nil {
+			return "", err
 		}
 
-		name, _ := json.Marshal(matches[1])
+		quotedName, _ := json.Marshal(name)
 
 		path.WriteString(".")
-		path.Write(name)
-		path.WriteString(matches[2])
+		path.Write(quotedName)
+		path.WriteString(indexes)
 	}
 
 	return path.String(), nil
+}
+
+// parseKeyPart splits one dot-separated key part, into its field name
+// and its JSON path index steps.
+func parseKeyPart(part string) (string, string, error) {
+	name, indexes, hasIndexes := strings.Cut(part, "[")
+	if name == "" || strings.ContainsAny(name, "]\x00") {
+		return "", "", ErrInvalidKey
+	}
+
+	if !hasIndexes {
+		return name, "", nil
+	}
+
+	steps := "[" + indexes
+	rest := steps
+	for rest != "" {
+		if !strings.HasPrefix(rest, "[") {
+			return "", "", ErrInvalidKey
+		}
+
+		index, after, found := strings.Cut(rest[1:], "]")
+		if !found {
+			return "", "", ErrInvalidKey
+		}
+
+		if index != "*" && !isIndex(index) {
+			return "", "", ErrInvalidKey
+		}
+
+		rest = after
+	}
+
+	return name, steps, nil
+}
+
+// isIndex reports whether index is a non-negative array position.
+func isIndex(index string) bool {
+	_, err := strconv.ParseUint(index, 10, 64)
+	return err == nil
 }
 
 // keyParam returns the JSON path bound as :key.
@@ -188,13 +226,25 @@ func valueCondition(comparator, value string) string {
 	switch {
 	case comparator == StartsWithKey || comparator == ContainsKey:
 		valueCond = "LOWER(node #>> '{}') LIKE :value"
-	case numberRegexp.MatchString(value):
+	case isNumber(value):
 		valueCond = fmt.Sprintf("(%s OR (%s))", textEqualCond, numberEqualCond)
 	default:
 		valueCond = textEqualCond
 	}
 
 	return fmt.Sprintf("%s AND %s", scalarCond, valueCond)
+}
+
+// isNumber reports whether value is a plain decimal number that PostgreSQL can
+// cast to numeric. Hex, Inf and NaN pass strconv.ParseFloat but not this check.
+func isNumber(value string) bool {
+	hasOnlyNumberChars := strings.Trim(value, "0123456789+-.eE") == ""
+	if !hasOnlyNumberChars {
+		return false
+	}
+
+	_, err := strconv.ParseFloat(value, 64)
+	return err == nil
 }
 
 func valueParam(value, comparator string) string {
