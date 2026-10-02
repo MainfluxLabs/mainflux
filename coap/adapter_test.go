@@ -30,28 +30,44 @@ type pubsubMock struct {
 	subscribed []string
 }
 
-func (ps *pubsubMock) PublishCommand(string, protomfx.Command) error { return nil }
+func (ps *pubsubMock) PublishCommand(string, protomfx.Command) error {
+	return nil
+}
 
-func (ps *pubsubMock) Dispatch(protomfx.Message, *domain.ProfileConfig) error { return nil }
+func (ps *pubsubMock) Dispatch(protomfx.Message, *domain.ProfileConfig) error {
+	return nil
+}
 
 func (ps *pubsubMock) Subscribe(_, topic string, _ messaging.MessageHandler) error {
 	ps.subscribed = append(ps.subscribed, topic)
 	return nil
 }
 
-func (ps *pubsubMock) Unsubscribe(string, string) error { return nil }
+func (ps *pubsubMock) Unsubscribe(string, string) error {
+	return nil
+}
 
-func (ps *pubsubMock) Close() error { return nil }
+func (ps *pubsubMock) Close() error {
+	return nil
+}
 
 type clientMock struct{}
 
-func (clientMock) Done() <-chan struct{} { return nil }
+func (clientMock) Done() <-chan struct{} {
+	return nil
+}
 
-func (clientMock) Cancel() error { return nil }
+func (clientMock) Cancel() error {
+	return nil
+}
 
-func (clientMock) Token() string { return clientToken }
+func (clientMock) Token() string {
+	return clientToken
+}
 
-func (clientMock) Handle(string, protomfx.Message) error { return nil }
+func (clientMock) Handle(string, protomfx.Message) error {
+	return nil
+}
 
 func TestSubscribe(t *testing.T) {
 	thing := domain.Thing{ID: thingID, Key: thingKey, GroupID: groupID}
