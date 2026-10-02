@@ -68,13 +68,12 @@ const (
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
 	defMaxUploadSizeMB   = "1024"
-
-	defBackend        = "local"
-	defSeaweedURL     = "http://localhost:8888"
-	defSeaweedPrefix  = "filestore"
-	defSeaweedTimeout = "30s"
-	defSeaweedChunkMB = "4"
-	maxSeaweedChunkMB = 256
+	defBackend           = "local"
+	defSeaweedURL        = "http://localhost:8888"
+	defSeaweedPrefix     = "filestore"
+	defSeaweedTimeout    = "30s"
+	defSeaweedChunkMB    = "4"
+	maxSeaweedChunkMB    = 256
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
