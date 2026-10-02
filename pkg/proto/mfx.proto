@@ -328,13 +328,13 @@ message ListJSONMessagesReq {
     int64           from         = 7;
     int64           to           = 8;
     string          key          = 9;
-    string          value        = 10;
-    string          comparator   = 11;
-    string          agg_interval = 12;
-    uint64          agg_value    = 13;
-    string          agg_type     = 14;
-    repeated string agg_fields   = 15;
-    string          dir          = 16;
+    string          agg_interval = 10;
+    uint64          agg_value    = 11;
+    string          agg_type     = 12;
+    repeated string agg_fields   = 13;
+    string          dir          = 14;
+    string          value        = 15;
+    string          comparator   = 16;
 }
 
 message ListJSONMessagesRes {
