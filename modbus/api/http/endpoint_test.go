@@ -24,6 +24,7 @@ import (
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,6 +132,7 @@ func toJSON(data any) string {
 }
 
 func newService() modbus.Service {
+	authSvc := pkgmocks.NewAuthService("", []users.User{{ID: "user-1", Email: token}}, nil)
 	thingsSvc := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -144,7 +146,7 @@ func newService() modbus.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return modbus.New(thingsSvc, pub, repo, idp, log)
+	return modbus.New(authSvc, thingsSvc, pub, repo, idp, log)
 }
 
 func newHTTPServer(svc modbus.Service) *httptest.Server {
@@ -551,6 +553,180 @@ func TestViewClient(t *testing.T) {
 			json.NewDecoder(res.Body).Decode(&body)
 			assert.Equal(t, clID, body.ID, fmt.Sprintf("%s: expected ID %s got %s", tc.desc, clID, body.ID))
 		}
+	}
+}
+
+func TestReadRegisters(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	validBody := fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","data_fields":[%s]}`, testIP, testPort, testFuncCode, dataField)
+
+	cases := []struct {
+		desc        string
+		token       string
+		body        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "read registers without content type",
+			token:       token,
+			body:        validBody,
+			contentType: emptyValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "read registers with invalid JSON",
+			token:       token,
+			body:        `}{`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "read registers missing IP address",
+			token:       token,
+			body:        fmt.Sprintf(`{"port":"%s","function_code":"%s","data_fields":[%s]}`, testPort, testFuncCode, dataField),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "read registers with invalid function code",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"unknown","data_fields":[%s]}`, testIP, testPort, dataField),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "read registers with missing data fields",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","data_fields":[]}`, testIP, testPort, testFuncCode),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "read registers with wrong token",
+			token:       wrongToken,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "read registers with empty token",
+			token:       emptyValue,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/read", ts.URL),
+			token:       tc.token,
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func TestWriteRegister(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	validBody := fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"uint16","value":42}`, testIP, testPort)
+
+	cases := []struct {
+		desc        string
+		token       string
+		body        string
+		contentType string
+		status      int
+	}{
+		{
+			desc:        "write register without content type",
+			token:       token,
+			body:        validBody,
+			contentType: emptyValue,
+			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "write register with invalid JSON",
+			token:       token,
+			body:        `}{`,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register missing IP address",
+			token:       token,
+			body:        fmt.Sprintf(`{"port":"%s","address":100,"type":"uint16","value":42}`, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register missing address",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","type":"uint16","value":42}`, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register missing value",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"uint16"}`, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register with invalid type",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"unknown","value":42}`, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register with invalid byte order",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"int32","byte_order":"ZZZZ","value":42}`, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register with wrong token",
+			token:       wrongToken,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "write register with empty token",
+			token:       emptyValue,
+			body:        validBody,
+			contentType: contentType,
+			status:      http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/write", ts.URL),
+			token:       tc.token,
+			contentType: tc.contentType,
+			body:        strings.NewReader(tc.body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
 
