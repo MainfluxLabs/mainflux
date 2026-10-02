@@ -8,6 +8,7 @@ package coap
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 
@@ -42,6 +43,7 @@ type PubSub interface {
 	messaging.CommandPublisher
 	messaging.MessageDispatcher
 	messaging.Subscriber
+	messaging.CommandSubscriber
 }
 
 const (
@@ -91,7 +93,15 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 		return err
 	}
 
+	if nats.IsCommandsSubject(subtopic) {
+		return svc.pubsub.SubscribeCommands(c.Token(), subtopic, c)
+	}
+
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
+}
+
+func isWildcard(elem string) bool {
+	return elem == "*" || elem == ">"
 }
 
 // authorizeSubscribe restricts observation of thing and group subjects to the
@@ -107,7 +117,7 @@ func (svc *adapterService) authorizeSubscribe(ctx context.Context, thingID, subj
 			if elems[1] != thingID {
 				return errors.ErrAuthorization
 			}
-			return nil
+			return authorizeSubjectType(elems)
 		case subjectPrefixGroups:
 			groupID, err := svc.things.GetGroupIDByThing(ctx, thingID)
 			if err != nil {
@@ -116,14 +126,22 @@ func (svc *adapterService) authorizeSubscribe(ctx context.Context, thingID, subj
 			if elems[1] != groupID {
 				return errors.ErrAuthorization
 			}
-			return nil
+			return authorizeSubjectType(elems)
 		}
 	}
 
-	for _, elem := range elems {
-		if elem == "*" || elem == ">" {
-			return errors.ErrAuthorization
-		}
+	if slices.ContainsFunc(elems, isWildcard) {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+// authorizeSubjectType rejects a wildcard in place of messages or commands,
+// since the observed type must be known to decode it.
+func authorizeSubjectType(elems []string) error {
+	if len(elems) >= 3 && isWildcard(elems[2]) {
+		return errors.ErrAuthorization
 	}
 
 	return nil

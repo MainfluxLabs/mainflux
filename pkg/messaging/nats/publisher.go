@@ -5,6 +5,7 @@ package nats
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -106,6 +107,16 @@ func GetThingCommandsSubject(thingID, subtopic string) string {
 
 func GetGroupCommandsSubject(groupID, subtopic string) string {
 	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
+}
+
+// IsCommandsSubject reports whether subject is a thing or group commands subject.
+func IsCommandsSubject(subject string) bool {
+	elems := strings.SplitN(subject, ".", 4)
+	if len(elems) < 3 {
+		return false
+	}
+
+	return (elems[0] == thingsPrefix || elems[0] == groupsPrefix) && elems[2] == commandsSuffix
 }
 
 func createSubject(entity, id, suffix, subtopic string) string {
