@@ -87,7 +87,6 @@ func (c *client) Handle(_ string, msg protomfx.Message) error {
 		c.logger.Error(fmt.Sprintf("Can't set content format: %s.", err))
 		return errors.Wrap(ErrOption, err)
 	}
-	opts = append(opts, message.Option{ID: message.Observe, Value: []byte{byte(c.observe)}})
 	opts, n, err = opts.SetObserve(buff, uint32(c.observe))
 	if err == message.ErrTooSmall {
 		buff = append(buff, make([]byte, n)...)
