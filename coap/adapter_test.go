@@ -27,7 +27,9 @@ const (
 )
 
 type pubsubMock struct {
-	subscribed []string
+	subscribed    []string
+	cmdSubscribed []string
+	cmdHandler    messaging.CommandHandler
 }
 
 func (ps *pubsubMock) PublishCommand(string, protomfx.Command) error {
@@ -43,6 +45,12 @@ func (ps *pubsubMock) Subscribe(_, topic string, _ messaging.MessageHandler) err
 	return nil
 }
 
+func (ps *pubsubMock) SubscribeCommands(_, topic string, handler messaging.CommandHandler) error {
+	ps.cmdSubscribed = append(ps.cmdSubscribed, topic)
+	ps.cmdHandler = handler
+	return nil
+}
+
 func (ps *pubsubMock) Unsubscribe(string, string) error {
 	return nil
 }
@@ -53,19 +61,23 @@ func (ps *pubsubMock) Close() error {
 
 type clientMock struct{}
 
-func (clientMock) Done() <-chan struct{} {
+func (*clientMock) Done() <-chan struct{} {
 	return nil
 }
 
-func (clientMock) Cancel() error {
+func (*clientMock) Cancel() error {
 	return nil
 }
 
-func (clientMock) Token() string {
+func (*clientMock) Token() string {
 	return clientToken
 }
 
-func (clientMock) Handle(string, protomfx.Message) error {
+func (*clientMock) Handle(string, protomfx.Message) error {
+	return nil
+}
+
+func (*clientMock) HandleCommand(string, protomfx.Command) error {
 	return nil
 }
 
@@ -76,34 +88,83 @@ func TestSubscribe(t *testing.T) {
 	key := domain.ThingKey{Value: thingKey, Type: domain.KeyTypeInternal}
 
 	cases := []struct {
-		desc    string
-		key     domain.ThingKey
-		subject string
-		err     error
+		desc     string
+		key      domain.ThingKey
+		subject  string
+		commands bool
+		err      error
 	}{
 		{
-			desc:    "observe own thing commands",
-			key:     key,
-			subject: fmt.Sprintf("things.%s.commands.shadow", thingID),
-			err:     nil,
+			desc:     "observe own thing commands",
+			key:      key,
+			subject:  fmt.Sprintf("things.%s.commands", thingID),
+			commands: true,
+			err:      nil,
 		},
 		{
-			desc:    "observe own thing commands with wildcard subtopic",
-			key:     key,
-			subject: fmt.Sprintf("things.%s.commands.>", thingID),
-			err:     nil,
+			desc:     "observe own thing commands with subtopic",
+			key:      key,
+			subject:  fmt.Sprintf("things.%s.commands.shadow", thingID),
+			commands: true,
+			err:      nil,
 		},
 		{
-			desc:    "observe own group commands",
-			key:     key,
-			subject: fmt.Sprintf("groups.%s.commands", groupID),
-			err:     nil,
+			desc:     "observe own thing commands with wildcard subtopic",
+			key:      key,
+			subject:  fmt.Sprintf("things.%s.commands.>", thingID),
+			commands: true,
+			err:      nil,
 		},
 		{
-			desc:    "observe custom subtopic",
+			desc:     "observe own group commands",
+			key:      key,
+			subject:  fmt.Sprintf("groups.%s.commands", groupID),
+			commands: true,
+			err:      nil,
+		},
+		{
+			desc:     "observe own thing messages",
+			key:      key,
+			subject:  fmt.Sprintf("things.%s.messages", thingID),
+			commands: false,
+			err:      nil,
+		},
+		{
+			desc:     "observe custom subtopic",
+			key:      key,
+			subject:  "home.room.temperature",
+			commands: false,
+			err:      nil,
+		},
+		{
+			desc:    "observe own thing with full wildcard type",
 			key:     key,
-			subject: "home.room.temperature",
-			err:     nil,
+			subject: fmt.Sprintf("things.%s.>", thingID),
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "observe own thing with single wildcard type",
+			key:     key,
+			subject: fmt.Sprintf("things.%s.*", thingID),
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "observe own thing with single wildcard type and subtopic",
+			key:     key,
+			subject: fmt.Sprintf("things.%s.*.shadow", thingID),
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "observe own group with full wildcard type",
+			key:     key,
+			subject: fmt.Sprintf("groups.%s.>", groupID),
+			err:     errors.ErrAuthorization,
+		},
+		{
+			desc:    "observe own group with single wildcard type",
+			key:     key,
+			subject: fmt.Sprintf("groups.%s.*", groupID),
+			err:     errors.ErrAuthorization,
 		},
 		{
 			desc:    "observe another thing's commands",
@@ -141,13 +202,21 @@ func TestSubscribe(t *testing.T) {
 		ps := &pubsubMock{}
 		svc := coap.New(things, ps)
 
-		err := svc.Subscribe(context.Background(), tc.key, tc.subject, clientMock{})
+		err := svc.Subscribe(context.Background(), tc.key, tc.subject, &clientMock{})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
-		if tc.err == nil {
-			assert.Equal(t, []string{tc.subject}, ps.subscribed, fmt.Sprintf("%s: expected subscription to %s\n", tc.desc, tc.subject))
-		} else {
-			assert.Empty(t, ps.subscribed, fmt.Sprintf("%s: expected no subscription\n", tc.desc))
+		switch {
+		case tc.err != nil:
+			assert.Empty(t, ps.subscribed, fmt.Sprintf("%s: expected no message subscription\n", tc.desc))
+			assert.Empty(t, ps.cmdSubscribed, fmt.Sprintf("%s: expected no command subscription\n", tc.desc))
+		case tc.commands:
+			assert.Equal(t, []string{tc.subject}, ps.cmdSubscribed, fmt.Sprintf("%s: expected command subscription to %s\n", tc.desc, tc.subject))
+			_, ok := ps.cmdHandler.(messaging.Canceler)
+			assert.True(t, ok, fmt.Sprintf("%s: expected command handler to be cancelable\n", tc.desc))
+			assert.Empty(t, ps.subscribed, fmt.Sprintf("%s: expected no message subscription\n", tc.desc))
+		default:
+			assert.Equal(t, []string{tc.subject}, ps.subscribed, fmt.Sprintf("%s: expected message subscription to %s\n", tc.desc, tc.subject))
+			assert.Empty(t, ps.cmdSubscribed, fmt.Sprintf("%s: expected no command subscription\n", tc.desc))
 		}
 	}
 }

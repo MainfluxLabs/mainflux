@@ -22,6 +22,7 @@ type Client interface {
 	// In CoAP terminology, Token similar to the Session ID.
 	Token() string
 	Handle(subject string, m protomfx.Message) error
+	HandleCommand(subject string, cmd protomfx.Command) error
 	Cancel() error
 	Done() <-chan struct{}
 }
@@ -68,11 +69,20 @@ func (c *client) Token() string {
 }
 
 func (c *client) Handle(_ string, msg protomfx.Message) error {
+	return c.notify(msg.Payload)
+}
+
+func (c *client) HandleCommand(_ string, cmd protomfx.Command) error {
+	return c.notify(cmd.Payload)
+}
+
+// notify sends the payload to the observer as the next notification.
+func (c *client) notify(payload []byte) error {
 	m := message.Message{
 		Code:    codes.Content,
 		Token:   c.token,
 		Context: c.client.Context(),
-		Body:    bytes.NewReader(msg.Payload),
+		Body:    bytes.NewReader(payload),
 	}
 
 	atomic.AddUint32(&c.observe, 1)

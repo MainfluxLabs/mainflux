@@ -42,7 +42,7 @@ func (f forwarder) Forward(id string, sub messaging.CommandSubscriber, pub messa
 }
 
 func handle(pub messaging.CommandPublisher, logger log.Logger) messaging.CommandHandler {
-	return func(subject string, cmd protomfx.Command) error {
+	return commandHandlerFunc(func(subject string, cmd protomfx.Command) error {
 		if cmd.Protocol == protocol {
 			return nil
 		}
@@ -54,5 +54,12 @@ func handle(pub messaging.CommandPublisher, logger log.Logger) messaging.Command
 		}()
 
 		return nil
-	}
+	})
+}
+
+// commandHandlerFunc adapts a function to messaging.CommandHandler.
+type commandHandlerFunc func(subject string, cmd protomfx.Command) error
+
+func (f commandHandlerFunc) HandleCommand(subject string, cmd protomfx.Command) error {
+	return f(subject, cmd)
 }
