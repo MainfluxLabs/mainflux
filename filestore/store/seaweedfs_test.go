@@ -27,16 +27,16 @@ const (
 	swChunkMB = 4
 )
 
-type fakeFiler struct {
+type testFiler struct {
 	mu    sync.Mutex
 	files map[string][]byte
 }
 
-func newFakeFiler() *fakeFiler {
-	return &fakeFiler{files: map[string][]byte{}}
+func newTestFiler() *testFiler {
+	return &testFiler{files: map[string][]byte{}}
 }
 
-func (f *fakeFiler) handler() http.Handler {
+func (f *testFiler) handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
 		defer f.mu.Unlock()
@@ -82,9 +82,9 @@ func (f *fakeFiler) handler() http.Handler {
 	})
 }
 
-func newSeaweed(t *testing.T) (store.FileStore, *fakeFiler, *httptest.Server) {
+func newSeaweed(t *testing.T) (store.FileStore, *testFiler, *httptest.Server) {
 	t.Helper()
-	f := newFakeFiler()
+	f := newTestFiler()
 	srv := httptest.NewServer(f.handler())
 	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout, swChunkMB)
 	require.Nil(t, err, fmt.Sprintf("new seaweedfs failed: %s", err))
