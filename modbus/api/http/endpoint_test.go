@@ -556,12 +556,12 @@ func TestViewClient(t *testing.T) {
 	}
 }
 
-func TestReadRegisters(t *testing.T) {
+func TestReadRegister(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validBody := fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","data_fields":[%s]}`, testIP, testPort, testFuncCode, dataField)
+	validBody := fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, testIP, testPort, testFuncCode)
 
 	cases := []struct {
 		desc        string
@@ -571,49 +571,63 @@ func TestReadRegisters(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "read registers without content type",
+			desc:        "read register without content type",
 			token:       token,
 			body:        validBody,
 			contentType: emptyValue,
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
-			desc:        "read registers with invalid JSON",
+			desc:        "read register with invalid JSON",
 			token:       token,
 			body:        `}{`,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "read registers missing IP address",
+			desc:        "read register missing IP address",
 			token:       token,
-			body:        fmt.Sprintf(`{"port":"%s","function_code":"%s","data_fields":[%s]}`, testPort, testFuncCode, dataField),
+			body:        fmt.Sprintf(`{"port":"%s","function_code":"%s","address":100,"type":"uint16"}`, testPort, testFuncCode),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "read registers with invalid function code",
+			desc:        "read register with invalid function code",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"unknown","data_fields":[%s]}`, testIP, testPort, dataField),
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"unknown","address":100,"type":"uint16"}`, testIP, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "read registers with missing data fields",
+			desc:        "read register missing address",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","data_fields":[]}`, testIP, testPort, testFuncCode),
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","type":"uint16"}`, testIP, testPort, testFuncCode),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "read registers with wrong token",
+			desc:        "read register with invalid type",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"unknown"}`, testIP, testPort, testFuncCode),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "read register with string type missing length",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"string"}`, testIP, testPort, testFuncCode),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "read register with wrong token",
 			token:       wrongToken,
 			body:        validBody,
 			contentType: contentType,
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "read registers with empty token",
+			desc:        "read register with empty token",
 			token:       emptyValue,
 			body:        validBody,
 			contentType: contentType,
