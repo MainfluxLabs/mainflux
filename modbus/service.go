@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"math"
 	"slices"
@@ -59,10 +60,10 @@ type Service interface {
 	// ViewClient retrieves data about a client identified with the provided ID.
 	ViewClient(ctx context.Context, token, id string) (Client, error)
 
-	// ReadRegisters performs an immediate Modbus read against the given connection and
-	// decodes the requested data fields. No client is created or looked up; the token
-	// is only checked for validity, not against any specific resource.
-	ReadRegisters(ctx context.Context, token string, req ReadRequest) (map[string]any, error)
+	// ReadRegister performs an immediate Modbus read against the given connection and
+	// returns the decoded value. No client is created or looked up; the token is only
+	// checked for validity, not against any specific resource.
+	ReadRegister(ctx context.Context, token string, req ReadRequest) (any, error)
 
 	// WriteRegister performs an immediate Modbus write against the given connection.
 	// No client is created or looked up; the token is only checked for validity, not
@@ -138,12 +139,30 @@ var (
 )
 
 // Sentinel errors for write-request validation failures that the HTTP layer
-// maps to 400 Bad Request, as opposed to operational failures (rate limiter,
-// connection, device I/O) which stay 500.
+// maps to 400 Bad Request.
 var (
 	ErrInvalidWriteValue = errors.New("invalid write value")
 	ErrValueOutOfRange   = errors.New("value out of range for type")
 )
+
+// Sentinel errors for device-side failures of ad hoc read and write requests.
+var (
+	// ErrDeviceUnavailable indicates the device is unreachable, timed out
+	// or returned an invalid response.
+	ErrDeviceUnavailable = errors.New("modbus device unavailable")
+	// ErrDeviceRejected indicates the device returned a Modbus exception response.
+	ErrDeviceRejected = errors.New("modbus device rejected request")
+)
+
+// deviceError wraps err with the sentinel error matching the failure.
+func deviceError(err error) error {
+	var mbErr *gbmodbus.ModbusError
+	if stderrors.As(err, &mbErr) {
+		return errors.Wrap(ErrDeviceRejected, err)
+	}
+
+	return errors.Wrap(ErrDeviceUnavailable, err)
+}
 
 type Block struct {
 	Start  uint16
@@ -252,18 +271,27 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 	return client, nil
 }
 
-func (cs *clientsService) ReadRegisters(ctx context.Context, token string, req ReadRequest) (map[string]any, error) {
+func (cs *clientsService) ReadRegister(ctx context.Context, token string, req ReadRequest) (any, error) {
 	if _, err := cs.auth.Identify(ctx, token); err != nil {
 		return nil, err
 	}
 
 	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
 	if err != nil {
-		return nil, err
+		return nil, deviceError(err)
 	}
 	defer mu.Unlock()
 
-	fields := calcFieldLengths(req.DataFields)
+	field := DataField{Address: req.Address}
+	// Coils and discrete inputs are single bits and take no decoding options.
+	if req.FunctionCode == ReadHoldingRegistersFunc || req.FunctionCode == ReadInputRegistersFunc {
+		field.Type = req.Type
+		field.ByteOrder = req.ByteOrder
+		field.Scale = req.Scale
+		field.Length = req.Length
+	}
+
+	fields := calcFieldLengths([]DataField{field})
 	maxLen := getBlockMaxLen(req.FunctionCode)
 	blocks := createBlocks(fields, maxLen)
 
@@ -271,13 +299,25 @@ func (cs *clientsService) ReadRegisters(ctx context.Context, token string, req R
 
 	data, err := cs.readData(handler, client, blocks)
 	if err != nil {
-		return nil, err
-	}
-	if len(data) == 0 {
-		return nil, errors.New(errEmptyResponse)
+		return nil, deviceError(err)
 	}
 
-	return buildFieldValues(data, fields, req.FunctionCode)
+	values, err := buildFieldValues(data, fields, req.FunctionCode)
+	if err != nil {
+		return nil, deviceError(err)
+	}
+
+	value, ok := values[field.Name]
+	if !ok {
+		return nil, deviceError(errors.New(errEmptyResponse))
+	}
+
+	// Register values are wrapped in an entry; coil values are plain booleans.
+	if entry, ok := value.(map[string]any); ok {
+		value = entry["value"]
+	}
+
+	return value, nil
 }
 
 func (cs *clientsService) WriteRegister(ctx context.Context, token string, req WriteRequest) error {
@@ -287,12 +327,19 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 
 	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
 	if err != nil {
-		return err
+		return deviceError(err)
 	}
 	defer mu.Unlock()
 
 	mc := gbmodbus.NewClient(handler)
-	return writeField(mc, req)
+	if err := writeField(mc, req); err != nil {
+		if errors.Contains(err, ErrInvalidWriteValue) || errors.Contains(err, ErrValueOutOfRange) {
+			return err
+		}
+		return deviceError(err)
+	}
+
+	return nil
 }
 
 // connect returns a rate-limited, connected handler for ipAddress:port, ready for

@@ -169,28 +169,32 @@ paths:
 
   /read:
     post:
-      summary: Read Modbus registers
-      description: Reads the given data fields from a device over Modbus and returns the decoded values. No client is created or looked up; connection info is supplied in the request, and the caller only needs a valid user token.
+      summary: Read a register or coil
+      description: Reads a single register value, coil or discrete input from a Modbus device and returns the decoded value. The request supplies the connection parameters and no stored client is used. Authorization requires a valid user token.
       tags:
         - registers
       requestBody:
-        $ref: "#/components/requestBodies/ReadRegistersReq"
+        $ref: "#/components/requestBodies/ReadRegisterReq"
       responses:
         '200':
-          $ref: "#/components/responses/ReadRegistersRes"
+          $ref: "#/components/responses/ReadRegisterRes"
         '400':
           description: Failed due to malformed JSON or invalid field.
         '401':
           description: Missing or invalid access token provided.
         '415':
           description: Missing or invalid content type.
+        '422':
+          description: Device returned a Modbus exception response.
         '500':
           $ref: "#/components/responses/ServiceError"
+        '503':
+          description: Device is unreachable, timed out or returned an invalid response.
 
   /write:
     post:
       summary: Write a register or coil
-      description: Writes a single register or coil on a device over Modbus. No client is created or looked up; connection info is supplied in the request, and the caller only needs a valid user token. The write function code is derived from "type".
+      description: Writes a single register value or coil to a Modbus device. The request supplies the connection parameters and no stored client is used. Authorization requires a valid user token. The write function code is derived from "type".
       tags:
         - registers
       requestBody:
@@ -204,8 +208,12 @@ paths:
           description: Missing or invalid access token provided.
         '415':
           description: Missing or invalid content type.
+        '422':
+          description: Device returned a Modbus exception response.
         '500':
           $ref: "#/components/responses/ServiceError"
+        '503':
+          description: Device is unreachable, timed out or returned an invalid response.
 
   /clients:
     patch:
@@ -543,8 +551,8 @@ components:
                 scale: 0.1
                 byte_order: "ABCD"
                 address: 0
-    ReadRegistersReq:
-      description: JSON-formatted document describing the device connection and the data fields to read. No client is created or referenced.
+    ReadRegisterReq:
+      description: JSON-formatted document describing the device connection and the value to read. The type, byte_order, scale and length properties apply to register function codes only and are ignored for coils and discrete inputs.
       required: true
       content:
         application/json:
@@ -566,26 +574,40 @@ components:
                 type: string
                 enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
                 example: "ReadHoldingRegisters"
-              data_fields:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DataField"
-                minItems: 1
-            required: [ip_address, port, function_code, data_fields]
+              address:
+                type: integer
+                example: 100
+              type:
+                type: string
+                enum: [bool, int16, uint16, int32, uint32, float32, string]
+                description: Required for register function codes.
+                example: "float32"
+              byte_order:
+                type: string
+                enum: [ABCD, DCBA, CDAB, BADC]
+                description: Byte order of the register data. Defaults to ABCD.
+                example: "ABCD"
+              scale:
+                type: number
+                format: double
+                description: Decoded value is multiplied by scale. No scaling is applied when omitted or zero.
+                example: 0.1
+              length:
+                type: integer
+                description: Register count. Required for type "string" and ignored for all other types.
+                example: 2
+            required: [ip_address, port, function_code, address]
           example:
             ip_address: "192.168.1.100"
             port: "502"
             slave_id: 1
             function_code: "ReadHoldingRegisters"
-            data_fields:
-              - name: "temperature"
-                type: "float32"
-                unit: "°C"
-                scale: 0.1
-                byte_order: "ABCD"
-                address: 0
+            address: 100
+            type: "float32"
+            byte_order: "ABCD"
+            scale: 0.1
     WriteRegisterReq:
-      description: JSON-formatted document describing the device connection and the register or coil write. No client is created or referenced.
+      description: JSON-formatted document describing the device connection and the value to write.
       required: true
       content:
         application/json:
@@ -609,20 +631,20 @@ components:
               type:
                 type: string
                 enum: [bool, int16, uint16, int32, uint32, float32]
-                description: Selects the write function code (bool -> WriteSingleCoil, int16/uint16 -> WriteSingleRegister, int32/uint32/float32 -> WriteMultipleRegisters).
+                description: Selects the write function code. Type bool uses WriteSingleCoil, int16 and uint16 use WriteSingleRegister, int32, uint32 and float32 use WriteMultipleRegisters.
                 example: "uint16"
               byte_order:
                 type: string
                 enum: [ABCD, DCBA, CDAB, BADC]
-                description: Used for int32/uint32/float32 only.
+                description: Byte order of the register data. Defaults to ABCD.
                 example: "ABCD"
               scale:
                 type: number
                 format: double
-                description: Value is divided by scale before being written.
+                description: Value is divided by scale before it is written. No scaling is applied when omitted or zero.
                 example: 0.1
               value:
-                description: Value to write; boolean for type "bool", numeric otherwise.
+                description: Value to write. Boolean for type "bool", numeric otherwise.
                 oneOf:
                   - type: number
                   - type: boolean
@@ -770,22 +792,21 @@ components:
                     scale: 0.1
                     byte_order: "ABCD"
                     address: 0
-    ReadRegistersRes:
-      description: Client's data fields read and decoded.
+    ReadRegisterRes:
+      description: Value read and decoded.
       content:
         application/json:
           schema:
             type: object
             properties:
-              values:
-                type: object
-                additionalProperties: true
-                description: Map of data field name to its decoded value (an object with "value" and optional "unit" for registers, or a plain boolean for coils).
+              value:
+                description: Decoded value. Boolean for coils, discrete inputs and type "bool", string for type "string", numeric otherwise.
+                oneOf:
+                  - type: number
+                  - type: boolean
+                  - type: string
           example:
-            values:
-              temperature:
-                value: 21.5
-                unit: "°C"
+            value: 21.5
     ServiceError:
       description: Unexpected server-side error occurred.
       content:

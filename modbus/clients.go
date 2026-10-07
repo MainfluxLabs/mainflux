@@ -45,13 +45,18 @@ type DataField struct {
 }
 
 // ReadRequest describes an ad hoc Modbus read against a device with no persisted
-// client: connection info plus the fields to decode. Authorized by user token alone.
+// client. Type, ByteOrder, Scale and Length apply to register function codes only.
+// Authorized by user token alone.
 type ReadRequest struct {
 	IPAddress    string
 	Port         string
 	SlaveID      uint8
 	FunctionCode string
-	DataFields   []DataField
+	Address      uint16
+	Type         string
+	ByteOrder    string
+	Scale        float64
+	Length       uint16
 }
 
 // WriteRequest describes an ad hoc Modbus write against a device with no persisted
