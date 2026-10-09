@@ -165,10 +165,6 @@ func (sr scriptRepository) UpdateScript(ctx context.Context, script pyscripts.Sc
 	return nil
 }
 
-// RemoveScripts deletes in one transaction. Issued as separate statements, a
-// failure part way through would leave the batch half applied while the caller
-// got an error, so a retry would act on a different world than the one it was
-// authorized against.
 func (sr scriptRepository) RemoveScripts(ctx context.Context, ids ...string) error {
 	tx, err := sr.db.BeginTxx(ctx, nil)
 	if err != nil {
