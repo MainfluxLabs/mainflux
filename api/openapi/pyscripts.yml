@@ -1,0 +1,391 @@
+openapi: 3.0.3
+info:
+  title: Mainflux pyscripts service
+  description: |
+    HTTP API for storing and running Python scripts.
+
+    Scripts are group-scoped. Reading requires group viewer; creating, updating,
+    deleting **and running** require group editor - running a script executes
+    code inside the service, so it is an edit-level action even though the script
+    is unchanged.
+
+    A script that raises, times out, exceeds a limit or returns something that
+    cannot be serialized still ran: the response is 200 with status "fail" and
+    the reason in "error". 5xx is reserved for infrastructure failures - no
+    worker available, a corrupt frame.
+
+    Saving a script compiles it, which occupies a python worker. So creating and
+    updating - not only running - can return 503 when the pool is saturated.
+  version: "1.0.0"
+
+paths:
+  /groups/{groupId}/scripts:
+    post:
+      summary: Creates scripts in a group.
+      tags: [scripts]
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateScriptsReq"
+      responses:
+        '201': { description: Scripts created. }
+        '400':
+          description: |
+            Malformed request, script exceeds the size limit, or the source does
+            not compile. A syntax error is reported with Python's own message.
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group editor required. }
+        '415': { description: Unsupported content type. }
+        '503': { description: No python worker available to compile the script. }
+    get:
+      summary: Lists scripts belonging to a group.
+      tags: [scripts]
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Name"
+      responses:
+        '200':
+          description: Page of scripts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScriptsPage"
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group viewer required. }
+
+  /scripts/{scriptId}:
+    get:
+      summary: Retrieves a script, including its source.
+      tags: [scripts]
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+      responses:
+        '200':
+          description: The script.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Script"
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group viewer required. }
+        '404': { description: Script does not exist. }
+    put:
+      summary: Updates a script.
+      tags: [scripts]
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateScriptReq"
+      responses:
+        '200': { description: Script updated. }
+        '400':
+          description: |
+            Malformed request, script exceeds the size limit, or the source does
+            not compile. A syntax error is reported with Python's own message.
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group editor required. }
+        '404': { description: Script does not exist. }
+        '503': { description: No python worker available to compile the script. }
+
+  /scripts:
+    patch:
+      summary: Removes scripts. Their run history is removed with them.
+      tags: [scripts]
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveScriptsReq"
+      responses:
+        '204': { description: Scripts removed. }
+        '400': { description: Malformed request. }
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group editor required. }
+
+  /scripts/{scriptId}/run:
+    post:
+      summary: Runs a script and records the run.
+      description: |
+        Executes the stored source against the supplied message. Requires group
+        editor, not viewer.
+
+        Any outcome that is the script's own - raising, exceeding a limit,
+        returning an unserializable value - is 200 with status "fail" and the
+        reason in "error". 5xx means the runner itself failed.
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+      requestBody:
+        $ref: "#/components/requestBodies/RunScriptReq"
+      responses:
+        '200':
+          description: The run, whether the script succeeded or failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+        '400': { description: Malformed request, or payload exceeds the size limit. }
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group editor required. }
+        '404': { description: Script does not exist. }
+        '500': { description: The python worker failed. }
+        '503':
+          description: |
+            No python worker became available within
+            MF_PYSCRIPTS_ACQUIRE_TIMEOUT. The request was shed, not queued;
+            retrying is safe.
+
+  /scripts/{scriptId}/runs:
+    get:
+      summary: Lists runs of a script.
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/ScriptId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        '200':
+          description: Page of runs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunsPage"
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group viewer required. }
+
+  /runs:
+    patch:
+      summary: Removes runs.
+      tags: [runs]
+      requestBody:
+        $ref: "#/components/requestBodies/RemoveRunsReq"
+      responses:
+        '204': { description: Runs removed. }
+        '400': { description: Malformed request. }
+        '401': { description: Missing or invalid access token. }
+        '403': { description: Group editor required. }
+
+  /health:
+    get:
+      summary: Service health check.
+      tags: [health]
+      responses:
+        '200': { description: Service is up. }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ScriptId:
+      name: scriptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Offset:
+      name: offset
+      in: query
+      schema: { type: integer, default: 0, minimum: 0 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 10, minimum: 1, maximum: 200 }
+    Order:
+      name: order
+      in: query
+      schema: { type: string, enum: [id, name, created_at, updated_at] }
+    Direction:
+      name: direction
+      in: query
+      schema: { type: string, enum: [asc, desc] }
+    Name:
+      name: name
+      in: query
+      schema: { type: string }
+    Status:
+      name: status
+      in: query
+      schema: { type: string, enum: [success, fail] }
+    From:
+      name: from
+      in: query
+      description: Unix milliseconds, inclusive.
+      schema: { type: integer, format: int64 }
+    To:
+      name: to
+      in: query
+      description: Unix milliseconds, exclusive.
+      schema: { type: integer, format: int64 }
+
+  schemas:
+    Script:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        group_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 254 }
+        description: { type: string }
+        source:
+          type: string
+          description: Python source. Returned only when viewing a single script.
+        sha256: { type: string, description: Checksum of the current source. }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ScriptsPage:
+      type: object
+      properties:
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+        scripts:
+          type: array
+          items: { $ref: "#/components/schemas/Script" }
+
+    Message:
+      type: object
+      description: |
+        Exposed to the script as the global `message`, not as a function
+        argument - a script is plain Python run top to bottom, with its last
+        expression as the result. Bounded by
+        MF_PYSCRIPTS_MAX_PAYLOAD_SIZE; a larger body is rejected with 400.
+      properties:
+        payload: { type: object }
+        subtopic: { type: string }
+        created: { type: integer, format: int64 }
+        publisher_id: { type: string }
+
+    Run:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        script_id: { type: string, format: uuid }
+        script_sha256:
+          type: string
+          description: |
+            Checksum of the source that actually ran. Differs from the script's
+            current sha256 when the script has been edited since.
+        status: { type: string, enum: [success, fail] }
+        return_value:
+          nullable: true
+          description: |
+            Value of the script's last expression - the rule a notebook cell
+            follows. Null when the script ends in a statement, and null whenever
+            the run failed.
+
+            A value that cannot be serialized - an ndarray, np.int64, a
+            DataFrame, NaN or Infinity - fails the run rather than being
+            recorded as null, so the author is told rather than left guessing.
+            Call .tolist() or float() first.
+        logs:
+          type: array
+          description: |
+            Anything the script wrote to stdout or stderr, one entry per line.
+            Lines are truncated at 8192 characters and the list at
+            MF_PYSCRIPTS_MAX_LOG_LINES.
+          items: { type: string }
+        error:
+          type: string
+          description: |
+            A traceback starting at the user's line, or the reason the run ended:
+            "timeout after 10s", "cpu time limit exceeded (5s)", "output limit
+            exceeded", "file size limit exceeded", "result cannot be returned:
+            ...", "script killed, most likely by the memory limit", or
+            "script crashed (segmentation fault)".
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time }
+
+    RunsPage:
+      type: object
+      properties:
+        total: { type: integer }
+        offset: { type: integer }
+        limit: { type: integer }
+        runs:
+          type: array
+          items: { $ref: "#/components/schemas/Run" }
+
+  requestBodies:
+    CreateScriptsReq:
+      description: |
+        Bounded by MF_PYSCRIPTS_MAX_BODY_SIZE; a larger body is rejected with
+        400 before MaxScriptSize is consulted.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [scripts]
+            properties:
+              scripts:
+                type: array
+                minItems: 1
+                items:
+                  type: object
+                  required: [name, source]
+                  properties:
+                    name: { type: string, maxLength: 254 }
+                    description: { type: string }
+                    source: { type: string }
+
+    UpdateScriptReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, source]
+            properties:
+              name: { type: string, maxLength: 254 }
+              description: { type: string }
+              source: { type: string }
+
+    RunScriptReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Message"
+
+    RemoveScriptsReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [script_ids]
+            properties:
+              script_ids:
+                type: array
+                minItems: 1
+                items: { type: string, format: uuid }
+
+    RemoveRunsReq:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [run_ids]
+            properties:
+              run_ids:
+                type: array
+                minItems: 1
+                items: { type: string, format: uuid }
+
+security:
+  - bearerAuth: []
