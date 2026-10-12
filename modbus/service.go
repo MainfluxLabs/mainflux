@@ -127,6 +127,19 @@ const (
 
 var _ Service = (*clientsService)(nil)
 var (
+	// ErrInvalidWriteValue indicates the write value does not match the register type.
+	ErrInvalidWriteValue = errors.New("invalid write value")
+
+	// ErrValueOutOfRange indicates the write value is out of range for the register type.
+	ErrValueOutOfRange = errors.New("value out of range for type")
+
+	// ErrDeviceUnavailable indicates the device is unreachable, timed out
+	// or returned an invalid response.
+	ErrDeviceUnavailable = errors.New("modbus device unavailable")
+
+	// ErrDeviceRejected indicates the device returned a Modbus exception response.
+	ErrDeviceRejected = errors.New("modbus device rejected request")
+
 	errReadRegisters  = "failed to read registers"
 	errRateLimiter    = "failed to wait for rate limiter"
 	errFormatPayload  = "failed to format payload"
@@ -136,22 +149,6 @@ var (
 
 	errInvalidWriteValue    = "invalid write value"
 	errUnsupportedWriteType = "unsupported write type"
-)
-
-// Sentinel errors for write-request validation failures that the HTTP layer
-// maps to 400 Bad Request.
-var (
-	ErrInvalidWriteValue = errors.New("invalid write value")
-	ErrValueOutOfRange   = errors.New("value out of range for type")
-)
-
-// Sentinel errors for device-side failures of ad hoc read and write requests.
-var (
-	// ErrDeviceUnavailable indicates the device is unreachable, timed out
-	// or returned an invalid response.
-	ErrDeviceUnavailable = errors.New("modbus device unavailable")
-	// ErrDeviceRejected indicates the device returned a Modbus exception response.
-	ErrDeviceRejected = errors.New("modbus device rejected request")
 )
 
 // deviceError wraps err with the sentinel error matching the failure.
