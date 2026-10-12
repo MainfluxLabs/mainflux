@@ -12,6 +12,7 @@ import (
 
 const (
 	minLen       = 1
+	maxStringLen = 125
 	maxLimitSize = 100
 	maxNameSize  = 254
 )
@@ -169,24 +170,19 @@ func validateDataFields(fields []field) error {
 	return nil
 }
 
-// validateFieldType checks t against the supported field types; string fields require a length.
+// validateFieldType checks t against the supported field types; string fields require a length within the Modbus read limit.
 func validateFieldType(t string, length uint16) error {
 	switch t {
 	case modbus.BoolType, modbus.Int16Type, modbus.Uint16Type, modbus.Int32Type, modbus.Uint32Type, modbus.Float32Type:
 		return nil
 	case modbus.StringType:
-		if length < minLen {
+		if length < minLen || length > maxStringLen {
 			return ErrInvalidFieldLength
 		}
 		return nil
 	default:
 		return ErrInvalidFieldType
 	}
-}
-
-// isRegisterFunc reports whether code reads registers rather than coils or discrete inputs.
-func isRegisterFunc(code string) bool {
-	return code == modbus.ReadHoldingRegistersFunc || code == modbus.ReadInputRegistersFunc
 }
 
 // validateWriteType checks t against the types writable via a single register or coil write.
@@ -287,7 +283,7 @@ func (req readRegisterReq) validate() error {
 	}
 
 	// Coils and discrete inputs are single bits and take no decoding options.
-	if !isRegisterFunc(req.FunctionCode) {
+	if !modbus.IsRegisterFunc(req.FunctionCode) {
 		return nil
 	}
 

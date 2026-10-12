@@ -284,7 +284,7 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 
 	field := DataField{Address: req.Address}
 	// Coils and discrete inputs are single bits and take no decoding options.
-	if req.FunctionCode == ReadHoldingRegistersFunc || req.FunctionCode == ReadInputRegistersFunc {
+	if IsRegisterFunc(req.FunctionCode) {
 		field.Type = req.Type
 		field.ByteOrder = req.ByteOrder
 		field.Scale = req.Scale

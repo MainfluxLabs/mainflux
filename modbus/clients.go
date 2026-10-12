@@ -20,6 +20,11 @@ const (
 	ByteOrderBADC = "BADC" // Byte-swapped (less common, but used in some contexts)
 )
 
+// IsRegisterFunc reports whether code reads registers rather than coils or discrete inputs.
+func IsRegisterFunc(code string) bool {
+	return code == ReadHoldingRegistersFunc || code == ReadInputRegistersFunc
+}
+
 type Client struct {
 	ID           string
 	GroupID      string
