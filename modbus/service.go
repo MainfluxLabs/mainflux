@@ -283,8 +283,10 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	defer mu.Unlock()
 
 	field := DataField{Address: req.Address}
-	// Coils and discrete inputs are single bits and take no decoding options.
-	if IsRegisterFunc(req.FunctionCode) {
+	switch req.FunctionCode {
+	case ReadCoilsFunc, ReadDiscreteInputsFunc:
+		// Coils and discrete inputs are single bits and take no decoding options.
+	default:
 		field.Type = req.Type
 		field.ByteOrder = req.ByteOrder
 		field.Scale = req.Scale

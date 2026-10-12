@@ -282,16 +282,17 @@ func (req readRegisterReq) validate() error {
 		return ErrMissingFieldAddress
 	}
 
-	// Coils and discrete inputs are single bits and take no decoding options.
-	if !modbus.IsRegisterFunc(req.FunctionCode) {
+	switch req.FunctionCode {
+	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc:
+		// Coils and discrete inputs are single bits and take no decoding options.
 		return nil
-	}
+	default:
+		if err := validateFieldType(req.Type, req.Length); err != nil {
+			return err
+		}
 
-	if err := validateFieldType(req.Type, req.Length); err != nil {
-		return err
+		return validateByteOrder(req.ByteOrder)
 	}
-
-	return validateByteOrder(req.ByteOrder)
 }
 
 type writeRegisterReq struct {

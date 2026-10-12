@@ -305,7 +305,7 @@ components:
           example: 0
         length:
           type: integer
-          description: Register count (auto-calculated from type; set manually only for string fields).
+          description: Register count (auto-calculated from type; set manually only for string fields). Maximum is 125.
           example: 2
       required: [name, type, byte_order, address]
 
@@ -594,7 +594,7 @@ components:
                 example: 0.1
               length:
                 type: integer
-                description: Register count. Required for type "string" and ignored for all other types.
+                description: Register count. Required for type "string" and ignored for all other types. Maximum is 125.
                 example: 2
             required: [ip_address, port, function_code, address]
           example:
