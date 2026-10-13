@@ -144,10 +144,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pyscripts.MaxScriptSize = cfg.maxScriptSize
-	httpapi.MaxPayloadSize = cfg.maxPayloadSize
-	httpapi.MaxBodySize = cfg.maxBodySize
-
 	db := connectToDB(cfg.dbConfig, logger)
 	defer db.Close()
 
@@ -180,10 +176,11 @@ func main() {
 	}
 	defer run.Close()
 
-	svc := newService(dbTracer, db, run, tc, logger)
+	svc := newService(dbTracer, db, run, tc, logger, cfg.maxScriptSize)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(httpTracer, svc, auth, logger), cfg.httpConfig, logger)
+		limits := httpapi.Limits{Body: cfg.maxBodySize, Payload: cfg.maxPayloadSize}
+		return servershttp.Start(ctx, httpapi.MakeHandler(httpTracer, svc, auth, logger, limits), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -329,14 +326,14 @@ func subscribeToThingsES(ctx context.Context, svc pyscripts.Service, cfg config,
 	return subscriber.Subscribe(ctx, events.NewEventHandler(svc))
 }
 
-func newService(dbTracer opentracing.Tracer, db *sqlx.DB, run runner.Runner, tc domain.ThingsClient, logger logger.Logger) pyscripts.Service {
+func newService(dbTracer opentracing.Tracer, db *sqlx.DB, run pyscripts.Runner, tc domain.ThingsClient, logger logger.Logger, maxScriptSize int) pyscripts.Service {
 	database := dbutil.NewDatabase(db)
 
 	repo := postgres.NewScriptRepository(database)
 	repo = tracing.ScriptRepositoryMiddleware(dbTracer, repo)
 
 	idProvider := uuid.New()
-	svc := pyscripts.New(repo, run, tc, idProvider, logger)
+	svc := pyscripts.New(repo, run, tc, idProvider, logger, maxScriptSize)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
