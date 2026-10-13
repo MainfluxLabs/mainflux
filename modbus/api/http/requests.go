@@ -12,6 +12,7 @@ import (
 
 const (
 	minLen       = 1
+	maxStringLen = 125
 	maxLimitSize = 100
 	maxNameSize  = 254
 )
@@ -157,14 +158,8 @@ func validateDataFields(fields []field) error {
 			return ErrMissingFieldAddress
 		}
 
-		switch f.Type {
-		case modbus.BoolType, modbus.Int16Type, modbus.Uint16Type, modbus.Int32Type, modbus.Uint32Type, modbus.Float32Type:
-		case modbus.StringType:
-			if f.Length < minLen {
-				return ErrInvalidFieldLength
-			}
-		default:
-			return ErrInvalidFieldType
+		if err := validateFieldType(f.Type, f.Length); err != nil {
+			return err
 		}
 
 		if err := validateByteOrder(f.ByteOrder); err != nil {
@@ -173,6 +168,21 @@ func validateDataFields(fields []field) error {
 	}
 
 	return nil
+}
+
+// validateFieldType checks t against the supported field types; string fields require a length within the Modbus read limit.
+func validateFieldType(t string, length uint16) error {
+	switch t {
+	case modbus.BoolType, modbus.Int16Type, modbus.Uint16Type, modbus.Int32Type, modbus.Uint32Type, modbus.Float32Type:
+		return nil
+	case modbus.StringType:
+		if length < minLen || length > maxStringLen {
+			return ErrInvalidFieldLength
+		}
+		return nil
+	default:
+		return ErrInvalidFieldType
+	}
 }
 
 // validateWriteType checks t against the types writable via a single register or coil write.
@@ -238,16 +248,20 @@ func (req viewClientReq) validate() error {
 	return nil
 }
 
-type readRegistersReq struct {
+type readRegisterReq struct {
 	token        string
 	IPAddress    string  `json:"ip_address"`
 	Port         string  `json:"port"`
 	SlaveID      uint8   `json:"slave_id,omitempty"`
 	FunctionCode string  `json:"function_code"`
-	DataFields   []field `json:"data_fields"`
+	Address      *uint16 `json:"address"`
+	Type         string  `json:"type,omitempty"`
+	ByteOrder    string  `json:"byte_order,omitempty"`
+	Scale        float64 `json:"scale,omitempty"`
+	Length       uint16  `json:"length,omitempty"`
 }
 
-func (req readRegistersReq) validate() error {
+func (req readRegisterReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -264,7 +278,21 @@ func (req readRegistersReq) validate() error {
 		return err
 	}
 
-	return validateDataFields(req.DataFields)
+	if req.Address == nil {
+		return ErrMissingFieldAddress
+	}
+
+	switch req.FunctionCode {
+	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc:
+		// Coils and discrete inputs are single bits and take no decoding options.
+		return nil
+	default:
+		if err := validateFieldType(req.Type, req.Length); err != nil {
+			return err
+		}
+
+		return validateByteOrder(req.ByteOrder)
+	}
 }
 
 type writeRegisterReq struct {
