@@ -279,6 +279,13 @@ components:
             on save; empty string for legacy rows created before the column was
             added.
           example: "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        size:
+          type: integer
+          format: int64
+          description: |
+            Size of the stored object in bytes. Omitted for legacy rows created
+            before the column was added.
+          example: 482304
 
     FilesPageRes:
       type: object

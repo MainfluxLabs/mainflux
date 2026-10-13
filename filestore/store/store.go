@@ -22,8 +22,8 @@ var ErrNotFound = errors.New("object not found")
 
 // FileStore is a pluggable binary-object store.
 type FileStore interface {
-	// Put streams r under key and returns the SHA256 hex checksum.
-	Put(ctx context.Context, key string, r io.Reader) (string, error)
+	// Put streams r under key and returns the SHA256 hex checksum and size in bytes.
+	Put(ctx context.Context, key string, r io.Reader) (string, int64, error)
 
 	// Get returns a streaming reader for key. If expectedChecksum is non-empty
 	// the reader returns ErrChecksumMismatch at EOF when the digest differs.

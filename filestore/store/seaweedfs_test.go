@@ -122,9 +122,10 @@ func TestSeaweedPut(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		checksum, err := s.Put(context.Background(), tc.key, bytes.NewReader(tc.content))
+		checksum, size, err := s.Put(context.Background(), tc.key, bytes.NewReader(tc.content))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		assert.Equal(t, sum(tc.content), checksum, fmt.Sprintf("%s: checksum mismatch", tc.desc))
+		assert.Equal(t, int64(len(tc.content)), size, fmt.Sprintf("%s: size mismatch", tc.desc))
 
 		got := f.files[swPrefix+"/"+tc.key]
 		assert.Equal(t, tc.content, got, fmt.Sprintf("%s: filer content mismatch", tc.desc))
@@ -136,7 +137,7 @@ func TestSeaweedGet(t *testing.T) {
 	defer srv.Close()
 
 	content := []byte(testContent)
-	expected, err := s.Put(context.Background(), testKey, bytes.NewReader(content))
+	expected, _, err := s.Put(context.Background(), testKey, bytes.NewReader(content))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	cases := []struct {
@@ -185,7 +186,7 @@ func TestSeaweedGetChecksumMismatch(t *testing.T) {
 	s, _, srv := newSeaweed(t)
 	defer srv.Close()
 
-	_, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	rc, err := s.Get(context.Background(), testKey, wrongSum)
@@ -200,7 +201,7 @@ func TestSeaweedDelete(t *testing.T) {
 	s, f, srv := newSeaweed(t)
 	defer srv.Close()
 
-	_, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	cases := []struct {
@@ -238,7 +239,7 @@ func TestSeaweedDeletePrefix(t *testing.T) {
 		"groups/g1/sub/b.txt",
 		"groups/g2/c.txt",
 	} {
-		_, err := s.Put(context.Background(), k, strings.NewReader("x"))
+		_, _, err := s.Put(context.Background(), k, strings.NewReader("x"))
 		require.Nil(t, err, fmt.Sprintf("put %s failed: %s", k, err))
 	}
 

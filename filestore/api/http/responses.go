@@ -31,6 +31,8 @@ type fileInfo struct {
 	Format   string         `json:"format"`
 	Time     float64        `json:"time"`
 	Metadata map[string]any `json:"metadata"`
+	Checksum string         `json:"checksum,omitempty"`
+	Size     int64          `json:"size,omitempty"`
 }
 
 type fileRes struct {

@@ -54,6 +54,7 @@ func (r *GroupsRepository) UpdateChecksum(_ context.Context, groupID string, fi 
 		return dbutil.ErrNotFound
 	}
 	got.Checksum = fi.Checksum
+	got.Size = fi.Size
 	r.byKey[k] = got
 	return nil
 }

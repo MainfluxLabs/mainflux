@@ -87,7 +87,7 @@ func (tr thingsRepository) Update(ctx context.Context, thingID string, fi filest
 }
 
 func (tr thingsRepository) UpdateChecksum(ctx context.Context, thingID string, fi filestore.FileInfo) error {
-	q := `UPDATE things_files SET checksum = :checksum
+	q := `UPDATE things_files SET checksum = :checksum, size = :size
           WHERE thing_id = :thing_id AND file_name = :file_name AND file_class = :file_class AND file_format = :file_format`
 
 	dbFile, err := toDBThingFile(thingID, fi)
@@ -113,7 +113,7 @@ func (tr thingsRepository) UpdateChecksum(ctx context.Context, thingID string, f
 }
 
 func (tr thingsRepository) Retrieve(ctx context.Context, thingID string, fi filestore.FileInfo) (filestore.FileInfo, error) {
-	q := `SELECT file_name, file_class, file_format, metadata, checksum FROM things_files
+	q := `SELECT file_name, file_class, file_format, metadata, checksum, size FROM things_files
 		WHERE thing_id = $1 AND file_class = $2 AND file_format = $3 AND file_name = $4`
 
 	dbFile := dbFileInfo{}
@@ -155,7 +155,7 @@ func (tr thingsRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
-	q := fmt.Sprintf(`SELECT file_name, file_class, file_format, time, metadata FROM things_files %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT file_name, file_class, file_format, time, metadata, checksum, size FROM things_files %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 
 	params := map[string]any{
 		"thing_id":    thingID,
@@ -283,6 +283,7 @@ type dbFileInfo struct {
 	Metadata   []byte  `db:"metadata"`
 	Time       float64 `db:"time"`
 	Checksum   string  `db:"checksum"`
+	Size       int64   `db:"size"`
 }
 
 type dbThingFile struct {
@@ -309,6 +310,7 @@ func toDBThingFile(thingID string, fi filestore.FileInfo) (dbThingFile, error) {
 			Metadata:   meta,
 			Time:       fi.Time,
 			Checksum:   fi.Checksum,
+			Size:       fi.Size,
 		},
 		ThingID: thingID,
 	}, nil
@@ -327,6 +329,7 @@ func toFileInfo(dbfi dbFileInfo) (filestore.FileInfo, error) {
 		Metadata: metadata,
 		Time:     dbfi.Time,
 		Checksum: dbfi.Checksum,
+		Size:     dbfi.Size,
 	}
 
 	return fileInfo, nil

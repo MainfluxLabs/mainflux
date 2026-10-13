@@ -257,6 +257,8 @@ func buildListFilesResponse(pm filestore.PageMetadata, files []filestore.FileInf
 			Format:   file.Format,
 			Time:     file.Time,
 			Metadata: file.Metadata,
+			Checksum: file.Checksum,
+			Size:     file.Size,
 		}
 
 		res.FilesInfo = append(res.FilesInfo, f)

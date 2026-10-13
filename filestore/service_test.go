@@ -73,6 +73,10 @@ func TestSaveGroupFile(t *testing.T) {
 
 	assert.Equal(t, 1, grRepo.Len())
 
+	stored, err := grRepo.Retrieve(context.Background(), groupID, fi)
+	require.Nil(t, err)
+	assert.Equal(t, int64(5), stored.Size, "size not persisted")
+
 	// Unauthorised user blocked before store.Put.
 	err = svc.SaveGroupFile(context.Background(), strings.NewReader("x"), "nope", groupID, fi)
 	assert.Error(t, err, "auth not enforced")
@@ -227,6 +231,7 @@ func TestSaveFile(t *testing.T) {
 	stored, err := thRepo.Retrieve(context.Background(), thingID, fi)
 	require.Nil(t, err)
 	assert.NotEmpty(t, stored.Checksum, "checksum not persisted")
+	assert.Equal(t, int64(5), stored.Size, "size not persisted")
 }
 
 func TestSaveFile_DuplicatePreservesExisting(t *testing.T) {

@@ -83,38 +83,46 @@ func (s *seaweedFS) objectURL(key string) string {
 	return u.String()
 }
 
-func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, error) {
+func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, int64, error) {
 	h := sha256.New()
 	pr, pw := io.Pipe()
+	var size int64
+	done := make(chan struct{})
 
 	defer pr.Close()
 	go func() {
-		_, err := io.Copy(pw, io.TeeReader(r, h))
+		defer close(done)
+		n, err := io.Copy(pw, io.TeeReader(r, h))
+		size = n
 		pw.CloseWithError(err)
 	}()
 
 	u, err := url.Parse(s.objectURL(key))
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	u.RawQuery = url.Values{"maxMB": {strconv.Itoa(s.chunkMB)}}.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), pr)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return "", errors.Wrap(ErrBackend, fmt.Errorf("put status %d", resp.StatusCode))
+		return "", 0, errors.Wrap(ErrBackend, fmt.Errorf("put status %d", resp.StatusCode))
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	// Wait for the copier so the hash and size are read only after it is done.
+	pr.Close()
+	<-done
+
+	return hex.EncodeToString(h.Sum(nil)), size, nil
 }
 
 func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.ReadCloser, error) {

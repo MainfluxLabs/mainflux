@@ -74,9 +74,10 @@ func TestLocalPut(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		checksum, err := s.Put(context.Background(), tc.key, bytes.NewReader(tc.content))
+		checksum, size, err := s.Put(context.Background(), tc.key, bytes.NewReader(tc.content))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		assert.Equal(t, sum(tc.content), checksum, fmt.Sprintf("%s: checksum mismatch", tc.desc))
+		assert.Equal(t, int64(len(tc.content)), size, fmt.Sprintf("%s: size mismatch", tc.desc))
 
 		data, readErr := os.ReadFile(filepath.Join(base, tc.key))
 		require.Nil(t, readErr, fmt.Sprintf("%s: read back failed: %s", tc.desc, readErr))
@@ -87,7 +88,7 @@ func TestLocalPut(t *testing.T) {
 func TestLocalGet(t *testing.T) {
 	s, _ := newLocal(t)
 	content := []byte(testContent)
-	expected, err := s.Put(context.Background(), testKey, bytes.NewReader(content))
+	expected, _, err := s.Put(context.Background(), testKey, bytes.NewReader(content))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	cases := []struct {
@@ -136,7 +137,7 @@ func TestLocalGet(t *testing.T) {
 
 func TestLocalGetChecksumMismatch(t *testing.T) {
 	s, _ := newLocal(t)
-	_, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	rc, err := s.Get(context.Background(), testKey, wrongSum)
@@ -149,7 +150,7 @@ func TestLocalGetChecksumMismatch(t *testing.T) {
 
 func TestLocalDelete(t *testing.T) {
 	s, base := newLocal(t)
-	_, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	cases := []struct {
@@ -185,7 +186,7 @@ func TestLocalDeletePrefix(t *testing.T) {
 		"groups/g1/sub/b.txt",
 		"groups/g2/c.txt",
 	} {
-		_, err := s.Put(context.Background(), k, strings.NewReader("x"))
+		_, _, err := s.Put(context.Background(), k, strings.NewReader("x"))
 		require.Nil(t, err, fmt.Sprintf("put %s failed: %s", k, err))
 	}
 

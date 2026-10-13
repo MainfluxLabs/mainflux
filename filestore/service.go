@@ -77,6 +77,7 @@ type FileInfo struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 	Time     float64        `json:"time,omitempty"`
 	Checksum string         `json:"checksum,omitempty"`
+	Size     int64          `json:"size,omitempty"`
 }
 
 type filestoreService struct {
@@ -128,7 +129,7 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 	}
 
 	objKey := thingFileKey(thID, fi.Name)
-	checksum, err := fs.store.Put(ctx, objKey, file)
+	checksum, size, err := fs.store.Put(ctx, objKey, file)
 	if err != nil {
 		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
 			return fs.thingsRepo.Remove(ctx, thID, fi)
@@ -137,6 +138,7 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 	}
 
 	fi.Checksum = checksum
+	fi.Size = size
 
 	if err := fs.thingsRepo.UpdateChecksum(ctx, thID, fi); err != nil {
 		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
@@ -252,7 +254,7 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 	}
 
 	objKey := groupFileKey(groupID, fi.Name)
-	checksum, err := fs.store.Put(ctx, objKey, file)
+	checksum, size, err := fs.store.Put(ctx, objKey, file)
 	if err != nil {
 		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
 			return fs.groupsRepo.Remove(ctx, groupID, fi)
@@ -261,6 +263,7 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 	}
 
 	fi.Checksum = checksum
+	fi.Size = size
 
 	if err := fs.groupsRepo.UpdateChecksum(ctx, groupID, fi); err != nil {
 		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {

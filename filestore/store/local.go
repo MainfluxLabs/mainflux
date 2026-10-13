@@ -23,24 +23,25 @@ func NewLocal(base string) FileStore {
 	return &local{base: base}
 }
 
-func (l *local) Put(_ context.Context, key string, r io.Reader) (string, error) {
+func (l *local) Put(_ context.Context, key string, r io.Reader) (string, int64, error) {
 	path := filepath.Join(l.base, key)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	f, err := os.Create(path)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer f.Close()
 
 	h := sha256.New()
-	if _, err := io.Copy(f, io.TeeReader(r, h)); err != nil {
-		return "", err
+	size, err := io.Copy(f, io.TeeReader(r, h))
+	if err != nil {
+		return "", 0, err
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return hex.EncodeToString(h.Sum(nil)), size, nil
 }
 
 func (l *local) Get(_ context.Context, key, expectedChecksum string) (io.ReadCloser, error) {

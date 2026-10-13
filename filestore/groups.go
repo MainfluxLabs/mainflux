@@ -17,7 +17,7 @@ type GroupsRepository interface {
 	Save(ctx context.Context, groupID string, fi FileInfo) error
 	// Update updates path in filestore
 	Update(ctx context.Context, groupID string, fi FileInfo) error
-	// UpdateChecksum sets the stored object's checksum on an existing row
+	// UpdateChecksum sets the stored object's checksum and size on an existing row
 	UpdateChecksum(ctx context.Context, groupID string, fi FileInfo) error
 	// Retrieve retrieves path from filestore
 	Retrieve(ctx context.Context, groupID string, fi FileInfo) (FileInfo, error)
