@@ -93,11 +93,11 @@ func JSONMapMessageToProto(msg map[string]any) *protomfx.Message {
 	}
 
 	return &protomfx.Message{
-		Publisher: publisher,
-		Subtopic:  subtopic,
-		Payload:   payload,
-		Protocol:  protocol,
-		Created:   created,
+		ThingId:  publisher,
+		Subtopic: subtopic,
+		Payload:  payload,
+		Protocol: protocol,
+		Created:  created,
 	}
 }
 
@@ -109,7 +109,7 @@ func ProtoJSONMessageToMap(msg *protomfx.Message) (map[string]any, error) {
 	}
 
 	return map[string]any{
-		"publisher": msg.Publisher,
+		"publisher": msg.ThingId,
 		"subtopic":  msg.Subtopic,
 		"protocol":  msg.Protocol,
 		"created":   msg.Created,

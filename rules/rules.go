@@ -93,7 +93,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 				return err
 			}
 			if err := rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
-				ThingId:  msg.Publisher,
+				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Created:  msg.Created,
@@ -105,7 +105,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 			}
 		case ActionTypeSMTP, ActionTypeSMPP:
 			notification := protomfx.Notification{
-				ThingId:  msg.Publisher,
+				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
 				Payload:  msg.Payload,
@@ -116,7 +116,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 			}
 		case ActionTypeWebhook:
 			webhook := protomfx.Webhook{
-				ThingId: msg.Publisher,
+				ThingId: msg.ThingId,
 				Payload: msg.Payload,
 				Created: msg.Created,
 			}
@@ -204,7 +204,7 @@ func (rs *rulesService) evaluateMessageConditions(ctx context.Context, msg *prot
 
 	for i, condition := range rule.Conditions {
 		if condition.Type == ConditionTypeScript {
-			results[i] = rs.runScriptCondition(ctx, msg, payload, condition.ScriptID)
+			results[i] = rs.runScriptCondition(ctx, msg, payload, rule.ID, condition.ScriptID)
 			continue
 		}
 
@@ -333,4 +333,12 @@ func findParam(payload map[string]any, param string) any {
 var RuleOrderFields = map[string]string{
 	"id":   "id",
 	"name": "LOWER(name)",
+}
+
+// ScriptRunOrderFields maps API-facing order keys to SQL column expressions for the lua_script_runs table.
+var ScriptRunOrderFields = map[string]string{
+	"id":          "id",
+	"started_at":  "started_at",
+	"finished_at": "finished_at",
+	"status":      "status",
 }

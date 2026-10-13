@@ -39,7 +39,7 @@ func TestSaveSenML(t *testing.T) {
 	repo := timescale.New(db)
 	now := time.Now().Unix()
 
-	pubid, err := uuid.NewV4()
+	thingID, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	for i := 0; i < msgsNum; i++ {
@@ -63,7 +63,7 @@ func TestSaveSenML(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			Publisher:   pubid.String(),
+			ThingId:     thingID.String(),
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
 			Payload:     payload,
@@ -79,7 +79,7 @@ func TestSaveSenML(t *testing.T) {
 func TestSaveJSON(t *testing.T) {
 	repo := timescale.New(db)
 
-	pubid, err := uuid.NewV4()
+	thingID, err := uuid.NewV4()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	payload := map[string]any{
@@ -96,7 +96,7 @@ func TestSaveJSON(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pm := protomfx.Message{
-		Publisher:   pubid.String(),
+		ThingId:     thingID.String(),
 		Created:     time.Now().Unix(),
 		Subtopic:    subtopic,
 		Protocol:    mqttProt,

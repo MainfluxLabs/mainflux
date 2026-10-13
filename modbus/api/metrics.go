@@ -75,6 +75,24 @@ func (ms *metricsMiddleware) ViewClient(ctx context.Context, token, id string) (
 	return ms.svc.ViewClient(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) ReadRegisters(ctx context.Context, token string, req modbus.ReadRequest) (map[string]any, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "read_registers").Add(1)
+		ms.latency.With("method", "read_registers").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ReadRegisters(ctx, token, req)
+}
+
+func (ms *metricsMiddleware) WriteRegister(ctx context.Context, token string, req modbus.WriteRequest) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "write_register").Add(1)
+		ms.latency.With("method", "write_register").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.WriteRegister(ctx, token, req)
+}
+
 func (ms *metricsMiddleware) UpdateClient(ctx context.Context, token string, client modbus.Client) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_client").Add(1)

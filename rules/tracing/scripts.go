@@ -17,6 +17,7 @@ const (
 	removeScriptsByGroup      = "remove_scripts_by_group"
 	saveScriptRuns            = "save_script_runs"
 	retrieveScriptRunsByThing = "retrieve_script_runs_by_thing"
+	retrieveScriptRunsByRule  = "retrieve_script_runs_by_rule"
 	removeScriptRuns          = "remove_script_runs"
 	retrieveScriptRunByID     = "retrieve_script_run_by_id"
 )
@@ -83,6 +84,14 @@ func (rpm ruleRepositoryMiddleware) RetrieveScriptRunsByThing(ctx context.Contex
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rpm.repo.RetrieveScriptRunsByThing(ctx, thingID, pm)
+}
+
+func (rpm ruleRepositoryMiddleware) RetrieveScriptRunsByRule(ctx context.Context, ruleID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
+	span := dbutil.CreateSpan(ctx, rpm.tracer, retrieveScriptRunsByRule)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rpm.repo.RetrieveScriptRunsByRule(ctx, ruleID, pm)
 }
 
 func (rpm ruleRepositoryMiddleware) RemoveScriptRuns(ctx context.Context, ids ...string) error {

@@ -41,7 +41,7 @@ type MessageHandler interface {
 	Handle(subject string, msg protomfx.Message) error
 }
 
-// Canceler is an optional capability a MessageHandler may implement for
+// Canceler is an optional capability a MessageHandler or CommandHandler may implement for
 // cleanup when its subscription ends. Subscriber implementations detect it
 // via a type assertion.
 type Canceler interface {
@@ -70,8 +70,11 @@ type AlarmSubscriber interface {
 	SubscribeAlarms(id string, handler AlarmHandler) error
 }
 
-// CommandHandler handles a received protomfx.Command for CommandSubscriber.
-type CommandHandler func(subject string, cmd protomfx.Command) error
+// CommandHandler represents protomfx.Command handler for CommandSubscriber.
+type CommandHandler interface {
+	// HandleCommand handles commands passed by underlying implementation.
+	HandleCommand(subject string, cmd protomfx.Command) error
+}
 
 // CommandSubscriber specifies the command subscription API.
 type CommandSubscriber interface {

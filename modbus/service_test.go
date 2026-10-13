@@ -17,6 +17,7 @@ import (
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
+	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,6 +52,7 @@ var client = modbus.Client{
 }
 
 func newService() modbus.Service {
+	authSvc := pkgmocks.NewAuthService("", []users.User{{ID: "user-1", Email: token}}, nil)
 	thingsSvc := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -64,7 +66,7 @@ func newService() modbus.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return modbus.New(thingsSvc, pub, repo, idp, log)
+	return modbus.New(authSvc, thingsSvc, pub, repo, idp, log)
 }
 
 func TestCreateClients(t *testing.T) {
@@ -172,6 +174,57 @@ func TestListClientsByThing(t *testing.T) {
 		if tc.err == nil {
 			assert.Equal(t, tc.size, uint64(len(page.Clients)), fmt.Sprintf("%s: expected %d clients got %d", tc.desc, tc.size, len(page.Clients)))
 		}
+	}
+}
+
+func TestReadRegisters(t *testing.T) {
+	svc := newService()
+
+	req := modbus.ReadRequest{
+		IPAddress:    client.IPAddress,
+		Port:         client.Port,
+		FunctionCode: modbus.ReadHoldingRegistersFunc,
+		DataFields:   []modbus.DataField{{Name: "temperature", Type: modbus.Float32Type, Address: 0}},
+	}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+	}{
+		{
+			desc:  "read registers with invalid token",
+			token: wrongToken,
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.ReadRegisters(context.Background(), tc.token, req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestWriteRegister(t *testing.T) {
+	svc := newService()
+
+	req := modbus.WriteRequest{IPAddress: client.IPAddress, Port: client.Port, Address: 100, Type: modbus.Uint16Type, Value: float64(42)}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+	}{
+		{
+			desc:  "write register with invalid token",
+			token: wrongToken,
+			err:   errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.WriteRegister(context.Background(), tc.token, req)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
 

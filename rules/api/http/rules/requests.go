@@ -110,7 +110,7 @@ func (req listRulesByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleOrderFields)
 }
 
 type listRulesByGroupReq struct {
@@ -128,7 +128,7 @@ func (req listRulesByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleOrderFields)
 }
 
 type updateRuleInput struct {
@@ -208,6 +208,24 @@ func (req removeRulesReq) validate() error {
 	}
 
 	return nil
+}
+
+type listScriptRunsByRuleReq struct {
+	token        string
+	ruleID       string
+	pageMetadata rules.PageMetadata
+}
+
+func (req listScriptRunsByRuleReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.ruleID == "" {
+		return apiutil.ErrMissingRuleID
+	}
+
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.ScriptRunOrderFields)
 }
 
 func validateThingIDs(ids []string) error {

@@ -16,6 +16,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -110,6 +111,15 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			withIdentity,
 		)(removeRulesEndpoint(svc)),
 		decodeRemoveRules,
+		encodeResponse,
+		opts...,
+	))
+	mux.Get("/rules/:id/runs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_script_runs_by_rule"),
+			withIdentity,
+		)(listScriptRunsByRuleEndpoint(svc)),
+		decodeListScriptRunsByRule,
 		encodeResponse,
 		opts...,
 	))
@@ -232,6 +242,20 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
+	return req, nil
+}
+
+func decodeListScriptRunsByRule(_ context.Context, r *http.Request) (any, error) {
+	pm, err := api.BuildScriptRunsPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listScriptRunsByRuleReq{
+		token:        apiutil.ExtractBearerToken(r),
+		ruleID:       bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
 	return req, nil
 }
 

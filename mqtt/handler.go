@@ -247,7 +247,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		return err
 	}
 
-	if isCommandSubject(subject) {
+	if nats.IsCommandsSubject(subject) {
 		if err := h.publishCommand(subject, msg); err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
 	cmd := protomfx.Command{
-		Publisher:   msg.Publisher,
+		Publisher:   msg.ThingId,
 		Subtopic:    msg.Subtopic,
 		Payload:     msg.Payload,
 		RecipientId: extractRecipient(subject),
@@ -317,15 +317,6 @@ func defaultTopicRoute(topic, publisherID string) (string, string, error) {
 		return "", "", err
 	}
 	return nats.GetMessagesSubject(publisherID, subtopic), subtopic, nil
-}
-
-func isCommandSubject(subject string) bool {
-	parts := strings.SplitN(subject, ".", 4)
-	if len(parts) < 3 {
-		return false
-	}
-	suffix := parts[2]
-	return suffix == topicSuffixCommands
 }
 
 // Subscribe - after client successfully subscribed

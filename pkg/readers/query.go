@@ -4,9 +4,13 @@
 package readers
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 const (
@@ -25,6 +29,10 @@ const (
 	GreaterThanKey = "gt"
 	// GreaterThanEqualKey represents the greater-than-or-equal comparison operator key.
 	GreaterThanEqualKey = "ge"
+	// StartsWithKey represents the case-insensitive starts-with comparison operator key.
+	StartsWithKey = "starts_with"
+	// ContainsKey represents the case-insensitive contains comparison operator key.
+	ContainsKey = "contains"
 
 	// MicrosecondInterval represents the microsecond aggregation interval unit.
 	MicrosecondInterval = "microsecond"
@@ -44,6 +52,19 @@ const (
 	MonthInterval = "month"
 	// YearInterval represents the year aggregation interval unit.
 	YearInterval = "year"
+)
+
+const (
+	keyPath         = "CAST(:key AS jsonpath)"
+	anyPayloadPath  = "'strict $.**'"
+	jsonScalarTypes = "('string', 'number', 'boolean')"
+)
+
+var (
+	// ErrInvalidKey indicates a malformed JSON payload key.
+	ErrInvalidKey = errors.New("invalid key")
+
+	likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 )
 
 func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string {
@@ -77,6 +98,167 @@ func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 		"from":      pm.From,
 		"to":        pm.To,
 	}
+}
+
+// JSONConditions returns the SQL predicates common to every json read.
+func JSONConditions(pm domain.JSONPageMetadata) []string {
+	conds := BaseConditions(pm.MessagesPageMetadata, JSONOrder)
+
+	switch {
+	case pm.Key != "" && pm.Value != "":
+		valueCond := valueCondition(pm.Comparator, pm.Value)
+		keyValueCond := anyPayloadNodeCondition(keyPath, valueCond)
+		return append(conds, keyValueCond)
+	case pm.Key != "":
+		keyCond := anyPayloadNodeCondition(keyPath, "jsonb_typeof(node) <> 'null'")
+		return append(conds, keyCond)
+	case pm.Value != "":
+		valueCond := valueCondition(pm.Comparator, pm.Value)
+		anyValueCond := anyPayloadNodeCondition(anyPayloadPath, valueCond)
+		return append(conds, anyValueCond)
+	default:
+		return conds
+	}
+}
+
+// JSONQueryParams returns the named parameters referenced by JSONConditions.
+func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
+	params := BaseQueryParams(pm.MessagesPageMetadata)
+
+	if pm.Key != "" {
+		params["key"] = keyParam(pm.Key)
+	}
+
+	if pm.Value != "" {
+		params["value"] = valueParam(pm.Value, pm.Comparator)
+	}
+
+	return params
+}
+
+// ParseKey converts a dot-separated JSON payload key into a strict JSON path.
+// Arrays are only entered through an index: [n] for one item or [*] for any item.
+func ParseKey(key string) (string, error) {
+	var path strings.Builder
+	path.WriteString("strict $")
+
+	for _, part := range strings.Split(key, ".") {
+		name, indexes, err := parseKeyPart(part)
+		if err != nil {
+			return "", err
+		}
+
+		quotedName, _ := json.Marshal(name)
+
+		path.WriteString(".")
+		path.Write(quotedName)
+		path.WriteString(indexes)
+	}
+
+	return path.String(), nil
+}
+
+// parseKeyPart splits one dot-separated key part, into its field name
+// and its JSON path index steps.
+func parseKeyPart(part string) (string, string, error) {
+	name, indexes, hasIndexes := strings.Cut(part, "[")
+	if name == "" || strings.ContainsAny(name, "]\x00") {
+		return "", "", ErrInvalidKey
+	}
+
+	if !hasIndexes {
+		return name, "", nil
+	}
+
+	steps := "[" + indexes
+	rest := steps
+	for rest != "" {
+		if !strings.HasPrefix(rest, "[") {
+			return "", "", ErrInvalidKey
+		}
+
+		index, after, found := strings.Cut(rest[1:], "]")
+		if !found {
+			return "", "", ErrInvalidKey
+		}
+
+		if index != "*" && !isIndex(index) {
+			return "", "", ErrInvalidKey
+		}
+
+		rest = after
+	}
+
+	return name, steps, nil
+}
+
+// isIndex reports whether index is a non-negative array position.
+func isIndex(index string) bool {
+	_, err := strconv.ParseUint(index, 10, 64)
+	return err == nil
+}
+
+// keyParam returns the JSON path bound as :key.
+func keyParam(key string) any {
+	path, err := ParseKey(key)
+	if err != nil {
+		return nil
+	}
+
+	return path
+}
+
+// anyPayloadNodeCondition matches messages where any jsonb node returned by
+// the path satisfies nodeCond.
+func anyPayloadNodeCondition(path, nodeCond string) string {
+	return fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, %s, '{}', true) AS node WHERE %s)", path, nodeCond)
+}
+
+// valueCondition matches node against :value when node is a scalar. For an
+// exact match on a numeric value, number nodes are also compared numerically.
+func valueCondition(comparator, value string) string {
+	scalarCond := fmt.Sprintf("jsonb_typeof(node) IN %s", jsonScalarTypes)
+
+	textEqualCond := "node #>> '{}' = :value"
+	numberEqualCond := "jsonb_typeof(node) = 'number' AND CAST(node #>> '{}' AS numeric) = CAST(:value AS numeric)"
+
+	var valueCond string
+	switch {
+	case comparator == StartsWithKey || comparator == ContainsKey:
+		valueCond = "node #>> '{}' ILIKE :value"
+	case isNumber(value):
+		valueCond = fmt.Sprintf("(%s OR (%s))", textEqualCond, numberEqualCond)
+	default:
+		valueCond = textEqualCond
+	}
+
+	return fmt.Sprintf("%s AND %s", scalarCond, valueCond)
+}
+
+// isNumber reports whether value is a plain decimal number that PostgreSQL can
+// cast to numeric. Hex, Inf and NaN pass strconv.ParseFloat but not this check.
+func isNumber(value string) bool {
+	hasOnlyNumberChars := strings.Trim(value, "0123456789+-.eE") == ""
+	if !hasOnlyNumberChars {
+		return false
+	}
+
+	_, err := strconv.ParseFloat(value, 64)
+	return err == nil
+}
+
+func valueParam(value, comparator string) string {
+	if comparator != StartsWithKey && comparator != ContainsKey {
+		return value
+	}
+
+	pattern := likeEscaper.Replace(value)
+
+	if comparator == StartsWithKey {
+		return pattern + "%"
+	}
+
+	return "%" + pattern + "%"
 }
 
 // senmlConditions returns the SQL predicates common to every senml read,

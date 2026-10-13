@@ -127,14 +127,14 @@ func (tr thingConfigRepository) RetrieveAll(ctx context.Context, pm apiutil.Page
 	}, nil
 }
 
-func (tr thingConfigRepository) Update(ctx context.Context, t uiconfigs.ThingConfig) (uiconfigs.ThingConfig, error) {
-	q := `UPDATE thing_configs 
+func (tr thingConfigRepository) Update(ctx context.Context, t uiconfigs.ThingConfig) error {
+	q := `UPDATE thing_configs
       	  SET config = :config
           WHERE thing_id = :thing_id`
 
 	dbTc, err := toDBThingConfig(t)
 	if err != nil {
-		return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := tr.db.NamedExecContext(ctx, q, dbTc)
@@ -143,38 +143,25 @@ func (tr thingConfigRepository) Update(ctx context.Context, t uiconfigs.ThingCon
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationWarning:
-				return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
-		return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return tr.Save(ctx, t)
+		_, err := tr.Save(ctx, t)
+		return err
 	}
 
-	qSelect := `SELECT thing_id,config
-	            FROM thing_configs
-				WHERE thing_id = $1`
-
-	var dbRes dbThingConfig
-	if err := tr.db.GetContext(ctx, &dbRes, qSelect, t.ThingID); err != nil {
-		return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	updated, err := toThingConfig(dbRes)
-	if err != nil {
-		return uiconfigs.ThingConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	return updated, nil
+	return nil
 }
 
 func (tr thingConfigRepository) Remove(ctx context.Context, thingID string) error {

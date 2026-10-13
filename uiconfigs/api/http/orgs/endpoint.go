@@ -57,8 +57,7 @@ func updateOrgConfigEndpoint(svc uiconfigs.Service) endpoint.Endpoint {
 			Config: req.Config,
 		}
 
-		_, err := svc.UpdateOrgConfig(ctx, req.token, orgConfig)
-		if err != nil {
+		if err := svc.UpdateOrgConfig(ctx, req.token, orgConfig); err != nil {
 			return nil, err
 		}
 

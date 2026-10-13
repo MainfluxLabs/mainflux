@@ -8,12 +8,14 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 )
 
 var (
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
+	_ apiutil.Response = (*scriptRunsPageRes)(nil)
 )
 
 type pageRes struct {
@@ -100,5 +102,22 @@ func (res thingIDsRes) Headers() map[string]string {
 }
 
 func (res thingIDsRes) Empty() bool {
+	return false
+}
+
+type scriptRunsPageRes struct {
+	pageRes
+	Runs []api.ScriptRunRes `json:"runs"`
+}
+
+func (res scriptRunsPageRes) Code() int {
+	return http.StatusOK
+}
+
+func (res scriptRunsPageRes) Headers() map[string]string {
+	return map[string]string{}
+}
+
+func (res scriptRunsPageRes) Empty() bool {
 	return false
 }

@@ -5,6 +5,7 @@ package nats
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -108,6 +109,16 @@ func GetGroupCommandsSubject(groupID, subtopic string) string {
 	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
 }
 
+// IsCommandsSubject reports whether subject is a thing or group commands subject.
+func IsCommandsSubject(subject string) bool {
+	elems := strings.SplitN(subject, ".", 4)
+	if len(elems) < 3 {
+		return false
+	}
+
+	return (elems[0] == thingsPrefix || elems[0] == groupsPrefix) && elems[2] == commandsSuffix
+}
+
 func createSubject(entity, id, suffix, subtopic string) string {
 	subject := fmt.Sprintf("%s.%s.%s", entity, id, suffix)
 	if subtopic != "" {
@@ -123,7 +134,7 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 	}
 
 	if pc.WriteEnabled {
-		if err := pub.Publish(GetMessagesSubject(msg.Publisher, msg.Subtopic), msg); err != nil {
+		if err := pub.Publish(GetMessagesSubject(msg.ThingId, msg.Subtopic), msg); err != nil {
 			return err
 		}
 	}
@@ -134,7 +145,7 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 	}
 	if pc.WebhookEnabled {
 		webhook := protomfx.Webhook{
-			ThingId: msg.Publisher,
+			ThingId: msg.ThingId,
 			Payload: msg.Payload,
 			Created: msg.Created,
 		}

@@ -131,15 +131,19 @@ func (ps *pubsub) SubscribeAlarms(id string, handler messaging.AlarmHandler) err
 }
 
 func (ps *pubsub) SubscribeCommands(id, topic string, handler messaging.CommandHandler) error {
+	var cancelFn func() error
+	if c, ok := handler.(messaging.Canceler); ok {
+		cancelFn = c.Cancel
+	}
 	newFn := func() proto.Message { return &protomfx.Command{} }
 	handleFn := func(subject string, msg proto.Message) error {
 		v, ok := msg.(*protomfx.Command)
 		if !ok {
 			return fmt.Errorf("%w %T for subject %s", ErrInvalidType, msg, subject)
 		}
-		return handler(subject, *v)
+		return handler.HandleCommand(subject, *v)
 	}
-	return ps.subscribe(id, topic, newFn, handleFn)
+	return ps.subscribeWithCancel(id, topic, newFn, handleFn, cancelFn)
 }
 
 func (ps *pubsub) SubscribeNotifications(id, topic string, handler messaging.NotificationHandler) error {

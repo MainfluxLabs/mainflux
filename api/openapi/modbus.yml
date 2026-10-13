@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Mainflux modbus service
-  description: HTTP API for managing Modbus TCP clients that poll device registers and publish readings to the platform.
+  description: HTTP API for managing Modbus TCP clients that poll device registers and publish readings to the platform, plus ad hoc register/coil reads and writes.
   version: 1.0.0
 
 paths:
@@ -162,6 +162,46 @@ paths:
           description: Missing or invalid access token provided.
         '404':
           description: Client does not exist.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /read:
+    post:
+      summary: Read Modbus registers
+      description: Reads the given data fields from a device over Modbus and returns the decoded values. No client is created or looked up; connection info is supplied in the request, and the caller only needs a valid user token.
+      tags:
+        - registers
+      requestBody:
+        $ref: "#/components/requestBodies/ReadRegistersReq"
+      responses:
+        '200':
+          $ref: "#/components/responses/ReadRegistersRes"
+        '400':
+          description: Failed due to malformed JSON or invalid field.
+        '401':
+          description: Missing or invalid access token provided.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+  /write:
+    post:
+      summary: Write a register or coil
+      description: Writes a single register or coil on a device over Modbus. No client is created or looked up; connection info is supplied in the request, and the caller only needs a valid user token. The write function code is derived from "type".
+      tags:
+        - registers
+      requestBody:
+        $ref: "#/components/requestBodies/WriteRegisterReq"
+      responses:
+        '200':
+          description: Value written.
+        '400':
+          description: Failed due to malformed JSON or invalid field.
+        '401':
+          description: Missing or invalid access token provided.
         '415':
           description: Missing or invalid content type.
         '500':
@@ -503,6 +543,98 @@ components:
                 scale: 0.1
                 byte_order: "ABCD"
                 address: 0
+    ReadRegistersReq:
+      description: JSON-formatted document describing the device connection and the data fields to read. No client is created or referenced.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ip_address:
+                type: string
+                example: "192.168.1.100"
+              port:
+                type: string
+                example: "502"
+              slave_id:
+                type: integer
+                minimum: 0
+                maximum: 255
+                example: 1
+              function_code:
+                type: string
+                enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+                example: "ReadHoldingRegisters"
+              data_fields:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataField"
+                minItems: 1
+            required: [ip_address, port, function_code, data_fields]
+          example:
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
+            function_code: "ReadHoldingRegisters"
+            data_fields:
+              - name: "temperature"
+                type: "float32"
+                unit: "°C"
+                scale: 0.1
+                byte_order: "ABCD"
+                address: 0
+    WriteRegisterReq:
+      description: JSON-formatted document describing the device connection and the register or coil write. No client is created or referenced.
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ip_address:
+                type: string
+                example: "192.168.1.100"
+              port:
+                type: string
+                example: "502"
+              slave_id:
+                type: integer
+                minimum: 0
+                maximum: 255
+                example: 1
+              address:
+                type: integer
+                example: 100
+              type:
+                type: string
+                enum: [bool, int16, uint16, int32, uint32, float32]
+                description: Selects the write function code (bool -> WriteSingleCoil, int16/uint16 -> WriteSingleRegister, int32/uint32/float32 -> WriteMultipleRegisters).
+                example: "uint16"
+              byte_order:
+                type: string
+                enum: [ABCD, DCBA, CDAB, BADC]
+                description: Used for int32/uint32/float32 only.
+                example: "ABCD"
+              scale:
+                type: number
+                format: double
+                description: Value is divided by scale before being written.
+                example: 0.1
+              value:
+                description: Value to write; boolean for type "bool", numeric otherwise.
+                oneOf:
+                  - type: number
+                  - type: boolean
+                example: 42
+            required: [ip_address, port, address, type, value]
+          example:
+            ip_address: "192.168.1.100"
+            port: "502"
+            slave_id: 1
+            address: 100
+            type: "uint16"
+            value: 42
     RemoveClientsReq:
       description: JSON-formatted document describing the identifiers of clients to delete.
       required: true
@@ -638,6 +770,22 @@ components:
                     scale: 0.1
                     byte_order: "ABCD"
                     address: 0
+    ReadRegistersRes:
+      description: Client's data fields read and decoded.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              values:
+                type: object
+                additionalProperties: true
+                description: Map of data field name to its decoded value (an object with "value" and optional "unit" for registers, or a plain boolean for coils).
+          example:
+            values:
+              temperature:
+                value: 21.5
+                unit: "°C"
     ServiceError:
       description: Unexpected server-side error occurred.
       content:

@@ -36,7 +36,7 @@ type OrgConfigRepository interface {
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (OrgConfigPage, error)
 
 	// Update performs an update to the existing organization config.
-	Update(ctx context.Context, oc OrgConfig) (OrgConfig, error)
+	Update(ctx context.Context, oc OrgConfig) error
 
 	// Remove removes the organization configs with the provided identifier.
 	Remove(ctx context.Context, orgID string) error

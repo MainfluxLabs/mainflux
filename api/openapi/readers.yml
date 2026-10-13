@@ -26,6 +26,9 @@ paths:
         - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Key"
+        - $ref: "#/components/parameters/Value"
+        - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
         - $ref: "#/components/parameters/AggField"
@@ -174,10 +177,10 @@ paths:
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/Protocol"
-        - $ref: "#/components/parameters/Value"
-        - $ref: "#/components/parameters/BoolValue"
-        - $ref: "#/components/parameters/StringValue"
-        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/V"
+        - $ref: "#/components/parameters/VB"
+        - $ref: "#/components/parameters/VS"
+        - $ref: "#/components/parameters/VD"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -358,10 +361,10 @@ paths:
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/Protocol"
-        - $ref: "#/components/parameters/Value"
-        - $ref: "#/components/parameters/BoolValue"
-        - $ref: "#/components/parameters/StringValue"
-        - $ref: "#/components/parameters/DataValue"
+        - $ref: "#/components/parameters/V"
+        - $ref: "#/components/parameters/VB"
+        - $ref: "#/components/parameters/VS"
+        - $ref: "#/components/parameters/VD"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -607,8 +610,15 @@ components:
           type: integer
           format: int64
           description: End time in nanoseconds.
-        filter:
+        key:
           type: string
+          description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
+        value:
+          type: string
+          description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
+        comparator:
+          type: string
+          enum: [eq, starts_with, contains]
         agg_interval:
           type: string
           enum: [microsecond, millisecond, second, minute, hour, day, week, month, year]
@@ -757,6 +767,20 @@ components:
       schema:
         type: string
       required: false
+    Key:
+      name: key
+      description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
+      in: query
+      schema:
+        type: string
+      required: false
+    Value:
+      name: value
+      description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
+      in: query
+      schema:
+        type: string
+      required: false
     Subtopic:
       name: subtopic
       description: Message subtopic.
@@ -771,28 +795,28 @@ components:
       schema:
         type: string
       required: false
-    Value:
+    V:
       name: v
       description: SenML message value (numeric).
       in: query
       schema:
         type: number
       required: false
-    BoolValue:
+    VB:
       name: vb
       description: SenML message bool value.
       in: query
       schema:
         type: boolean
       required: false
-    StringValue:
+    VS:
       name: vs
       description: SenML message string value.
       in: query
       schema:
         type: string
       required: false
-    DataValue:
+    VD:
       name: vd
       description: SenML message data value.
       in: query
@@ -801,7 +825,9 @@ components:
       required: false
     Comparator:
       name: comparator
-      description: Value comparison operator.
+      description: |
+        Value comparison operator. SenML messages support `eq`, `lt`, `le`, `gt` and `ge`.
+        JSON messages support `eq`, `starts_with` and `contains`.
       in: query
       schema:
         type: string
@@ -812,6 +838,8 @@ components:
           - le
           - gt
           - ge
+          - starts_with
+          - contains
       required: false
     From:
       name: from

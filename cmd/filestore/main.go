@@ -22,6 +22,7 @@ import (
 	httpapi "github.com/MainfluxLabs/mainflux/filestore/api/http"
 	"github.com/MainfluxLabs/mainflux/filestore/events"
 	"github.com/MainfluxLabs/mainflux/filestore/postgres"
+	"github.com/MainfluxLabs/mainflux/filestore/store"
 	"github.com/MainfluxLabs/mainflux/filestore/tracing"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/clients"
@@ -65,6 +66,14 @@ const (
 	defDBSSLKey          = ""
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
+	defFilesPath         = "files"
+	defMaxUploadSizeMB   = "1024"
+	defBackend           = "local"
+	defSeaweedURL        = "http://localhost:8888"
+	defSeaweedPrefix     = "filestore"
+	defSeaweedTimeout    = "30s"
+	defSeaweedChunkMB    = "4"
+	maxSeaweedChunkMB    = 256
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -87,6 +96,13 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
+	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
+	envSeaweedChunkMB    = "MF_FILESTORE_SEAWEED_CHUNK_SIZE"
+	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
+	envBackend           = "MF_FILESTORE_BACKEND"
+	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
+	envFilesPath         = "MF_FILESTORE_FILES_PATH"
+	envMaxUploadSizeMB   = "MF_FILESTORE_MAX_UPLOAD_SIZE"
 )
 
 type config struct {
@@ -99,6 +115,16 @@ type config struct {
 	thingsConfig      clients.Config
 	authConfig        clients.Config
 	esURL             string
+	store             storeConfig
+}
+
+type storeConfig struct {
+	backend        string
+	filesPath      string
+	seaweedURL     string
+	seaweedPrefix  string
+	seaweedTimeout time.Duration
+	seaweedChunkMB int
 }
 
 func main() {
@@ -142,7 +168,7 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("filestore_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(thingsAuth, dbTracer, db, logger)
+	svc := newService(thingsAuth, dbTracer, db, cfg.store, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
@@ -215,6 +241,31 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	maxUploadSizeMB, err := strconv.Atoi(mainflux.Env(envMaxUploadSizeMB, defMaxUploadSizeMB))
+	if err != nil || maxUploadSizeMB <= 0 || maxUploadSizeMB > httpapi.MaxUploadSizeMB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envMaxUploadSizeMB, httpapi.MaxUploadSizeMB)
+	}
+
+	seaweedTimeout, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
+	if err != nil {
+		log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
+	}
+
+	seaweedChunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
+	maxChunkMB := min(maxSeaweedChunkMB, maxUploadSizeMB)
+	if err != nil || seaweedChunkMB <= 0 || seaweedChunkMB > maxChunkMB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxChunkMB)
+	}
+
+	storeConfig := storeConfig{
+		backend:        mainflux.Env(envBackend, defBackend),
+		filesPath:      mainflux.Env(envFilesPath, defFilesPath),
+		seaweedURL:     mainflux.Env(envSeaweedURL, defSeaweedURL),
+		seaweedPrefix:  mainflux.Env(envSeaweedPrefix, defSeaweedPrefix),
+		seaweedTimeout: seaweedTimeout,
+		seaweedChunkMB: seaweedChunkMB,
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
@@ -225,6 +276,21 @@ func loadConfig() config {
 		thingsConfig:      thingsConfig,
 		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
+		store:             storeConfig,
+	}
+}
+
+func buildStore(cfg storeConfig, logger logger.Logger) store.FileStore {
+	switch cfg.backend {
+	case "seaweedfs":
+		fs, err := store.NewSeaweedFS(cfg.seaweedURL, cfg.seaweedPrefix, cfg.seaweedTimeout, cfg.seaweedChunkMB)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to init SeaweedFS backend: %s", err))
+			os.Exit(1)
+		}
+		return fs
+	default:
+		return store.NewLocal(cfg.filesPath)
 	}
 }
 
@@ -258,12 +324,13 @@ func subscribeToThingsES(ctx context.Context, svc filestore.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) filestore.Service {
+func newService(thingsAuth domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, storeCfg storeConfig, logger logger.Logger) filestore.Service {
 	thRepo := postgres.NewThingsRepository(db)
 	thRepo = tracing.ThingsRepositoryMiddleware(dbTracer, thRepo)
 	grRepo := postgres.NewGroupsRepository(db)
 	grRepo = tracing.GroupsRepositoryMiddleware(dbTracer, grRepo)
-	svc := filestore.New(thingsAuth, thRepo, grRepo)
+	fs := buildStore(storeCfg, logger)
+	svc := filestore.New(thingsAuth, thRepo, grRepo, fs, logger)
 
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(

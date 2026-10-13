@@ -127,14 +127,14 @@ func (or orgConfigRepository) RetrieveAll(ctx context.Context, pm apiutil.PageMe
 	}, nil
 }
 
-func (or orgConfigRepository) Update(ctx context.Context, o uiconfigs.OrgConfig) (uiconfigs.OrgConfig, error) {
-	q := `UPDATE org_configs 
+func (or orgConfigRepository) Update(ctx context.Context, o uiconfigs.OrgConfig) error {
+	q := `UPDATE org_configs
       	  SET config = :config
           WHERE org_id = :org_id`
 
 	dbOc, err := toDBOrgConfig(o)
 	if err != nil {
-		return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	res, errdb := or.db.NamedExecContext(ctx, q, dbOc)
@@ -143,38 +143,25 @@ func (or orgConfigRepository) Update(ctx context.Context, o uiconfigs.OrgConfig)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationWarning:
-				return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrMalformedEntity, errdb)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
-		return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	cnt, errdb := res.RowsAffected()
 	if errdb != nil {
-		return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, errdb)
+		return errors.Wrap(dbutil.ErrUpdateEntity, errdb)
 	}
 
 	if cnt == 0 {
-		return or.Save(ctx, o)
+		_, err := or.Save(ctx, o)
+		return err
 	}
 
-	qSelect := `SELECT org_id, config
-	            FROM org_configs
-				WHERE org_id = $1;`
-
-	var dbRes dbOrgConfig
-	if err := or.db.GetContext(ctx, &dbRes, qSelect, o.OrgID); err != nil {
-		return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
-	}
-
-	updated, err := toOrgConfig(dbRes)
-	if err != nil {
-		return uiconfigs.OrgConfig{}, errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	return updated, nil
+	return nil
 }
 
 func (or orgConfigRepository) Remove(ctx context.Context, orgID string) error {

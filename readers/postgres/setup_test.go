@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 
+	pwriter "github.com/MainfluxLabs/mainflux/consumers/writers/postgres"
 	"github.com/MainfluxLabs/mainflux/readers/postgres"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
@@ -60,6 +61,12 @@ func TestMain(m *testing.M) {
 		SSLKey:      "",
 		SSLRootCert: "",
 	}
+
+	wdb, err := pwriter.Connect(pwriter.Config(dbConfig))
+	if err != nil {
+		log.Fatalf("Could not migrate test DB: %s", err)
+	}
+	wdb.Close()
 
 	if db, err = postgres.Connect(dbConfig); err != nil {
 		log.Fatalf("Could not setup test DB connection: %s", err)

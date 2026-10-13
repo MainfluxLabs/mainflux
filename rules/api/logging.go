@@ -300,6 +300,21 @@ func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, th
 	return lm.svc.ListScriptRunsByThing(ctx, token, thingID, pm)
 }
 
+func (lm loggingMiddleware) ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm rules.PageMetadata) (_ rules.ScriptRunsPage, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method list_script_runs_by_rule by user %s, rule id %s took %s to complete", email, ruleID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ListScriptRunsByRule(ctx, token, ruleID, pm)
+}
+
 func (lm loggingMiddleware) RemoveScriptRuns(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

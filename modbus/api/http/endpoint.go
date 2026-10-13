@@ -129,6 +129,56 @@ func viewClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	}
 }
 
+func readRegistersEndpoint(svc modbus.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(readRegistersReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		rr := modbus.ReadRequest{
+			IPAddress:    req.IPAddress,
+			Port:         req.Port,
+			SlaveID:      req.SlaveID,
+			FunctionCode: req.FunctionCode,
+			DataFields:   toDataFields(req.DataFields),
+		}
+
+		values, err := svc.ReadRegisters(ctx, req.token, rr)
+		if err != nil {
+			return nil, err
+		}
+
+		return readRegistersRes{Values: values}, nil
+	}
+}
+
+func writeRegisterEndpoint(svc modbus.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(writeRegisterReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		wr := modbus.WriteRequest{
+			IPAddress: req.IPAddress,
+			Port:      req.Port,
+			SlaveID:   req.SlaveID,
+			Address:   *req.Address,
+			Type:      req.Type,
+			ByteOrder: req.ByteOrder,
+			Scale:     req.Scale,
+			Value:     req.Value,
+		}
+
+		if err := svc.WriteRegister(ctx, req.token, wr); err != nil {
+			return nil, err
+		}
+
+		return apiutil.EmptyRes{StatusCode: http.StatusOK}, nil
+	}
+}
+
 func updateClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(updateClientReq)

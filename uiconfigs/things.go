@@ -35,7 +35,7 @@ type ThingConfigRepository interface {
 	RetrieveAll(ctx context.Context, pm apiutil.PageMetadata) (ThingConfigPage, error)
 
 	// Update performs an update to the existing thing config.
-	Update(ctx context.Context, tc ThingConfig) (ThingConfig, error)
+	Update(ctx context.Context, tc ThingConfig) error
 
 	// Remove removes the thing configs with the given thing ID.
 	Remove(ctx context.Context, thingID string) error

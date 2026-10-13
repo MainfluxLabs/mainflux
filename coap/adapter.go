@@ -8,6 +8,8 @@ package coap
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -41,7 +43,13 @@ type PubSub interface {
 	messaging.CommandPublisher
 	messaging.MessageDispatcher
 	messaging.Subscriber
+	messaging.CommandSubscriber
 }
+
+const (
+	subjectPrefixThings = "things"
+	subjectPrefixGroups = "groups"
+)
 
 var _ Service = (*adapterService)(nil)
 
@@ -76,11 +84,67 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 }
 
 func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, subtopic string, c Client) error {
-	if _, err := svc.things.GetPubConfigByKey(ctx, key); err != nil {
+	thingID, err := svc.things.Identify(ctx, key)
+	if err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
+	if err := svc.authorizeSubscribe(ctx, thingID, subtopic); err != nil {
+		return err
+	}
+
+	if nats.IsCommandsSubject(subtopic) {
+		return svc.pubsub.SubscribeCommands(c.Token(), subtopic, c)
+	}
+
 	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
+}
+
+func isWildcard(elem string) bool {
+	return elem == "*" || elem == ">"
+}
+
+// authorizeSubscribe restricts observation of thing and group subjects to the
+// observing thing's own ID and its group, like the MQTT adapter does for its
+// custom topics. Outside of those subjects, wildcards are rejected so that a
+// thing cannot observe every subject on the broker.
+func (svc *adapterService) authorizeSubscribe(ctx context.Context, thingID, subject string) error {
+	elems := strings.Split(subject, ".")
+
+	if len(elems) >= 2 {
+		switch elems[0] {
+		case subjectPrefixThings:
+			if elems[1] != thingID {
+				return errors.ErrAuthorization
+			}
+			return authorizeSubjectType(elems)
+		case subjectPrefixGroups:
+			groupID, err := svc.things.GetGroupIDByThing(ctx, thingID)
+			if err != nil {
+				return errors.Wrap(errors.ErrAuthorization, err)
+			}
+			if elems[1] != groupID {
+				return errors.ErrAuthorization
+			}
+			return authorizeSubjectType(elems)
+		}
+	}
+
+	if slices.ContainsFunc(elems, isWildcard) {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+// authorizeSubjectType rejects a wildcard in place of messages or commands,
+// since the observed type must be known to decode it.
+func authorizeSubjectType(elems []string) error {
+	if len(elems) >= 3 && isWildcard(elems[2]) {
+		return errors.ErrAuthorization
+	}
+
+	return nil
 }
 
 func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {

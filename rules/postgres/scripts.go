@@ -206,8 +206,8 @@ func (rr ruleRepository) SaveScriptRuns(ctx context.Context, runs ...rules.Scrip
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO lua_script_runs (id, script_id, thing_id, logs, started_at, finished_at, status, error) 
-		VALUES (:id, :script_id, :thing_id, :logs, :started_at, :finished_at, :status, :error);
+		INSERT INTO lua_script_runs (id, script_id, rule_id, thing_id, logs, started_at, finished_at, status, error)
+		VALUES (:id, :script_id, :rule_id, :thing_id, :logs, :started_at, :finished_at, :status, :error);
 	`
 
 	for _, run := range runs {
@@ -242,7 +242,7 @@ func (rr ruleRepository) SaveScriptRuns(ctx context.Context, runs ...rules.Scrip
 
 func (rr ruleRepository) RetrieveScriptRunByID(ctx context.Context, id string) (rules.ScriptRun, error) {
 	query := `
-		SELECT id, script_id, thing_id, logs, started_at, finished_at, status, error
+		SELECT id, script_id, rule_id, thing_id, logs, started_at, finished_at, status, error
 		FROM lua_script_runs
 		WHERE id = $1;
 	`
@@ -288,11 +288,19 @@ func (rr ruleRepository) RemoveScriptRuns(ctx context.Context, ids ...string) er
 }
 
 func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
-	oq := dbutil.GetOrderQuery(pm.Order, rules.RuleOrderFields)
+	return rr.retrieveScriptRuns(ctx, "thing_id", thingID, pm)
+}
+
+func (rr ruleRepository) RetrieveScriptRunsByRule(ctx context.Context, ruleID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
+	return rr.retrieveScriptRuns(ctx, "rule_id", ruleID, pm)
+}
+
+func (rr ruleRepository) retrieveScriptRuns(ctx context.Context, col, val string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
+	oq := dbutil.GetOrderQuery(pm.Order, rules.ScriptRunOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	thingQuery := "thing_id = :thing_id"
+	cq := fmt.Sprintf("%s = :%s", col, col)
 
 	statusQuery := ""
 	if pm.Status != "" {
@@ -307,10 +315,10 @@ func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID 
 		toQuery = "started_at < :to"
 	}
 
-	whereClause := dbutil.BuildWhereClause(thingQuery, statusQuery, fromQuery, toQuery)
+	whereClause := dbutil.BuildWhereClause(cq, statusQuery, fromQuery, toQuery)
 
 	query := `
-		SELECT id, script_id, thing_id, logs, started_at, finished_at, status, error
+		SELECT id, script_id, rule_id, thing_id, logs, started_at, finished_at, status, error
 		FROM lua_script_runs %s ORDER BY %s %s %s;
 	`
 
@@ -320,12 +328,12 @@ func (rr ruleRepository) RetrieveScriptRunsByThing(ctx context.Context, thingID 
 	queryCount = fmt.Sprintf(queryCount, whereClause)
 
 	params := map[string]any{
-		"thing_id": thingID,
-		"limit":    pm.Limit,
-		"offset":   pm.Offset,
-		"status":   pm.Status,
-		"from":     pm.From,
-		"to":       pm.To,
+		col:      val,
+		"limit":  pm.Limit,
+		"offset": pm.Offset,
+		"status": pm.Status,
+		"from":   pm.From,
+		"to":     pm.To,
 	}
 
 	rows, err := rr.db.NamedQueryContext(ctx, query, params)
@@ -393,6 +401,7 @@ func toLuaScript(dbScript dbLuaScript) rules.LuaScript {
 type dbScriptRun struct {
 	ID         string         `db:"id"`
 	ScriptID   string         `db:"script_id"`
+	RuleID     sql.NullString `db:"rule_id"`
 	ThingID    string         `db:"thing_id"`
 	Logs       []byte         `db:"logs"`
 	StartedAt  time.Time      `db:"started_at"`
@@ -418,9 +427,15 @@ func toDBScriptRun(run rules.ScriptRun) (dbScriptRun, error) {
 		Valid:  run.Error != "",
 	}
 
+	ruleID := sql.NullString{
+		String: run.RuleID,
+		Valid:  run.RuleID != "",
+	}
+
 	return dbScriptRun{
 		ID:         run.ID,
 		ScriptID:   run.ScriptID,
+		RuleID:     ruleID,
 		ThingID:    run.ThingID,
 		Logs:       logsBytes,
 		StartedAt:  run.StartedAt,
@@ -441,9 +456,15 @@ func toScriptRun(dbs dbScriptRun) (rules.ScriptRun, error) {
 		errorField = dbs.Error.String
 	}
 
+	ruleID := ""
+	if dbs.RuleID.Valid {
+		ruleID = dbs.RuleID.String
+	}
+
 	return rules.ScriptRun{
 		ID:         dbs.ID,
 		ScriptID:   dbs.ScriptID,
+		RuleID:     ruleID,
 		ThingID:    dbs.ThingID,
 		Logs:       logs,
 		StartedAt:  dbs.StartedAt,

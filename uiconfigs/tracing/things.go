@@ -60,7 +60,7 @@ func (uirm thingConfigRepositoryMiddleware) RetrieveAll(ctx context.Context, pm 
 	return uirm.repo.RetrieveAll(ctx, pm)
 }
 
-func (uirm thingConfigRepositoryMiddleware) Update(ctx context.Context, d uiconfigs.ThingConfig) (uiconfigs.ThingConfig, error) {
+func (uirm thingConfigRepositoryMiddleware) Update(ctx context.Context, d uiconfigs.ThingConfig) error {
 	span := dbutil.CreateSpan(ctx, uirm.tracer, updateThingConfig)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)

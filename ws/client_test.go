@@ -67,26 +67,26 @@ func TestHandle(t *testing.T) {
 
 	cases := []struct {
 		desc            string
-		publisher       string
+		thingID         string
 		expectedPayload []byte
 		expectMsg       bool
 	}{
 		{
 			desc:            "handling with different id from ws.Client",
-			publisher:       msg.Publisher,
+			thingID:         msg.ThingId,
 			expectedPayload: msg.Payload,
 			expectMsg:       true,
 		},
 		{
 			desc:            "handling with same id as ws.Client (empty by default) drops message",
-			publisher:       "",
+			thingID:         "",
 			expectedPayload: []byte{},
 			expectMsg:       false,
 		},
 	}
 
 	for _, tc := range cases {
-		msg.Publisher = tc.publisher
+		msg.ThingId = tc.thingID
 		err = c.Handle(subject, msg)
 		assert.Nil(t, err, fmt.Sprintf("expected nil error from handle, got: %s", err))
 		receivedMsg := []byte{}

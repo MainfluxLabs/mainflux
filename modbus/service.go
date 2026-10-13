@@ -59,6 +59,16 @@ type Service interface {
 	// ViewClient retrieves data about a client identified with the provided ID.
 	ViewClient(ctx context.Context, token, id string) (Client, error)
 
+	// ReadRegisters performs an immediate Modbus read against the given connection and
+	// decodes the requested data fields. No client is created or looked up; the token
+	// is only checked for validity, not against any specific resource.
+	ReadRegisters(ctx context.Context, token string, req ReadRequest) (map[string]any, error)
+
+	// WriteRegister performs an immediate Modbus write against the given connection.
+	// No client is created or looked up; the token is only checked for validity, not
+	// against any specific resource.
+	WriteRegister(ctx context.Context, token string, req WriteRequest) error
+
 	// UpdateClient updates client identified by the provided ID.
 	UpdateClient(ctx context.Context, token string, client Client) error
 
@@ -87,6 +97,7 @@ type Publisher interface {
 
 type clientsService struct {
 	things     domain.ThingsClient
+	auth       domain.AuthClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
 	publisher  Publisher
@@ -121,6 +132,17 @@ var (
 	errGetConnection  = "failed to get connection"
 	errEmptyResponse  = "empty response payload"
 	errNotEnoughBytes = "not enough bytes to read"
+
+	errInvalidWriteValue    = "invalid write value"
+	errUnsupportedWriteType = "unsupported write type"
+)
+
+// Sentinel errors for write-request validation failures that the HTTP layer
+// maps to 400 Bad Request, as opposed to operational failures (rate limiter,
+// connection, device I/O) which stay 500.
+var (
+	ErrInvalidWriteValue = errors.New("invalid write value")
+	ErrValueOutOfRange   = errors.New("value out of range for type")
 )
 
 type Block struct {
@@ -128,8 +150,9 @@ type Block struct {
 	Length uint16
 }
 
-func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(auth domain.AuthClient, things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
+		auth:       auth,
 		things:     things,
 		publisher:  pub,
 		clients:    clients,
@@ -227,6 +250,75 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 	}
 
 	return client, nil
+}
+
+func (cs *clientsService) ReadRegisters(ctx context.Context, token string, req ReadRequest) (map[string]any, error) {
+	if _, err := cs.auth.Identify(ctx, token); err != nil {
+		return nil, err
+	}
+
+	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
+	if err != nil {
+		return nil, err
+	}
+	defer mu.Unlock()
+
+	fields := calcFieldLengths(req.DataFields)
+	maxLen := getBlockMaxLen(req.FunctionCode)
+	blocks := createBlocks(fields, maxLen)
+
+	client := Client{IPAddress: req.IPAddress, Port: req.Port, SlaveID: req.SlaveID, FunctionCode: req.FunctionCode, DataFields: fields}
+
+	data, err := cs.readData(handler, client, blocks)
+	if err != nil {
+		return nil, err
+	}
+	if len(data) == 0 {
+		return nil, errors.New(errEmptyResponse)
+	}
+
+	return buildFieldValues(data, fields, req.FunctionCode)
+}
+
+func (cs *clientsService) WriteRegister(ctx context.Context, token string, req WriteRequest) error {
+	if _, err := cs.auth.Identify(ctx, token); err != nil {
+		return err
+	}
+
+	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
+	if err != nil {
+		return err
+	}
+	defer mu.Unlock()
+
+	mc := gbmodbus.NewClient(handler)
+	return writeField(mc, req)
+}
+
+// connect returns a rate-limited, connected handler for ipAddress:port, ready for
+// immediate I/O, along with its mutex already locked. Callers must defer mu.Unlock()
+// after their I/O completes, since the connection may be shared by requests
+// targeting different slave IDs. Callers are responsible for their own authorization.
+func (cs *clientsService) connect(ctx context.Context, ipAddress, port string, slaveID uint8) (*gbmodbus.TCPClientHandler, *sync.Mutex, error) {
+	key := fmt.Sprintf("%s:%s", ipAddress, port)
+
+	waitCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	limiter := cs.getLimiter(key)
+	if err := limiter.Wait(waitCtx); err != nil {
+		return nil, nil, fmt.Errorf("%s: %w", errRateLimiter, err)
+	}
+
+	handler, mu, err := cs.connPool.Get(key)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s: %w", errGetConnection, err)
+	}
+
+	mu.Lock()
+	handler.SlaveId = slaveID
+
+	return handler, mu, nil
 }
 
 func (cs *clientsService) UpdateClient(ctx context.Context, token string, client Client) error {
@@ -385,21 +477,14 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 
-		key := fmt.Sprintf("%s:%s", client.IPAddress, client.Port)
-		logPrefix := fmt.Sprintf("client %s (%s) %s", client.ID, client.Name, key)
+		logPrefix := fmt.Sprintf("client %s (%s) %s:%s", client.ID, client.Name, client.IPAddress, client.Port)
 
-		limiter := cs.getLimiter(key)
-		if err := limiter.Wait(ctx); err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errRateLimiter, err))
-			return
-		}
-
-		handler, err := cs.connPool.Get(key)
+		handler, mu, err := cs.connect(ctx, client.IPAddress, client.Port, client.SlaveID)
 		if err != nil {
-			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errGetConnection, err))
+			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
 		}
-		handler.SlaveId = client.SlaveID
+		defer mu.Unlock()
 
 		data, err := cs.readData(handler, client, blocks)
 		if err != nil {
@@ -423,6 +508,95 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 		}
 
 		cs.logger.Info(fmt.Sprintf("%s: published %d fields", logPrefix, len(data)))
+	}
+}
+
+func writeField(mc gbmodbus.Client, req WriteRequest) error {
+	switch req.Type {
+	case BoolType:
+		v, ok := req.Value.(bool)
+		if !ok {
+			return errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected bool value for type %s", req.Type))
+		}
+
+		coilValue := uint16(0x0000)
+		if v {
+			coilValue = 0xFF00
+		}
+
+		_, err := mc.WriteSingleCoil(req.Address, coilValue)
+		return err
+	case Int16Type, Uint16Type, Int32Type, Uint32Type, Float32Type:
+		value, ok := req.Value.(float64)
+		if !ok {
+			return errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected numeric value for type %s", req.Type))
+		}
+
+		raw, err := encodeNumericField(value, req.Type, req.Scale)
+		if err != nil {
+			return err
+		}
+
+		raw = reorderBytes(raw, req.ByteOrder)
+
+		if len(raw) == 2 {
+			_, err = mc.WriteSingleRegister(req.Address, binary.BigEndian.Uint16(raw))
+			return err
+		}
+
+		_, err = mc.WriteMultipleRegisters(req.Address, 2, raw)
+		return err
+	default:
+		return fmt.Errorf("%s: %s", errUnsupportedWriteType, req.Type)
+	}
+}
+
+// encodeNumericField converts an engineering-unit value back into raw big-endian
+// device bytes, undoing the scale applied by readNumericField.
+func encodeNumericField(value float64, typ string, scale float64) ([]byte, error) {
+	if scale != 0 {
+		value /= scale
+	}
+
+	switch typ {
+	case Int16Type:
+		rounded := math.Round(value)
+		if rounded < math.MinInt16 || rounded > math.MaxInt16 {
+			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
+		}
+		b := make([]byte, 2)
+		binary.BigEndian.PutUint16(b, uint16(int16(rounded)))
+		return b, nil
+	case Uint16Type:
+		rounded := math.Round(value)
+		if rounded < 0 || rounded > math.MaxUint16 {
+			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
+		}
+		b := make([]byte, 2)
+		binary.BigEndian.PutUint16(b, uint16(rounded))
+		return b, nil
+	case Int32Type:
+		rounded := math.Round(value)
+		if rounded < math.MinInt32 || rounded > math.MaxInt32 {
+			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
+		}
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, uint32(int32(rounded)))
+		return b, nil
+	case Uint32Type:
+		rounded := math.Round(value)
+		if rounded < 0 || rounded > math.MaxUint32 {
+			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
+		}
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, uint32(rounded))
+		return b, nil
+	case Float32Type:
+		b := make([]byte, 4)
+		binary.BigEndian.PutUint32(b, math.Float32bits(float32(value)))
+		return b, nil
+	default:
+		return nil, fmt.Errorf("%s: %s", errUnsupportedWriteType, typ)
 	}
 }
 
@@ -569,15 +743,24 @@ func getBlockMaxLen(funcCode string) (maxLen int) {
 }
 
 func formatPayload(data map[string][]byte, fields []DataField, funcCode string) ([]byte, error) {
+	result, err := buildFieldValues(data, fields, funcCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(result)
+}
+
+func buildFieldValues(data map[string][]byte, fields []DataField, funcCode string) (map[string]any, error) {
 	switch funcCode {
 	case ReadCoilsFunc, ReadDiscreteInputsFunc:
-		return formatCoilsPayload(data, fields)
+		return buildCoilValues(data, fields)
 	default:
-		return formatRegistersPayload(data, fields)
+		return buildRegisterValues(data, fields)
 	}
 }
 
-func formatRegistersPayload(data map[string][]byte, fields []DataField) ([]byte, error) {
+func buildRegisterValues(data map[string][]byte, fields []DataField) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for _, f := range fields {
@@ -621,10 +804,10 @@ func formatRegistersPayload(data map[string][]byte, fields []DataField) ([]byte,
 		result[f.Name] = createEntry(value, f.Unit)
 	}
 
-	return json.Marshal(result)
+	return result, nil
 }
 
-func formatCoilsPayload(dataMap map[string][]byte, fields []DataField) ([]byte, error) {
+func buildCoilValues(dataMap map[string][]byte, fields []DataField) (map[string]any, error) {
 	result := make(map[string]any)
 
 	for _, f := range fields {
@@ -638,7 +821,7 @@ func formatCoilsPayload(dataMap map[string][]byte, fields []DataField) ([]byte, 
 		result[f.Name] = bit
 	}
 
-	return json.Marshal(result)
+	return result, nil
 }
 
 func calcFieldLengths(fields []DataField) []DataField {

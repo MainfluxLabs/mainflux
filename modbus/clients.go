@@ -44,6 +44,30 @@ type DataField struct {
 	Length    uint16  `json:"length"`
 }
 
+// ReadRequest describes an ad hoc Modbus read against a device with no persisted
+// client: connection info plus the fields to decode. Authorized by user token alone.
+type ReadRequest struct {
+	IPAddress    string
+	Port         string
+	SlaveID      uint8
+	FunctionCode string
+	DataFields   []DataField
+}
+
+// WriteRequest describes an ad hoc Modbus write against a device with no persisted
+// client. The write function code is derived from Type, not from any FunctionCode.
+// Authorized by user token alone.
+type WriteRequest struct {
+	IPAddress string
+	Port      string
+	SlaveID   uint8
+	Address   uint16
+	Type      string
+	ByteOrder string
+	Scale     float64
+	Value     any
+}
+
 type ClientsPage struct {
 	PageMetadata
 	Clients []Client

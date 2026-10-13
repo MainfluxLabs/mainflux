@@ -9,6 +9,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
+	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -205,21 +206,11 @@ func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadat
 			Dir:    pm.Dir,
 			Name:   pm.Name,
 		},
-		Runs: []scriptRunRes{},
+		Runs: []api.ScriptRunRes{},
 	}
 
 	for _, run := range page.Runs {
-		sr := scriptRunRes{
-			ID:         run.ID,
-			ScriptID:   run.ScriptID,
-			ThingID:    run.ThingID,
-			Logs:       run.Logs,
-			StartedAt:  run.StartedAt,
-			FinishedAt: run.FinishedAt,
-			Status:     run.Status,
-			Error:      run.Error,
-		}
-		res.Runs = append(res.Runs, sr)
+		res.Runs = append(res.Runs, api.ToScriptRunRes(run))
 	}
 
 	return res

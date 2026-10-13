@@ -207,6 +207,15 @@ func (ms metricsMiddleware) ListScriptRunsByThing(ctx context.Context, token, th
 	return ms.svc.ListScriptRunsByThing(ctx, token, thingID, pm)
 }
 
+func (ms metricsMiddleware) ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm rules.PageMetadata) (rules.ScriptRunsPage, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "list_script_runs_by_rule").Add(1)
+		ms.latency.With("method", "list_script_runs_by_rule").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.ListScriptRunsByRule(ctx, token, ruleID, pm)
+}
+
 func (ms metricsMiddleware) RemoveScriptRuns(ctx context.Context, token string, ids ...string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_script_runs").Add(1)

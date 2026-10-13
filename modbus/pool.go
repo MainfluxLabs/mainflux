@@ -11,6 +11,10 @@ import (
 type connection struct {
 	handler *modbus.TCPClientHandler
 	created time.Time
+	// mu serializes access to handler: one TCP connection may be shared by
+	// requests targeting different slave IDs, so callers must hold this for
+	// the full request lifetime (from setting SlaveId through the actual I/O).
+	mu sync.Mutex
 }
 
 type modbusConnectionPool struct {
@@ -33,15 +37,17 @@ func newModbusConnectionPool(ttl, cleanFreq time.Duration) *modbusConnectionPool
 	return pool
 }
 
-// Get returns a handler for the given address or creates a new one
-func (p *modbusConnectionPool) Get(address string) (*modbus.TCPClientHandler, error) {
+// Get returns a handler for the given address (creating one if needed) along with
+// its mutex. Callers must hold the mutex for the full request, from setting
+// handler.SlaveId through the actual I/O, since the connection may be shared.
+func (p *modbusConnectionPool) Get(address string) (*modbus.TCPClientHandler, *sync.Mutex, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	// Reuse existing connection
 	if conn, ok := p.conns[address]; ok {
 		if time.Since(conn.created) < p.ttl {
-			return conn.handler, nil
+			return conn.handler, &conn.mu, nil
 		}
 		// expired
 		conn.handler.Close()
@@ -53,14 +59,15 @@ func (p *modbusConnectionPool) Get(address string) (*modbus.TCPClientHandler, er
 	handler.Timeout = 10 * time.Second
 	handler.IdleTimeout = p.ttl
 	if err := handler.Connect(); err != nil {
-		return nil, fmt.Errorf("failed to connect to %s: %w", address, err)
+		return nil, nil, fmt.Errorf("failed to connect to %s: %w", address, err)
 	}
 
-	p.conns[address] = &connection{
+	conn := &connection{
 		handler: handler,
 		created: time.Now(),
 	}
-	return handler, nil
+	p.conns[address] = conn
+	return conn.handler, &conn.mu, nil
 }
 
 // Close all connections

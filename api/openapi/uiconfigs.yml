@@ -209,7 +209,7 @@ paths:
   /backup:
     get:
       summary: Backup all configs
-      description: Downloads a backup file containing all org, group, and thing configs accessible to the authenticated user.
+      description: Downloads a backup file containing all org, group, and thing configs. Restricted to admin users.
       tags:
         - backup
       responses:
@@ -217,13 +217,15 @@ paths:
           $ref: "#/components/responses/BackupRes"
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Backup is restricted to admin users.
         '500':
           $ref: "#/components/responses/ServiceError"
 
   /restore:
     post:
       summary: Restore configs from backup
-      description: Restores org, group, and thing configs from a previously exported backup file.
+      description: Restores org, group, and thing configs from a previously exported backup file. Restricted to admin users.
       tags:
         - backup
       requestBody:
@@ -235,6 +237,8 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Restore is restricted to admin users.
         '415':
           description: Missing or invalid content type.
         '500':

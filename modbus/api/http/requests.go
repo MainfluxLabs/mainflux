@@ -28,6 +28,7 @@ var (
 	ErrInvalidFieldType    = errors.New("invalid field type")
 	ErrInvalidFieldLength  = errors.New("invalid field length")
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
+	ErrMissingValue        = errors.New("missing value")
 )
 
 // validatePageMetadata validates the modbus page metadata.
@@ -110,20 +111,44 @@ func (req client) validate() error {
 		return ErrInvalidScheduler
 	}
 
-	switch req.FunctionCode {
-	case modbus.ReadCoilsFunc,
-		modbus.ReadDiscreteInputsFunc,
-		modbus.ReadInputRegistersFunc,
-		modbus.ReadHoldingRegistersFunc:
+	if err := validateFunctionCode(req.FunctionCode); err != nil {
+		return err
+	}
+
+	return validateDataFields(req.DataFields)
+}
+
+// validateFunctionCode checks that code is one of the supported read function codes.
+func validateFunctionCode(code string) error {
+	switch code {
+	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc, modbus.ReadInputRegistersFunc, modbus.ReadHoldingRegistersFunc:
+		return nil
 	default:
 		return ErrInvalidFunctionCode
 	}
+}
 
-	if len(req.DataFields) < minLen {
+// validateByteOrder checks order against the supported byte orders; empty is allowed (use default).
+func validateByteOrder(order string) error {
+	if order == "" {
+		return nil
+	}
+
+	switch order {
+	case modbus.ByteOrderABCD, modbus.ByteOrderDCBA, modbus.ByteOrderCDAB, modbus.ByteOrderBADC:
+		return nil
+	default:
+		return ErrInvalidByteOrder
+	}
+}
+
+// validateDataFields checks a non-empty list of data fields.
+func validateDataFields(fields []field) error {
+	if len(fields) < minLen {
 		return ErrMissingDataFields
 	}
 
-	for _, f := range req.DataFields {
+	for _, f := range fields {
 		if f.Name == "" {
 			return ErrMissingFieldName
 		}
@@ -142,16 +167,22 @@ func (req client) validate() error {
 			return ErrInvalidFieldType
 		}
 
-		if f.ByteOrder != "" {
-			switch f.ByteOrder {
-			case modbus.ByteOrderABCD, modbus.ByteOrderDCBA, modbus.ByteOrderCDAB, modbus.ByteOrderBADC:
-			default:
-				return ErrInvalidByteOrder
-			}
+		if err := validateByteOrder(f.ByteOrder); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+// validateWriteType checks t against the types writable via a single register or coil write.
+func validateWriteType(t string) error {
+	switch t {
+	case modbus.BoolType, modbus.Int16Type, modbus.Uint16Type, modbus.Int32Type, modbus.Uint32Type, modbus.Float32Type:
+		return nil
+	default:
+		return ErrInvalidFieldType
+	}
 }
 
 type listClientsByThingReq struct {
@@ -205,6 +236,75 @@ func (req viewClientReq) validate() error {
 	}
 
 	return nil
+}
+
+type readRegistersReq struct {
+	token        string
+	IPAddress    string  `json:"ip_address"`
+	Port         string  `json:"port"`
+	SlaveID      uint8   `json:"slave_id,omitempty"`
+	FunctionCode string  `json:"function_code"`
+	DataFields   []field `json:"data_fields"`
+}
+
+func (req readRegistersReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.IPAddress == "" {
+		return ErrMissingIPAddress
+	}
+
+	if req.Port == "" {
+		return ErrMissingPort
+	}
+
+	if err := validateFunctionCode(req.FunctionCode); err != nil {
+		return err
+	}
+
+	return validateDataFields(req.DataFields)
+}
+
+type writeRegisterReq struct {
+	token     string
+	IPAddress string  `json:"ip_address"`
+	Port      string  `json:"port"`
+	SlaveID   uint8   `json:"slave_id,omitempty"`
+	Address   *uint16 `json:"address"`
+	Type      string  `json:"type"`
+	ByteOrder string  `json:"byte_order,omitempty"`
+	Scale     float64 `json:"scale,omitempty"`
+	Value     any     `json:"value"`
+}
+
+func (req writeRegisterReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.IPAddress == "" {
+		return ErrMissingIPAddress
+	}
+
+	if req.Port == "" {
+		return ErrMissingPort
+	}
+
+	if req.Address == nil {
+		return ErrMissingFieldAddress
+	}
+
+	if req.Value == nil {
+		return ErrMissingValue
+	}
+
+	if err := validateWriteType(req.Type); err != nil {
+		return err
+	}
+
+	return validateByteOrder(req.ByteOrder)
 }
 
 type updateClientReq struct {

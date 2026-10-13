@@ -74,7 +74,7 @@ func (req listScriptsByGroupReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleOrderFields)
 }
 
 type scriptReq struct {
@@ -162,7 +162,7 @@ func (req listScriptRunsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.ScriptRunOrderFields)
 }
 
 type removeScriptRunsReq struct {

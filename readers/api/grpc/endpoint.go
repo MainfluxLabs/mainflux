@@ -13,6 +13,10 @@ import (
 func listJSONMessagesEndpoint(svc readers.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(listJSONMessagesReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
 		page, err := svc.ListJSONMessages(ctx, "", req.thingKey, req.pm)
 		return listJSONMessagesRes{page: page}, err
 	}

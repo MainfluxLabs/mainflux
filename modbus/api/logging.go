@@ -96,6 +96,34 @@ func (lm *loggingMiddleware) ViewClient(ctx context.Context, token, id string) (
 	return lm.svc.ViewClient(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) ReadRegisters(ctx context.Context, token string, req modbus.ReadRequest) (response map[string]any, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method read_registers by user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.ReadRegisters(ctx, token, req)
+}
+
+func (lm *loggingMiddleware) WriteRegister(ctx context.Context, token string, req modbus.WriteRequest) (err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method write_register by user %s took %s to complete", email, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.WriteRegister(ctx, token, req)
+}
+
 func (lm *loggingMiddleware) UpdateClient(ctx context.Context, token string, client modbus.Client) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

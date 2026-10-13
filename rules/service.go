@@ -68,6 +68,9 @@ type ServiceScripts interface {
 	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
 	ListScriptRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ScriptRunsPage, error)
 
+	// ListScriptRunsByRule retrieves a list of Script Runs associated with a specific Rule.
+	ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (ScriptRunsPage, error)
+
 	// RemoveScriptRuns removes the Runs identified by the provided IDs.
 	RemoveScriptRuns(ctx context.Context, token string, ids ...string) error
 }
@@ -399,6 +402,19 @@ func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingI
 	return rs.rules.RetrieveScriptRunsByThing(ctx, thingID, pm)
 }
 
+func (rs *rulesService) ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (ScriptRunsPage, error) {
+	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
+	if err != nil {
+		return ScriptRunsPage{}, err
+	}
+
+	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupViewer}); err != nil {
+		return ScriptRunsPage{}, err
+	}
+
+	return rs.rules.RetrieveScriptRunsByRule(ctx, ruleID, pm)
+}
+
 func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids ...string) error {
 	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
@@ -425,7 +441,7 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		return err
 	}
 
-	page, err := rs.rules.RetrieveByThing(ctx, msg.Publisher, PageMetadata{InputType: InputTypeMessage})
+	page, err := rs.rules.RetrieveByThing(ctx, msg.ThingId, PageMetadata{InputType: InputTypeMessage})
 	if err != nil {
 		return err
 	}
@@ -465,11 +481,11 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 	}
 
 	msg := protomfx.Message{
-		Publisher: alarm.ThingId,
-		Subtopic:  alarm.Subtopic,
-		Protocol:  alarm.Protocol,
-		Created:   alarm.Created,
-		Payload:   payload,
+		ThingId:  alarm.ThingId,
+		Subtopic: alarm.Subtopic,
+		Protocol: alarm.Protocol,
+		Created:  alarm.Created,
+		Payload:  payload,
 	}
 
 	for _, rule := range page.Rules {
@@ -492,7 +508,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			case ActionTypeSMTP, ActionTypeSMPP:
 				subject := fmt.Sprintf("%s.%s", action.Type, action.ID)
 				notification := protomfx.Notification{
-					ThingId:  msg.Publisher,
+					ThingId:  msg.ThingId,
 					Subtopic: msg.Subtopic,
 					Protocol: msg.Protocol,
 					Payload:  msg.Payload,
@@ -501,7 +517,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:
 				webhook := protomfx.Webhook{
-					ThingId: msg.Publisher,
+					ThingId: msg.ThingId,
 					Payload: msg.Payload,
 					Created: msg.Created,
 				}
@@ -550,6 +566,9 @@ type RepositoryScripts interface {
 
 	// RetrieveScriptRunsByThing retrieves a list of Script runs by Thing ID.
 	RetrieveScriptRunsByThing(ctx context.Context, thingID string, pm PageMetadata) (ScriptRunsPage, error)
+
+	// RetrieveScriptRunsByRule retrieves a list of Script runs by Rule ID.
+	RetrieveScriptRunsByRule(ctx context.Context, ruleID string, pm PageMetadata) (ScriptRunsPage, error)
 
 	// RemoveScriptRuns removes one or more Script runs by IDs.
 	RemoveScriptRuns(ctx context.Context, ids ...string) error
