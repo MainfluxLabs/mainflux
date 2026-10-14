@@ -30,8 +30,8 @@ type Service interface {
 	SaveFile(ctx context.Context, file io.Reader, key string, fi FileInfo) error
 	// UpdateFile updates file from filestore
 	UpdateFile(ctx context.Context, key string, fi FileInfo) error
-	// ViewFile streams file from filestore. Caller must Close.
-	ViewFile(ctx context.Context, key string, fi FileInfo) (io.ReadCloser, error)
+	// ViewFile streams file from filestore, or only the requested byte range when one is given. Caller must Close.
+	ViewFile(ctx context.Context, key string, fi FileInfo, rng *Range) (File, error)
 	// ListFiles retrieves files from filestore by thing
 	ListFiles(ctx context.Context, key string, fi FileInfo, pm PageMetadata) (FileThingsPage, error)
 	// RemoveFile removes file from filestore
@@ -43,8 +43,8 @@ type Service interface {
 	SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error
 	// UpdateGroupFile updates group file from filestore
 	UpdateGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error
-	// ViewGroupFile streams group file from filestore. Caller must Close.
-	ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) (io.ReadCloser, error)
+	// ViewGroupFile streams group file from filestore, or only the requested byte range when one is given. Caller must Close.
+	ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo, rng *Range) (File, error)
 	// ListGroupFiles retrieves files from filestore by group
 	ListGroupFiles(ctx context.Context, token, groupID string, fi FileInfo, pm PageMetadata) (FileGroupsPage, error)
 	// RemoveGroupFile removes group file from filestore
@@ -54,8 +54,8 @@ type Service interface {
 	// all files belonging to things related to the given group
 	RemoveAllFilesByGroup(ctx context.Context, groupID string) error
 
-	// ViewGroupFileByKey streams group file using Thing Key. Caller must Close.
-	ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) (io.ReadCloser, error)
+	// ViewGroupFileByKey streams group file using Thing Key, or only the requested byte range when one is given. Caller must Close.
+	ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo, rng *Range) (File, error)
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -78,6 +78,47 @@ type FileInfo struct {
 	Time     float64        `json:"time,omitempty"`
 	Checksum string         `json:"checksum,omitempty"`
 	Size     int64          `json:"size,omitempty"`
+}
+
+// ErrRangeNotSatisfiable indicates a requested byte range that lies outside the file.
+var ErrRangeNotSatisfiable = errors.New("range not satisfiable")
+
+// Range is a requested byte range; both bounds are inclusive.
+type Range struct {
+	// Start is the first byte to read; -N means the last N bytes.
+	Start int64
+	// End is the last byte to read; -1 means up to the end of the file.
+	End int64
+}
+
+// resolve returns where the requested range starts and how many bytes it covers in a file of the given size.
+func (r Range) resolve(size int64) (offset, length int64, err error) {
+	if r.Start < 0 {
+		n := min(-r.Start, size)
+		return size - n, n, nil
+	}
+
+	if r.Start >= size {
+		return 0, 0, ErrRangeNotSatisfiable
+	}
+
+	end := r.End
+	if end < 0 || end >= size {
+		end = size - 1
+	}
+
+	return r.Start, end - r.Start + 1, nil
+}
+
+// File is the streamed content of a stored file, whole or a byte range of it.
+type File struct {
+	io.ReadCloser
+	// Size is the total file size in bytes, 0 when unknown.
+	Size int64
+	// Partial reports that only part of the file is streamed, as described by Offset and Length.
+	Partial bool
+	Offset  int64
+	Length  int64
 }
 
 type filestoreService struct {
@@ -221,24 +262,18 @@ func (fs *filestoreService) RemoveFiles(ctx context.Context, thingID string) err
 	return fs.thingsRepo.RemoveByThing(ctx, thingID)
 }
 
-func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo) (io.ReadCloser, error) {
+func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo, rng *Range) (File, error) {
 	thID, err := fs.identify(ctx, key)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
 	f, err := fs.thingsRepo.Retrieve(ctx, thID, fi)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
-	objKey := thingFileKey(thID, f.Name)
-	rc, err := fs.store.Get(ctx, objKey, f.Checksum)
-	if err != nil {
-		return nil, fs.translateGetErr(objKey, err)
-	}
-
-	return rc, nil
+	return fs.openFile(ctx, thingFileKey(thID, f.Name), f, rng)
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {
@@ -355,48 +390,60 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 	return fs.thingsRepo.RemoveByGroup(ctx, groupID)
 }
 
-func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo) (io.ReadCloser, error) {
+func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo, rng *Range) (File, error) {
 	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
-		return nil, err
+		return File{}, err
 	}
 
 	f, err := fs.groupsRepo.Retrieve(ctx, groupID, fi)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
-	key := groupFileKey(groupID, f.Name)
-	rc, err := fs.store.Get(ctx, key, f.Checksum)
-	if err != nil {
-		return nil, fs.translateGetErr(key, err)
-	}
-
-	return rc, nil
+	return fs.openFile(ctx, groupFileKey(groupID, f.Name), f, rng)
 }
 
-func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo) (io.ReadCloser, error) {
+func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo, rng *Range) (File, error) {
 	thID, err := fs.identify(ctx, thingKey)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
 	grID, err := fs.things.GetGroupIDByThing(ctx, thID)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
 	f, err := fs.groupsRepo.Retrieve(ctx, grID, fi)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
-	key := groupFileKey(grID, f.Name)
-	rc, err := fs.store.Get(ctx, key, f.Checksum)
+	return fs.openFile(ctx, groupFileKey(grID, f.Name), f, rng)
+}
+
+// openFile streams the whole stored file, or only the requested byte range when one is given.
+func (fs *filestoreService) openFile(ctx context.Context, key string, f FileInfo, rng *Range) (File, error) {
+	// Files stored before sizes were recorded cannot resolve a range, so they are sent whole.
+	if rng == nil || f.Size == 0 {
+		rc, err := fs.store.Get(ctx, key, f.Checksum)
+		if err != nil {
+			return File{}, fs.translateGetErr(key, err)
+		}
+		return File{ReadCloser: rc, Size: f.Size}, nil
+	}
+
+	offset, length, err := rng.resolve(f.Size)
 	if err != nil {
-		return nil, fs.translateGetErr(key, err)
+		return File{}, err
 	}
 
-	return rc, nil
+	rc, err := fs.store.GetRange(ctx, key, offset, length)
+	if err != nil {
+		return File{}, fs.translateGetErr(key, err)
+	}
+
+	return File{ReadCloser: rc, Size: f.Size, Partial: true, Offset: offset, Length: length}, nil
 }
 
 // translateGetErr maps a store miss to dbutil.ErrNotFound so the API returns

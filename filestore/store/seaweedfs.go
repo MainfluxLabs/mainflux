@@ -151,6 +151,37 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 	return &verifyReader{rc: resp.Body, h: sha256.New(), expected: expectedChecksum}, nil
 }
 
+func (s *seaweedFS) GetRange(ctx context.Context, key string, offset, length int64) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.objectURL(key), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", offset, offset+length-1))
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusPartialContent:
+	case http.StatusOK:
+		// The filer ignored the range and sent the whole object.
+		if _, err := io.CopyN(io.Discard, resp.Body, offset); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+	case http.StatusNotFound:
+		resp.Body.Close()
+		return nil, ErrNotFound
+	default:
+		resp.Body.Close()
+		return nil, errors.Wrap(ErrBackend, fmt.Errorf("get range status %d", resp.StatusCode))
+	}
+
+	return limitedReadCloser{Reader: io.LimitReader(resp.Body, length), Closer: resp.Body}, nil
+}
+
 func (s *seaweedFS) Delete(ctx context.Context, key string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.objectURL(key), nil)
 	if err != nil {

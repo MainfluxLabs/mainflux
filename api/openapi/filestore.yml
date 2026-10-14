@@ -63,13 +63,18 @@ paths:
         - thingKeyAuth: []
       parameters:
         - $ref: "#/components/parameters/FileNamePath"
+        - $ref: "#/components/parameters/Range"
       responses:
         '200':
           $ref: "#/components/responses/FileDownloadRes"
+        '206':
+          $ref: "#/components/responses/FilePartialRes"
         '401':
           description: Missing or invalid thing key provided.
         '404':
           description: File does not exist.
+        '416':
+          description: Requested range lies outside the file.
         '500':
           $ref: "#/components/responses/ServiceError"
     put:
@@ -175,15 +180,20 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GroupId"
         - $ref: "#/components/parameters/FileNamePath"
+        - $ref: "#/components/parameters/Range"
       responses:
         '200':
           $ref: "#/components/responses/FileDownloadRes"
+        '206':
+          $ref: "#/components/responses/FilePartialRes"
         '401':
           description: Missing or invalid access token provided.
         '403':
           description: Failed to perform authorization over the entity.
         '404':
           description: File does not exist.
+        '416':
+          description: Requested range lies outside the file.
         '500':
           $ref: "#/components/responses/ServiceError"
     put:
@@ -241,13 +251,18 @@ paths:
         - thingKeyAuth: []
       parameters:
         - $ref: "#/components/parameters/FileNamePath"
+        - $ref: "#/components/parameters/Range"
       responses:
         '200':
           $ref: "#/components/responses/FileDownloadRes"
+        '206':
+          $ref: "#/components/responses/FilePartialRes"
         '401':
           description: Missing or invalid thing key provided.
         '404':
           description: File does not exist.
+        '416':
+          description: Requested range lies outside the file.
         '500':
           $ref: "#/components/responses/ServiceError"
 
@@ -323,6 +338,18 @@ components:
       schema:
         type: string
       example: "sensor-data.csv"
+    Range:
+      name: Range
+      in: header
+      required: false
+      description: |
+        Requests a single byte range of the file, e.g. `bytes=0-1023`,
+        `bytes=1024-` or `bytes=-512`. Multiple ranges, other units and
+        malformed values are ignored and the whole file is returned. Files
+        stored before sizes were recorded are always returned whole.
+      schema:
+        type: string
+      example: "bytes=1024-"
     Offset:
       name: offset
       in: query
@@ -470,6 +497,34 @@ components:
             `attachment; filename="<name>"` for ASCII-only filenames.
             Non-ASCII filenames additionally include a `filename*=UTF-8''...`
             parameter per RFC 6266 / RFC 5987.
+          schema:
+            type: string
+        Accept-Ranges:
+          description: |
+            `bytes` when the file size is known and range requests are supported.
+          schema:
+            type: string
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
+    FilePartialRes:
+      description: |
+        The requested byte range of the file, streamed as
+        `application/octet-stream`. The stored checksum covers the whole file,
+        so a range is not verified against it; clients should verify the
+        assembled file themselves.
+      headers:
+        Content-Range:
+          description: Served range and total size, e.g. `bytes 1024-2047/482304`.
+          schema:
+            type: string
+        Content-Length:
+          description: Number of bytes in the range.
+          schema:
+            type: integer
+        Accept-Ranges:
           schema:
             type: string
       content:

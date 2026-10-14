@@ -60,6 +60,23 @@ func (l *local) Get(_ context.Context, key, expectedChecksum string) (io.ReadClo
 	return &verifyReader{rc: f, h: sha256.New(), expected: expectedChecksum}, nil
 }
 
+func (l *local) GetRange(_ context.Context, key string, offset, length int64) (io.ReadCloser, error) {
+	f, err := os.Open(filepath.Join(l.base, key))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	if _, err := f.Seek(offset, io.SeekStart); err != nil {
+		f.Close()
+		return nil, err
+	}
+
+	return limitedReadCloser{Reader: io.LimitReader(f, length), Closer: f}, nil
+}
+
 func (l *local) Delete(_ context.Context, key string) error {
 	if err := os.Remove(filepath.Join(l.base, key)); err != nil && !os.IsNotExist(err) {
 		return err

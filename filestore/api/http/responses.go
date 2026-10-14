@@ -5,12 +5,13 @@ package http
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"unicode"
 
+	"github.com/MainfluxLabs/mainflux/filestore"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 )
 
@@ -73,11 +74,15 @@ func (res listFilesRes) Empty() bool {
 }
 
 type streamFileRes struct {
-	reader io.ReadCloser
-	name   string
+	file filestore.File
+	name string
 }
 
 func (res streamFileRes) Code() int {
+	if res.file.Partial {
+		return http.StatusPartialContent
+	}
+
 	return http.StatusOK
 }
 
@@ -85,6 +90,15 @@ func (res streamFileRes) Headers() map[string]string {
 	h := map[string]string{}
 	if res.name != "" {
 		h["Content-Disposition"] = contentDisposition(res.name)
+	}
+	if res.file.Size > 0 {
+		h["Accept-Ranges"] = "bytes"
+	}
+	if res.file.Partial {
+		first := res.file.Offset
+		last := first + res.file.Length - 1
+		h["Content-Range"] = fmt.Sprintf("bytes %d-%d/%d", first, last, res.file.Size)
+		h["Content-Length"] = strconv.FormatInt(res.file.Length, 10)
 	}
 	return h
 }

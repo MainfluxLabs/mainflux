@@ -85,6 +85,7 @@ func (req listFilesReq) validate() error {
 
 type fileReq struct {
 	key domain.ThingKey
+	rng *filestore.Range
 	info
 }
 
@@ -167,6 +168,7 @@ func (req listGroupFilesReq) validate() error {
 type groupFileReq struct {
 	token   string
 	groupID string
+	rng     *filestore.Range
 	info
 }
 
@@ -188,6 +190,7 @@ func (req groupFileReq) validate() error {
 
 type groupFileByKeyReq struct {
 	key domain.ThingKey
+	rng *filestore.Range
 	info
 }
 

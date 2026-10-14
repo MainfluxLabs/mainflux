@@ -148,6 +148,66 @@ func TestLocalGetChecksumMismatch(t *testing.T) {
 	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), fmt.Sprintf("expected ErrChecksumMismatch got %s", err))
 }
 
+func TestLocalGetRange(t *testing.T) {
+	s, _ := newLocal(t)
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
+
+	cases := []struct {
+		desc   string
+		key    string
+		offset int64
+		length int64
+		want   string
+		err    error
+	}{
+		{
+			desc:   "get range from start",
+			key:    testKey,
+			offset: 0,
+			length: 5,
+			want:   "hello",
+			err:    nil,
+		},
+		{
+			desc:   "get range in the middle",
+			key:    testKey,
+			offset: 6,
+			length: 4,
+			want:   "main",
+			err:    nil,
+		},
+		{
+			desc:   "get range to the end",
+			key:    testKey,
+			offset: 6,
+			length: 8,
+			want:   "mainflux",
+			err:    nil,
+		},
+		{
+			desc:   "get range of missing key",
+			key:    "groups/missing/x.txt",
+			offset: 0,
+			length: 1,
+			err:    store.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		rc, err := s.GetRange(context.Background(), tc.key, tc.offset, tc.length)
+		if tc.err != nil {
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+			continue
+		}
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		data, readErr := io.ReadAll(rc)
+		require.Nil(t, readErr, fmt.Sprintf("%s: read failed: %s", tc.desc, readErr))
+		rc.Close()
+		assert.Equal(t, tc.want, string(data), fmt.Sprintf("%s: content mismatch", tc.desc))
+	}
+}
+
 func TestLocalDelete(t *testing.T) {
 	s, base := newLocal(t)
 	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
