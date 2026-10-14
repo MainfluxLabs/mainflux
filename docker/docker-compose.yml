@@ -550,6 +550,7 @@ services:
   seaweedfs-master:
     image: chrislusf/seaweedfs:3.71
     container_name: mainfluxlabs-seaweedfs-master
+    profiles: ["seaweedfs"]
     restart: on-failure
     command: "master -ip=seaweedfs-master -ip.bind=0.0.0.0 -mdir=/data"
     expose:
@@ -567,6 +568,7 @@ services:
   seaweedfs-volume:
     image: chrislusf/seaweedfs:3.71
     container_name: mainfluxlabs-seaweedfs-volume
+    profiles: ["seaweedfs"]
     depends_on:
       seaweedfs-master:
         condition: service_healthy
@@ -587,6 +589,7 @@ services:
   seaweedfs-filer:
     image: chrislusf/seaweedfs:3.71
     container_name: mainfluxlabs-seaweedfs-filer
+    profiles: ["seaweedfs"]
     depends_on:
       seaweedfs-master:
         condition: service_healthy
@@ -616,6 +619,7 @@ services:
         condition: service_started
       seaweedfs-filer:
         condition: service_healthy
+        required: false
     restart: on-failure
     environment:
       MF_FILESTORE_LOG_LEVEL: ${MF_FILESTORE_LOG_LEVEL}
