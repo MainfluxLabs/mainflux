@@ -268,7 +268,7 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	byteRange, err := parseRange(r.Header.Get(rangeHeader))
+	byteRange, err := parseByteRange(r.Header.Get(rangeHeader))
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func decodeGroupFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	byteRange, err := parseRange(r.Header.Get(rangeHeader))
+	byteRange, err := parseByteRange(r.Header.Get(rangeHeader))
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +395,7 @@ func decodeGroupFileByKey(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	byteRange, err := parseRange(r.Header.Get(rangeHeader))
+	byteRange, err := parseByteRange(r.Header.Get(rangeHeader))
 	if err != nil {
 		return nil, err
 	}
@@ -472,9 +472,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	apiutil.WriteErrorResponse(err, w)
 }
 
-// parseRange parses a single-range Range header (RFC 9110). Headers it does
+// parseByteRange parses a single-range Range header (RFC 9110). Headers it does
 // not support, such as multiple ranges, are ignored so the whole file is sent.
-func parseRange(header string) (*filestore.ByteRange, error) {
+func parseByteRange(header string) (*filestore.ByteRange, error) {
 	spec, ok := strings.CutPrefix(header, "bytes=")
 	if !ok || strings.Contains(spec, ",") {
 		return nil, nil
