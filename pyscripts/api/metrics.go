@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pyscripts"
-	"github.com/MainfluxLabs/mainflux/pyscripts/runner"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -83,7 +82,7 @@ func (ms *metricsMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID s
 	return ms.svc.RemoveScriptsByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) RunScript(ctx context.Context, token, id string, in runner.Input) (_ pyscripts.ScriptRun, err error) {
+func (ms *metricsMiddleware) RunScript(ctx context.Context, token, id string, in pyscripts.Input) (_ pyscripts.ScriptRun, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "run_script").Add(1)
 		ms.latency.With("method", "run_script").Observe(time.Since(begin).Seconds())

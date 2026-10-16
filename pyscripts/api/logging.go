@@ -10,7 +10,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pyscripts"
-	"github.com/MainfluxLabs/mainflux/pyscripts/runner"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
 )
@@ -110,7 +109,7 @@ func (lm loggingMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID st
 	return lm.svc.RemoveScriptsByGroup(ctx, groupID)
 }
 
-func (lm loggingMiddleware) RunScript(ctx context.Context, token, id string, in runner.Input) (_ pyscripts.ScriptRun, err error) {
+func (lm loggingMiddleware) RunScript(ctx context.Context, token, id string, in pyscripts.Input) (_ pyscripts.ScriptRun, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method run_script by user %s, script id %s took %s to complete", email, id, time.Since(begin))

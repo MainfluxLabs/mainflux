@@ -36,6 +36,7 @@ paths:
         '401': { description: Missing or invalid access token. }
         '403': { description: Group editor required. }
         '415': { description: Unsupported content type. }
+        '500': { description: The python worker failed while compiling the script. }
         '503': { description: No python worker available to compile the script. }
     get:
       summary: Lists scripts belonging to a group.
@@ -144,7 +145,7 @@ paths:
         - $ref: "#/components/parameters/ScriptId"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Limit"
-        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/RunOrder"
         - $ref: "#/components/parameters/Direction"
         - $ref: "#/components/parameters/Status"
         - $ref: "#/components/parameters/From"
@@ -158,6 +159,7 @@ paths:
                 $ref: "#/components/schemas/RunsPage"
         '401': { description: Missing or invalid access token. }
         '403': { description: Group viewer required. }
+        '404': { description: Script does not exist. }
 
   /runs:
     patch:
@@ -208,6 +210,10 @@ components:
       name: order
       in: query
       schema: { type: string, enum: [id, name, created_at, updated_at] }
+    RunOrder:
+      name: order
+      in: query
+      schema: { type: string, enum: [id, started_at, status] }
     Direction:
       name: direction
       in: query
@@ -252,6 +258,16 @@ components:
         total: { type: integer }
         offset: { type: integer }
         limit: { type: integer }
+        order:
+          type: string
+          description: Order field the page was sorted by; echoed back as applied.
+        direction:
+          type: string
+          enum: [asc, desc]
+          description: Sort direction the page was sorted by; echoed back as applied.
+        name:
+          type: string
+          description: Name filter the page was built with, when one was supplied.
         scripts:
           type: array
           items: { $ref: "#/components/schemas/Script" }
@@ -261,8 +277,8 @@ components:
       description: |
         Exposed to the script as the global `message`, not as a function
         argument - a script is plain Python run top to bottom, with its last
-        expression as the result. Bounded by
-        MF_PYSCRIPTS_MAX_PAYLOAD_SIZE; a larger body is rejected with 400.
+        expression as the result. Capped at 1 MiB once decoded; a larger
+        payload is rejected with 400.
       properties:
         payload: { type: object }
         subtopic: { type: string }
@@ -301,11 +317,24 @@ components:
         error:
           type: string
           description: |
-            A traceback starting at the user's line, or the reason the run ended:
-            "timeout after 10s", "cpu time limit exceeded (5s)", "output limit
-            exceeded", "file size limit exceeded", "result cannot be returned:
-            ...", "script killed, most likely by the memory limit", or
-            "script crashed (segmentation fault)".
+            A traceback starting at the user's line, or the reason the run ended.
+            The reasons are:
+
+            - "timeout after 10s"
+            - "run cancelled by the caller"
+            - "cpu time limit exceeded (5s)"
+            - "output limit exceeded"
+            - "file size limit exceeded"
+            - "result cannot be returned: ..."
+            - "script killed, most likely by the memory limit"
+            - "script crashed (segmentation fault)"
+            - "script killed by <signal>"
+            - "script exited without a result (code 0)"
+            - "could not isolate the run: ..."
+
+            "run cancelled by the caller" means the client disconnected or its
+            context ended, not that the script reached a limit. The run is still
+            recorded, because it had already started executing.
         started_at: { type: string, format: date-time }
         finished_at: { type: string, format: date-time }
 
@@ -315,6 +344,13 @@ components:
         total: { type: integer }
         offset: { type: integer }
         limit: { type: integer }
+        order:
+          type: string
+          description: Order field the page was sorted by; echoed back as applied.
+        direction:
+          type: string
+          enum: [asc, desc]
+          description: Sort direction the page was sorted by; echoed back as applied.
         runs:
           type: array
           items: { $ref: "#/components/schemas/Run" }
@@ -322,8 +358,9 @@ components:
   requestBodies:
     CreateScriptsReq:
       description: |
-        Bounded by MF_PYSCRIPTS_MAX_BODY_SIZE; a larger body is rejected with
-        400 before MaxScriptSize is consulted.
+        Each script's source is bounded by MF_PYSCRIPTS_MAX_SCRIPT_SIZE, checked
+        after the body has been decoded. The body itself is not capped as it is
+        read.
       required: true
       content:
         application/json:
@@ -334,6 +371,7 @@ components:
               scripts:
                 type: array
                 minItems: 1
+                maxItems: 32
                 items:
                   type: object
                   required: [name, source]

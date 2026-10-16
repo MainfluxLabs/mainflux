@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/pyscripts"
-	"github.com/MainfluxLabs/mainflux/pyscripts/runner"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -112,7 +111,7 @@ func runScriptEndpoint(svc pyscripts.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		in := runner.Input{
+		in := pyscripts.Input{
 			Payload:     req.Payload,
 			Subtopic:    req.Subtopic,
 			Created:     req.Created,

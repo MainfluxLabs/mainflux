@@ -4,6 +4,8 @@
 package http
 
 import (
+	"encoding/json"
+
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pyscripts"
@@ -20,16 +22,17 @@ const (
 
 	// maxRemoveBatch bounds a delete batch. The service authorizes each id with a
 	// retrieve plus a gRPC call, so an unbounded list is cheap request
-	// amplification against things and auth - a 4MB body holds ~100k uuids.
+	// amplification against things and auth.
 	maxRemoveBatch = 100
+
+	// maxPayloadSize bounds the input payload of a run. It is checked here, on
+	// the parsed request, so the body is read and decoded in full first - a
+	// caller can still make the service allocate a large body before being
+	// refused. Source length is not checked here: the service bounds it against
+	// its configured limit, and a second hardcoded check would silently override
+	// that configuration.
+	maxPayloadSize = 1 << 20
 )
-
-// MaxPayloadSize bounds the input payload accepted by a run request.
-var MaxPayloadSize int64 = 1 << 20
-
-// MaxBodySize bounds every other request body. Without it a create or update is
-// buffered in full before MaxScriptSize is ever consulted.
-var MaxBodySize int64 = 4 << 20
 
 type script struct {
 	Name        string `json:"name"`
@@ -44,10 +47,6 @@ func (s script) validate() error {
 
 	if s.Source == "" {
 		return errors.ErrMalformedEntity
-	}
-
-	if len(s.Source) > pyscripts.MaxScriptSize {
-		return pyscripts.ErrScriptSize
 	}
 
 	return nil
@@ -183,6 +182,17 @@ func (req runScriptReq) validate() error {
 
 	if req.id == "" {
 		return apiutil.ErrMissingScriptID
+	}
+
+	if req.Payload != nil {
+		encoded, err := json.Marshal(req.Payload)
+		if err != nil {
+			return errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+
+		if len(encoded) > maxPayloadSize {
+			return apiutil.ErrInvalidQueryParams
+		}
 	}
 
 	return nil

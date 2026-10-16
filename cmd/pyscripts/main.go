@@ -71,8 +71,6 @@ const (
 	defAcquireWait   = "5s"
 	defStartWait     = "60s"
 	defMaxScriptSize = "65535"
-	defMaxPayload    = "1048576"
-	defMaxBody       = "4194304"
 	defMaxOutput     = "1048576"
 	defMaxLogLines   = "256"
 	defMaxCPUSeconds = "5"
@@ -108,8 +106,6 @@ const (
 	envAcquireWait   = "MF_PYSCRIPTS_ACQUIRE_TIMEOUT"
 	envStartWait     = "MF_PYSCRIPTS_START_TIMEOUT"
 	envMaxScriptSize = "MF_PYSCRIPTS_MAX_SCRIPT_SIZE"
-	envMaxPayload    = "MF_PYSCRIPTS_MAX_PAYLOAD_SIZE"
-	envMaxBody       = "MF_PYSCRIPTS_MAX_BODY_SIZE"
 	envMaxOutput     = "MF_PYSCRIPTS_MAX_OUTPUT_SIZE"
 	envMaxLogLines   = "MF_PYSCRIPTS_MAX_LOG_LINES"
 	envMaxCPUSeconds = "MF_PYSCRIPTS_MAX_CPU_SECONDS"
@@ -130,8 +126,6 @@ type config struct {
 	authGRPCTimeout   time.Duration
 	esURL             string
 	maxScriptSize     int
-	maxPayloadSize    int64
-	maxBodySize       int64
 }
 
 func main() {
@@ -179,8 +173,7 @@ func main() {
 	svc := newService(dbTracer, db, run, tc, logger, cfg.maxScriptSize)
 
 	g.Go(func() error {
-		limits := httpapi.Limits{Body: cfg.maxBodySize, Payload: cfg.maxPayloadSize}
-		return servershttp.Start(ctx, httpapi.MakeHandler(httpTracer, svc, auth, logger, limits), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(httpTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -283,8 +276,6 @@ func loadConfig() config {
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		maxScriptSize:     envInt(envMaxScriptSize, defMaxScriptSize),
-		maxPayloadSize:    int64(envInt(envMaxPayload, defMaxPayload)),
-		maxBodySize:       int64(envInt(envMaxBody, defMaxBody)),
 	}
 }
 

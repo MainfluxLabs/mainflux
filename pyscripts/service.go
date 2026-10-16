@@ -12,7 +12,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
-	"github.com/MainfluxLabs/mainflux/pyscripts/runner"
 )
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -39,7 +38,7 @@ type Service interface {
 	RemoveScriptsByGroup(ctx context.Context, groupID string) error
 
 	// RunScript executes the Script identified by the provided ID and records the run.
-	RunScript(ctx context.Context, token, id string, in runner.Input) (ScriptRun, error)
+	RunScript(ctx context.Context, token, id string, in Input) (ScriptRun, error)
 
 	// ListRunsByScript retrieves a list of Runs belonging to a specific Script.
 	ListRunsByScript(ctx context.Context, token, scriptID string, pm PageMetadata) (ScriptRunsPage, error)
@@ -49,23 +48,28 @@ type Service interface {
 }
 
 type pyscriptsService struct {
-	scripts    ScriptRepository
-	runner     runner.Runner
-	things     domain.ThingsClient
-	idProvider uuid.IDProvider
-	logger     logger.Logger
+	scripts ScriptRepository
+	runner  Runner
+	// maxScriptSize bounds stored script source. It is held here rather than in a
+	// package variable so the limit arrives with the service it governs, as every
+	// other configured bound in this repository does.
+	maxScriptSize int
+	things        domain.ThingsClient
+	idProvider    uuid.IDProvider
+	logger        logger.Logger
 }
 
 var _ Service = (*pyscriptsService)(nil)
 
 // New instantiates the pyscripts service implementation.
-func New(scripts ScriptRepository, run runner.Runner, things domain.ThingsClient, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(scripts ScriptRepository, run Runner, things domain.ThingsClient, idp uuid.IDProvider, logger logger.Logger, maxScriptSize int) Service {
 	return &pyscriptsService{
-		scripts:    scripts,
-		runner:     run,
-		things:     things,
-		idProvider: idp,
-		logger:     logger,
+		scripts:       scripts,
+		runner:        run,
+		things:        things,
+		idProvider:    idp,
+		logger:        logger,
+		maxScriptSize: maxScriptSize,
 	}
 }
 
@@ -152,7 +156,7 @@ func (ps *pyscriptsService) RemoveScriptsByGroup(ctx context.Context, groupID st
 	return ps.scripts.RemoveScriptsByGroup(ctx, groupID)
 }
 
-func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in runner.Input) (ScriptRun, error) {
+func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in Input) (ScriptRun, error) {
 	script, err := ps.scripts.RetrieveScriptByID(ctx, id)
 	if err != nil {
 		return ScriptRun{}, err
@@ -164,7 +168,7 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	res, err := ps.runner.Run(ctx, runner.Source{SHA256: script.SHA256, Code: script.Source}, in)
+	res, err := ps.runner.Run(ctx, Source{SHA256: script.SHA256, Code: script.Source}, in)
 	if err != nil {
 		return ScriptRun{}, err
 	}
@@ -224,7 +228,7 @@ func (ps *pyscriptsService) RemoveRuns(ctx context.Context, token string, ids ..
 // Both are enforced here rather than only at the transport layer, so every
 // caller is bound by them.
 func (ps *pyscriptsService) validateSource(ctx context.Context, source string) error {
-	if len(source) > MaxScriptSize {
+	if len(source) > ps.maxScriptSize {
 		return ErrScriptSize
 	}
 
@@ -246,7 +250,7 @@ func Checksum(source string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func toRun(id string, script Script, res runner.Result) ScriptRun {
+func toRun(id string, script Script, res Result) ScriptRun {
 	run := ScriptRun{
 		ID:           id,
 		ScriptID:     script.ID,

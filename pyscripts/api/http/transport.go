@@ -18,7 +18,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/pyscripts"
-	"github.com/MainfluxLabs/mainflux/pyscripts/runner"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -35,6 +34,7 @@ const (
 
 // MakeHandler returns a HTTP handler for Python script API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc pyscripts.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
+
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -140,7 +140,7 @@ func decodeCreateScripts(_ context.Context, r *http.Request) (any, error) {
 		groupID: bone.GetValue(r, apiutil.IDKey),
 	}
 
-	if err := json.NewDecoder(http.MaxBytesReader(nil, r.Body, MaxBodySize)).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
@@ -192,7 +192,7 @@ func decodeUpdateScript(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	if err := json.NewDecoder(http.MaxBytesReader(nil, r.Body, MaxBodySize)).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
@@ -206,7 +206,7 @@ func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
 
 	req := removeScriptsReq{token: apiutil.ExtractBearerToken(r)}
 
-	if err := json.NewDecoder(http.MaxBytesReader(nil, r.Body, MaxBodySize)).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
@@ -223,7 +223,7 @@ func decodeRunScript(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	body := http.MaxBytesReader(nil, r.Body, MaxPayloadSize)
+	body := r.Body
 	if err := json.NewDecoder(body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
@@ -284,7 +284,7 @@ func decodeRemoveRuns(_ context.Context, r *http.Request) (any, error) {
 
 	req := removeRunsReq{token: apiutil.ExtractBearerToken(r)}
 
-	if err := json.NewDecoder(http.MaxBytesReader(nil, r.Body, MaxBodySize)).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
@@ -316,9 +316,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, pyscripts.ErrScriptSize),
 		errors.Contains(err, pyscripts.ErrScriptSyntax):
 		w.WriteHeader(http.StatusBadRequest)
-	case errors.Contains(err, runner.ErrBusy):
+	case errors.Contains(err, pyscripts.ErrRunnerBusy):
 		w.WriteHeader(http.StatusServiceUnavailable)
-	case errors.Contains(err, runner.ErrWorkerFailed),
+	case errors.Contains(err, pyscripts.ErrRunnerFailed),
 		errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
