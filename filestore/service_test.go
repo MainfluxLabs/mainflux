@@ -191,69 +191,69 @@ func TestViewGroupFileRange(t *testing.T) {
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader(content), token, groupID, fi))
 
 	cases := []struct {
-		desc    string
-		rng     *filestore.Range
-		want    string
-		partial bool
-		offset  int64
-		err     error
+		desc      string
+		byteRange *filestore.Range
+		want      string
+		partial   bool
+		offset    int64
+		err       error
 	}{
 		{
-			desc:    "view whole file without range",
-			rng:     nil,
-			want:    content,
-			partial: false,
-			err:     nil,
+			desc:      "view whole file without range",
+			byteRange: nil,
+			want:      content,
+			partial:   false,
+			err:       nil,
 		},
 		{
-			desc:    "view bounded range",
-			rng:     &filestore.Range{Start: 6, End: 9},
-			want:    "main",
-			partial: true,
-			offset:  6,
-			err:     nil,
+			desc:      "view bounded range",
+			byteRange: &filestore.Range{Start: 6, End: 9},
+			want:      "main",
+			partial:   true,
+			offset:    6,
+			err:       nil,
 		},
 		{
-			desc:    "view open-ended range",
-			rng:     &filestore.Range{Start: 6, End: -1},
-			want:    "mainflux",
-			partial: true,
-			offset:  6,
-			err:     nil,
+			desc:      "view open-ended range",
+			byteRange: &filestore.Range{Start: 6, End: -1},
+			want:      "mainflux",
+			partial:   true,
+			offset:    6,
+			err:       nil,
 		},
 		{
-			desc:    "view range with end past file size",
-			rng:     &filestore.Range{Start: 10, End: 100},
-			want:    "flux",
-			partial: true,
-			offset:  10,
-			err:     nil,
+			desc:      "view range with end past file size",
+			byteRange: &filestore.Range{Start: 10, End: 100},
+			want:      "flux",
+			partial:   true,
+			offset:    10,
+			err:       nil,
 		},
 		{
-			desc:    "view suffix range",
-			rng:     &filestore.Range{Start: -3, End: -1},
-			want:    "lux",
-			partial: true,
-			offset:  11,
-			err:     nil,
+			desc:      "view suffix range",
+			byteRange: &filestore.Range{Start: -3, End: -1},
+			want:      "lux",
+			partial:   true,
+			offset:    11,
+			err:       nil,
 		},
 		{
-			desc:    "view suffix range longer than file",
-			rng:     &filestore.Range{Start: -100, End: -1},
-			want:    content,
-			partial: true,
-			offset:  0,
-			err:     nil,
+			desc:      "view suffix range longer than file",
+			byteRange: &filestore.Range{Start: -100, End: -1},
+			want:      content,
+			partial:   true,
+			offset:    0,
+			err:       nil,
 		},
 		{
-			desc: "view range starting past file size",
-			rng:  &filestore.Range{Start: 14, End: -1},
-			err:  filestore.ErrRangeNotSatisfiable,
+			desc:      "view range starting past file size",
+			byteRange: &filestore.Range{Start: 14, End: -1},
+			err:       filestore.ErrRangeNotSatisfiable,
 		},
 	}
 
 	for _, tc := range cases {
-		file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, tc.rng)
+		file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, tc.byteRange)
 		if tc.err != nil {
 			assert.True(t, errors.Contains(err, tc.err), "%s: expected %v, got %v", tc.desc, tc.err, err)
 			continue

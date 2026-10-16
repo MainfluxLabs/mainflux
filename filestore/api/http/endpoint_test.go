@@ -69,65 +69,65 @@ func TestRangeRequest(t *testing.T) {
 
 	cases := []struct {
 		desc         string
-		rng          string
+		byteRange    string
 		status       int
 		body         string
 		contentRange string
 	}{
 		{
-			desc:   "view file without range",
-			rng:    "",
-			status: http.StatusOK,
-			body:   fileContent,
+			desc:      "view file without range",
+			byteRange: "",
+			status:    http.StatusOK,
+			body:      fileContent,
 		},
 		{
 			desc:         "view file with bounded range",
-			rng:          "bytes=6-9",
+			byteRange:    "bytes=6-9",
 			status:       http.StatusPartialContent,
 			body:         "main",
 			contentRange: fmt.Sprintf("bytes 6-9/%d", size),
 		},
 		{
 			desc:         "view file with open-ended range",
-			rng:          "bytes=6-",
+			byteRange:    "bytes=6-",
 			status:       http.StatusPartialContent,
 			body:         "mainflux",
 			contentRange: fmt.Sprintf("bytes 6-13/%d", size),
 		},
 		{
 			desc:         "view file with suffix range",
-			rng:          "bytes=-3",
+			byteRange:    "bytes=-3",
 			status:       http.StatusPartialContent,
 			body:         "lux",
 			contentRange: fmt.Sprintf("bytes 11-13/%d", size),
 		},
 		{
-			desc:   "view file with multiple ranges",
-			rng:    "bytes=0-1,4-5",
-			status: http.StatusOK,
-			body:   fileContent,
+			desc:      "view file with multiple ranges",
+			byteRange: "bytes=0-1,4-5",
+			status:    http.StatusOK,
+			body:      fileContent,
 		},
 		{
-			desc:   "view file with unsupported range unit",
-			rng:    "items=0-1",
-			status: http.StatusOK,
-			body:   fileContent,
+			desc:      "view file with unsupported range unit",
+			byteRange: "items=0-1",
+			status:    http.StatusOK,
+			body:      fileContent,
 		},
 		{
-			desc:   "view file with malformed range",
-			rng:    "bytes=5-2",
-			status: http.StatusOK,
-			body:   fileContent,
+			desc:      "view file with malformed range",
+			byteRange: "bytes=5-2",
+			status:    http.StatusOK,
+			body:      fileContent,
 		},
 		{
-			desc:   "view file with range starting past file size",
-			rng:    fmt.Sprintf("bytes=%d-", size),
-			status: http.StatusRequestedRangeNotSatisfiable,
+			desc:      "view file with range starting past file size",
+			byteRange: fmt.Sprintf("bytes=%d-", size),
+			status:    http.StatusRequestedRangeNotSatisfiable,
 		},
 		{
-			desc:   "view file with empty suffix range",
-			rng:    "bytes=-0",
-			status: http.StatusRequestedRangeNotSatisfiable,
+			desc:      "view file with empty suffix range",
+			byteRange: "bytes=-0",
+			status:    http.StatusRequestedRangeNotSatisfiable,
 		},
 	}
 
@@ -135,8 +135,8 @@ func TestRangeRequest(t *testing.T) {
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, fileName), nil)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+thingKey)
-		if tc.rng != "" {
-			req.Header.Set("Range", tc.rng)
+		if tc.byteRange != "" {
+			req.Header.Set("Range", tc.byteRange)
 		}
 
 		res, err := srv.Client().Do(req)

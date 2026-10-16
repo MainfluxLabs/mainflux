@@ -83,7 +83,7 @@ func viewFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		file, err := svc.ViewFile(ctx, req.key.Value, fi, req.rng)
+		file, err := svc.ViewFile(ctx, req.key.Value, fi, req.byteRange)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func viewGroupFileEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		file, err := svc.ViewGroupFile(ctx, req.token, req.groupID, fi, req.rng)
+		file, err := svc.ViewGroupFile(ctx, req.token, req.groupID, fi, req.byteRange)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +207,7 @@ func viewGroupFileByKeyEndpoint(svc filestore.Service) endpoint.Endpoint {
 			Format: req.format,
 		}
 
-		file, err := svc.ViewGroupFileByKey(ctx, req.key.Value, fi, req.rng)
+		file, err := svc.ViewGroupFileByKey(ctx, req.key.Value, fi, req.byteRange)
 		if err != nil {
 			return nil, err
 		}

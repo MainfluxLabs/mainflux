@@ -268,14 +268,14 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	rng, err := parseRange(r.Header.Get(rangeHeader))
+	byteRange, err := parseRange(r.Header.Get(rangeHeader))
 	if err != nil {
 		return nil, err
 	}
 
 	req := fileReq{
-		key: apiutil.ExtractThingKey(r),
-		rng: rng,
+		key:       apiutil.ExtractThingKey(r),
+		byteRange: byteRange,
 		info: info{
 			name:   name,
 			format: format,
@@ -368,15 +368,15 @@ func decodeGroupFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	rng, err := parseRange(r.Header.Get(rangeHeader))
+	byteRange, err := parseRange(r.Header.Get(rangeHeader))
 	if err != nil {
 		return nil, err
 	}
 
 	req := groupFileReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
-		rng:     rng,
+		token:     apiutil.ExtractBearerToken(r),
+		groupID:   bone.GetValue(r, idKey),
+		byteRange: byteRange,
 		info: info{
 			name:   name,
 			format: format,
@@ -395,14 +395,14 @@ func decodeGroupFileByKey(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	rng, err := parseRange(r.Header.Get(rangeHeader))
+	byteRange, err := parseRange(r.Header.Get(rangeHeader))
 	if err != nil {
 		return nil, err
 	}
 
 	req := groupFileByKeyReq{
-		key: apiutil.ExtractThingKey(r),
-		rng: rng,
+		key:       apiutil.ExtractThingKey(r),
+		byteRange: byteRange,
 		info: info{
 			name:   name,
 			format: format,

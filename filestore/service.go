@@ -31,7 +31,7 @@ type Service interface {
 	// UpdateFile updates file from filestore
 	UpdateFile(ctx context.Context, key string, fi FileInfo) error
 	// ViewFile streams file from filestore, or only the requested byte range when one is given. Caller must Close.
-	ViewFile(ctx context.Context, key string, fi FileInfo, rng *Range) (File, error)
+	ViewFile(ctx context.Context, key string, fi FileInfo, byteRange *Range) (File, error)
 	// ListFiles retrieves files from filestore by thing
 	ListFiles(ctx context.Context, key string, fi FileInfo, pm PageMetadata) (FileThingsPage, error)
 	// RemoveFile removes file from filestore
@@ -44,7 +44,7 @@ type Service interface {
 	// UpdateGroupFile updates group file from filestore
 	UpdateGroupFile(ctx context.Context, token, groupID string, fi FileInfo) error
 	// ViewGroupFile streams group file from filestore, or only the requested byte range when one is given. Caller must Close.
-	ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo, rng *Range) (File, error)
+	ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo, byteRange *Range) (File, error)
 	// ListGroupFiles retrieves files from filestore by group
 	ListGroupFiles(ctx context.Context, token, groupID string, fi FileInfo, pm PageMetadata) (FileGroupsPage, error)
 	// RemoveGroupFile removes group file from filestore
@@ -55,7 +55,7 @@ type Service interface {
 	RemoveAllFilesByGroup(ctx context.Context, groupID string) error
 
 	// ViewGroupFileByKey streams group file using Thing Key, or only the requested byte range when one is given. Caller must Close.
-	ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo, rng *Range) (File, error)
+	ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo, byteRange *Range) (File, error)
 }
 
 // PageMetadata contains page metadata that helps navigation.
@@ -262,7 +262,7 @@ func (fs *filestoreService) RemoveFiles(ctx context.Context, thingID string) err
 	return fs.thingsRepo.RemoveByThing(ctx, thingID)
 }
 
-func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo, rng *Range) (File, error) {
+func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInfo, byteRange *Range) (File, error) {
 	thID, err := fs.identify(ctx, key)
 	if err != nil {
 		return File{}, err
@@ -273,7 +273,7 @@ func (fs *filestoreService) ViewFile(ctx context.Context, key string, fi FileInf
 		return File{}, err
 	}
 
-	return fs.openFile(ctx, thingFileKey(thID, f.Name), f, rng)
+	return fs.openFile(ctx, thingFileKey(thID, f.Name), f, byteRange)
 }
 
 func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, token, groupID string, fi FileInfo) error {
@@ -390,7 +390,7 @@ func (fs *filestoreService) RemoveAllFilesByGroup(ctx context.Context, groupID s
 	return fs.thingsRepo.RemoveByGroup(ctx, groupID)
 }
 
-func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo, rng *Range) (File, error) {
+func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID string, fi FileInfo, byteRange *Range) (File, error) {
 	if err := fs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
 		return File{}, err
 	}
@@ -400,10 +400,10 @@ func (fs *filestoreService) ViewGroupFile(ctx context.Context, token, groupID st
 		return File{}, err
 	}
 
-	return fs.openFile(ctx, groupFileKey(groupID, f.Name), f, rng)
+	return fs.openFile(ctx, groupFileKey(groupID, f.Name), f, byteRange)
 }
 
-func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo, rng *Range) (File, error) {
+func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey string, fi FileInfo, byteRange *Range) (File, error) {
 	thID, err := fs.identify(ctx, thingKey)
 	if err != nil {
 		return File{}, err
@@ -419,13 +419,13 @@ func (fs *filestoreService) ViewGroupFileByKey(ctx context.Context, thingKey str
 		return File{}, err
 	}
 
-	return fs.openFile(ctx, groupFileKey(grID, f.Name), f, rng)
+	return fs.openFile(ctx, groupFileKey(grID, f.Name), f, byteRange)
 }
 
 // openFile streams the whole stored file, or only the requested byte range when one is given.
-func (fs *filestoreService) openFile(ctx context.Context, key string, f FileInfo, rng *Range) (File, error) {
+func (fs *filestoreService) openFile(ctx context.Context, key string, f FileInfo, byteRange *Range) (File, error) {
 	// Files stored before sizes were recorded cannot resolve a range, so they are sent whole.
-	if rng == nil || f.Size == 0 {
+	if byteRange == nil || f.Size == 0 {
 		rc, err := fs.store.Get(ctx, key, f.Checksum)
 		if err != nil {
 			return File{}, fs.translateGetErr(key, err)
@@ -433,7 +433,7 @@ func (fs *filestoreService) openFile(ctx context.Context, key string, f FileInfo
 		return File{ReadCloser: rc, Size: f.Size}, nil
 	}
 
-	offset, length, err := rng.resolve(f.Size)
+	offset, length, err := byteRange.resolve(f.Size)
 	if err != nil {
 		return File{}, err
 	}
