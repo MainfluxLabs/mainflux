@@ -39,7 +39,7 @@ services:
   ui:
     image: ${MF_RELEASE_PREFIX}/ui:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-ui
-    restart: on-failure
+    restart: unless-stopped
     ports:
       - ${MF_UI_PORT}:${MF_UI_PORT}
     networks:
@@ -51,7 +51,7 @@ services:
   nginx:
     image: nginx:1.20.0-alpine
     container_name: mainfluxlabs-nginx
-    restart: on-failure
+    restart: unless-stopped
     volumes:
       - ./nginx/nginx-${AUTH-key}.conf:/etc/nginx/nginx.conf.template
       - ./nginx/entrypoint.sh:/docker-entrypoint.d/entrypoint.sh
@@ -82,7 +82,7 @@ services:
       file: brokers/nats.yml
       service: broker
     container_name: mainfluxlabs-broker
-    restart: on-failure
+    restart: unless-stopped
     networks:
       - mainfluxlabs-base-net
 
@@ -90,7 +90,7 @@ services:
   auth-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-auth-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_AUTH_DB_USER}
       POSTGRES_PASSWORD: ${MF_AUTH_DB_PASS}
@@ -107,7 +107,7 @@ services:
       - auth-db
     expose:
       - ${MF_AUTH_GRPC_PORT}
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_AUTH_LOG_LEVEL: ${MF_AUTH_LOG_LEVEL}
       MF_AUTH_DB_HOST: auth-db
@@ -153,7 +153,7 @@ services:
   audit-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-audit-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_AUDIT_DB_USER}
       POSTGRES_PASSWORD: ${MF_AUDIT_DB_PASS}
@@ -171,7 +171,7 @@ services:
       - auth
       - things
       - es-redis
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_AUDIT_LOG_LEVEL: ${MF_AUDIT_LOG_LEVEL}
       MF_AUDIT_DB_HOST: audit-db
@@ -195,7 +195,7 @@ services:
   users-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-users-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_USERS_DB_USER}
       POSTGRES_PASSWORD: ${MF_USERS_DB_PASS}
@@ -218,7 +218,7 @@ services:
       - auth
     expose:
       - ${MF_USERS_GRPC_PORT}
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_USERS_LOG_LEVEL: ${MF_USERS_LOG_LEVEL}
       MF_USERS_DB_HOST: users-db
@@ -263,7 +263,7 @@ services:
   things-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-things-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_THINGS_DB_USER}
       POSTGRES_PASSWORD: ${MF_THINGS_DB_PASS}
@@ -276,7 +276,7 @@ services:
   auth-redis:
     image: redis:6.2.2-alpine
     container_name: mainfluxlabs-auth-redis
-    restart: on-failure
+    restart: unless-stopped
     networks:
       - mainfluxlabs-base-net
     volumes:
@@ -288,7 +288,7 @@ services:
     depends_on:
       - things-db
       - auth
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_THINGS_LOG_LEVEL: ${MF_THINGS_LOG_LEVEL}
       MF_THINGS_DB_HOST: things-db
@@ -330,6 +330,7 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.53
     container_name: mainfluxlabs-jaeger
+    restart: unless-stopped
     ports:
       - ${MF_JAEGER_PORT}:${MF_JAEGER_PORT}/udp
       - ${MF_JAEGER_FRONTEND}:${MF_JAEGER_FRONTEND}
@@ -341,7 +342,7 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2.0
     container_name: mainfluxlabs-mosquitto
-    restart: on-failure
+    restart: unless-stopped
     networks:
       - mainfluxlabs-base-net
     volumes:
@@ -351,7 +352,7 @@ services:
   mqtt-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-mqtt-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${MF_MQTT_ADAPTER_DB_USER}
       - POSTGRES_PASSWORD=${MF_MQTT_ADAPTER_DB_PASS}
@@ -369,7 +370,7 @@ services:
       - things
       - broker
       - mqtt-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
       MF_MQTT_ADAPTER_MQTT_PORT: ${MF_MQTT_ADAPTER_MQTT_PORT}
@@ -406,7 +407,7 @@ services:
     depends_on:
       - things
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_HTTP_ADAPTER_LOG_LEVEL: debug
       MF_HTTP_ADAPTER_PORT: ${MF_HTTP_ADAPTER_PORT}
@@ -422,7 +423,7 @@ services:
   es-redis:
     image: redis:6.2.2-alpine
     container_name: mainfluxlabs-es-redis
-    restart: on-failure
+    restart: unless-stopped
     networks:
       - mainfluxlabs-base-net
     volumes:
@@ -434,7 +435,7 @@ services:
     depends_on:
       - things
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
       MF_COAP_ADAPTER_PORT: ${MF_COAP_ADAPTER_PORT}
@@ -454,7 +455,7 @@ services:
     depends_on:
       - things
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_WS_ADAPTER_LOG_LEVEL: ${MF_WS_ADAPTER_LOG_LEVEL}
       MF_WS_ADAPTER_PORT: ${MF_WS_ADAPTER_PORT}
@@ -471,7 +472,7 @@ services:
   timescale-db:
     image: timescale/timescaledb:2.15.3-pg16
     container_name: mainfluxlabs-timescale-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_TIMESCALE_WRITER_DB_USER}
       POSTGRES_PASSWORD: ${MF_TIMESCALE_WRITER_DB_PASS}
@@ -486,7 +487,7 @@ services:
     container_name: mainfluxlabs-timescale-writer
     depends_on:
       - timescale-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_BROKER_URL: ${MF_BROKER_URL}
       MF_TIMESCALE_WRITER_LOG_LEVEL: ${MF_TIMESCALE_WRITER_LOG_LEVEL}
@@ -508,7 +509,7 @@ services:
   timescale-reader:
     image: ${MF_RELEASE_PREFIX}/timescale-reader:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-timescale-reader
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_TIMESCALE_READER_LOG_LEVEL: ${MF_TIMESCALE_READER_LOG_LEVEL}
       MF_TIMESCALE_READER_PORT: ${MF_TIMESCALE_READER_PORT}
@@ -537,7 +538,7 @@ services:
   filestore-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-filestore-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=${MF_FILESTORE_DB_USER}
       - POSTGRES_PASSWORD=${MF_FILESTORE_DB_PASS}
@@ -551,7 +552,7 @@ services:
     image: chrislusf/seaweedfs:3.71
     container_name: mainfluxlabs-seaweedfs-master
     profiles: ["seaweedfs"]
-    restart: on-failure
+    restart: unless-stopped
     command: "master -ip=seaweedfs-master -ip.bind=0.0.0.0 -mdir=/data"
     expose:
       - 9333
@@ -572,7 +573,7 @@ services:
     depends_on:
       seaweedfs-master:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
     command: "volume -mserver=seaweedfs-master:9333 -ip=seaweedfs-volume -ip.bind=0.0.0.0 -dir=/data -port=8080 -disk=hdd"
     expose:
       - 8080
@@ -595,7 +596,7 @@ services:
         condition: service_healthy
       seaweedfs-volume:
         condition: service_healthy
-    restart: on-failure
+    restart: unless-stopped
     command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_SEAWEED_CHUNK_SIZE}"
     expose:
       - 8888
@@ -620,7 +621,7 @@ services:
       seaweedfs-filer:
         condition: service_healthy
         required: false
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_FILESTORE_LOG_LEVEL: ${MF_FILESTORE_LOG_LEVEL}
       MF_FILESTORE_DB_HOST: ${MF_FILESTORE_DB_HOST}
@@ -659,7 +660,7 @@ services:
   webhooks-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-webhooks-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_WEBHOOKS_DB_USER}
       POSTGRES_PASSWORD: ${MF_WEBHOOKS_DB_PASS}
@@ -676,7 +677,7 @@ services:
       - things
       - webhooks-db
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_WEBHOOKS_LOG_LEVEL: ${MF_WEBHOOKS_LOG_LEVEL}
       MF_BROKER_URL: ${MF_NATS_URL}
@@ -702,7 +703,7 @@ services:
   smtp-notifier-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-smtp-notifier-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_SMTP_NOTIFIER_DB_USER}
       POSTGRES_PASSWORD: ${MF_SMTP_NOTIFIER_DB_PASS}
@@ -718,7 +719,7 @@ services:
     depends_on:
       - things
       - smtp-notifier-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_SMTP_NOTIFIER_LOG_LEVEL: ${MF_SMTP_NOTIFIER_LOG_LEVEL}
       MF_SMTP_NOTIFIER_PORT: ${MF_SMTP_NOTIFIER_PORT}
@@ -757,7 +758,7 @@ services:
   downlinks-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-downlinks-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_DOWNLINKS_DB_USER}
       POSTGRES_PASSWORD: ${MF_DOWNLINKS_DB_PASS}
@@ -774,7 +775,7 @@ services:
       - things
       - downlinks-db
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_DOWNLINKS_LOG_LEVEL: ${MF_DOWNLINKS_LOG_LEVEL}
       MF_DOWNLINKS_HTTP_PORT: ${MF_DOWNLINKS_HTTP_PORT}
@@ -800,7 +801,7 @@ services:
   shadows-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-shadows-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_SHADOWS_DB_USER}
       POSTGRES_PASSWORD: ${MF_SHADOWS_DB_PASS}
@@ -817,7 +818,7 @@ services:
       - things
       - shadows-db
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_SHADOWS_LOG_LEVEL: ${MF_SHADOWS_LOG_LEVEL}
       MF_SHADOWS_HTTP_PORT: ${MF_SHADOWS_HTTP_PORT}
@@ -843,7 +844,7 @@ services:
   modbus-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-modbus-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_MODBUS_DB_USER}
       POSTGRES_PASSWORD: ${MF_MODBUS_DB_PASS}
@@ -860,7 +861,7 @@ services:
       - things
       - modbus-db
       - broker
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_MODBUS_LOG_LEVEL: ${MF_MODBUS_LOG_LEVEL}
       MF_MODBUS_HTTP_PORT: ${MF_MODBUS_HTTP_PORT}
@@ -886,7 +887,7 @@ services:
   converters:
     image: ${MF_RELEASE_PREFIX}/converters:${MF_RELEASE_TAG}
     container_name: mainfluxlabs-converters
-    restart: on-failure
+    restart: unless-stopped
     depends_on:
       - things
       - broker
@@ -909,7 +910,7 @@ services:
   alarms-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-alarms-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_ALARMS_DB_USER}
       POSTGRES_PASSWORD: ${MF_ALARMS_DB_PASS}
@@ -925,7 +926,7 @@ services:
     depends_on:
       - things
       - alarms-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_ALARMS_LOG_LEVEL: ${MF_ALARMS_LOG_LEVEL}
       MF_BROKER_URL: ${MF_NATS_URL}
@@ -951,7 +952,7 @@ services:
   rules-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-rules-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_RULES_DB_USER}
       POSTGRES_PASSWORD: ${MF_RULES_DB_PASS}
@@ -967,7 +968,7 @@ services:
     depends_on:
       - things
       - rules-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_RULES_LOG_LEVEL: ${MF_RULES_LOG_LEVEL}
       MF_BROKER_URL: ${MF_NATS_URL}
@@ -993,7 +994,7 @@ services:
   certs-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-certs-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_CERTS_DB_USER}
       POSTGRES_PASSWORD: ${MF_CERTS_DB_PASS}
@@ -1008,7 +1009,7 @@ services:
     container_name: mainfluxlabs-certs
     depends_on:
       - certs-db
-    restart: on-failure
+    restart: unless-stopped
     networks:
       - mainfluxlabs-base-net
     ports:
@@ -1050,7 +1051,7 @@ services:
   uiconfigs-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-uiconfigs-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${MF_UI_CONFIGS_DB_USER}
       POSTGRES_PASSWORD: ${MF_UI_CONFIGS_DB_PASS}
@@ -1065,7 +1066,7 @@ services:
     container_name: mainfluxlabs-uiconfigs
     depends_on:
       - uiconfigs-db
-    restart: on-failure
+    restart: unless-stopped
     environment:
       MF_UI_CONFIGS_LOG_LEVEL: ${MF_UI_CONFIGS_LOG_LEVEL}
       MF_UI_CONFIGS_HTTP_PORT: ${MF_UI_CONFIGS_HTTP_PORT}
