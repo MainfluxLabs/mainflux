@@ -22,25 +22,33 @@ paths:
   /groups/{groupId}/scripts:
     post:
       summary: Creates scripts in a group.
-      tags: [scripts]
+      tags:
+        - scripts
       parameters:
         - $ref: "#/components/parameters/GroupId"
       requestBody:
         $ref: "#/components/requestBodies/CreateScriptsReq"
       responses:
-        '201': { description: Scripts created. }
+        '201':
+          description: Scripts created.
         '400':
           description: |
             Malformed request, script exceeds the size limit, or the source does
             not compile. A syntax error is reported with Python's own message.
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group editor required. }
-        '415': { description: Unsupported content type. }
-        '500': { description: The python worker failed while compiling the script. }
-        '503': { description: No python worker available to compile the script. }
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group editor required.
+        '415':
+          description: Unsupported content type.
+        '500':
+          description: The python worker failed while compiling the script.
+        '503':
+          description: No python worker available to compile the script.
     get:
       summary: Lists scripts belonging to a group.
-      tags: [scripts]
+      tags:
+        - scripts
       parameters:
         - $ref: "#/components/parameters/GroupId"
         - $ref: "#/components/parameters/Offset"
@@ -55,13 +63,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScriptsPage"
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group viewer required. }
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group viewer required.
 
   /scripts/{scriptId}:
     get:
       summary: Retrieves a script, including its source.
-      tags: [scripts]
+      tags:
+        - scripts
       parameters:
         - $ref: "#/components/parameters/ScriptId"
       responses:
@@ -71,38 +82,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Script"
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group viewer required. }
-        '404': { description: Script does not exist. }
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group viewer required.
+        '404':
+          description: Script does not exist.
     put:
       summary: Updates a script.
-      tags: [scripts]
+      tags:
+        - scripts
       parameters:
         - $ref: "#/components/parameters/ScriptId"
       requestBody:
         $ref: "#/components/requestBodies/UpdateScriptReq"
       responses:
-        '200': { description: Script updated. }
+        '200':
+          description: Script updated.
         '400':
           description: |
             Malformed request, script exceeds the size limit, or the source does
             not compile. A syntax error is reported with Python's own message.
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group editor required. }
-        '404': { description: Script does not exist. }
-        '503': { description: No python worker available to compile the script. }
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group editor required.
+        '404':
+          description: Script does not exist.
+        '503':
+          description: No python worker available to compile the script.
 
   /scripts:
     patch:
       summary: Removes scripts. Their run history is removed with them.
-      tags: [scripts]
+      tags:
+        - scripts
       requestBody:
         $ref: "#/components/requestBodies/RemoveScriptsReq"
       responses:
-        '204': { description: Scripts removed. }
-        '400': { description: Malformed request. }
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group editor required. }
+        '204':
+          description: Scripts removed.
+        '400':
+          description: Malformed request.
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group editor required.
 
   /scripts/{scriptId}/run:
     post:
@@ -114,7 +139,8 @@ paths:
         Any outcome that is the script's own - raising, exceeding a limit,
         returning an unserializable value - is 200 with status "fail" and the
         reason in "error". 5xx means the runner itself failed.
-      tags: [runs]
+      tags:
+        - runs
       parameters:
         - $ref: "#/components/parameters/ScriptId"
       requestBody:
@@ -126,11 +152,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Run"
-        '400': { description: Malformed request, or payload exceeds the size limit. }
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group editor required. }
-        '404': { description: Script does not exist. }
-        '500': { description: The python worker failed. }
+        '400':
+          description: Malformed request, or payload exceeds the size limit.
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group editor required.
+        '404':
+          description: Script does not exist.
+        '500':
+          description: The python worker failed.
         '503':
           description: |
             No python worker became available within
@@ -140,7 +171,8 @@ paths:
   /scripts/{scriptId}/runs:
     get:
       summary: Lists runs of a script.
-      tags: [runs]
+      tags:
+        - runs
       parameters:
         - $ref: "#/components/parameters/ScriptId"
         - $ref: "#/components/parameters/Offset"
@@ -157,28 +189,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RunsPage"
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group viewer required. }
-        '404': { description: Script does not exist. }
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group viewer required.
+        '404':
+          description: Script does not exist.
 
   /runs:
     patch:
       summary: Removes runs.
-      tags: [runs]
+      tags:
+        - runs
       requestBody:
         $ref: "#/components/requestBodies/RemoveRunsReq"
       responses:
-        '204': { description: Runs removed. }
-        '400': { description: Malformed request. }
-        '401': { description: Missing or invalid access token. }
-        '403': { description: Group editor required. }
+        '204':
+          description: Runs removed.
+        '400':
+          description: Malformed request.
+        '401':
+          description: Missing or invalid access token.
+        '403':
+          description: Group editor required.
 
   /health:
     get:
       summary: Service health check.
-      tags: [health]
+      tags:
+        - health
       responses:
-        '200': { description: Service is up. }
+        '200':
+          description: Service is up.
 
 components:
   securitySchemes:
@@ -192,72 +234,112 @@ components:
       name: groupId
       in: path
       required: true
-      schema: { type: string, format: uuid }
+      schema:
+        type: string
+        format: uuid
     ScriptId:
       name: scriptId
       in: path
       required: true
-      schema: { type: string, format: uuid }
+      schema:
+        type: string
+        format: uuid
     Offset:
       name: offset
       in: query
-      schema: { type: integer, default: 0, minimum: 0 }
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
     Limit:
       name: limit
       in: query
-      schema: { type: integer, default: 10, minimum: 1, maximum: 200 }
+      schema:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 200
     Order:
       name: order
       in: query
-      schema: { type: string, enum: [id, name, created_at, updated_at] }
+      schema:
+        type: string
+        enum: [id, name, created_at, updated_at]
     RunOrder:
       name: order
       in: query
-      schema: { type: string, enum: [id, started_at, status] }
+      schema:
+        type: string
+        enum: [id, started_at, status]
     Direction:
       name: direction
       in: query
-      schema: { type: string, enum: [asc, desc] }
+      schema:
+        type: string
+        enum: [asc, desc]
     Name:
       name: name
       in: query
-      schema: { type: string }
+      schema:
+        type: string
     Status:
       name: status
       in: query
-      schema: { type: string, enum: [success, fail] }
+      schema:
+        type: string
+        enum: [success, fail]
     From:
       name: from
       in: query
       description: Unix milliseconds, inclusive.
-      schema: { type: integer, format: int64 }
+      schema:
+        type: integer
+        format: int64
     To:
       name: to
       in: query
       description: Unix milliseconds, exclusive.
-      schema: { type: integer, format: int64 }
+      schema:
+        type: integer
+        format: int64
 
   schemas:
     Script:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        group_id: { type: string, format: uuid }
-        name: { type: string, maxLength: 254 }
-        description: { type: string }
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 254
+        description:
+          type: string
         source:
           type: string
           description: Python source. Returned only when viewing a single script.
-        sha256: { type: string, description: Checksum of the current source. }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
+        sha256:
+          type: string
+          description: Checksum of the current source.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     ScriptsPage:
       type: object
       properties:
-        total: { type: integer }
-        offset: { type: integer }
-        limit: { type: integer }
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
         order:
           type: string
           description: Order field the page was sorted by; echoed back as applied.
@@ -270,7 +352,8 @@ components:
           description: Name filter the page was built with, when one was supplied.
         scripts:
           type: array
-          items: { $ref: "#/components/schemas/Script" }
+          items:
+            $ref: "#/components/schemas/Script"
 
     Message:
       type: object
@@ -280,22 +363,33 @@ components:
         expression as the result. Capped at 1 MiB once decoded; a larger
         payload is rejected with 400.
       properties:
-        payload: { type: object }
-        subtopic: { type: string }
-        created: { type: integer, format: int64 }
-        publisher_id: { type: string }
+        payload:
+          type: object
+        subtopic:
+          type: string
+        created:
+          type: integer
+          format: int64
+        publisher_id:
+          type: string
 
     Run:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        script_id: { type: string, format: uuid }
+        id:
+          type: string
+          format: uuid
+        script_id:
+          type: string
+          format: uuid
         script_sha256:
           type: string
           description: |
             Checksum of the source that actually ran. Differs from the script's
             current sha256 when the script has been edited since.
-        status: { type: string, enum: [success, fail] }
+        status:
+          type: string
+          enum: [success, fail]
         return_value:
           nullable: true
           description: |
@@ -313,7 +407,8 @@ components:
             Anything the script wrote to stdout or stderr, one entry per line.
             Lines are truncated at 8192 characters and the list at
             MF_PYSCRIPTS_MAX_LOG_LINES.
-          items: { type: string }
+          items:
+            type: string
         error:
           type: string
           description: |
@@ -335,15 +430,22 @@ components:
             "run cancelled by the caller" means the client disconnected or its
             context ended, not that the script reached a limit. The run is still
             recorded, because it had already started executing.
-        started_at: { type: string, format: date-time }
-        finished_at: { type: string, format: date-time }
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
 
     RunsPage:
       type: object
       properties:
-        total: { type: integer }
-        offset: { type: integer }
-        limit: { type: integer }
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
         order:
           type: string
           description: Order field the page was sorted by; echoed back as applied.
@@ -353,7 +455,8 @@ components:
           description: Sort direction the page was sorted by; echoed back as applied.
         runs:
           type: array
-          items: { $ref: "#/components/schemas/Run" }
+          items:
+            $ref: "#/components/schemas/Run"
 
   requestBodies:
     CreateScriptsReq:
@@ -376,9 +479,13 @@ components:
                   type: object
                   required: [name, source]
                   properties:
-                    name: { type: string, maxLength: 254 }
-                    description: { type: string }
-                    source: { type: string }
+                    name:
+                      type: string
+                      maxLength: 254
+                    description:
+                      type: string
+                    source:
+                      type: string
 
     UpdateScriptReq:
       required: true
@@ -388,9 +495,13 @@ components:
             type: object
             required: [name, source]
             properties:
-              name: { type: string, maxLength: 254 }
-              description: { type: string }
-              source: { type: string }
+              name:
+                type: string
+                maxLength: 254
+              description:
+                type: string
+              source:
+                type: string
 
     RunScriptReq:
       required: true
@@ -410,7 +521,9 @@ components:
               script_ids:
                 type: array
                 minItems: 1
-                items: { type: string, format: uuid }
+                items:
+                  type: string
+                  format: uuid
 
     RemoveRunsReq:
       required: true
@@ -423,7 +536,9 @@ components:
               run_ids:
                 type: array
                 minItems: 1
-                items: { type: string, format: uuid }
+                items:
+                  type: string
+                  format: uuid
 
 security:
   - bearerAuth: []
