@@ -474,7 +474,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 // parseRange parses a single-range Range header (RFC 9110). Headers it does
 // not support, such as multiple ranges, are ignored so the whole file is sent.
-func parseRange(header string) (*filestore.Range, error) {
+func parseRange(header string) (*filestore.ByteRange, error) {
 	spec, ok := strings.CutPrefix(header, "bytes=")
 	if !ok || strings.Contains(spec, ",") {
 		return nil, nil
@@ -493,7 +493,7 @@ func parseRange(header string) (*filestore.Range, error) {
 		case n <= 0:
 			return nil, filestore.ErrRangeNotSatisfiable
 		}
-		return &filestore.Range{Start: -n, End: -1}, nil
+		return &filestore.ByteRange{Start: -n, End: -1}, nil
 	}
 
 	start, err := strconv.ParseInt(first, 10, 64)
@@ -502,7 +502,7 @@ func parseRange(header string) (*filestore.Range, error) {
 	}
 
 	if last == "" {
-		return &filestore.Range{Start: start, End: -1}, nil
+		return &filestore.ByteRange{Start: start, End: -1}, nil
 	}
 
 	end, err := strconv.ParseInt(last, 10, 64)
@@ -510,7 +510,7 @@ func parseRange(header string) (*filestore.Range, error) {
 		return nil, nil
 	}
 
-	return &filestore.Range{Start: start, End: end}, nil
+	return &filestore.ByteRange{Start: start, End: end}, nil
 }
 
 // mapUploadErr converts an http.MaxBytesReader overflow into ErrLimitSize.

@@ -192,7 +192,7 @@ func TestViewGroupFileRange(t *testing.T) {
 
 	cases := []struct {
 		desc      string
-		byteRange *filestore.Range
+		byteRange *filestore.ByteRange
 		want      string
 		partial   bool
 		offset    int64
@@ -207,7 +207,7 @@ func TestViewGroupFileRange(t *testing.T) {
 		},
 		{
 			desc:      "view bounded range",
-			byteRange: &filestore.Range{Start: 6, End: 9},
+			byteRange: &filestore.ByteRange{Start: 6, End: 9},
 			want:      "main",
 			partial:   true,
 			offset:    6,
@@ -215,7 +215,7 @@ func TestViewGroupFileRange(t *testing.T) {
 		},
 		{
 			desc:      "view open-ended range",
-			byteRange: &filestore.Range{Start: 6, End: -1},
+			byteRange: &filestore.ByteRange{Start: 6, End: -1},
 			want:      "mainflux",
 			partial:   true,
 			offset:    6,
@@ -223,7 +223,7 @@ func TestViewGroupFileRange(t *testing.T) {
 		},
 		{
 			desc:      "view range with end past file size",
-			byteRange: &filestore.Range{Start: 10, End: 100},
+			byteRange: &filestore.ByteRange{Start: 10, End: 100},
 			want:      "flux",
 			partial:   true,
 			offset:    10,
@@ -231,7 +231,7 @@ func TestViewGroupFileRange(t *testing.T) {
 		},
 		{
 			desc:      "view suffix range",
-			byteRange: &filestore.Range{Start: -3, End: -1},
+			byteRange: &filestore.ByteRange{Start: -3, End: -1},
 			want:      "lux",
 			partial:   true,
 			offset:    11,
@@ -239,7 +239,7 @@ func TestViewGroupFileRange(t *testing.T) {
 		},
 		{
 			desc:      "view suffix range longer than file",
-			byteRange: &filestore.Range{Start: -100, End: -1},
+			byteRange: &filestore.ByteRange{Start: -100, End: -1},
 			want:      content,
 			partial:   true,
 			offset:    0,
@@ -247,7 +247,7 @@ func TestViewGroupFileRange(t *testing.T) {
 		},
 		{
 			desc:      "view range starting past file size",
-			byteRange: &filestore.Range{Start: 14, End: -1},
+			byteRange: &filestore.ByteRange{Start: 14, End: -1},
 			err:       filestore.ErrRangeNotSatisfiable,
 		},
 	}
@@ -282,7 +282,7 @@ func TestViewRangeNoChecksum(t *testing.T) {
 	// Same size as the original, so only the checksum can tell them apart.
 	require.Nil(t, os.WriteFile(filepath.Join(base, "groups", groupID, fi.Name), []byte("PAYLOAD"), 0o644))
 
-	file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, &filestore.Range{Start: 3, End: -1})
+	file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, &filestore.ByteRange{Start: 3, End: -1})
 	require.Nil(t, err)
 	defer file.Close()
 
@@ -301,7 +301,7 @@ func TestViewRangeNoSize(t *testing.T) {
 	require.Nil(t, os.MkdirAll(dir, 0o755))
 	require.Nil(t, os.WriteFile(filepath.Join(dir, fi.Name), []byte("payload"), 0o644))
 
-	file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, &filestore.Range{Start: 3, End: -1})
+	file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, &filestore.ByteRange{Start: 3, End: -1})
 	require.Nil(t, err)
 	defer file.Close()
 
@@ -317,7 +317,7 @@ func TestViewGroupFileByKeyRange(t *testing.T) {
 	fi := filestore.FileInfo{Name: "a.bin", Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
 
-	file, err := svc.ViewGroupFileByKey(context.Background(), thingKey, fi, &filestore.Range{Start: 3, End: -1})
+	file, err := svc.ViewGroupFileByKey(context.Background(), thingKey, fi, &filestore.ByteRange{Start: 3, End: -1})
 	require.Nil(t, err)
 	defer file.Close()
 
@@ -417,7 +417,7 @@ func TestViewFileRange(t *testing.T) {
 	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("hello"), thingKey, fi))
 
-	file, err := svc.ViewFile(context.Background(), thingKey, fi, &filestore.Range{Start: 1, End: 2})
+	file, err := svc.ViewFile(context.Background(), thingKey, fi, &filestore.ByteRange{Start: 1, End: 2})
 	require.Nil(t, err)
 	defer file.Close()
 
