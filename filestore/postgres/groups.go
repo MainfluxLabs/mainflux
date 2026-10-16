@@ -86,7 +86,7 @@ func (gr groupsRepository) Update(ctx context.Context, groupID string, fi filest
 }
 
 func (gr groupsRepository) UpdateChecksum(ctx context.Context, groupID string, fi filestore.FileInfo) error {
-	q := `UPDATE groups_files SET checksum = :checksum
+	q := `UPDATE groups_files SET checksum = :checksum, size = :size
           WHERE group_id = :group_id AND file_name = :file_name AND file_class = :file_class AND file_format = :file_format`
 
 	dbFile, err := toDBFileInfoGroups(groupID, fi)
@@ -112,7 +112,7 @@ func (gr groupsRepository) UpdateChecksum(ctx context.Context, groupID string, f
 }
 
 func (gr groupsRepository) Retrieve(ctx context.Context, groupID string, fi filestore.FileInfo) (filestore.FileInfo, error) {
-	q := `SELECT file_name, file_class, file_format, metadata, checksum FROM groups_files
+	q := `SELECT file_name, file_class, file_format, metadata, checksum, size FROM groups_files
 		WHERE group_id = $1 AND file_class = $2 AND file_format = $3 AND file_name = $4`
 
 	dbFile := dbFileInfo{}
@@ -157,7 +157,7 @@ func (gr groupsRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
 	}
-	q := fmt.Sprintf(`SELECT file_name, file_class, file_format, time, metadata FROM groups_files %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
+	q := fmt.Sprintf(`SELECT file_name, file_class, file_format, time, metadata, checksum, size FROM groups_files %s ORDER BY %s %s %s`, whereClause, oq, dq, olq)
 
 	params := map[string]any{
 		"group_id":    groupID,
@@ -274,6 +274,7 @@ func toDBFileInfoGroups(groupID string, fi filestore.FileInfo) (dbFileInfoGroups
 			Metadata:   meta,
 			Time:       fi.Time,
 			Checksum:   fi.Checksum,
+			Size:       fi.Size,
 		},
 		GroupID: groupID,
 	}, nil

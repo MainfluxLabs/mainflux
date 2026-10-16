@@ -51,13 +51,13 @@ func (ms *metricsMiddleware) UpdateFile(ctx context.Context, key string, fi file
 	return ms.svc.UpdateFile(ctx, key, fi)
 }
 
-func (ms *metricsMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo) (io.ReadCloser, error) {
+func (ms *metricsMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo, byteRange *filestore.ByteRange) (filestore.File, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_file").Add(1)
 		ms.latency.With("method", "view_file").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewFile(ctx, key, fi)
+	return ms.svc.ViewFile(ctx, key, fi, byteRange)
 }
 
 func (ms *metricsMiddleware) ListFiles(ctx context.Context, key string, fi filestore.FileInfo, pm filestore.PageMetadata) (files filestore.FileThingsPage, err error) {
@@ -105,13 +105,13 @@ func (ms *metricsMiddleware) UpdateGroupFile(ctx context.Context, token, groupID
 	return ms.svc.UpdateGroupFile(ctx, token, groupID, fi)
 }
 
-func (ms *metricsMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) (io.ReadCloser, error) {
+func (ms *metricsMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo, byteRange *filestore.ByteRange) (filestore.File, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_group_file").Add(1)
 		ms.latency.With("method", "view_group_file").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewGroupFile(ctx, token, groupID, fi)
+	return ms.svc.ViewGroupFile(ctx, token, groupID, fi, byteRange)
 }
 
 func (ms *metricsMiddleware) ListGroupFiles(ctx context.Context, token, groupID string, fi filestore.FileInfo, pm filestore.PageMetadata) (filestore.FileGroupsPage, error) {
@@ -141,11 +141,11 @@ func (ms *metricsMiddleware) RemoveAllFilesByGroup(ctx context.Context, groupID 
 	return ms.svc.RemoveAllFilesByGroup(ctx, groupID)
 }
 
-func (ms *metricsMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey string, fi filestore.FileInfo) (io.ReadCloser, error) {
+func (ms *metricsMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey string, fi filestore.FileInfo, byteRange *filestore.ByteRange) (filestore.File, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "view_group_file_by_key").Add(1)
 		ms.latency.With("method", "view_group_file_by_key").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.ViewGroupFileByKey(ctx, thingKey, fi)
+	return ms.svc.ViewGroupFileByKey(ctx, thingKey, fi, byteRange)
 }

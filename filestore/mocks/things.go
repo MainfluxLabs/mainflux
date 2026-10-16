@@ -55,6 +55,7 @@ func (r *ThingsRepository) UpdateChecksum(_ context.Context, thingID string, fi 
 		return dbutil.ErrNotFound
 	}
 	got.Checksum = fi.Checksum
+	got.Size = fi.Size
 	r.byKey[k] = got
 	return nil
 }

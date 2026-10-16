@@ -23,24 +23,25 @@ func NewLocal(base string) FileStore {
 	return &local{base: base}
 }
 
-func (l *local) Put(_ context.Context, key string, r io.Reader) (string, error) {
+func (l *local) Put(_ context.Context, key string, r io.Reader) (string, int64, error) {
 	path := filepath.Join(l.base, key)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	f, err := os.Create(path)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer f.Close()
 
 	h := sha256.New()
-	if _, err := io.Copy(f, io.TeeReader(r, h)); err != nil {
-		return "", err
+	size, err := io.Copy(f, io.TeeReader(r, h))
+	if err != nil {
+		return "", 0, err
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return hex.EncodeToString(h.Sum(nil)), size, nil
 }
 
 func (l *local) Get(_ context.Context, key, expectedChecksum string) (io.ReadCloser, error) {
@@ -57,6 +58,23 @@ func (l *local) Get(_ context.Context, key, expectedChecksum string) (io.ReadClo
 	}
 
 	return &verifyReader{rc: f, h: sha256.New(), expected: expectedChecksum}, nil
+}
+
+func (l *local) GetRange(_ context.Context, key string, offset, length int64) (io.ReadCloser, error) {
+	f, err := os.Open(filepath.Join(l.base, key))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	if _, err := f.Seek(offset, io.SeekStart); err != nil {
+		f.Close()
+		return nil, err
+	}
+
+	return limitedReadCloser{Reader: io.LimitReader(f, length), Closer: f}, nil
 }
 
 func (l *local) Delete(_ context.Context, key string) error {
