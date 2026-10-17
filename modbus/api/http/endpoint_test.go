@@ -24,7 +24,6 @@ import (
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -119,6 +118,24 @@ type clientRes struct {
 	Scheduler    cron.Scheduler `json:"scheduler"`
 }
 
+type fieldReq struct {
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	ByteOrder string `json:"byte_order,omitempty"`
+	Address   uint16 `json:"address"`
+	Length    uint16 `json:"length,omitempty"`
+	Value     any    `json:"value,omitempty"`
+}
+
+type clientReq struct {
+	Name         string         `json:"name"`
+	IPAddress    string         `json:"ip_address"`
+	Port         string         `json:"port"`
+	FunctionCode string         `json:"function_code"`
+	Scheduler    cron.Scheduler `json:"scheduler"`
+	DataFields   []fieldReq     `json:"data_fields"`
+}
+
 type clientsPageRes struct {
 	Clients []clientRes `json:"clients"`
 	Total   uint64      `json:"total"`
@@ -132,7 +149,6 @@ func toJSON(data any) string {
 }
 
 func newService() modbus.Service {
-	authSvc := pkgmocks.NewAuthService("", []users.User{{ID: "user-1", Email: token}}, nil)
 	thingsSvc := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -146,7 +162,7 @@ func newService() modbus.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return modbus.New(authSvc, thingsSvc, pub, repo, idp, log)
+	return modbus.New(thingsSvc, pub, repo, idp, log)
 }
 
 func newHTTPServer(svc modbus.Service) *httptest.Server {
@@ -165,6 +181,35 @@ func TestCreateClients(t *testing.T) {
 	withField := func(field string) string {
 		return fmt.Sprintf(`[{%s,%s,"data_fields":[%s]}]`, baseClientJSON, validScheduler, field)
 	}
+
+	writeCoilsClient := clientReq{
+		Name:         "write-coils-client",
+		IPAddress:    testIP,
+		Port:         testPort,
+		FunctionCode: modbus.WriteCoilsFunc,
+		Scheduler:    testClient.Scheduler,
+		DataFields:   []fieldReq{{Name: "pump", Type: modbus.BoolType, Value: true}},
+	}
+
+	writeRegistersClient := writeCoilsClient
+	writeRegistersClient.Name = "write-registers-client"
+	writeRegistersClient.FunctionCode = modbus.WriteHoldingRegistersFunc
+	writeRegistersClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type, ByteOrder: modbus.ByteOrderABCD, Value: 21.5}}
+
+	missingValueClient := writeRegistersClient
+	missingValueClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type}}
+
+	outOfRangeValueClient := writeRegistersClient
+	outOfRangeValueClient.DataFields = []fieldReq{{Name: "mode", Type: modbus.Int16Type, Value: 100000}}
+
+	invalidValueClient := writeRegistersClient
+	invalidValueClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type, Value: true}}
+
+	nonBoolCoilClient := writeCoilsClient
+	nonBoolCoilClient.DataFields = []fieldReq{{Name: "pump", Type: modbus.Uint16Type, Value: 1}}
+
+	stringWriteClient := writeRegistersClient
+	stringWriteClient.DataFields = []fieldReq{{Name: "label", Type: modbus.StringType, Length: 2, Value: "ab"}}
 
 	cases := []struct {
 		desc        string
@@ -289,6 +334,62 @@ func TestCreateClients(t *testing.T) {
 		{
 			desc:        "create clients with string field missing length",
 			body:        withField(`{"name":"label","type":"string","byte_order":"ABCD","address":0,"length":0}`),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write coils client with valid request",
+			body:        toJSON([]clientReq{writeCoilsClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "create write holding registers client with valid request",
+			body:        toJSON([]clientReq{writeRegistersClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "create write client with missing value",
+			body:        toJSON([]clientReq{missingValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with value not matching type",
+			body:        toJSON([]clientReq{invalidValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with value out of range",
+			body:        toJSON([]clientReq{outOfRangeValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write coils client with non-bool type",
+			body:        toJSON([]clientReq{nonBoolCoilClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with string type",
+			body:        toJSON([]clientReq{stringWriteClient}),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -561,7 +662,7 @@ func TestReadRegister(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validBody := fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, testIP, testPort, testFuncCode)
+	validBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, thingID, testIP, testPort, testFuncCode)
 
 	cases := []struct {
 		desc        string
@@ -570,6 +671,13 @@ func TestReadRegister(t *testing.T) {
 		contentType string
 		status      int
 	}{
+		{
+			desc:        "read register missing thing ID",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, testIP, testPort, testFuncCode),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
 		{
 			desc:        "read register without content type",
 			token:       token,
@@ -587,35 +695,35 @@ func TestReadRegister(t *testing.T) {
 		{
 			desc:        "read register missing IP address",
 			token:       token,
-			body:        fmt.Sprintf(`{"port":"%s","function_code":"%s","address":100,"type":"uint16"}`, testPort, testFuncCode),
+			body:        fmt.Sprintf(`{"thing_id":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, thingID, testPort, testFuncCode),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "read register with invalid function code",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"unknown","address":100,"type":"uint16"}`, testIP, testPort),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"unknown","address":100,"type":"uint16"}`, thingID, testIP, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "read register missing address",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","type":"uint16"}`, testIP, testPort, testFuncCode),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","type":"uint16"}`, thingID, testIP, testPort, testFuncCode),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "read register with invalid type",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"unknown"}`, testIP, testPort, testFuncCode),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"unknown"}`, thingID, testIP, testPort, testFuncCode),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "read register with string type missing length",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"string"}`, testIP, testPort, testFuncCode),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"string"}`, thingID, testIP, testPort, testFuncCode),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
@@ -655,7 +763,7 @@ func TestWriteRegister(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validBody := fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"uint16","value":42}`, testIP, testPort)
+	validBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"uint16","value":42}`, thingID, testIP, testPort)
 
 	cases := []struct {
 		desc        string
@@ -664,6 +772,13 @@ func TestWriteRegister(t *testing.T) {
 		contentType string
 		status      int
 	}{
+		{
+			desc:        "write register missing thing ID",
+			token:       token,
+			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"uint16","value":42}`, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
 		{
 			desc:        "write register without content type",
 			token:       token,
@@ -681,35 +796,35 @@ func TestWriteRegister(t *testing.T) {
 		{
 			desc:        "write register missing IP address",
 			token:       token,
-			body:        fmt.Sprintf(`{"port":"%s","address":100,"type":"uint16","value":42}`, testPort),
+			body:        fmt.Sprintf(`{"thing_id":"%s","port":"%s","address":100,"type":"uint16","value":42}`, thingID, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "write register missing address",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","type":"uint16","value":42}`, testIP, testPort),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","type":"uint16","value":42}`, thingID, testIP, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "write register missing value",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"uint16"}`, testIP, testPort),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"uint16"}`, thingID, testIP, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "write register with invalid type",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"unknown","value":42}`, testIP, testPort),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"unknown","value":42}`, thingID, testIP, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "write register with invalid byte order",
 			token:       token,
-			body:        fmt.Sprintf(`{"ip_address":"%s","port":"%s","address":100,"type":"int32","byte_order":"ZZZZ","value":42}`, testIP, testPort),
+			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"int32","byte_order":"ZZZZ","value":42}`, thingID, testIP, testPort),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},

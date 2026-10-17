@@ -14,6 +14,9 @@ const (
 	ReadHoldingRegistersFunc = "ReadHoldingRegisters" // 0x03
 	ReadInputRegistersFunc   = "ReadInputRegisters"   // 0x04
 
+	WriteCoilsFunc            = "WriteCoils"            // 0x05, 0x0F
+	WriteHoldingRegistersFunc = "WriteHoldingRegisters" // 0x06, 0x10
+
 	ByteOrderABCD = "ABCD" // Big-endian (standard network order)
 	ByteOrderDCBA = "DCBA" // Little-endian (x86, ARM in little-endian mode)
 	ByteOrderCDAB = "CDAB" // Middle-endian (PDP-style)
@@ -42,12 +45,16 @@ type DataField struct {
 	ByteOrder string  `json:"byte_order"`
 	Address   uint16  `json:"address"`
 	Length    uint16  `json:"length"`
+	Value     any     `json:"value,omitempty"`
 }
 
-// ReadRequest describes an ad hoc Modbus read against a device with no persisted
+// ReadRequest describes an immediate Modbus read made on behalf of a thing, with no persisted
 // client. Type, ByteOrder, Scale and Length apply to register function codes only.
-// Authorized by user token alone.
+// The value read is published as a message of the thing under Name, or under the address when Name is empty.
 type ReadRequest struct {
+	ThingID      string
+	Name         string
+	Unit         string
 	IPAddress    string
 	Port         string
 	SlaveID      uint8
@@ -59,10 +66,13 @@ type ReadRequest struct {
 	Length       uint16
 }
 
-// WriteRequest describes an ad hoc Modbus write against a device with no persisted
+// WriteRequest describes an immediate Modbus write made on behalf of a thing, with no persisted
 // client. The write function code is derived from Type, not from any FunctionCode.
-// Authorized by user token alone.
+// The value read back after the write is published as a message of the thing under Name, or under the address when Name is empty.
 type WriteRequest struct {
+	ThingID   string
+	Name      string
+	Unit      string
 	IPAddress string
 	Port      string
 	SlaveID   uint8
