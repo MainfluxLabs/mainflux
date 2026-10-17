@@ -14,6 +14,9 @@ const (
 	ReadHoldingRegistersFunc = "ReadHoldingRegisters" // 0x03
 	ReadInputRegistersFunc   = "ReadInputRegisters"   // 0x04
 
+	WriteCoilsFunc            = "WriteCoils"            // 0x05, 0x0F
+	WriteHoldingRegistersFunc = "WriteHoldingRegisters" // 0x06, 0x10
+
 	ByteOrderABCD = "ABCD" // Big-endian (standard network order)
 	ByteOrderDCBA = "DCBA" // Little-endian (x86, ARM in little-endian mode)
 	ByteOrderCDAB = "CDAB" // Middle-endian (PDP-style)
@@ -42,6 +45,7 @@ type DataField struct {
 	ByteOrder string  `json:"byte_order"`
 	Address   uint16  `json:"address"`
 	Length    uint16  `json:"length"`
+	Value     any     `json:"value,omitempty"`
 }
 
 // ReadRequest describes an ad hoc Modbus read against a device with no persisted

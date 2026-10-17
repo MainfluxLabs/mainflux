@@ -30,6 +30,8 @@ var (
 	ErrInvalidFieldLength  = errors.New("invalid field length")
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
 	ErrMissingValue        = errors.New("missing value")
+	ErrInvalidValue        = errors.New("invalid value")
+	ErrValueOutOfRange     = errors.New("value out of range for type")
 )
 
 // validatePageMetadata validates the modbus page metadata.
@@ -54,6 +56,7 @@ type field struct {
 	ByteOrder string  `json:"byte_order"`
 	Address   *uint16 `json:"address"`
 	Length    uint16  `json:"length,omitempty"`
+	Value     any     `json:"value,omitempty"`
 }
 
 type client struct {
@@ -112,11 +115,67 @@ func (req client) validate() error {
 		return ErrInvalidScheduler
 	}
 
-	if err := validateFunctionCode(req.FunctionCode); err != nil {
-		return err
+	switch req.FunctionCode {
+	case modbus.WriteCoilsFunc,
+		modbus.WriteHoldingRegistersFunc:
+		if err := validateDataFields(req.DataFields); err != nil {
+			return err
+		}
+
+		return validateWriteFields(req.FunctionCode, req.DataFields)
+	default:
+		if err := validateFunctionCode(req.FunctionCode); err != nil {
+			return err
+		}
+
+		return validateDataFields(req.DataFields)
+	}
+}
+
+// validateWriteFields checks the constraints specific to the data fields of a write client.
+func validateWriteFields(funcCode string, fields []field) error {
+	for _, f := range fields {
+		if funcCode == modbus.WriteCoilsFunc && f.Type != modbus.BoolType {
+			return ErrInvalidFieldType
+		}
+
+		if err := validateWriteType(f.Type); err != nil {
+			return err
+		}
+
+		if err := validateWriteValue(f); err != nil {
+			return err
+		}
 	}
 
-	return validateDataFields(req.DataFields)
+	return nil
+}
+
+// validateWriteValue checks that the value is a bool for the bool type, and a number within the type range for numeric types.
+func validateWriteValue(f field) error {
+	if f.Value == nil {
+		return ErrMissingValue
+	}
+
+	switch f.Type {
+	case modbus.BoolType:
+		if _, ok := f.Value.(bool); !ok {
+			return ErrInvalidValue
+		}
+
+		return nil
+	default:
+		v, ok := f.Value.(float64)
+		if !ok {
+			return ErrInvalidValue
+		}
+
+		if err := modbus.ValidateWriteValue(v, f.Type, f.Scale); err != nil {
+			return ErrValueOutOfRange
+		}
+
+		return nil
+	}
 }
 
 // validateFunctionCode checks that code is one of the supported read function codes.

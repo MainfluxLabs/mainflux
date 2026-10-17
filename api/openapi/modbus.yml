@@ -307,6 +307,12 @@ components:
           type: integer
           description: Register count (auto-calculated from type; set manually only for string fields). Maximum is 125.
           example: 2
+        value:
+          description: Value written on each scheduled run of a write client. Boolean for type "bool", numeric otherwise. Required for the WriteCoils and WriteHoldingRegisters function codes.
+          oneOf:
+            - type: number
+            - type: boolean
+          example: 21.5
       required: [name, type, byte_order, address]
 
     ClientReqSchema:
@@ -328,7 +334,7 @@ components:
           example: 1
         function_code:
           type: string
-          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters, WriteCoils, WriteHoldingRegisters]
           example: "ReadHoldingRegisters"
         scheduler:
           $ref: "#/components/schemas/Scheduler"
@@ -373,7 +379,7 @@ components:
           example: 1
         function_code:
           type: string
-          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters, WriteCoils, WriteHoldingRegisters]
           example: "ReadHoldingRegisters"
         scheduler:
           $ref: "#/components/schemas/Scheduler"
@@ -498,7 +504,7 @@ components:
                 format: binary
                 description: >-
                   CSV file whose rows become the client's data fields, one row per field.
-                  Requires a header row naming the columns (name, type, unit, scale, byte_order, address, length), in any order;
+                  Requires a header row naming the columns (name, type, unit, scale, byte_order, address, length, value), in any order;
                   header names are matched case-insensitively and unknown columns are ignored.
                   The "type" and "byte_order" cell values are also matched case-insensitively.
             required:

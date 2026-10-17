@@ -119,6 +119,24 @@ type clientRes struct {
 	Scheduler    cron.Scheduler `json:"scheduler"`
 }
 
+type fieldReq struct {
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	ByteOrder string `json:"byte_order,omitempty"`
+	Address   uint16 `json:"address"`
+	Length    uint16 `json:"length,omitempty"`
+	Value     any    `json:"value,omitempty"`
+}
+
+type clientReq struct {
+	Name         string         `json:"name"`
+	IPAddress    string         `json:"ip_address"`
+	Port         string         `json:"port"`
+	FunctionCode string         `json:"function_code"`
+	Scheduler    cron.Scheduler `json:"scheduler"`
+	DataFields   []fieldReq     `json:"data_fields"`
+}
+
 type clientsPageRes struct {
 	Clients []clientRes `json:"clients"`
 	Total   uint64      `json:"total"`
@@ -165,6 +183,35 @@ func TestCreateClients(t *testing.T) {
 	withField := func(field string) string {
 		return fmt.Sprintf(`[{%s,%s,"data_fields":[%s]}]`, baseClientJSON, validScheduler, field)
 	}
+
+	writeCoilsClient := clientReq{
+		Name:         "write-coils-client",
+		IPAddress:    testIP,
+		Port:         testPort,
+		FunctionCode: modbus.WriteCoilsFunc,
+		Scheduler:    testClient.Scheduler,
+		DataFields:   []fieldReq{{Name: "pump", Type: modbus.BoolType, Value: true}},
+	}
+
+	writeRegistersClient := writeCoilsClient
+	writeRegistersClient.Name = "write-registers-client"
+	writeRegistersClient.FunctionCode = modbus.WriteHoldingRegistersFunc
+	writeRegistersClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type, ByteOrder: modbus.ByteOrderABCD, Value: 21.5}}
+
+	missingValueClient := writeRegistersClient
+	missingValueClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type}}
+
+	outOfRangeValueClient := writeRegistersClient
+	outOfRangeValueClient.DataFields = []fieldReq{{Name: "mode", Type: modbus.Int16Type, Value: 100000}}
+
+	invalidValueClient := writeRegistersClient
+	invalidValueClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type, Value: true}}
+
+	nonBoolCoilClient := writeCoilsClient
+	nonBoolCoilClient.DataFields = []fieldReq{{Name: "pump", Type: modbus.Uint16Type, Value: 1}}
+
+	stringWriteClient := writeRegistersClient
+	stringWriteClient.DataFields = []fieldReq{{Name: "label", Type: modbus.StringType, Length: 2, Value: "ab"}}
 
 	cases := []struct {
 		desc        string
@@ -289,6 +336,62 @@ func TestCreateClients(t *testing.T) {
 		{
 			desc:        "create clients with string field missing length",
 			body:        withField(`{"name":"label","type":"string","byte_order":"ABCD","address":0,"length":0}`),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write coils client with valid request",
+			body:        toJSON([]clientReq{writeCoilsClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "create write holding registers client with valid request",
+			body:        toJSON([]clientReq{writeRegistersClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusCreated,
+		},
+		{
+			desc:        "create write client with missing value",
+			body:        toJSON([]clientReq{missingValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with value not matching type",
+			body:        toJSON([]clientReq{invalidValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with value out of range",
+			body:        toJSON([]clientReq{outOfRangeValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write coils client with non-bool type",
+			body:        toJSON([]clientReq{nonBoolCoilClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with string type",
+			body:        toJSON([]clientReq{stringWriteClient}),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
