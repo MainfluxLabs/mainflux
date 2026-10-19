@@ -321,7 +321,7 @@ components:
         source:
           type: string
           description: Python source. Returned only when viewing a single script.
-        sha256:
+        checksum:
           type: string
           description: Checksum of the current source.
         created_at:
@@ -382,11 +382,11 @@ components:
         script_id:
           type: string
           format: uuid
-        script_sha256:
+        script_checksum:
           type: string
           description: |
             Checksum of the source that actually ran. Differs from the script's
-            current sha256 when the script has been edited since.
+            current checksum when the script has been edited since.
         status:
           type: string
           enum: [success, fail]
