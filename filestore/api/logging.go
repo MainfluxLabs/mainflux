@@ -55,7 +55,7 @@ func (lm *loggingMiddleware) UpdateFile(ctx context.Context, key string, fi file
 	return lm.svc.UpdateFile(ctx, key, fi)
 }
 
-func (lm *loggingMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo) (rc io.ReadCloser, err error) {
+func (lm *loggingMiddleware) ViewFile(ctx context.Context, key string, fi filestore.FileInfo, byteRange *filestore.ByteRange) (f filestore.File, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_file took %s to complete", time.Since(begin))
 		if err != nil {
@@ -65,7 +65,7 @@ func (lm *loggingMiddleware) ViewFile(ctx context.Context, key string, fi filest
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewFile(ctx, key, fi)
+	return lm.svc.ViewFile(ctx, key, fi, byteRange)
 }
 
 func (lm *loggingMiddleware) ListFiles(ctx context.Context, key string, fi filestore.FileInfo, pm filestore.PageMetadata) (files filestore.FileThingsPage, err error) {
@@ -135,7 +135,7 @@ func (lm *loggingMiddleware) UpdateGroupFile(ctx context.Context, token, groupID
 	return lm.svc.UpdateGroupFile(ctx, token, groupID, fi)
 }
 
-func (lm *loggingMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo) (rc io.ReadCloser, err error) {
+func (lm *loggingMiddleware) ViewGroupFile(ctx context.Context, token, groupID string, fi filestore.FileInfo, byteRange *filestore.ByteRange) (f filestore.File, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method view_group_file by user %s, file name %s took %s to complete", email, fi.Name, time.Since(begin))
@@ -146,7 +146,7 @@ func (lm *loggingMiddleware) ViewGroupFile(ctx context.Context, token, groupID s
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewGroupFile(ctx, token, groupID, fi)
+	return lm.svc.ViewGroupFile(ctx, token, groupID, fi, byteRange)
 }
 
 func (lm *loggingMiddleware) ListGroupFiles(ctx context.Context, token, groupID string, fi filestore.FileInfo, pm filestore.PageMetadata) (files filestore.FileGroupsPage, err error) {
@@ -190,7 +190,7 @@ func (lm *loggingMiddleware) RemoveAllFilesByGroup(ctx context.Context, groupID 
 	return lm.svc.RemoveAllFilesByGroup(ctx, groupID)
 }
 
-func (lm *loggingMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey string, fi filestore.FileInfo) (rc io.ReadCloser, err error) {
+func (lm *loggingMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey string, fi filestore.FileInfo, byteRange *filestore.ByteRange) (f filestore.File, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method view_group_file_by_key for file name %s took %s to complete", fi.Name, time.Since(begin))
 		if err != nil {
@@ -200,5 +200,5 @@ func (lm *loggingMiddleware) ViewGroupFileByKey(ctx context.Context, thingKey st
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ViewGroupFileByKey(ctx, thingKey, fi)
+	return lm.svc.ViewGroupFileByKey(ctx, thingKey, fi, byteRange)
 }

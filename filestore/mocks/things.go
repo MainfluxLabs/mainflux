@@ -46,7 +46,7 @@ func (r *ThingsRepository) Save(_ context.Context, thingID, groupID string, fi f
 	return nil
 }
 
-func (r *ThingsRepository) UpdateChecksum(_ context.Context, thingID string, fi filestore.FileInfo) error {
+func (r *ThingsRepository) UpdateObject(_ context.Context, thingID string, fi filestore.FileInfo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	k := thingKey(thingID, fi)
@@ -55,6 +55,7 @@ func (r *ThingsRepository) UpdateChecksum(_ context.Context, thingID string, fi 
 		return dbutil.ErrNotFound
 	}
 	got.Checksum = fi.Checksum
+	got.Size = fi.Size
 	r.byKey[k] = got
 	return nil
 }

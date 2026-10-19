@@ -83,38 +83,46 @@ func (s *seaweedFS) objectURL(key string) string {
 	return u.String()
 }
 
-func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, error) {
+func (s *seaweedFS) Put(ctx context.Context, key string, r io.Reader) (string, int64, error) {
 	h := sha256.New()
 	pr, pw := io.Pipe()
+	var size int64
+	done := make(chan struct{})
 
 	defer pr.Close()
 	go func() {
-		_, err := io.Copy(pw, io.TeeReader(r, h))
+		defer close(done)
+		n, err := io.Copy(pw, io.TeeReader(r, h))
+		size = n
 		pw.CloseWithError(err)
 	}()
 
 	u, err := url.Parse(s.objectURL(key))
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	u.RawQuery = url.Values{"maxMB": {strconv.Itoa(s.chunkMB)}}.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), pr)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return "", errors.Wrap(ErrBackend, fmt.Errorf("put status %d", resp.StatusCode))
+		return "", 0, errors.Wrap(ErrBackend, fmt.Errorf("put status %d", resp.StatusCode))
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	// Wait for the copier so the hash and size are read only after it is done.
+	pr.Close()
+	<-done
+
+	return hex.EncodeToString(h.Sum(nil)), size, nil
 }
 
 func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.ReadCloser, error) {
@@ -141,6 +149,37 @@ func (s *seaweedFS) Get(ctx context.Context, key, expectedChecksum string) (io.R
 	}
 
 	return &verifyReader{rc: resp.Body, h: sha256.New(), expected: expectedChecksum}, nil
+}
+
+func (s *seaweedFS) GetRange(ctx context.Context, key string, offset, length int64) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.objectURL(key), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", offset, offset+length-1))
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusPartialContent:
+	case http.StatusOK:
+		// The filer ignored the range and sent the whole object.
+		if _, err := io.CopyN(io.Discard, resp.Body, offset); err != nil {
+			resp.Body.Close()
+			return nil, err
+		}
+	case http.StatusNotFound:
+		resp.Body.Close()
+		return nil, ErrNotFound
+	default:
+		resp.Body.Close()
+		return nil, errors.Wrap(ErrBackend, fmt.Errorf("get range status %d", resp.StatusCode))
+	}
+
+	return limitedReadCloser{Reader: io.LimitReader(resp.Body, length), Closer: resp.Body}, nil
 }
 
 func (s *seaweedFS) Delete(ctx context.Context, key string) error {

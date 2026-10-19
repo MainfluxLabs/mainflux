@@ -74,9 +74,10 @@ func TestLocalPut(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		checksum, err := s.Put(context.Background(), tc.key, bytes.NewReader(tc.content))
+		checksum, size, err := s.Put(context.Background(), tc.key, bytes.NewReader(tc.content))
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		assert.Equal(t, sum(tc.content), checksum, fmt.Sprintf("%s: checksum mismatch", tc.desc))
+		assert.Equal(t, int64(len(tc.content)), size, fmt.Sprintf("%s: size mismatch", tc.desc))
 
 		data, readErr := os.ReadFile(filepath.Join(base, tc.key))
 		require.Nil(t, readErr, fmt.Sprintf("%s: read back failed: %s", tc.desc, readErr))
@@ -87,7 +88,7 @@ func TestLocalPut(t *testing.T) {
 func TestLocalGet(t *testing.T) {
 	s, _ := newLocal(t)
 	content := []byte(testContent)
-	expected, err := s.Put(context.Background(), testKey, bytes.NewReader(content))
+	expected, _, err := s.Put(context.Background(), testKey, bytes.NewReader(content))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	cases := []struct {
@@ -136,7 +137,7 @@ func TestLocalGet(t *testing.T) {
 
 func TestLocalGetChecksumMismatch(t *testing.T) {
 	s, _ := newLocal(t)
-	_, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	rc, err := s.Get(context.Background(), testKey, wrongSum)
@@ -147,9 +148,69 @@ func TestLocalGetChecksumMismatch(t *testing.T) {
 	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), fmt.Sprintf("expected ErrChecksumMismatch got %s", err))
 }
 
+func TestLocalGetRange(t *testing.T) {
+	s, _ := newLocal(t)
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
+
+	cases := []struct {
+		desc   string
+		key    string
+		offset int64
+		length int64
+		want   string
+		err    error
+	}{
+		{
+			desc:   "get range from start",
+			key:    testKey,
+			offset: 0,
+			length: 5,
+			want:   "hello",
+			err:    nil,
+		},
+		{
+			desc:   "get range in the middle",
+			key:    testKey,
+			offset: 6,
+			length: 4,
+			want:   "main",
+			err:    nil,
+		},
+		{
+			desc:   "get range to the end",
+			key:    testKey,
+			offset: 6,
+			length: 8,
+			want:   "mainflux",
+			err:    nil,
+		},
+		{
+			desc:   "get range of missing key",
+			key:    "groups/missing/x.txt",
+			offset: 0,
+			length: 1,
+			err:    store.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		rc, err := s.GetRange(context.Background(), tc.key, tc.offset, tc.length)
+		if tc.err != nil {
+			assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+			continue
+		}
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		data, readErr := io.ReadAll(rc)
+		require.Nil(t, readErr, fmt.Sprintf("%s: read failed: %s", tc.desc, readErr))
+		rc.Close()
+		assert.Equal(t, tc.want, string(data), fmt.Sprintf("%s: content mismatch", tc.desc))
+	}
+}
+
 func TestLocalDelete(t *testing.T) {
 	s, base := newLocal(t)
-	_, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
+	_, _, err := s.Put(context.Background(), testKey, bytes.NewReader([]byte(testContent)))
 	require.Nil(t, err, fmt.Sprintf("put failed: %s", err))
 
 	cases := []struct {
@@ -185,7 +246,7 @@ func TestLocalDeletePrefix(t *testing.T) {
 		"groups/g1/sub/b.txt",
 		"groups/g2/c.txt",
 	} {
-		_, err := s.Put(context.Background(), k, strings.NewReader("x"))
+		_, _, err := s.Put(context.Background(), k, strings.NewReader("x"))
 		require.Nil(t, err, fmt.Sprintf("put %s failed: %s", k, err))
 	}
 

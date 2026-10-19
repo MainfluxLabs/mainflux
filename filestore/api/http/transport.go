@@ -34,57 +34,57 @@ import (
 )
 
 const (
-	contentType            = "application/json"
-	octetStreamContentType = "application/octet-stream"
-	maxMemory              = 32 << 20
-	metadataKey            = "metadata"
-	fileKey                = "file"
-	nameKey                = "name"
-	imagesClass            = "images"
-	documentsClass         = "documents"
-	bimClass               = "BIM"
-	pointcloudsClass       = "pointclouds"
-	binariesClass          = "binaries"
-	jpgFormat              = "jpg"  // JPG image
-	jpegFormat             = "jpeg" // JPEG image
-	svgFormat              = "svg"  // Scalable Vector Graphics
-	pngFormat              = "png"  // Portable Network Graphics
-	pdfFormat              = "pdf"  // Portable Document Format
-	csvFormat              = "csv"  // Comma-separated values
-	txtFormat              = "txt"  // Text
-	docFormat              = "doc"  // Microsoft Word
-	docxFormat             = "docx" // Microsoft Word
-	xlsFormat              = "xls"  // Microsoft Excel
-	xlsxFormat             = "xlsx" // Microsoft Excel
-	pptFormat              = "ppt"  // Microsoft PowerPoint
-	pptxFormat             = "pptx" // Microsoft PowerPoint
-	odtFormat              = "odt"  // OpenDocument Text
-	odfFormat              = "odf"  // OpenDocument Formula
-	odpFormat              = "odp"  // OpenDocument Presentation
-	odsFormat              = "ods"  // OpenDocument Spreadsheet
-	xpsFormat              = "xps"  // XML Paper Specification
-	ifcFormat              = "ifc"  // Building Information Modeling
-	e57Format              = "e57"  // Point Clouds
-	binFormat              = "bin"  // Point Clouds
-	limitKey               = "limit"
-	formatKey              = "format"
-	offsetKey              = "offset"
-	classKey               = "class"
-	orderKey               = "order"
-	timeKey                = "time"
-	directionKey           = "dir"
-	idKey                  = "id"
-	defDirection           = "desc"
-	defOrder               = "time"
-	defOffset              = 0
-	defLimit               = 10
-	maxFileNameLen         = 255
-	textPrefix             = "text/"
-	imagePrefix            = "image/"
-	applicationPrefix      = "application/"
-	applicationPDFPrefix   = "application/pdf"
-	MaxUploadSizeMB        = 1024
-	maxUploadBytes         = MaxUploadSizeMB << 20
+	maxMemory            = 32 << 20
+	metadataKey          = "metadata"
+	fileKey              = "file"
+	nameKey              = "name"
+	imagesClass          = "images"
+	documentsClass       = "documents"
+	bimClass             = "BIM"
+	pointcloudsClass     = "pointclouds"
+	binariesClass        = "binaries"
+	jpgFormat            = "jpg"  // JPG image
+	jpegFormat           = "jpeg" // JPEG image
+	svgFormat            = "svg"  // Scalable Vector Graphics
+	pngFormat            = "png"  // Portable Network Graphics
+	pdfFormat            = "pdf"  // Portable Document Format
+	csvFormat            = "csv"  // Comma-separated values
+	txtFormat            = "txt"  // Text
+	docFormat            = "doc"  // Microsoft Word
+	docxFormat           = "docx" // Microsoft Word
+	xlsFormat            = "xls"  // Microsoft Excel
+	xlsxFormat           = "xlsx" // Microsoft Excel
+	pptFormat            = "ppt"  // Microsoft PowerPoint
+	pptxFormat           = "pptx" // Microsoft PowerPoint
+	odtFormat            = "odt"  // OpenDocument Text
+	odfFormat            = "odf"  // OpenDocument Formula
+	odpFormat            = "odp"  // OpenDocument Presentation
+	odsFormat            = "ods"  // OpenDocument Spreadsheet
+	xpsFormat            = "xps"  // XML Paper Specification
+	ifcFormat            = "ifc"  // Building Information Modeling
+	e57Format            = "e57"  // Point Clouds
+	binFormat            = "bin"  // Binary
+	limitKey             = "limit"
+	formatKey            = "format"
+	offsetKey            = "offset"
+	classKey             = "class"
+	orderKey             = "order"
+	timeKey              = "time"
+	directionKey         = "dir"
+	idKey                = "id"
+	defDirection         = "desc"
+	defOrder             = "time"
+	defOffset            = 0
+	defLimit             = 10
+	maxFileNameLen       = 255
+	textPrefix           = "text/"
+	imagePrefix          = "image/"
+	applicationPrefix    = "application/"
+	applicationPDFPrefix = "application/pdf"
+	rangeHeader          = "Range"
+	contentTypeHeader    = "Content-Type"
+	MaxUploadSizeMB      = 1024
+	maxUploadBytes       = MaxUploadSizeMB << 20
 )
 
 func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {
@@ -186,7 +186,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 }
 
 func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
+	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -210,7 +210,7 @@ func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeUpdateFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -264,8 +264,14 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	byteRange, err := parseByteRange(r.Header.Get(rangeHeader))
+	if err != nil {
+		return nil, err
+	}
+
 	req := fileReq{
-		key: apiutil.ExtractThingKey(r),
+		key:       apiutil.ExtractThingKey(r),
+		byteRange: byteRange,
 		info: info{
 			name:   name,
 			format: format,
@@ -277,7 +283,7 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeMultipart) {
+	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -302,7 +308,7 @@ func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeUpdateGroupFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), contentType) {
+	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
@@ -358,9 +364,15 @@ func decodeGroupFile(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	byteRange, err := parseByteRange(r.Header.Get(rangeHeader))
+	if err != nil {
+		return nil, err
+	}
+
 	req := groupFileReq{
-		token:   apiutil.ExtractBearerToken(r),
-		groupID: bone.GetValue(r, idKey),
+		token:     apiutil.ExtractBearerToken(r),
+		groupID:   bone.GetValue(r, idKey),
+		byteRange: byteRange,
 		info: info{
 			name:   name,
 			format: format,
@@ -379,8 +391,14 @@ func decodeGroupFileByKey(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	byteRange, err := parseByteRange(r.Header.Get(rangeHeader))
+	if err != nil {
+		return nil, err
+	}
+
 	req := groupFileByKeyReq{
-		key: apiutil.ExtractThingKey(r),
+		key:       apiutil.ExtractThingKey(r),
+		byteRange: byteRange,
 		info: info{
 			name:   name,
 			format: format,
@@ -392,7 +410,7 @@ func decodeGroupFileByKey(_ context.Context, r *http.Request) (any, error) {
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set(contentTypeHeader, apiutil.ContentTypeJSON)
 
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -411,7 +429,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 
 func encodeViewFileResponse(logger logger.Logger) kithttp.EncodeResponseFunc {
 	return func(_ context.Context, w http.ResponseWriter, response any) error {
-		w.Header().Set("Content-Type", octetStreamContentType)
+		w.Header().Set(contentTypeHeader, apiutil.ContentTypeOctetStream)
 
 		fr, ok := response.(streamFileRes)
 		if !ok {
@@ -422,9 +440,9 @@ func encodeViewFileResponse(logger logger.Logger) kithttp.EncodeResponseFunc {
 			w.Header().Set(k, v)
 		}
 		w.WriteHeader(fr.Code())
-		defer fr.reader.Close()
+		defer fr.file.Close()
 
-		if _, err := io.Copy(w, fr.reader); err != nil {
+		if _, err := io.Copy(w, fr.file); err != nil {
 			// The 200 status and headers are already on the wire, so the
 			// response cannot be switched to an error code. Log the failure
 			// (e.g. a checksum mismatch surfaced by the store at EOF) and
@@ -439,8 +457,56 @@ func encodeViewFileResponse(logger logger.Logger) kithttp.EncodeResponseFunc {
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	apiutil.EncodeError(err, w)
+	switch {
+	case errors.Contains(err, filestore.ErrRangeNotSatisfiable):
+		w.Header().Set(contentTypeHeader, apiutil.ContentTypeJSON)
+		w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+	default:
+		apiutil.EncodeError(err, w)
+	}
+
 	apiutil.WriteErrorResponse(err, w)
+}
+
+// parseByteRange parses a single-range Range header (RFC 9110). Headers it does
+// not support, such as multiple ranges, are ignored so the whole file is sent.
+func parseByteRange(header string) (*filestore.ByteRange, error) {
+	spec, ok := strings.CutPrefix(header, "bytes=")
+	if !ok || strings.Contains(spec, ",") {
+		return nil, nil
+	}
+
+	first, last, ok := strings.Cut(strings.TrimSpace(spec), "-")
+	if !ok {
+		return nil, nil
+	}
+
+	if first == "" {
+		n, err := strconv.ParseInt(last, 10, 64)
+		switch {
+		case err != nil:
+			return nil, nil
+		case n <= 0:
+			return nil, filestore.ErrRangeNotSatisfiable
+		}
+		return &filestore.ByteRange{Start: -n, End: -1}, nil
+	}
+
+	start, err := strconv.ParseInt(first, 10, 64)
+	if err != nil || start < 0 {
+		return nil, nil
+	}
+
+	if last == "" {
+		return &filestore.ByteRange{Start: start, End: -1}, nil
+	}
+
+	end, err := strconv.ParseInt(last, 10, 64)
+	if err != nil || end < start {
+		return nil, nil
+	}
+
+	return &filestore.ByteRange{Start: start, End: end}, nil
 }
 
 // mapUploadErr converts an http.MaxBytesReader overflow into ErrLimitSize.
