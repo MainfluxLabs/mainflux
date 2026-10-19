@@ -26,7 +26,6 @@ import (
 
 const (
 	emailKey        = "email"
-	statusKey       = "status"
 	emailTokenKey   = "token"
 	stateKey        = "state"
 	providerKey     = "provider"
@@ -229,7 +228,7 @@ func decodeListUsers(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	s, err := apiutil.ReadStringQuery(r, statusKey, users.EnabledStatusKey)
+	s, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, users.EnabledStatusKey)
 	if err != nil {
 		return nil, err
 	}

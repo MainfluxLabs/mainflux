@@ -26,8 +26,6 @@ import (
 const (
 	operationKey  = "operation"
 	actionDataKey = "action_data"
-	fromKey       = "from"
-	toKey         = "to"
 )
 
 func MakeHandler(svc audit.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger log.Logger) http.Handler {
@@ -140,12 +138,12 @@ func buildPageMetadata(r *http.Request) (audit.PageMetadata, error) {
 		return audit.PageMetadata{}, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return audit.PageMetadata{}, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return audit.PageMetadata{}, err
 	}

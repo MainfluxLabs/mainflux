@@ -31,8 +31,6 @@ const (
 	vdKey                  = "vd"
 	vbKey                  = "vb"
 	comparatorKey          = "comparator"
-	fromKey                = "from"
-	toKey                  = "to"
 	convertKey             = "convert"
 	keyKey                 = "key"
 	valueKey               = "value"
@@ -284,12 +282,12 @@ func decodeDeleteAllJSONMessages(_ context.Context, r *http.Request) (any, error
 		return nil, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -322,12 +320,12 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -349,12 +347,12 @@ func decodeDeleteJSONMessages(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeDeleteAllSenMLMessages(_ context.Context, r *http.Request) (any, error) {
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -385,12 +383,12 @@ func decodeDeleteSenMLMessages(_ context.Context, r *http.Request) (any, error) 
 		return nil, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -536,12 +534,12 @@ func buildMessagesPageMetadata(r *http.Request) (readers.MessagesPageMetadata, e
 		return readers.MessagesPageMetadata{}, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return readers.MessagesPageMetadata{}, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return readers.MessagesPageMetadata{}, err
 	}
