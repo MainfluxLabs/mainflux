@@ -626,6 +626,11 @@ func getListFilesParams(r *http.Request) (listFilesParams, error) {
 		return listFilesParams{}, apiutil.ErrInvalidQueryParams
 	}
 
+	m, err := apiutil.ReadMetadataQuery(r, apiutil.MetadataKey, nil)
+	if err != nil {
+		return listFilesParams{}, err
+	}
+
 	res := listFilesParams{
 		info: info{
 			name:   n,
@@ -633,10 +638,11 @@ func getListFilesParams(r *http.Request) (listFilesParams, error) {
 			class:  c,
 		},
 		pageMetadata: filestore.PageMetadata{
-			Limit:  l,
-			Offset: o,
-			Order:  or,
-			Dir:    d,
+			Limit:    l,
+			Offset:   o,
+			Order:    or,
+			Dir:      d,
+			Metadata: m,
 		},
 	}
 
