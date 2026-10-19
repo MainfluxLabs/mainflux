@@ -98,7 +98,7 @@ func (lm loggingMiddleware) RemoveScripts(ctx context.Context, token string, ids
 
 func (lm loggingMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_scripts_by_group group id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf("Method remove_scripts_by_group for group id %s took %s to complete", groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
