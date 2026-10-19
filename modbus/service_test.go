@@ -177,14 +177,15 @@ func TestListClientsByThing(t *testing.T) {
 	}
 }
 
-func TestReadRegisters(t *testing.T) {
+func TestReadRegister(t *testing.T) {
 	svc := newService()
 
 	req := modbus.ReadRequest{
 		IPAddress:    client.IPAddress,
 		Port:         client.Port,
 		FunctionCode: modbus.ReadHoldingRegistersFunc,
-		DataFields:   []modbus.DataField{{Name: "temperature", Type: modbus.Float32Type, Address: 0}},
+		Address:      0,
+		Type:         modbus.Float32Type,
 	}
 
 	cases := []struct {
@@ -200,7 +201,7 @@ func TestReadRegisters(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.ReadRegisters(context.Background(), tc.token, req)
+		_, err := svc.ReadRegister(context.Background(), tc.token, req)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }

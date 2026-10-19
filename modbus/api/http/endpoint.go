@@ -129,9 +129,9 @@ func viewClientEndpoint(svc modbus.Service) endpoint.Endpoint {
 	}
 }
 
-func readRegistersEndpoint(svc modbus.Service) endpoint.Endpoint {
+func readRegisterEndpoint(svc modbus.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(readRegistersReq)
+		req := request.(readRegisterReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
@@ -141,15 +141,19 @@ func readRegistersEndpoint(svc modbus.Service) endpoint.Endpoint {
 			Port:         req.Port,
 			SlaveID:      req.SlaveID,
 			FunctionCode: req.FunctionCode,
-			DataFields:   toDataFields(req.DataFields),
+			Address:      *req.Address,
+			Type:         req.Type,
+			ByteOrder:    req.ByteOrder,
+			Scale:        req.Scale,
+			Length:       req.Length,
 		}
 
-		values, err := svc.ReadRegisters(ctx, req.token, rr)
+		value, err := svc.ReadRegister(ctx, req.token, rr)
 		if err != nil {
 			return nil, err
 		}
 
-		return readRegistersRes{Values: values}, nil
+		return readRegisterRes{Value: value}, nil
 	}
 }
 

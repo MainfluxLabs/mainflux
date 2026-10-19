@@ -105,10 +105,10 @@ func MakeHandler(tracer opentracing.Tracer, svc modbus.Service, ac domain.AuthCl
 	))
 	r.Post("/read", kithttp.NewServer(
 		endpoint.Chain(
-			kitot.TraceServer(tracer, "read_registers"),
+			kitot.TraceServer(tracer, "read_register"),
 			withIdentity,
-		)(readRegistersEndpoint(svc)),
-		decodeReadRegisters,
+		)(readRegisterEndpoint(svc)),
+		decodeReadRegister,
 		encodeResponse,
 		opts...,
 	))
@@ -311,12 +311,12 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeReadRegisters(_ context.Context, r *http.Request) (any, error) {
+func decodeReadRegister(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get(ctKey), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := readRegistersReq{token: apiutil.ExtractBearerToken(r)}
+	req := readRegisterReq{token: apiutil.ExtractBearerToken(r)}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
@@ -404,6 +404,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		errors.Contains(err, modbus.ErrInvalidWriteValue),
 		errors.Contains(err, modbus.ErrValueOutOfRange):
 		w.WriteHeader(http.StatusBadRequest)
+	case errors.Contains(err, modbus.ErrDeviceRejected):
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	case errors.Contains(err, modbus.ErrDeviceUnavailable):
+		w.WriteHeader(http.StatusServiceUnavailable)
 	default:
 		apiutil.EncodeError(err, w)
 	}

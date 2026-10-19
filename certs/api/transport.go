@@ -27,8 +27,6 @@ import (
 
 const (
 	serialKey = "serial"
-	toKey     = "to"
-	fromKey   = "from"
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
@@ -149,7 +147,7 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	tStr, err := apiutil.ReadStringQuery(r, toKey, "")
+	tStr, err := apiutil.ReadStringQuery(r, apiutil.ToKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +159,7 @@ func decodeListSerialsByThing(_ context.Context, r *http.Request) (any, error) {
 		}
 	}
 
-	fStr, err := apiutil.ReadStringQuery(r, fromKey, "")
+	fStr, err := apiutil.ReadStringQuery(r, apiutil.FromKey, "")
 	if err != nil {
 		return nil, err
 	}

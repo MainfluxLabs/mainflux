@@ -11,12 +11,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
-const (
-	statusKey = "status"
-	fromKey   = "from"
-	toKey     = "to"
-)
-
 type ScriptRunRes struct {
 	ID         string    `json:"id"`
 	ScriptID   string    `json:"script_id"`
@@ -40,17 +34,17 @@ func BuildScriptRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 		return rules.PageMetadata{}, err
 	}
 
-	status, err := apiutil.ReadStringQuery(r, statusKey, "")
+	status, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, "")
 	if err != nil {
 		return rules.PageMetadata{}, err
 	}
 
-	fromMs, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	fromMs, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return rules.PageMetadata{}, err
 	}
 
-	toMs, err := apiutil.ReadIntQuery(r, toKey, 0)
+	toMs, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return rules.PageMetadata{}, err
 	}
