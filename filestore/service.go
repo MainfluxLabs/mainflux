@@ -181,7 +181,7 @@ func (fs *filestoreService) SaveFile(ctx context.Context, file io.Reader, key st
 	fi.Checksum = checksum
 	fi.Size = size
 
-	if err := fs.thingsRepo.UpdateChecksum(ctx, thID, fi); err != nil {
+	if err := fs.thingsRepo.UpdateObject(ctx, thID, fi); err != nil {
 		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
 			return fs.thingsRepo.Remove(ctx, thID, fi)
 		})
@@ -300,7 +300,7 @@ func (fs *filestoreService) SaveGroupFile(ctx context.Context, file io.Reader, t
 	fi.Checksum = checksum
 	fi.Size = size
 
-	if err := fs.groupsRepo.UpdateChecksum(ctx, groupID, fi); err != nil {
+	if err := fs.groupsRepo.UpdateObject(ctx, groupID, fi); err != nil {
 		fs.releaseFile(ctx, objKey, func(ctx context.Context) error {
 			return fs.groupsRepo.Remove(ctx, groupID, fi)
 		})

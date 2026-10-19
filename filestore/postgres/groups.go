@@ -85,7 +85,7 @@ func (gr groupsRepository) Update(ctx context.Context, groupID string, fi filest
 	return nil
 }
 
-func (gr groupsRepository) UpdateChecksum(ctx context.Context, groupID string, fi filestore.FileInfo) error {
+func (gr groupsRepository) UpdateObject(ctx context.Context, groupID string, fi filestore.FileInfo) error {
 	q := `UPDATE groups_files SET checksum = :checksum, size = :size
           WHERE group_id = :group_id AND file_name = :file_name AND file_class = :file_class AND file_format = :file_format`
 

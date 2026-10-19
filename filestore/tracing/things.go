@@ -11,7 +11,7 @@ import (
 const (
 	saveThingFile           = "save_thing_file"
 	updateThingFile         = "update_thing_file"
-	updateThingFileChecksum = "update_thing_file_checksum"
+	updateThingFileObject   = "update_thing_file_object"
 	retrieveThingFile       = "retrieve_thing_file"
 	retrieveThingFiles      = "retrieve_thing_files"
 	removeThingFile         = "remove_thing_file"
@@ -55,12 +55,12 @@ func (trm thingsRepositoryMiddleware) Update(ctx context.Context, thingID string
 	return trm.repo.Update(ctx, thingID, fi)
 }
 
-func (trm thingsRepositoryMiddleware) UpdateChecksum(ctx context.Context, thingID string, fi filestore.FileInfo) error {
-	span := dbutil.CreateSpan(ctx, trm.tracer, updateThingFileChecksum)
+func (trm thingsRepositoryMiddleware) UpdateObject(ctx context.Context, thingID string, fi filestore.FileInfo) error {
+	span := dbutil.CreateSpan(ctx, trm.tracer, updateThingFileObject)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return trm.repo.UpdateChecksum(ctx, thingID, fi)
+	return trm.repo.UpdateObject(ctx, thingID, fi)
 }
 
 func (trm thingsRepositoryMiddleware) Retrieve(ctx context.Context, thingID string, fi filestore.FileInfo) (filestore.FileInfo, error) {

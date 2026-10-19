@@ -86,7 +86,7 @@ func (tr thingsRepository) Update(ctx context.Context, thingID string, fi filest
 	return nil
 }
 
-func (tr thingsRepository) UpdateChecksum(ctx context.Context, thingID string, fi filestore.FileInfo) error {
+func (tr thingsRepository) UpdateObject(ctx context.Context, thingID string, fi filestore.FileInfo) error {
 	q := `UPDATE things_files SET checksum = :checksum, size = :size
           WHERE thing_id = :thing_id AND file_name = :file_name AND file_class = :file_class AND file_format = :file_format`
 

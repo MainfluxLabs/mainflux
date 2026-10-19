@@ -45,7 +45,7 @@ func (r *GroupsRepository) Save(_ context.Context, groupID string, fi filestore.
 	return nil
 }
 
-func (r *GroupsRepository) UpdateChecksum(_ context.Context, groupID string, fi filestore.FileInfo) error {
+func (r *GroupsRepository) UpdateObject(_ context.Context, groupID string, fi filestore.FileInfo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	k := groupKey(groupID, fi)
