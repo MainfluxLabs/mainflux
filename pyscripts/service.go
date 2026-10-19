@@ -90,7 +90,7 @@ func (ps *pyscriptsService) CreateScripts(ctx context.Context, token, groupID st
 
 		scripts[i].ID = id
 		scripts[i].GroupID = groupID
-		scripts[i].SHA256 = Checksum(scripts[i].Source)
+		scripts[i].Checksum = Checksum(scripts[i].Source)
 	}
 
 	return ps.scripts.SaveScripts(ctx, scripts...)
@@ -132,7 +132,7 @@ func (ps *pyscriptsService) UpdateScript(ctx context.Context, token string, scri
 	}
 
 	script.GroupID = existing.GroupID
-	script.SHA256 = Checksum(script.Source)
+	script.Checksum = Checksum(script.Source)
 
 	return ps.scripts.UpdateScript(ctx, script)
 }
@@ -168,7 +168,7 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	res, err := ps.runner.Run(ctx, Source{SHA256: script.SHA256, Code: script.Source}, in)
+	res, err := ps.runner.Run(ctx, Source{Checksum: script.Checksum, Code: script.Source}, in)
 	if err != nil {
 		return ScriptRun{}, err
 	}
@@ -252,15 +252,15 @@ func Checksum(source string) string {
 
 func toRun(id string, script Script, res Result) ScriptRun {
 	run := ScriptRun{
-		ID:           id,
-		ScriptID:     script.ID,
-		ScriptSHA256: script.SHA256,
-		Value:        res.Value,
-		Logs:         res.Logs,
-		StartedAt:    res.StartedAt,
-		FinishedAt:   res.FinishedAt,
-		Status:       ScriptRunStatusSuccess,
-		Error:        res.Error,
+		ID:             id,
+		ScriptID:       script.ID,
+		ScriptChecksum: script.Checksum,
+		Value:          res.Value,
+		Logs:           res.Logs,
+		StartedAt:      res.StartedAt,
+		FinishedAt:     res.FinishedAt,
+		Status:         ScriptRunStatusSuccess,
+		Error:          res.Error,
 	}
 
 	if res.Error != "" {

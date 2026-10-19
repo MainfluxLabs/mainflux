@@ -25,9 +25,9 @@ func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.Scrip
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO script_runs (id, script_id, script_sha256, return_value, logs,
+		INSERT INTO script_runs (id, script_id, script_checksum, return_value, logs,
 		                         started_at, finished_at, status, error)
-		VALUES (:id, :script_id, :script_sha256, :return_value, :logs,
+		VALUES (:id, :script_id, :script_checksum, :return_value, :logs,
 		        :started_at, :finished_at, :status, :error);
 	`
 
@@ -51,7 +51,7 @@ func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.Scrip
 
 func (sr scriptRepository) RetrieveRunByID(ctx context.Context, id string) (pyscripts.ScriptRun, error) {
 	query := `
-		SELECT id, script_id, script_sha256, return_value, logs,
+		SELECT id, script_id, script_checksum, return_value, logs,
 		       started_at, finished_at, status, error
 		FROM script_runs
 		WHERE id = $1;
@@ -106,7 +106,7 @@ func (sr scriptRepository) RetrieveRunsByScript(ctx context.Context, scriptID st
 	whereClause := dbutil.BuildWhereClause(clauses...)
 
 	query := fmt.Sprintf(`
-		SELECT id, script_id, script_sha256, return_value, logs,
+		SELECT id, script_id, script_checksum, return_value, logs,
 		       started_at, finished_at, status, error
 		FROM script_runs %s ORDER BY %s %s %s;
 	`, whereClause, oq, dq, olq)
@@ -165,15 +165,15 @@ func (sr scriptRepository) RemoveRuns(ctx context.Context, ids ...string) error 
 }
 
 type dbScriptRun struct {
-	ID           string         `db:"id"`
-	ScriptID     string         `db:"script_id"`
-	ScriptSHA256 string         `db:"script_sha256"`
-	Value        []byte         `db:"return_value"`
-	Logs         []byte         `db:"logs"`
-	StartedAt    time.Time      `db:"started_at"`
-	FinishedAt   time.Time      `db:"finished_at"`
-	Status       string         `db:"status"`
-	Error        sql.NullString `db:"error"`
+	ID             string         `db:"id"`
+	ScriptID       string         `db:"script_id"`
+	ScriptChecksum string         `db:"script_checksum"`
+	Value          []byte         `db:"return_value"`
+	Logs           []byte         `db:"logs"`
+	StartedAt      time.Time      `db:"started_at"`
+	FinishedAt     time.Time      `db:"finished_at"`
+	Status         string         `db:"status"`
+	Error          sql.NullString `db:"error"`
 }
 
 func toDBRun(r pyscripts.ScriptRun) (dbScriptRun, error) {
@@ -196,15 +196,15 @@ func toDBRun(r pyscripts.ScriptRun) (dbScriptRun, error) {
 	}
 
 	return dbScriptRun{
-		ID:           r.ID,
-		ScriptID:     r.ScriptID,
-		ScriptSHA256: r.ScriptSHA256,
-		Value:        vb,
-		Logs:         lb,
-		StartedAt:    r.StartedAt,
-		FinishedAt:   r.FinishedAt,
-		Status:       r.Status,
-		Error:        sql.NullString{String: r.Error, Valid: r.Error != ""},
+		ID:             r.ID,
+		ScriptID:       r.ScriptID,
+		ScriptChecksum: r.ScriptChecksum,
+		Value:          vb,
+		Logs:           lb,
+		StartedAt:      r.StartedAt,
+		FinishedAt:     r.FinishedAt,
+		Status:         r.Status,
+		Error:          sql.NullString{String: r.Error, Valid: r.Error != ""},
 	}, nil
 }
 
@@ -224,14 +224,14 @@ func toRun(dbr dbScriptRun) (pyscripts.ScriptRun, error) {
 	}
 
 	return pyscripts.ScriptRun{
-		ID:           dbr.ID,
-		ScriptID:     dbr.ScriptID,
-		ScriptSHA256: dbr.ScriptSHA256,
-		Value:        value,
-		Logs:         logs,
-		StartedAt:    dbr.StartedAt,
-		FinishedAt:   dbr.FinishedAt,
-		Status:       dbr.Status,
-		Error:        dbr.Error.String,
+		ID:             dbr.ID,
+		ScriptID:       dbr.ScriptID,
+		ScriptChecksum: dbr.ScriptChecksum,
+		Value:          value,
+		Logs:           logs,
+		StartedAt:      dbr.StartedAt,
+		FinishedAt:     dbr.FinishedAt,
+		Status:         dbr.Status,
+		Error:          dbr.Error.String,
 	}, nil
 }

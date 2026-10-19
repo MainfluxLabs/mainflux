@@ -35,7 +35,7 @@ type scriptRes struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description,omitempty"`
 	Source      string    `json:"source,omitempty"`
-	SHA256      string    `json:"sha256,omitempty"`
+	Checksum    string    `json:"checksum,omitempty"`
 	CreatedAt   time.Time `json:"created_at,omitempty"`
 	UpdatedAt   time.Time `json:"updated_at,omitempty"`
 	updated     bool
@@ -92,15 +92,15 @@ func (res scriptsPageRes) Empty() bool {
 }
 
 type runRes struct {
-	ID           string    `json:"id"`
-	ScriptID     string    `json:"script_id"`
-	ScriptSHA256 string    `json:"script_sha256"`
-	Status       string    `json:"status"`
-	Value        any       `json:"return_value"`
-	Logs         []string  `json:"logs"`
-	Error        string    `json:"error,omitempty"`
-	StartedAt    time.Time `json:"started_at"`
-	FinishedAt   time.Time `json:"finished_at"`
+	ID             string    `json:"id"`
+	ScriptID       string    `json:"script_id"`
+	ScriptChecksum string    `json:"script_checksum"`
+	Status         string    `json:"status"`
+	Value          any       `json:"return_value"`
+	Logs           []string  `json:"logs"`
+	Error          string    `json:"error,omitempty"`
+	StartedAt      time.Time `json:"started_at"`
+	FinishedAt     time.Time `json:"finished_at"`
 }
 
 func (res runRes) Code() int {
@@ -152,7 +152,7 @@ func buildScriptRes(s pyscripts.Script, withSource bool) scriptRes {
 		GroupID:     s.GroupID,
 		Name:        s.Name,
 		Description: s.Description,
-		SHA256:      s.SHA256,
+		Checksum:    s.Checksum,
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
 	}
@@ -200,15 +200,15 @@ func buildRunRes(r pyscripts.ScriptRun) runRes {
 	}
 
 	return runRes{
-		ID:           r.ID,
-		ScriptID:     r.ScriptID,
-		ScriptSHA256: r.ScriptSHA256,
-		Status:       r.Status,
-		Value:        r.Value,
-		Logs:         logs,
-		Error:        r.Error,
-		StartedAt:    r.StartedAt,
-		FinishedAt:   r.FinishedAt,
+		ID:             r.ID,
+		ScriptID:       r.ScriptID,
+		ScriptChecksum: r.ScriptChecksum,
+		Status:         r.Status,
+		Value:          r.Value,
+		Logs:           logs,
+		Error:          r.Error,
+		StartedAt:      r.StartedAt,
+		FinishedAt:     r.FinishedAt,
 	}
 }
 

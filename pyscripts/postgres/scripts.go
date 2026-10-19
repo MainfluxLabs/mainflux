@@ -36,8 +36,8 @@ func (sr scriptRepository) SaveScripts(ctx context.Context, scripts ...pyscripts
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO scripts (id, group_id, name, description, source, sha256)
-		VALUES (:id, :group_id, :name, :description, :source, :sha256)
+		INSERT INTO scripts (id, group_id, name, description, source, checksum)
+		VALUES (:id, :group_id, :name, :description, :source, :checksum)
 		RETURNING created_at, updated_at;
 	`
 
@@ -71,7 +71,7 @@ func (sr scriptRepository) SaveScripts(ctx context.Context, scripts ...pyscripts
 
 func (sr scriptRepository) RetrieveScriptByID(ctx context.Context, id string) (pyscripts.Script, error) {
 	query := `
-		SELECT id, group_id, name, description, source, sha256, created_at, updated_at
+		SELECT id, group_id, name, description, source, checksum, created_at, updated_at
 		FROM scripts
 		WHERE id = $1;
 	`
@@ -103,7 +103,7 @@ func (sr scriptRepository) RetrieveScriptsByGroup(ctx context.Context, groupID s
 	whereClause := dbutil.BuildWhereClause(gq, nq)
 
 	query := fmt.Sprintf(`
-		SELECT id, group_id, name, description, source, sha256, created_at, updated_at
+		SELECT id, group_id, name, description, source, checksum, created_at, updated_at
 		FROM scripts %s ORDER BY %s %s %s;
 	`, whereClause, oq, dq, olq)
 
@@ -144,7 +144,7 @@ func (sr scriptRepository) UpdateScript(ctx context.Context, script pyscripts.Sc
 	query := `
 		UPDATE scripts
 		SET name = :name, description = :description, source = :source,
-		    sha256 = :sha256, updated_at = NOW()
+		    checksum = :checksum, updated_at = NOW()
 		WHERE id = :id;
 	`
 
@@ -204,7 +204,7 @@ type dbScript struct {
 	Name        string    `db:"name"`
 	Description string    `db:"description"`
 	Source      string    `db:"source"`
-	SHA256      string    `db:"sha256"`
+	Checksum    string    `db:"checksum"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 }
@@ -216,7 +216,7 @@ func toDBScript(s pyscripts.Script) dbScript {
 		Name:        s.Name,
 		Description: s.Description,
 		Source:      s.Source,
-		SHA256:      s.SHA256,
+		Checksum:    s.Checksum,
 	}
 }
 
@@ -227,7 +227,7 @@ func toScript(dbs dbScript) pyscripts.Script {
 		Name:        dbs.Name,
 		Description: dbs.Description,
 		Source:      dbs.Source,
-		SHA256:      dbs.SHA256,
+		Checksum:    dbs.Checksum,
 		CreatedAt:   dbs.CreatedAt,
 		UpdatedAt:   dbs.UpdatedAt,
 	}
