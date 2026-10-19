@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	statusKey = "status"
-	fromKey   = "from"
-	toKey     = "to"
+	fromKey = "from"
+	toKey   = "to"
 )
 
 type ScriptRunRes struct {
@@ -40,7 +39,7 @@ func BuildScriptRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 		return rules.PageMetadata{}, err
 	}
 
-	status, err := apiutil.ReadStringQuery(r, statusKey, "")
+	status, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, "")
 	if err != nil {
 		return rules.PageMetadata{}, err
 	}

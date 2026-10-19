@@ -34,6 +34,7 @@ const (
 	EmailKey               = "email"
 	PayloadKey             = "payload"
 	InputTypeKey           = "input_type"
+	StatusKey              = "status"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"

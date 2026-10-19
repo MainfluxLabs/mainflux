@@ -28,7 +28,6 @@ const (
 	csvFormat     = "csv"
 	timeFormatKey = "time_format"
 	levelKey      = "level"
-	statusKey     = "status"
 	protocolKey   = "protocol"
 	subtopicKey   = "subtopic"
 	fromKey       = "from"
@@ -133,7 +132,7 @@ func buildPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 		return alarms.PageMetadata{}, err
 	}
 
-	s, err := apiutil.ReadStringQuery(r, statusKey, "")
+	s, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, "")
 	if err != nil {
 		return alarms.PageMetadata{}, err
 	}
