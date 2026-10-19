@@ -30,8 +30,6 @@ const (
 	levelKey      = "level"
 	protocolKey   = "protocol"
 	subtopicKey   = "subtopic"
-	fromKey       = "from"
-	toKey         = "to"
 )
 
 // MakeHandler returns a HTTP handler for Alarm API endpoints.
@@ -147,12 +145,12 @@ func buildPageMetadata(r *http.Request) (alarms.PageMetadata, error) {
 		return alarms.PageMetadata{}, err
 	}
 
-	from, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	from, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return alarms.PageMetadata{}, err
 	}
 
-	to, err := apiutil.ReadIntQuery(r, toKey, 0)
+	to, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return alarms.PageMetadata{}, err
 	}

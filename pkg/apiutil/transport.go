@@ -35,6 +35,8 @@ const (
 	PayloadKey             = "payload"
 	InputTypeKey           = "input_type"
 	StatusKey              = "status"
+	FromKey                = "from"
+	ToKey                  = "to"
 	IDOrder                = "id"
 	AscDir                 = "asc"
 	DescDir                = "desc"
