@@ -115,19 +115,18 @@ func (req client) validate() error {
 		return ErrInvalidScheduler
 	}
 
+	if err := validateFunctionCode(req.FunctionCode); err != nil {
+		return err
+	}
+
 	switch req.FunctionCode {
-	case modbus.WriteCoilsFunc,
-		modbus.WriteHoldingRegistersFunc:
+	case modbus.WriteCoilsFunc, modbus.WriteHoldingRegistersFunc:
 		if err := validateDataFields(req.DataFields); err != nil {
 			return err
 		}
 
 		return validateWriteFields(req.FunctionCode, req.DataFields)
 	default:
-		if err := validateFunctionCode(req.FunctionCode); err != nil {
-			return err
-		}
-
 		return validateDataFields(req.DataFields)
 	}
 }
@@ -178,8 +177,19 @@ func validateWriteValue(f field) error {
 	}
 }
 
-// validateFunctionCode checks that code is one of the supported read function codes.
+// validateFunctionCode checks that code is one of the supported client function codes.
 func validateFunctionCode(code string) error {
+	switch code {
+	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc, modbus.ReadInputRegistersFunc, modbus.ReadHoldingRegistersFunc,
+		modbus.WriteCoilsFunc, modbus.WriteHoldingRegistersFunc:
+		return nil
+	default:
+		return ErrInvalidFunctionCode
+	}
+}
+
+// validateReadFunctionCode checks that code is one of the supported read function codes.
+func validateReadFunctionCode(code string) error {
 	switch code {
 	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc, modbus.ReadInputRegistersFunc, modbus.ReadHoldingRegistersFunc:
 		return nil
@@ -340,7 +350,7 @@ func (req readRegisterReq) validate() error {
 		return ErrMissingPort
 	}
 
-	if err := validateFunctionCode(req.FunctionCode); err != nil {
+	if err := validateReadFunctionCode(req.FunctionCode); err != nil {
 		return err
 	}
 

@@ -617,6 +617,8 @@ components:
                 example: 2
             required: [thing_id, ip_address, port, function_code, address]
           example:
+            thing_id: "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+            name: "temperature"
             ip_address: "192.168.1.100"
             port: "502"
             slave_id: 1
@@ -683,6 +685,8 @@ components:
                 example: 42
             required: [thing_id, ip_address, port, address, type, value]
           example:
+            thing_id: "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+            name: "setpoint"
             ip_address: "192.168.1.100"
             port: "502"
             slave_id: 1
