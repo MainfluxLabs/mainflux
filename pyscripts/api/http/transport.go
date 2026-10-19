@@ -26,12 +26,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	statusKey = "status"
-	fromKey   = "from"
-	toKey     = "to"
-)
-
 // MakeHandler returns a HTTP handler for Python script API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc pyscripts.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 
@@ -237,17 +231,17 @@ func decodeListRunsByScript(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	status, err := apiutil.ReadStringQuery(r, statusKey, "")
+	status, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, "")
 	if err != nil {
 		return nil, err
 	}
 
-	fromMs, err := apiutil.ReadIntQuery(r, fromKey, 0)
+	fromMs, err := apiutil.ReadIntQuery(r, apiutil.FromKey, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	toMs, err := apiutil.ReadIntQuery(r, toKey, 0)
+	toMs, err := apiutil.ReadIntQuery(r, apiutil.ToKey, 0)
 	if err != nil {
 		return nil, err
 	}
