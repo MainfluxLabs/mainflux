@@ -63,7 +63,7 @@ const (
 	xpsFormat            = "xps"  // XML Paper Specification
 	ifcFormat            = "ifc"  // Building Information Modeling
 	e57Format            = "e57"  // Point Clouds
-	binFormat            = "bin"  // Point Clouds
+	binFormat            = "bin"  // Binary
 	limitKey             = "limit"
 	formatKey            = "format"
 	offsetKey            = "offset"
