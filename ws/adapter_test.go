@@ -41,9 +41,9 @@ var msg = protomfx.Message{
 }
 
 var cmd = protomfx.Command{
-	Publisher: thingID,
-	Protocol:  protocol,
-	Payload:   []byte(`{"led":"turn_on"}`),
+	ThingId:  thingID,
+	Protocol: protocol,
+	Payload:  []byte(`{"led":"turn_on"}`),
 }
 
 func newService(tc domain.ThingsClient) (ws.Service, mocks.MockPubSub) {
