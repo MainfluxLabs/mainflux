@@ -43,6 +43,7 @@ const (
 	bimClass             = "BIM"
 	pointcloudsClass     = "pointclouds"
 	binariesClass        = "binaries"
+	archivesClass        = "archives"
 	jpgFormat            = "jpg"  // JPG image
 	jpegFormat           = "jpeg" // JPEG image
 	svgFormat            = "svg"  // Scalable Vector Graphics
@@ -64,6 +65,8 @@ const (
 	ifcFormat            = "ifc"  // Building Information Modeling
 	e57Format            = "e57"  // Point Clouds
 	binFormat            = "bin"  // Binary
+	hexFormat            = "hex"  // Intel HEX
+	zipFormat            = "zip"  // ZIP archive
 	limitKey             = "limit"
 	formatKey            = "format"
 	offsetKey            = "offset"
@@ -81,6 +84,7 @@ const (
 	imagePrefix          = "image/"
 	applicationPrefix    = "application/"
 	applicationPDFPrefix = "application/pdf"
+	applicationZIP       = "application/zip"
 	rangeHeader          = "Range"
 	contentTypeHeader    = "Content-Type"
 	MaxUploadSizeMB      = 1024
@@ -650,8 +654,8 @@ func getListFilesParams(r *http.Request) (listFilesParams, error) {
 }
 
 // verifyMagicBytes sniffs the first 512 bytes of f and ensures the detected
-// MIME type is plausible for the declared class/format. Binaries and pointclouds
-// get no magic-byte enforcement (arbitrary payloads).
+// MIME type is plausible for the declared class/format. Binaries (except Intel
+// HEX), point clouds and BIM files get no magic-byte enforcement (arbitrary payloads).
 func verifyMagicBytes(f multipart.File, class, format string) error {
 	buf := make([]byte, 512)
 	n, err := f.Read(buf)
@@ -676,7 +680,15 @@ func verifyMagicBytes(f multipart.File, class, format string) error {
 
 func mimeMatches(class, format, mime string) bool {
 	switch class {
-	case binariesClass, pointcloudsClass, bimClass:
+	case binariesClass:
+		// Intel HEX encodes a binary image as text; other binaries are arbitrary payloads.
+		if format == hexFormat {
+			return strings.HasPrefix(mime, textPrefix)
+		}
+		return true
+	case archivesClass:
+		return mime == applicationZIP
+	case pointcloudsClass, bimClass:
 		return true
 	case imagesClass:
 		// SVG is an XML document, not a binary image format, so
@@ -737,8 +749,10 @@ func parseFileName(name string) (string, string, error) {
 		class = bimClass
 	case e57Format:
 		class = pointcloudsClass
-	case binFormat:
+	case binFormat, hexFormat:
 		class = binariesClass
+	case zipFormat:
+		class = archivesClass
 	default:
 		return "", "", apiutil.ErrUnsupportedContentType
 	}
