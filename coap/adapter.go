@@ -157,7 +157,7 @@ func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.Th
 		return err
 	}
 
-	cmd.Publisher = res
+	cmd.ThingId = res
 	cmd.RecipientId = thingID
 	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
@@ -172,7 +172,7 @@ func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.Th
 		return err
 	}
 
-	cmd.Publisher = thingID
+	cmd.ThingId = thingID
 	return svc.pubsub.PublishCommand(nats.GetGroupCommandsSubject(groupID, cmd.Subtopic), cmd)
 }
 

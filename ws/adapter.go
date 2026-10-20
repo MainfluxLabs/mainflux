@@ -115,7 +115,7 @@ func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key doma
 		return err
 	}
 
-	cmd.Publisher = senderThingID
+	cmd.ThingId = senderThingID
 	cmd.RecipientId = thingID
 	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
 }
@@ -138,6 +138,6 @@ func (svc *adapterService) SendCommandToGroupByKey(ctx context.Context, key doma
 		return err
 	}
 
-	cmd.Publisher = thingID
+	cmd.ThingId = thingID
 	return svc.pubsub.PublishCommand(nats.GetGroupCommandsSubject(groupID, cmd.Subtopic), cmd)
 }
