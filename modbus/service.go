@@ -281,7 +281,11 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	}
 	defer mu.Unlock()
 
-	field := DataField{Name: messageKey(req.Name, req.Address), Unit: req.Unit, Address: req.Address}
+	field := DataField{
+		Name:    messageKey(req.Name, req.Address),
+		Unit:    req.Unit,
+		Address: req.Address,
+	}
 	switch req.FunctionCode {
 	case ReadCoilsFunc, ReadDiscreteInputsFunc:
 		// Coils and discrete inputs are single bits and take no decoding options.
@@ -296,7 +300,13 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	maxLen := getBlockMaxLen(req.FunctionCode)
 	blocks := createBlocks(fields, maxLen)
 
-	client := Client{IPAddress: req.IPAddress, Port: req.Port, SlaveID: req.SlaveID, FunctionCode: req.FunctionCode, DataFields: fields}
+	client := Client{
+		IPAddress:    req.IPAddress,
+		Port:         req.Port,
+		SlaveID:      req.SlaveID,
+		FunctionCode: req.FunctionCode,
+		DataFields:   fields,
+	}
 
 	data, err := cs.readData(handler, client, blocks)
 	if err != nil {
@@ -360,7 +370,15 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 		funcCode = WriteCoilsFunc
 	}
 
-	field := DataField{Name: messageKey(req.Name, req.Address), Unit: req.Unit, Type: req.Type, ByteOrder: req.ByteOrder, Scale: req.Scale, Address: req.Address, Value: req.Value}
+	field := DataField{
+		Name:      messageKey(req.Name, req.Address),
+		Unit:      req.Unit,
+		Type:      req.Type,
+		ByteOrder: req.ByteOrder,
+		Scale:     req.Scale,
+		Address:   req.Address,
+		Value:     req.Value,
+	}
 	fields := calcFieldLengths([]DataField{field})
 	client := Client{FunctionCode: funcCode, DataFields: fields}
 	blocks := createWriteBlocks(fields, getBlockMaxLen(funcCode))
