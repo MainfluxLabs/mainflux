@@ -41,7 +41,7 @@ func (svc thingsServiceMock) GetPubConfigByKey(_ context.Context, key domain.Thi
 	}
 
 	return domain.PubConfigInfo{
-		PublisherID: th.ID,
+		ThingID: th.ID,
 	}, nil
 }
 
@@ -111,7 +111,7 @@ func (svc thingsServiceMock) CanThingAccessGroup(_ context.Context, req domain.T
 }
 
 func (svc thingsServiceMock) CanThingCommand(_ context.Context, req domain.ThingCommandReq) error {
-	publisher, ok := svc.things[req.PublisherID]
+	publisher, ok := svc.things[req.ThingID]
 	if !ok {
 		return errors.ErrAuthentication
 	}
@@ -129,7 +129,7 @@ func (svc thingsServiceMock) CanThingCommand(_ context.Context, req domain.Thing
 }
 
 func (svc thingsServiceMock) CanThingGroupCommand(_ context.Context, req domain.ThingGroupCommandReq) error {
-	publisher, ok := svc.things[req.PublisherID]
+	publisher, ok := svc.things[req.ThingID]
 	if !ok {
 		return errors.ErrAuthentication
 	}

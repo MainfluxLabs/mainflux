@@ -24,7 +24,7 @@ const (
 var ErrInvalidContentType = errors.New("invalid content type")
 
 func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
-	msg.ThingId = pc.PublisherID
+	msg.ThingId = pc.ThingID
 	msg.Created = time.Now().UnixNano()
 
 	if pc.ProfileConfig != nil {

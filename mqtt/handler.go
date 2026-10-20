@@ -144,9 +144,9 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 	return nil
 }
 
-func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
+func (h *handler) authorizeThingCommand(thingID, recipientID string) error {
 	if err := h.things.CanThingCommand(context.Background(), domain.ThingCommandReq{
-		PublisherID: publisherID,
+		ThingID:     thingID,
 		RecipientID: recipientID,
 	}); err != nil {
 		return errors.ErrAuthorization
@@ -154,10 +154,10 @@ func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
 	return nil
 }
 
-func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
+func (h *handler) authorizeGroupCommand(thingID, groupID string) error {
 	if err := h.things.CanThingGroupCommand(context.Background(), domain.ThingGroupCommandReq{
-		PublisherID: publisherID,
-		GroupID:     groupID,
+		ThingID: thingID,
+		GroupID: groupID,
 	}); err != nil {
 		return errors.ErrAuthorization
 	}
@@ -232,7 +232,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		return err
 	}
 
-	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
+	subject, subtopic, err := parseTopic(topic, pc.ThingID)
 	if err != nil {
 		return errors.Wrap(errFailedParseSubtopic, err)
 	}

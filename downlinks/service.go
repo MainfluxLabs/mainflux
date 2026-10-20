@@ -441,7 +441,7 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 	}
 
 	conn := domain.PubConfigInfo{
-		PublisherID:   thingID,
+		ThingID:       thingID,
 		ProfileConfig: config,
 	}
 

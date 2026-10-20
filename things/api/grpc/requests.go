@@ -131,13 +131,13 @@ func (req thingAccessGroupReq) validate() error {
 }
 
 type thingCommandReq struct {
-	publisherID string
+	thingID     string
 	recipientID string
 }
 
 func (req thingCommandReq) validate() error {
-	if req.publisherID == "" {
-		return apiutil.ErrMissingPublisherID
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.recipientID == "" {
@@ -148,13 +148,13 @@ func (req thingCommandReq) validate() error {
 }
 
 type thingGroupCommandReq struct {
-	publisherID string
-	groupID     string
+	thingID string
+	groupID string
 }
 
 func (req thingGroupCommandReq) validate() error {
-	if req.publisherID == "" {
-		return apiutil.ErrMissingPublisherID
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.groupID == "" {
