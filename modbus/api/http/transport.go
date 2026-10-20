@@ -401,6 +401,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrInvalidByteOrder,
 		err == ErrInvalidFieldLength,
 		err == ErrMissingValue,
+		err == ErrInvalidValue,
+		err == ErrValueOutOfRange,
 		errors.Contains(err, modbus.ErrInvalidWriteValue),
 		errors.Contains(err, modbus.ErrValueOutOfRange):
 		w.WriteHeader(http.StatusBadRequest)

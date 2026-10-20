@@ -17,7 +17,6 @@ import (
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
-	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +51,6 @@ var client = modbus.Client{
 }
 
 func newService() modbus.Service {
-	authSvc := pkgmocks.NewAuthService("", []users.User{{ID: "user-1", Email: token}}, nil)
 	thingsSvc := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -66,7 +64,7 @@ func newService() modbus.Service {
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
-	return modbus.New(authSvc, thingsSvc, pub, repo, idp, log)
+	return modbus.New(thingsSvc, pub, repo, idp, log)
 }
 
 func TestCreateClients(t *testing.T) {
@@ -181,6 +179,7 @@ func TestReadRegister(t *testing.T) {
 	svc := newService()
 
 	req := modbus.ReadRequest{
+		ThingID:      thingID,
 		IPAddress:    client.IPAddress,
 		Port:         client.Port,
 		FunctionCode: modbus.ReadHoldingRegistersFunc,
@@ -209,7 +208,7 @@ func TestReadRegister(t *testing.T) {
 func TestWriteRegister(t *testing.T) {
 	svc := newService()
 
-	req := modbus.WriteRequest{IPAddress: client.IPAddress, Port: client.Port, Address: 100, Type: modbus.Uint16Type, Value: float64(42)}
+	req := modbus.WriteRequest{ThingID: thingID, IPAddress: client.IPAddress, Port: client.Port, Address: 100, Type: modbus.Uint16Type, Value: float64(42)}
 
 	cases := []struct {
 		desc  string

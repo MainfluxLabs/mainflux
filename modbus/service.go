@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -60,14 +61,12 @@ type Service interface {
 	// ViewClient retrieves data about a client identified with the provided ID.
 	ViewClient(ctx context.Context, token, id string) (Client, error)
 
-	// ReadRegister performs an immediate Modbus read against the given connection and
-	// returns the decoded value. No client is created or looked up; the token is only
-	// checked for validity, not against any specific resource.
+	// ReadRegister performs an immediate Modbus read on behalf of the thing, publishes the
+	// decoded value as a message of the thing and returns it. No client is created or looked up.
 	ReadRegister(ctx context.Context, token string, req ReadRequest) (any, error)
 
-	// WriteRegister performs an immediate Modbus write against the given connection.
-	// No client is created or looked up; the token is only checked for validity, not
-	// against any specific resource.
+	// WriteRegister performs an immediate Modbus write on behalf of the thing, reads the value back
+	// and publishes it as a message of the thing. No client is created or looked up.
 	WriteRegister(ctx context.Context, token string, req WriteRequest) error
 
 	// UpdateClient updates client identified by the provided ID.
@@ -98,7 +97,6 @@ type Publisher interface {
 
 type clientsService struct {
 	things     domain.ThingsClient
-	auth       domain.AuthClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
 	publisher  Publisher
@@ -118,11 +116,10 @@ const (
 	Float32Type = "float32"
 	StringType  = "string"
 
-	// Lowered from the protocol max (125): some devices/gateways can't handle
-	// a full-size block read even though the spec allows it. 64 is a common
-	// conservative cap in the wild.
-	maxRegs = 64
-	maxBits = 2000 // 0x01 and 0x02
+	// maxRegs is below the protocol limits because some devices and gateways reject full-size register requests.
+	maxRegs      = 64   // 0x03, 0x04 and 0x10
+	maxBits      = 2000 // 0x01 and 0x02
+	maxWriteBits = 1968 // 0x0F
 )
 
 var _ Service = (*clientsService)(nil)
@@ -141,6 +138,7 @@ var (
 	ErrDeviceRejected = errors.New("modbus device rejected request")
 
 	errReadRegisters  = "failed to read registers"
+	errWriteRegisters = "failed to write registers"
 	errRateLimiter    = "failed to wait for rate limiter"
 	errFormatPayload  = "failed to format payload"
 	errGetConnection  = "failed to get connection"
@@ -166,9 +164,8 @@ type Block struct {
 	Length uint16
 }
 
-func New(auth domain.AuthClient, things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
-		auth:       auth,
 		things:     things,
 		publisher:  pub,
 		clients:    clients,
@@ -269,7 +266,12 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 }
 
 func (cs *clientsService) ReadRegister(ctx context.Context, token string, req ReadRequest) (any, error) {
-	if _, err := cs.auth.Identify(ctx, token); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: req.ThingID, Action: domain.GroupEditor}); err != nil {
+		return nil, errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	config, err := cs.things.GetConfigByThing(ctx, req.ThingID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -279,7 +281,11 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	}
 	defer mu.Unlock()
 
-	field := DataField{Address: req.Address}
+	field := DataField{
+		Name:    messageKey(req.Name, req.Address),
+		Unit:    req.Unit,
+		Address: req.Address,
+	}
 	switch req.FunctionCode {
 	case ReadCoilsFunc, ReadDiscreteInputsFunc:
 		// Coils and discrete inputs are single bits and take no decoding options.
@@ -294,7 +300,13 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	maxLen := getBlockMaxLen(req.FunctionCode)
 	blocks := createBlocks(fields, maxLen)
 
-	client := Client{IPAddress: req.IPAddress, Port: req.Port, SlaveID: req.SlaveID, FunctionCode: req.FunctionCode, DataFields: fields}
+	client := Client{
+		IPAddress:    req.IPAddress,
+		Port:         req.Port,
+		SlaveID:      req.SlaveID,
+		FunctionCode: req.FunctionCode,
+		DataFields:   fields,
+	}
 
 	data, err := cs.readData(handler, client, blocks)
 	if err != nil {
@@ -311,6 +323,15 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 		return nil, deviceError(errors.New(errEmptyResponse))
 	}
 
+	payload, err := json.Marshal(values)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cs.publish(config, req.ThingID, payload); err != nil {
+		return nil, err
+	}
+
 	// Register values are wrapped in an entry; coil values are plain booleans.
 	if entry, ok := value.(map[string]any); ok {
 		value = entry["value"]
@@ -319,8 +340,22 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	return value, nil
 }
 
+// messageKey returns the key of a value published for an immediate read or write; without a name the address is used.
+func messageKey(name string, address uint16) string {
+	if name != "" {
+		return name
+	}
+
+	return strconv.Itoa(int(address))
+}
+
 func (cs *clientsService) WriteRegister(ctx context.Context, token string, req WriteRequest) error {
-	if _, err := cs.auth.Identify(ctx, token); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: req.ThingID, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	config, err := cs.things.GetConfigByThing(ctx, req.ThingID)
+	if err != nil {
 		return err
 	}
 
@@ -330,15 +365,46 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 	}
 	defer mu.Unlock()
 
-	mc := gbmodbus.NewClient(handler)
-	if err := writeField(mc, req); err != nil {
+	funcCode := WriteHoldingRegistersFunc
+	if req.Type == BoolType {
+		funcCode = WriteCoilsFunc
+	}
+
+	field := DataField{
+		Name:      messageKey(req.Name, req.Address),
+		Unit:      req.Unit,
+		Type:      req.Type,
+		ByteOrder: req.ByteOrder,
+		Scale:     req.Scale,
+		Address:   req.Address,
+		Value:     req.Value,
+	}
+	fields := calcFieldLengths([]DataField{field})
+	client := Client{FunctionCode: funcCode, DataFields: fields}
+	blocks := createWriteBlocks(fields, getBlockMaxLen(funcCode))
+
+	if err := writeData(gbmodbus.NewClient(handler), client, blocks); err != nil {
 		if errors.Contains(err, ErrInvalidWriteValue) || errors.Contains(err, ErrValueOutOfRange) {
 			return err
 		}
 		return deviceError(err)
 	}
 
-	return nil
+	// The written value is read back and published, as scheduled write clients do.
+	readClient := client
+	readClient.FunctionCode = readFunc(funcCode)
+
+	data, err := cs.readData(handler, readClient, blocks)
+	if err != nil {
+		return deviceError(err)
+	}
+
+	payload, err := formatPayload(data, readClient.DataFields, readClient.FunctionCode)
+	if err != nil {
+		return deviceError(err)
+	}
+
+	return cs.publish(config, req.ThingID, payload)
 }
 
 // connect returns a rate-limited, connected handler for ipAddress:port, ready for
@@ -517,7 +583,18 @@ func (cs *clientsService) unscheduleTask(c Client) {
 
 func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig) func() {
 	maxLen := getBlockMaxLen(client.FunctionCode)
-	blocks := createBlocks(client.DataFields, maxLen)
+	write := isWriteFunc(client.FunctionCode)
+
+	var blocks []Block
+	if write {
+		blocks = createWriteBlocks(client.DataFields, maxLen)
+	} else {
+		blocks = createBlocks(client.DataFields, maxLen)
+	}
+
+	// Write clients read the written blocks back, so the published values reflect the device state.
+	readClient := client
+	readClient.FunctionCode = readFunc(client.FunctionCode)
 
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -532,7 +609,16 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 		}
 		defer mu.Unlock()
 
-		data, err := cs.readData(handler, client, blocks)
+		if write {
+			if err := writeData(gbmodbus.NewClient(handler), client, blocks); err != nil {
+				cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
+				return
+			}
+
+			cs.logger.Info(fmt.Sprintf("%s: wrote %d fields", logPrefix, len(client.DataFields)))
+		}
+
+		data, err := cs.readData(handler, readClient, blocks)
 		if err != nil {
 			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
@@ -542,7 +628,7 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 			return
 		}
 
-		formattedPayload, err := formatPayload(data, client.DataFields, client.FunctionCode)
+		formattedPayload, err := formatPayload(data, readClient.DataFields, readClient.FunctionCode)
 		if err != nil {
 			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errFormatPayload, err))
 			return
@@ -557,44 +643,170 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 	}
 }
 
-func writeField(mc gbmodbus.Client, req WriteRequest) error {
-	switch req.Type {
-	case BoolType:
-		v, ok := req.Value.(bool)
-		if !ok {
-			return errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected bool value for type %s", req.Type))
+func isWriteFunc(funcCode string) bool {
+	switch funcCode {
+	case WriteCoilsFunc, WriteHoldingRegistersFunc:
+		return true
+	default:
+		return false
+	}
+}
+
+// readFunc returns the read function code for the register table that a write function code targets.
+func readFunc(funcCode string) string {
+	switch funcCode {
+	case WriteCoilsFunc:
+		return ReadCoilsFunc
+	case WriteHoldingRegistersFunc:
+		return ReadHoldingRegistersFunc
+	default:
+		return funcCode
+	}
+}
+
+// createWriteBlocks groups adjacent fields only, because a write request spanning a gap
+// overwrites the addresses between fields.
+func createWriteBlocks(fields []DataField, maxLen int) []Block {
+	if len(fields) == 0 {
+		return nil
+	}
+
+	slices.SortFunc(fields, func(a, b DataField) int {
+		return int(a.Address) - int(b.Address)
+	})
+
+	var blocks []Block
+	block := Block{Start: fields[0].Address, Length: fields[0].Length}
+
+	for _, field := range fields[1:] {
+		if field.Address == block.Start+block.Length && int(block.Length+field.Length) <= maxLen {
+			block.Length += field.Length
+			continue
 		}
 
-		coilValue := uint16(0x0000)
-		if v {
-			coilValue = 0xFF00
-		}
+		blocks = append(blocks, block)
+		block = Block{Start: field.Address, Length: field.Length}
+	}
 
-		_, err := mc.WriteSingleCoil(req.Address, coilValue)
-		return err
-	case Int16Type, Uint16Type, Int32Type, Uint32Type, Float32Type:
-		value, ok := req.Value.(float64)
-		if !ok {
-			return errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected numeric value for type %s", req.Type))
-		}
+	return append(blocks, block)
+}
 
-		raw, err := encodeNumericField(value, req.Type, req.Scale)
+func writeData(mc gbmodbus.Client, client Client, blocks []Block) error {
+	for _, block := range blocks {
+		fields := blockFields(client.DataFields, block)
+
+		// Encoding errors are returned unwrapped to preserve the ErrInvalidWriteValue and ErrValueOutOfRange sentinels.
+		raw, err := encodeBlock(client.FunctionCode, block, fields)
 		if err != nil {
 			return err
 		}
 
-		raw = reorderBytes(raw, req.ByteOrder)
+		if err := writeBlock(mc, client.FunctionCode, block, raw); err != nil {
+			names := make([]string, 0, len(fields))
+			for _, field := range fields {
+				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
+			}
+			return fmt.Errorf("%s: write %s starting at %d, length %d, fields [%s]: %w", errWriteRegisters, client.FunctionCode, block.Start, block.Length, strings.Join(names, ", "), err)
+		}
+	}
 
-		if len(raw) == 2 {
-			_, err = mc.WriteSingleRegister(req.Address, binary.BigEndian.Uint16(raw))
+	return nil
+}
+
+// encodeBlock converts the field values of a block into its write request payload.
+func encodeBlock(funcCode string, block Block, fields []DataField) ([]byte, error) {
+	switch funcCode {
+	case WriteCoilsFunc:
+		// Modbus packs coils LSB-first.
+		bits := make([]byte, (block.Length+7)/8)
+		for _, field := range fields {
+			v, ok := field.Value.(bool)
+			if !ok {
+				return nil, errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected bool value for field %s", field.Name))
+			}
+			if v {
+				offset := int(field.Address - block.Start)
+				byteIndex := offset / 8
+				bitIndex := uint(offset % 8)
+				bits[byteIndex] |= 1 << bitIndex
+			}
+		}
+		return bits, nil
+	default:
+		raw := make([]byte, int(block.Length)*2)
+		for _, field := range fields {
+			b, err := encodeRegisterField(field)
+			if err != nil {
+				return nil, err
+			}
+			copy(raw[int(field.Address-block.Start)*2:], b)
+		}
+		return raw, nil
+	}
+}
+
+// writeBlock uses function codes 0x05 and 0x06 for single-element blocks,
+// because not all devices implement 0x0F and 0x10.
+func writeBlock(mc gbmodbus.Client, funcCode string, block Block, raw []byte) error {
+	switch funcCode {
+	case WriteCoilsFunc:
+		if block.Length == 1 {
+			coilValue := uint16(0x0000)
+			if raw[0] != 0 {
+				coilValue = 0xFF00
+			}
+
+			_, err := mc.WriteSingleCoil(block.Start, coilValue)
 			return err
 		}
 
-		_, err = mc.WriteMultipleRegisters(req.Address, 2, raw)
+		_, err := mc.WriteMultipleCoils(block.Start, block.Length, raw)
 		return err
 	default:
-		return fmt.Errorf("%s: %s", errUnsupportedWriteType, req.Type)
+		if block.Length == 1 {
+			_, err := mc.WriteSingleRegister(block.Start, binary.BigEndian.Uint16(raw))
+			return err
+		}
+
+		_, err := mc.WriteMultipleRegisters(block.Start, block.Length, raw)
+		return err
 	}
+}
+
+// encodeRegisterField converts the field value into raw register bytes in the field byte order.
+func encodeRegisterField(field DataField) ([]byte, error) {
+	var raw []byte
+	switch field.Type {
+	case BoolType:
+		v, ok := field.Value.(bool)
+		if !ok {
+			return nil, errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected bool value for field %s", field.Name))
+		}
+
+		raw = []byte{0x00, 0x00}
+		if v {
+			raw[1] = 0x01
+		}
+	default:
+		v, ok := field.Value.(float64)
+		if !ok {
+			return nil, errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected numeric value for field %s", field.Name))
+		}
+
+		var err error
+		raw, err = encodeNumericField(v, field.Type, field.Scale)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return reorderBytes(raw, field.ByteOrder), nil
+}
+
+// ValidateWriteValue checks that value, after scale is applied, fits the numeric register type.
+func ValidateWriteValue(value float64, typ string, scale float64) error {
+	_, err := encodeNumericField(value, typ, scale)
+	return err
 }
 
 // encodeNumericField converts an engineering-unit value back into raw big-endian
@@ -782,6 +994,8 @@ func getBlockMaxLen(funcCode string) (maxLen int) {
 	switch funcCode {
 	case ReadCoilsFunc, ReadDiscreteInputsFunc:
 		maxLen = maxBits
+	case WriteCoilsFunc:
+		maxLen = maxWriteBits
 	default:
 		maxLen = maxRegs
 	}

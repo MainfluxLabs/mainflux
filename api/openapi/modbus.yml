@@ -170,7 +170,7 @@ paths:
   /read:
     post:
       summary: Read a register or coil
-      description: Reads a single register value, coil or discrete input from a Modbus device and returns the decoded value. The request supplies the connection parameters and no stored client is used. Authorization requires a valid user token.
+      description: Reads a single register value, coil or discrete input from a Modbus device on behalf of a thing, publishes the decoded value as a message of the thing and returns it. The request supplies the connection parameters and no stored client is used. The user requires editor access to the thing.
       tags:
         - registers
       requestBody:
@@ -194,7 +194,7 @@ paths:
   /write:
     post:
       summary: Write a register or coil
-      description: Writes a single register value or coil to a Modbus device. The request supplies the connection parameters and no stored client is used. Authorization requires a valid user token. The write function code is derived from "type".
+      description: Writes a single register value or coil to a Modbus device on behalf of a thing, reads the value back and publishes it as a message of the thing. The request supplies the connection parameters and no stored client is used. The user requires editor access to the thing. The write function code is derived from "type".
       tags:
         - registers
       requestBody:
@@ -307,6 +307,12 @@ components:
           type: integer
           description: Register count (auto-calculated from type; set manually only for string fields). Maximum is 125.
           example: 2
+        value:
+          description: Value written on each scheduled run of a write client. Boolean for type "bool", numeric otherwise. Required for the WriteCoils and WriteHoldingRegisters function codes.
+          oneOf:
+            - type: number
+            - type: boolean
+          example: 21.5
       required: [name, type, byte_order, address]
 
     ClientReqSchema:
@@ -328,7 +334,7 @@ components:
           example: 1
         function_code:
           type: string
-          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters, WriteCoils, WriteHoldingRegisters]
           example: "ReadHoldingRegisters"
         scheduler:
           $ref: "#/components/schemas/Scheduler"
@@ -373,7 +379,7 @@ components:
           example: 1
         function_code:
           type: string
-          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters]
+          enum: [ReadCoils, ReadDiscreteInputs, ReadInputRegisters, ReadHoldingRegisters, WriteCoils, WriteHoldingRegisters]
           example: "ReadHoldingRegisters"
         scheduler:
           $ref: "#/components/schemas/Scheduler"
@@ -498,7 +504,7 @@ components:
                 format: binary
                 description: >-
                   CSV file whose rows become the client's data fields, one row per field.
-                  Requires a header row naming the columns (name, type, unit, scale, byte_order, address, length), in any order;
+                  Requires a header row naming the columns (name, type, unit, scale, byte_order, address, length, value), in any order;
                   header names are matched case-insensitively and unknown columns are ignored.
                   The "type" and "byte_order" cell values are also matched case-insensitively.
             required:
@@ -559,6 +565,19 @@ components:
           schema:
             type: object
             properties:
+              thing_id:
+                type: string
+                format: uuid
+                description: Thing on whose behalf the value is read and published.
+                example: "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+              name:
+                type: string
+                description: Key of the published value; the address is used when omitted.
+                example: "temperature"
+              unit:
+                type: string
+                description: Unit included with the published value.
+                example: "°C"
               ip_address:
                 type: string
                 example: "192.168.1.100"
@@ -596,8 +615,10 @@ components:
                 type: integer
                 description: Register count. Required for type "string" and ignored for all other types. Maximum is 125.
                 example: 2
-            required: [ip_address, port, function_code, address]
+            required: [thing_id, ip_address, port, function_code, address]
           example:
+            thing_id: "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+            name: "temperature"
             ip_address: "192.168.1.100"
             port: "502"
             slave_id: 1
@@ -614,6 +635,19 @@ components:
           schema:
             type: object
             properties:
+              thing_id:
+                type: string
+                format: uuid
+                description: Thing on whose behalf the value is written and published.
+                example: "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+              name:
+                type: string
+                description: Key of the published value; the address is used when omitted.
+                example: "setpoint"
+              unit:
+                type: string
+                description: Unit included with the published value.
+                example: "°C"
               ip_address:
                 type: string
                 example: "192.168.1.100"
@@ -649,8 +683,10 @@ components:
                   - type: number
                   - type: boolean
                 example: 42
-            required: [ip_address, port, address, type, value]
+            required: [thing_id, ip_address, port, address, type, value]
           example:
+            thing_id: "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+            name: "setpoint"
             ip_address: "192.168.1.100"
             port: "502"
             slave_id: 1
