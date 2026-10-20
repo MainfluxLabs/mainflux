@@ -41,6 +41,7 @@ paths:
         - $ref: "#/components/parameters/FileName"
         - $ref: "#/components/parameters/FileFormat"
         - $ref: "#/components/parameters/FileClass"
+        - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
           $ref: "#/components/responses/ListFilesRes"
@@ -157,6 +158,7 @@ paths:
         - $ref: "#/components/parameters/FileName"
         - $ref: "#/components/parameters/FileFormat"
         - $ref: "#/components/parameters/FileClass"
+        - $ref: "#/components/parameters/Metadata"
       responses:
         '200':
           $ref: "#/components/responses/ListFilesRes"
@@ -402,6 +404,14 @@ components:
       description: Filter by file class (e.g. document, image).
       schema:
         type: string
+    Metadata:
+      name: metadata
+      in: query
+      required: false
+      description: Metadata filter. Filtering is performed matching the parameter with metadata on top level. Parameter is json.
+      schema:
+        type: object
+        additionalProperties: {}
 
   requestBodies:
     SaveFileReq:

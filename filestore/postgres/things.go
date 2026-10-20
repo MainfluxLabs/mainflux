@@ -134,6 +134,10 @@ func (tr thingsRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	nq, name := getFileNameQuery(fi.Name)
 	cq := getClassQuery(fi.Class)
 	fq := getFormatQuery(fi.Format)
+	m, mq, err := dbutil.GetMetadataQuery(pm.Metadata)
+	if err != nil {
+		return filestore.FileThingsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
 	oq := getFileOrderQuery(pm.Order)
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
@@ -151,6 +155,9 @@ func (tr thingsRepository) RetrieveByThing(ctx context.Context, thingID string, 
 	if fq != "" {
 		query = append(query, fq)
 	}
+	if mq != "" {
+		query = append(query, mq)
+	}
 	var whereClause string
 	if len(query) > 0 {
 		whereClause = fmt.Sprintf(" WHERE %s", strings.Join(query, " AND "))
@@ -162,6 +169,7 @@ func (tr thingsRepository) RetrieveByThing(ctx context.Context, thingID string, 
 		"file_name":   name,
 		"file_class":  fi.Class,
 		"file_format": fi.Format,
+		"metadata":    m,
 		"limit":       pm.Limit,
 		"offset":      pm.Offset,
 	}
