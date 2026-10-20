@@ -148,11 +148,11 @@ func (ss *shadowsService) publish(thingID string, delta State) error {
 	}
 
 	cmd := protomfx.Command{
-		Publisher: thingID,
-		Subtopic:  shadowSubtopic,
-		Protocol:  "shadows",
-		Payload:   payload,
-		Created:   time.Now().UnixNano(),
+		ThingId:  thingID,
+		Subtopic: shadowSubtopic,
+		Protocol: "shadows",
+		Payload:  payload,
+		Created:  time.Now().UnixNano(),
 	}
 
 	subject := nats.GetThingCommandsSubject(thingID, shadowSubtopic)
