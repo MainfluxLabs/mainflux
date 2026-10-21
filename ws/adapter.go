@@ -29,13 +29,13 @@ type Service interface {
 	// SendCommandToThing publishes a command to the specified thing, authorized by user token.
 	SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error
 
-	// SendCommandToThingByKey publishes a command to the specified thing, authorized by publisher thing key (M2M).
+	// SendCommandToThingByKey publishes a command to the specified thing, authorized by sender thing key (M2M).
 	SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error
 
 	// SendCommandToGroup publishes a command to things that belong to a specified group, authorized by user token.
 	SendCommandToGroup(ctx context.Context, token, groupID string, cmd protomfx.Command) error
 
-	// SendCommandToGroupByKey publishes a command to a group, authorized by publisher thing key (M2M).
+	// SendCommandToGroupByKey publishes a command to a group, authorized by sender thing key (M2M).
 	SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
