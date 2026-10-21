@@ -47,10 +47,10 @@ func (pr postgresRepo) ConsumeMessage(_ string, msg protomfx.Message) error {
 }
 
 func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {
-	q := `INSERT INTO senml (subtopic, publisher, protocol,
+	q := `INSERT INTO senml (subtopic, thing_id, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
-          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
+          VALUES (:subtopic, :thing_id, :protocol, :name, :unit,
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
@@ -99,9 +99,9 @@ type jsonRow struct {
 }
 
 func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
-	q := `INSERT INTO json (created, subtopic, publisher, protocol, payload, payload_hash)
-          VALUES (:created, :subtopic, :publisher, :protocol, :payload, :payload_hash)
-          ON CONFLICT (created, publisher, subtopic, payload_hash) DO NOTHING;`
+	q := `INSERT INTO json (created, subtopic, thing_id, protocol, payload, payload_hash)
+          VALUES (:created, :subtopic, :thing_id, :protocol, :payload, :payload_hash)
+          ON CONFLICT (created, thing_id, subtopic, payload_hash) DO NOTHING;`
 
 	tx, err := pr.db.BeginTxx(context.Background(), nil)
 	if err != nil {
