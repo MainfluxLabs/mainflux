@@ -30,8 +30,8 @@ var (
 	Subtopic string = ""
 	// RawOutput raw output mode
 	RawOutput bool = false
-	// Publisher query parameter
-	Publisher string = ""
+	// ThingID query parameter
+	ThingID string = ""
 	// Protocol query parameter
 	Protocol string = ""
 	// From timestamp query parameter (milliseconds)
@@ -132,7 +132,7 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 		Offset:      uint64(Offset),
 		Limit:       uint64(Limit),
 		Subtopic:    Subtopic,
-		Publisher:   Publisher,
+		ThingID:     ThingID,
 		Protocol:    Protocol,
 		From:        From,
 		To:          To,
@@ -157,7 +157,7 @@ func buildSenMLPageMetadata() mfxsdk.SenMLPageMetadata {
 		Offset:      uint64(Offset),
 		Limit:       uint64(Limit),
 		Subtopic:    Subtopic,
-		Publisher:   Publisher,
+		ThingID:     ThingID,
 		Protocol:    Protocol,
 		Name:        SenMLName,
 		Value:       SenMLValue,
