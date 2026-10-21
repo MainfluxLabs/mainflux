@@ -216,9 +216,9 @@ Things are assigned a **type** that determines what they are allowed to do withi
 Authorization is enforced per action:
 
 - **`message`** — any type can send a message to any other type within the same group.
-- **`command`** — restricted by publisher type:
+- **`command`** — restricted by sender thing type:
 
-| Publisher type | `command` targets        |
+| Sender type    | `command` targets        |
 |----------------|--------------------------|
 | `controller`   | sensor, actuator, device |
 | `gateway`      | sensor, actuator, device |
@@ -226,7 +226,7 @@ Authorization is enforced per action:
 | `sensor`       | *(none)*                 |
 | `actuator`     | *(none)*                 |
 
-Both publisher and recipient must belong to the **same group**. A thing with an unknown or missing type is denied all command actions.
+Both sender and recipient must belong to the **same group**. A thing with an unknown or missing type is denied all command actions.
 
 ## Usage
 

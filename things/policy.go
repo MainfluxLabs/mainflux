@@ -16,20 +16,20 @@ var thingPolicies = map[string][]string{
 	ThingTypeActuator:   {},
 }
 
-// CanCommand checks publisher type against a specific recipient type.
-func CanCommand(publisherType, recipientType string) error {
-	allowed, ok := thingPolicies[publisherType]
+// CanCommand checks the sending thing's type against a specific recipient type.
+func CanCommand(thingType, recipientType string) error {
+	allowed, ok := thingPolicies[thingType]
 	if !ok || !slices.Contains(allowed, recipientType) {
 		return errors.ErrAuthorization
 	}
 	return nil
 }
 
-// CanGroupCommand checks if the publisher has any command authority.
+// CanGroupCommand checks if the sending thing has any command authority.
 // Group commands are intentionally coarse — filtering by recipient type
-// is the responsibility of the receiving things, not the publisher.
-func CanGroupCommand(publisherType string) error {
-	if allowed := thingPolicies[publisherType]; len(allowed) == 0 {
+// is the responsibility of the receiving things, not the sender.
+func CanGroupCommand(thingType string) error {
+	if allowed := thingPolicies[thingType]; len(allowed) == 0 {
 		return errors.ErrAuthorization
 	}
 	return nil
