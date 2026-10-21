@@ -101,7 +101,7 @@ func newAuthService() domain.AuthClient {
 }
 
 func TestListSenMLMessages(t *testing.T) {
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	now := time.Now().Unix()
@@ -118,10 +118,10 @@ func TestListSenMLMessages(t *testing.T) {
 	for i := 0; i < numOfMessages; i++ {
 		// Mix possible values as well as value sum.
 		msg := senml.Message{
-			Publisher: pubID,
-			Protocol:  mqttProt,
-			Time:      int64(now - int64(i)),
-			Name:      "name",
+			ThingID:  thingID,
+			Protocol: mqttProt,
+			Time:     int64(now - int64(i)),
+			Name:     "name",
 		}
 
 		count := i % valueFields
@@ -155,7 +155,7 @@ func TestListSenMLMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: pubID},
+		adminToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(nil, messages, thSvc, authSvc)
@@ -446,8 +446,8 @@ func TestListSenMLMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read page messages with publisher filter",
-			url:    fmt.Sprintf("%s/senml?publisher=%s", ts.URL, pubID),
+			desc:   "read page messages with thing ID filter",
+			url:    fmt.Sprintf("%s/senml?thing_id=%s", ts.URL, thingID),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
@@ -479,7 +479,7 @@ func TestListSenMLMessages(t *testing.T) {
 }
 
 func TestListJSONMessages(t *testing.T) {
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	now := time.Now().Unix()
@@ -488,9 +488,9 @@ func TestListJSONMessages(t *testing.T) {
 
 	for i := 0; i < numOfMessages; i++ {
 		msg := mfjson.Message{
-			Publisher: pubID,
-			Protocol:  mqttProt,
-			Created:   int64(now - int64(i)),
+			ThingID:  thingID,
+			Protocol: mqttProt,
+			Created:  int64(now - int64(i)),
 		}
 
 		// Mix different value types
@@ -521,7 +521,7 @@ func TestListJSONMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: pubID},
+		adminToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(messages, nil, thSvc, authSvc)
@@ -682,8 +682,8 @@ func TestListJSONMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read JSON messages with publisher filter",
-			url:    fmt.Sprintf("%s/json?publisher=%s", ts.URL, pubID),
+			desc:   "read JSON messages with thing ID filter",
+			url:    fmt.Sprintf("%s/json?thing_id=%s", ts.URL, thingID),
 			token:  adminToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
@@ -739,7 +739,7 @@ type senmlPageRes struct {
 }
 
 func TestDeleteSenMLMessages(t *testing.T) {
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	authSvc := newAuthService()
@@ -748,7 +748,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: pubID},
+		adminToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(nil, nil, thSvc, authSvc)
@@ -762,24 +762,24 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	}{
 		{
 			desc:   "delete senml messages as admin",
-			url:    fmt.Sprintf("%s/senml/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, thingID),
 			token:  adminToken,
 			status: http.StatusNoContent,
 		},
 		{
 			desc:   "delete senml messages with invalid token",
-			url:    fmt.Sprintf("%s/senml/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, thingID),
 			token:  invalid,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "delete senml messages with empty token",
-			url:    fmt.Sprintf("%s/senml/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/senml/%s", ts.URL, thingID),
 			token:  "",
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "delete senml messages with wrong publisher",
+			desc:   "delete senml messages with wrong thing ID",
 			url:    fmt.Sprintf("%s/senml/%s", ts.URL, invalid),
 			token:  adminToken,
 			status: http.StatusForbidden,
@@ -801,7 +801,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 }
 
 func TestDeleteJSONMessages(t *testing.T) {
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	authSvc := newAuthService()
@@ -810,7 +810,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: pubID},
+		adminToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(nil, nil, thSvc, authSvc)
@@ -824,24 +824,24 @@ func TestDeleteJSONMessages(t *testing.T) {
 	}{
 		{
 			desc:   "delete json messages as admin",
-			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, thingID),
 			token:  adminToken,
 			status: http.StatusNoContent,
 		},
 		{
 			desc:   "delete json messages with invalid token",
-			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, thingID),
 			token:  invalid,
 			status: http.StatusUnauthorized,
 		},
 		{
 			desc:   "delete json messages with empty token",
-			url:    fmt.Sprintf("%s/json/%s", ts.URL, pubID),
+			url:    fmt.Sprintf("%s/json/%s", ts.URL, thingID),
 			token:  "",
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "delete json messages with wrong publisher",
+			desc:   "delete json messages with wrong thing ID",
 			url:    fmt.Sprintf("%s/json/%s", ts.URL, invalid),
 			token:  adminToken,
 			status: http.StatusForbidden,
