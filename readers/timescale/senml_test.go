@@ -49,14 +49,14 @@ func TestListSenMLMessages(t *testing.T) {
 	reader := treader.NewSenMLRepository(db)
 	writer := twriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pubID2, err := idProvider.ID()
+	thingID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
-		Publisher: pubID,
-		Protocol:  mqttProt,
+		ThingID:  thingID,
+		Protocol: mqttProt,
 	}
 
 	messages := []senml.Message{}
@@ -90,7 +90,7 @@ func TestListSenMLMessages(t *testing.T) {
 			msg.Sum = &sum
 			msg.Subtopic = subtopic
 			msg.Protocol = httpProt
-			msg.Publisher = pubID2
+			msg.ThingID = thingID2
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
@@ -114,7 +114,7 @@ func TestListSenMLMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			ThingId:     m.Publisher,
+			ThingId:     m.ThingID,
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
@@ -172,11 +172,11 @@ func TestListSenMLMessages(t *testing.T) {
 				},
 			},
 		},
-		"read senml messages with publisher": {
+		"read senml messages with thing ID": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Limit:     noLimit,
-					Publisher: pubID2,
+					Limit:   noLimit,
+					ThingID: thingID2,
 				},
 			},
 			page: readers.SenMLMessagesPage{
