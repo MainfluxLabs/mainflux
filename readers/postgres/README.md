@@ -8,14 +8,14 @@ Postgres reader provides message repository implementation for Postgres.
 CREATE TABLE json (
     created   BIGINT,
     subtopic  VARCHAR(254),
-    publisher VARCHAR(254),
+    thing_id  VARCHAR(254),
     protocol  TEXT,
     payload   JSONB
 );
 
 CREATE TABLE senml (
     subtopic     VARCHAR(254) NOT NULL,
-    publisher    UUID NOT NULL,
+    thing_id     UUID NOT NULL,
     protocol     TEXT,
     name         TEXT NOT NULL,
     unit         TEXT,

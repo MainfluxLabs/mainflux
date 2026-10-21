@@ -53,14 +53,14 @@ func TestListSenMLMessages(t *testing.T) {
 	reader := preader.NewSenMLRepository(db)
 	writer := pwriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pubID2, err := idProvider.ID()
+	thingID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
-		Publisher: pubID,
-		Protocol:  mqttProt,
+		ThingID:  thingID,
+		Protocol: mqttProt,
 	}
 
 	messages := []senml.Message{}
@@ -94,7 +94,7 @@ func TestListSenMLMessages(t *testing.T) {
 			msg.Sum = &sum
 			msg.Subtopic = subtopic
 			msg.Protocol = httpProt
-			msg.Publisher = pubID2
+			msg.ThingID = thingID2
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
@@ -118,7 +118,7 @@ func TestListSenMLMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			ThingId:     m.Publisher,
+			ThingId:     m.ThingID,
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
@@ -176,11 +176,11 @@ func TestListSenMLMessages(t *testing.T) {
 				},
 			},
 		},
-		"read messages with publisher": {
+		"read messages with thing ID": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Limit:     noLimit,
-					Publisher: pubID2,
+					Limit:   noLimit,
+					ThingID: thingID2,
 				},
 			},
 			page: readers.SenMLMessagesPage{
@@ -466,7 +466,7 @@ func TestSenMLAggregation(t *testing.T) {
 	reader := preader.NewSenMLRepository(db)
 	writer := pwriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	now := time.Now().Unix()
@@ -481,7 +481,7 @@ func TestSenMLAggregation(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		err = writer.ConsumeMessage(subject, protomfx.Message{
-			ThingId:     pubID,
+			ThingId:     thingID,
 			Protocol:    mqttProt,
 			ContentType: senml.JSON,
 			Payload:     payload,
@@ -493,7 +493,7 @@ func TestSenMLAggregation(t *testing.T) {
 		"max aggregation": {
 			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Limit:       noLimit,
-				Publisher:   pubID,
+				ThingID:     thingID,
 				AggType:     maxAgg,
 				AggInterval: "hour",
 				AggValue:    1,
@@ -503,7 +503,7 @@ func TestSenMLAggregation(t *testing.T) {
 		"min aggregation": {
 			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Limit:       noLimit,
-				Publisher:   pubID,
+				ThingID:     thingID,
 				AggType:     minAgg,
 				AggInterval: "hour",
 				AggValue:    1,
@@ -513,7 +513,7 @@ func TestSenMLAggregation(t *testing.T) {
 		"avg aggregation": {
 			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Limit:       noLimit,
-				Publisher:   pubID,
+				ThingID:     thingID,
 				AggType:     avgAgg,
 				AggInterval: "hour",
 				AggValue:    1,
@@ -523,7 +523,7 @@ func TestSenMLAggregation(t *testing.T) {
 		"count aggregation": {
 			MessagesPageMetadata: readers.MessagesPageMetadata{
 				Limit:       noLimit,
-				Publisher:   pubID,
+				ThingID:     thingID,
 				AggType:     countAgg,
 				AggInterval: "hour",
 				AggValue:    1,
@@ -544,14 +544,14 @@ func TestDeleteSenMLMessages(t *testing.T) {
 	reader := preader.NewSenMLRepository(db)
 	writer := pwriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
-	pubID2, err := idProvider.ID()
+	thingID2, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	m := senml.Message{
-		Publisher: pubID,
-		Protocol:  mqttProt,
+		ThingID:  thingID,
+		Protocol: mqttProt,
 	}
 
 	messages := []senml.Message{}
@@ -576,7 +576,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			msg.Sum = &sum
 			msg.Subtopic = subtopic
 			msg.Protocol = httpProt
-			msg.Publisher = pubID2
+			msg.ThingID = thingID2
 			msg.Name = msgName
 			queryMsgs = append(queryMsgs, msg)
 		}
@@ -600,7 +600,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		pm := protomfx.Message{
-			ThingId:     m.Publisher,
+			ThingId:     m.ThingID,
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
@@ -619,10 +619,10 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		"delete senml messages with subtopic": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: pubID2,
-					Subtopic:  subtopic,
-					From:      0,
-					To:        now + 1,
+					ThingID:  thingID2,
+					Subtopic: subtopic,
+					From:     0,
+					To:       now + 1,
 				},
 			},
 			expectedCount: uint64(len(queryMsgs)),
@@ -631,10 +631,10 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		"delete senml messages with protocol": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: pubID2,
-					Protocol:  httpProt,
-					From:      0,
-					To:        now + 1,
+					ThingID:  thingID2,
+					Protocol: httpProt,
+					From:     0,
+					To:       now + 1,
 				},
 			},
 			expectedCount: uint64(len(queryMsgs)),
@@ -643,9 +643,9 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		"delete senml messages with time range from": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: pubID,
-					From:      messages[20].Time,
-					To:        now + 1,
+					ThingID: thingID,
+					From:    messages[20].Time,
+					To:      now + 1,
 				},
 			},
 			expectedCount: 17,
@@ -654,9 +654,9 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		"delete senml messages with time range to": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: pubID,
-					From:      0,
-					To:        messages[20].Time + 1,
+					ThingID: thingID,
+					From:    0,
+					To:      messages[20].Time + 1,
 				},
 			},
 			expectedCount: 65,
@@ -665,40 +665,40 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		"delete senml messages with time range from/to": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: pubID,
-					From:      messages[50].Time,
-					To:        messages[20].Time + 1,
+					ThingID: thingID,
+					From:    messages[50].Time,
+					To:      messages[20].Time + 1,
 				},
 			},
 			expectedCount: 25,
 			description:   "should delete messages within time range",
 		},
-		"delete all senml messages for publisher": {
+		"delete all senml messages for thing ID": {
 			pageMeta: readers.SenMLPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: pubID,
-					From:      0,
-					To:        now + 1,
+					ThingID: thingID,
+					From:    0,
+					To:      now + 1,
 				},
 			},
 			expectedCount: uint64(msgsNum - len(queryMsgs)),
-			description:   "should delete all messages for specific publisher",
+			description:   "should delete all messages for specific thing",
 		},
 	}
 
 	for desc, tc := range cases {
 		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: pubID,
-				From:      0,
-				To:        now + 1,
+				ThingID: thingID,
+				From:    0,
+				To:      now + 1,
 			},
 		})
 		_ = reader.Remove(context.Background(), readers.SenMLPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: pubID2,
-				From:      0,
-				To:        now + 1,
+				ThingID: thingID2,
+				From:    0,
+				To:      now + 1,
 			},
 		})
 
@@ -718,7 +718,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 			pm := protomfx.Message{
-				ThingId:     m.Publisher,
+				ThingId:     m.ThingID,
 				Subtopic:    m.Subtopic,
 				Protocol:    m.Protocol,
 				ContentType: senml.JSON,
@@ -731,12 +731,12 @@ func TestDeleteSenMLMessages(t *testing.T) {
 
 		beforePage, err := reader.Retrieve(context.Background(), readers.SenMLPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: tc.pageMeta.Publisher,
-				Subtopic:  tc.pageMeta.Subtopic,
-				Protocol:  tc.pageMeta.Protocol,
-				From:      tc.pageMeta.From,
-				To:        tc.pageMeta.To,
-				Limit:     noLimit,
+				ThingID:  tc.pageMeta.ThingID,
+				Subtopic: tc.pageMeta.Subtopic,
+				Protocol: tc.pageMeta.Protocol,
+				From:     tc.pageMeta.From,
+				To:       tc.pageMeta.To,
+				Limit:    noLimit,
 			},
 		})
 
@@ -748,12 +748,12 @@ func TestDeleteSenMLMessages(t *testing.T) {
 
 		afterPage, err := reader.Retrieve(context.Background(), readers.SenMLPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: tc.pageMeta.Publisher,
-				Subtopic:  tc.pageMeta.Subtopic,
-				Protocol:  tc.pageMeta.Protocol,
-				From:      tc.pageMeta.From,
-				To:        tc.pageMeta.To,
-				Limit:     noLimit,
+				ThingID:  tc.pageMeta.ThingID,
+				Subtopic: tc.pageMeta.Subtopic,
+				Protocol: tc.pageMeta.Protocol,
+				From:     tc.pageMeta.From,
+				To:       tc.pageMeta.To,
+				Limit:    noLimit,
 			},
 		})
 		require.Nil(t, err)
