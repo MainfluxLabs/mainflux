@@ -65,7 +65,7 @@ type messagesPageMetadataReq interface {
 	GetOffset() uint64
 	GetLimit() uint64
 	GetSubtopic() string
-	GetPublisher() string
+	GetThingId() string
 	GetProtocol() string
 	GetFrom() int64
 	GetTo() int64
@@ -81,7 +81,7 @@ func decodeMessagesPageMetadata(req messagesPageMetadataReq) domain.MessagesPage
 		Offset:      req.GetOffset(),
 		Limit:       req.GetLimit(),
 		Subtopic:    req.GetSubtopic(),
-		Publisher:   req.GetPublisher(),
+		Publisher:   req.GetThingId(),
 		Protocol:    req.GetProtocol(),
 		From:        req.GetFrom(),
 		To:          req.GetTo(),

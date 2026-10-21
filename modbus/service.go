@@ -676,7 +676,7 @@ func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, 
 		Payload:  payload,
 	}
 
-	pc := domain.PubConfigInfo{PublisherID: thingID, ProfileConfig: config}
+	pc := domain.PubConfigInfo{ThingID: thingID, ProfileConfig: config}
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}

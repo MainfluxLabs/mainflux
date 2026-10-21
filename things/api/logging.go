@@ -271,7 +271,7 @@ func (lm *loggingMiddleware) RemoveProfiles(ctx context.Context, token string, i
 
 func (lm *loggingMiddleware) GetPubConfigByKey(ctx context.Context, key things.ThingKey) (pc things.PubConfigInfo, err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method get_pub_config_by_key for thing id %s took %s to complete", pc.PublisherID, time.Since(begin))
+		message := fmt.Sprintf("Method get_pub_config_by_key for thing id %s took %s to complete", pc.ThingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -361,7 +361,7 @@ func (lm *loggingMiddleware) CanThingAccessGroup(ctx context.Context, req things
 
 func (lm *loggingMiddleware) CanThingCommand(ctx context.Context, req things.ThingCommandReq) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_thing_command for publisher id %s and recipient id %s took %s to complete", req.PublisherID, req.RecipientID, time.Since(begin))
+		message := fmt.Sprintf("Method can_thing_command for thing id %s and recipient id %s took %s to complete", req.ThingID, req.RecipientID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -374,7 +374,7 @@ func (lm *loggingMiddleware) CanThingCommand(ctx context.Context, req things.Thi
 
 func (lm *loggingMiddleware) CanThingGroupCommand(ctx context.Context, req things.ThingGroupCommandReq) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method can_thing_group_command for publisher id %s and group id %s took %s to complete", req.PublisherID, req.GroupID, time.Since(begin))
+		message := fmt.Sprintf("Method can_thing_group_command for thing id %s and group id %s took %s to complete", req.ThingID, req.GroupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

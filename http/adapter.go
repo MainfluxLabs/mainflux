@@ -93,7 +93,7 @@ func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domai
 		return err
 	}
 
-	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: publisherID, RecipientID: thingID}); err != nil {
+	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{ThingID: publisherID, RecipientID: thingID}); err != nil {
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (as *adapterService) SendCommandToGroupByKey(ctx context.Context, key domai
 		return err
 	}
 
-	if err := as.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{PublisherID: publisherID, GroupID: groupID}); err != nil {
+	if err := as.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{ThingID: publisherID, GroupID: groupID}); err != nil {
 		return err
 	}
 

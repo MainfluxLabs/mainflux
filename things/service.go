@@ -610,7 +610,7 @@ func (ts *thingsService) GetPubConfigByKey(ctx context.Context, key ThingKey) (P
 	}
 
 	res := PubConfigInfo{
-		PublisherID:   thID,
+		ThingID:       thID,
 		ProfileConfig: profile.Config,
 	}
 
@@ -709,7 +709,7 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 }
 
 func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandReq) error {
-	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.ThingID)
 	if err != nil {
 		return err
 	}
@@ -727,7 +727,7 @@ func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandRe
 }
 
 func (ts *thingsService) CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error {
-	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.PublisherID)
+	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.ThingID)
 	if err != nil {
 		return err
 	}

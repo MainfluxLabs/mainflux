@@ -111,7 +111,7 @@ func (svc *adapterService) SendCommandToThingByKey(ctx context.Context, key doma
 		return err
 	}
 
-	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{PublisherID: senderThingID, RecipientID: thingID}); err != nil {
+	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{ThingID: senderThingID, RecipientID: thingID}); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (svc *adapterService) SendCommandToGroupByKey(ctx context.Context, key doma
 		return err
 	}
 
-	if err := svc.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{PublisherID: thingID, GroupID: groupID}); err != nil {
+	if err := svc.things.CanThingGroupCommand(ctx, domain.ThingGroupCommandReq{ThingID: thingID, GroupID: groupID}); err != nil {
 		return err
 	}
 
