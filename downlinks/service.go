@@ -388,7 +388,7 @@ func (ds *downlinksService) createTask(d Downlink, config *domain.ProfileConfig)
 		}
 
 		if err := ds.publish(config, d.ThingID, formattedPayload); err != nil {
-			ds.logger.Error(fmt.Sprintf("%s with publisher %s: %s", errPublishMessage, d.ThingID, err))
+			ds.logger.Error(fmt.Sprintf("%s with thing %s: %s", errPublishMessage, d.ThingID, err))
 			return
 		}
 
