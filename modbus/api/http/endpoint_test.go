@@ -202,6 +202,11 @@ func TestCreateClients(t *testing.T) {
 	outOfRangeValueClient := writeRegistersClient
 	outOfRangeValueClient.DataFields = []fieldReq{{Name: "mode", Type: modbus.Int16Type, Value: 100000}}
 
+	addressOutOfRangeClient := writeRegistersClient
+	addressOutOfRangeClient.DataFields = []fieldReq{
+		{Name: "setpoint", Type: modbus.Float32Type, Address: 65535, Value: 21.5},
+	}
+
 	invalidValueClient := writeRegistersClient
 	invalidValueClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type, Value: true}}
 
@@ -374,6 +379,14 @@ func TestCreateClients(t *testing.T) {
 		{
 			desc:        "create write client with value out of range",
 			body:        toJSON([]clientReq{outOfRangeValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with field past the last address",
+			body:        toJSON([]clientReq{addressOutOfRangeClient}),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,

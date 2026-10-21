@@ -8,6 +8,11 @@ import (
 	gbmodbus "github.com/goburrow/modbus"
 )
 
+const (
+	errReadRegisters  = "failed to read registers"
+	errWriteRegisters = "failed to write registers"
+)
+
 func isWriteFunc(funcCode string) bool {
 	switch funcCode {
 	case WriteCoilsFunc, WriteHoldingRegistersFunc:
@@ -29,8 +34,7 @@ func readFunc(funcCode string) string {
 	}
 }
 
-func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Client, blocks []Block) (map[string][]byte, error) {
-	mc := gbmodbus.NewClient(handler)
+func readData(mc gbmodbus.Client, client Client, blocks []Block) (map[string][]byte, error) {
 	data := make(map[string][]byte)
 
 	for _, block := range blocks {
@@ -38,11 +42,11 @@ func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Cl
 
 		raw, err := readBlock(mc, client.FunctionCode, block.Start, block.Length)
 		if err != nil {
-			names := make([]string, 0, len(fields))
-			for _, field := range fields {
-				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
-			}
-			return nil, fmt.Errorf("%s: read %s starting at %d, length %d, fields [%s]: %w", errReadRegisters, client.FunctionCode, block.Start, block.Length, strings.Join(names, ", "), err)
+			return nil, fmt.Errorf(
+				"%s: read %s starting at %d, length %d, fields [%s]: %w",
+				errReadRegisters, client.FunctionCode, block.Start, block.Length,
+				fieldNames(fields), err,
+			)
 		}
 
 		for _, field := range fields {
@@ -80,11 +84,11 @@ func writeData(mc gbmodbus.Client, client Client, blocks []Block) error {
 		}
 
 		if err := writeBlock(mc, client.FunctionCode, block, raw); err != nil {
-			names := make([]string, 0, len(fields))
-			for _, field := range fields {
-				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
-			}
-			return fmt.Errorf("%s: write %s starting at %d, length %d, fields [%s]: %w", errWriteRegisters, client.FunctionCode, block.Start, block.Length, strings.Join(names, ", "), err)
+			return fmt.Errorf(
+				"%s: write %s starting at %d, length %d, fields [%s]: %w",
+				errWriteRegisters, client.FunctionCode, block.Start, block.Length,
+				fieldNames(fields), err,
+			)
 		}
 	}
 
@@ -117,4 +121,14 @@ func writeBlock(mc gbmodbus.Client, funcCode string, block Block, raw []byte) er
 		_, err := mc.WriteMultipleRegisters(block.Start, block.Length, raw)
 		return err
 	}
+}
+
+// fieldNames formats fields as name@address pairs for error messages.
+func fieldNames(fields []DataField) string {
+	names := make([]string, 0, len(fields))
+	for _, field := range fields {
+		names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
+	}
+
+	return strings.Join(names, ", ")
 }

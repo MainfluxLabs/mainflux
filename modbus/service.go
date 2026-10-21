@@ -126,6 +126,12 @@ var (
 	// ErrValueOutOfRange indicates the write value is out of range for the register type.
 	ErrValueOutOfRange = errors.New("value out of range for type")
 
+	// ErrUnsupportedWriteType indicates the field type cannot be written to a register.
+	ErrUnsupportedWriteType = errors.New("unsupported write type")
+
+	// ErrAddressOutOfRange indicates a field extends past the last Modbus address.
+	ErrAddressOutOfRange = errors.New("field address out of range")
+
 	// ErrDeviceUnavailable indicates the device is unreachable, timed out
 	// or returned an invalid response.
 	ErrDeviceUnavailable = errors.New("modbus device unavailable")
@@ -133,16 +139,10 @@ var (
 	// ErrDeviceRejected indicates the device returned a Modbus exception response.
 	ErrDeviceRejected = errors.New("modbus device rejected request")
 
-	errReadRegisters  = "failed to read registers"
-	errWriteRegisters = "failed to write registers"
-	errRateLimiter    = "failed to wait for rate limiter"
-	errFormatPayload  = "failed to format payload"
-	errGetConnection  = "failed to get connection"
-	errEmptyResponse  = "empty response payload"
-	errNotEnoughBytes = "not enough bytes to read"
-
-	errInvalidWriteValue    = "invalid write value"
-	errUnsupportedWriteType = "unsupported write type"
+	errRateLimiter   = "failed to wait for rate limiter"
+	errFormatPayload = "failed to format payload"
+	errGetConnection = "failed to get connection"
+	errEmptyResponse = "empty response payload"
 )
 
 // deviceError wraps err with the sentinel error matching the failure.
@@ -153,6 +153,13 @@ func deviceError(err error) error {
 	}
 
 	return errors.Wrap(ErrDeviceUnavailable, err)
+}
+
+// isRequestError reports whether err is caused by the requested value rather than by the device.
+func isRequestError(err error) bool {
+	return errors.Contains(err, ErrInvalidWriteValue) ||
+		errors.Contains(err, ErrValueOutOfRange) ||
+		errors.Contains(err, ErrUnsupportedWriteType)
 }
 
 func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
@@ -190,6 +197,9 @@ func (cs *clientsService) createClients(ctx context.Context, token, thingID stri
 		clients[i].ID = id
 
 		clients[i].DataFields = calcFieldLengths(clients[i].DataFields)
+		if err := validateFieldAddresses(clients[i].DataFields); err != nil {
+			return []Client{}, err
+		}
 	}
 
 	cls, err := cs.clients.Save(ctx, clients...)
@@ -288,6 +298,10 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	}
 
 	fields := calcFieldLengths([]DataField{field})
+	if err := validateFieldAddresses(fields); err != nil {
+		return nil, err
+	}
+
 	maxLen := getBlockMaxLen(req.FunctionCode)
 	blocks := createBlocks(fields, maxLen)
 
@@ -299,7 +313,7 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 		DataFields:   fields,
 	}
 
-	data, err := cs.readData(handler, client, blocks)
+	data, err := readData(gbmodbus.NewClient(handler), client, blocks)
 	if err != nil {
 		return nil, deviceError(err)
 	}
@@ -371,11 +385,15 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 		Value:     req.Value,
 	}
 	fields := calcFieldLengths([]DataField{field})
+	if err := validateFieldAddresses(fields); err != nil {
+		return err
+	}
+
 	client := Client{FunctionCode: funcCode, DataFields: fields}
 	blocks := createWriteBlocks(fields, getBlockMaxLen(funcCode))
 
 	if err := writeData(gbmodbus.NewClient(handler), client, blocks); err != nil {
-		if errors.Contains(err, ErrInvalidWriteValue) || errors.Contains(err, ErrValueOutOfRange) {
+		if isRequestError(err) {
 			return err
 		}
 		return deviceError(err)
@@ -385,7 +403,7 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 	readClient := client
 	readClient.FunctionCode = readFunc(funcCode)
 
-	data, err := cs.readData(handler, readClient, blocks)
+	data, err := readData(gbmodbus.NewClient(handler), readClient, blocks)
 	if err != nil {
 		return deviceError(err)
 	}
@@ -434,9 +452,12 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	cs.unscheduleTask(c)
-
 	client.DataFields = calcFieldLengths(client.DataFields)
+	if err := validateFieldAddresses(client.DataFields); err != nil {
+		return err
+	}
+
+	cs.unscheduleTask(c)
 
 	if err = cs.clients.Update(ctx, client); err != nil {
 		return err
@@ -609,7 +630,7 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 			cs.logger.Info(fmt.Sprintf("%s: wrote %d fields", logPrefix, len(client.DataFields)))
 		}
 
-		data, err := cs.readData(handler, readClient, blocks)
+		data, err := readData(gbmodbus.NewClient(handler), readClient, blocks)
 		if err != nil {
 			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return

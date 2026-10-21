@@ -1,6 +1,14 @@
 package modbus
 
-import "slices"
+import (
+	"fmt"
+	"slices"
+
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
+)
+
+// addressSpace is the number of addresses in a Modbus table.
+const addressSpace = 1 << 16
 
 type Block struct {
 	Start  uint16
@@ -114,4 +122,20 @@ func calcFieldLengths(fields []DataField) []DataField {
 	}
 
 	return fields
+}
+
+// validateFieldAddresses checks that every field ends within the Modbus address space,
+// because a block end beyond the last address wraps around in 16-bit arithmetic.
+func validateFieldAddresses(fields []DataField) error {
+	for _, field := range fields {
+		if int(field.Address)+int(field.Length) > addressSpace {
+			err := fmt.Errorf(
+				"field %s at address %d with length %d",
+				field.Name, field.Address, field.Length,
+			)
+			return errors.Wrap(ErrAddressOutOfRange, err)
+		}
+	}
+
+	return nil
 }

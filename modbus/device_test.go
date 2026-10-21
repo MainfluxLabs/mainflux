@@ -193,7 +193,7 @@ func TestWriteData(t *testing.T) {
 			fields: []DataField{
 				{Name: "label", Type: StringType, Address: 0, Length: 2, Value: float64(1)},
 			},
-			err: errors.New(fmt.Sprintf("%s: %s", errUnsupportedWriteType, StringType)),
+			err: ErrUnsupportedWriteType,
 		},
 		{
 			desc:     "write register with value out of range",

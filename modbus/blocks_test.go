@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -234,5 +235,34 @@ func TestCalcFieldLengths(t *testing.T) {
 	for _, tc := range cases {
 		got := calcFieldLengths(tc.fields)
 		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
+	}
+}
+
+func TestValidateFieldAddresses(t *testing.T) {
+	cases := []struct {
+		desc   string
+		fields []DataField
+		err    error
+	}{
+		{
+			desc: "validate field ending at the last address",
+			fields: []DataField{
+				{Name: "last", Address: 65534, Length: 2},
+			},
+			err: nil,
+		},
+		{
+			desc: "validate field ending past the last address",
+			fields: []DataField{
+				{Name: "wrapped", Address: 65535, Length: 2},
+			},
+			err: ErrAddressOutOfRange,
+		},
+	}
+
+	for _, tc := range cases {
+		err := validateFieldAddresses(tc.fields)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 }
