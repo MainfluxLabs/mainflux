@@ -31,10 +31,10 @@ type Service interface {
 	// Unsubscribe method is used to stop observing resource.
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
 
-	// SendCommandToThing publishes a command to the specified thing, authorized by publisher thing key (M2M).
+	// SendCommandToThing publishes a command to the specified thing, authorized by sender thing key (M2M).
 	SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error
 
-	// SendCommandToGroup publishes a command to a group, authorized by publisher thing key (M2M).
+	// SendCommandToGroup publishes a command to a group, authorized by sender thing key (M2M).
 	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
