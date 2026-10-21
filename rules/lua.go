@@ -120,7 +120,7 @@ type luaAPIFunc struct {
 
 // Initializes and returns a new script environment associated with a specific Lua script and Mainflux message.
 // The following is made available to the Lua environment as part of an "mfx" table in the global namespace:
-//  1. The associated Message payload, subtopic, creation timestamp, and publisher ID
+//  1. The associated Message payload, subtopic, creation timestamp, and thing ID
 //  2. API functions
 func NewLuaEnv(service *rulesService, script *LuaScript, ruleID string, message *protomfx.Message, payload map[string]any, functions ...luaAPIFunc) (*luaEnv, error) {
 	state := lua.NewState()
