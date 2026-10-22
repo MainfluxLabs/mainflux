@@ -12,6 +12,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/http"
 	log "github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
@@ -43,7 +44,8 @@ func (lm *loggingMiddleware) Publish(ctx context.Context, key domain.ThingKey, m
 
 func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_command_to_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method send_command_to_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -56,7 +58,8 @@ func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, thin
 
 func (lm *loggingMiddleware) SendCommandToGroup(ctx context.Context, token, groupID string, cmd protomfx.Command) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_command_to_group for group id %s took %s to complete", groupID, time.Since(begin))
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method send_command_to_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

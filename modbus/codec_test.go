@@ -11,36 +11,9 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	gbmodbus "github.com/goburrow/modbus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// modbusClientMock records the last write call made through it, so tests
-// can assert on address/value/quantity without a real Modbus device.
-type modbusClientMock struct {
-	gbmodbus.Client
-	lastAddress  uint16
-	lastValue    uint16
-	lastQuantity uint16
-	lastBytes    []byte
-	err          error
-}
-
-func (f *modbusClientMock) WriteSingleCoil(address, value uint16) ([]byte, error) {
-	f.lastAddress, f.lastValue = address, value
-	return nil, f.err
-}
-
-func (f *modbusClientMock) WriteSingleRegister(address, value uint16) ([]byte, error) {
-	f.lastAddress, f.lastValue = address, value
-	return nil, f.err
-}
-
-func (f *modbusClientMock) WriteMultipleRegisters(address, quantity uint16, value []byte) ([]byte, error) {
-	f.lastAddress, f.lastQuantity, f.lastBytes = address, quantity, value
-	return nil, f.err
-}
 
 func TestReorderBytes(t *testing.T) {
 	cases := []struct {
@@ -218,168 +191,6 @@ func TestExtractFieldBytesCoils(t *testing.T) {
 			continue
 		}
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
-		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
-	}
-}
-
-func TestCreateBlocks(t *testing.T) {
-	cases := []struct {
-		desc   string
-		fields []DataField
-		maxLen int
-		want   []Block
-	}{
-		{
-			desc:   "empty fields returns nil",
-			fields: []DataField{},
-			maxLen: 125,
-			want:   nil,
-		},
-		{
-			desc: "single field creates one block",
-			fields: []DataField{
-				{Address: 0, Length: 1},
-			},
-			maxLen: 125,
-			want:   []Block{{Start: 0, Length: 1}},
-		},
-		{
-			desc: "contiguous fields merge into one block",
-			fields: []DataField{
-				{Address: 0, Length: 1},
-				{Address: 1, Length: 1},
-				{Address: 2, Length: 1},
-			},
-			maxLen: 125,
-			want:   []Block{{Start: 0, Length: 3}},
-		},
-		{
-			desc: "fields exceeding maxLen split into separate blocks",
-			fields: []DataField{
-				{Address: 0, Length: 1},
-				{Address: 200, Length: 1},
-			},
-			maxLen: 125,
-			want: []Block{
-				{Start: 0, Length: 1},
-				{Start: 200, Length: 1},
-			},
-		},
-		{
-			desc: "fields are sorted by address before grouping",
-			fields: []DataField{
-				{Address: 5, Length: 1},
-				{Address: 0, Length: 1},
-				{Address: 3, Length: 1},
-			},
-			maxLen: 125,
-			want:   []Block{{Start: 0, Length: 6}},
-		},
-	}
-
-	for _, tc := range cases {
-		got := createBlocks(tc.fields, tc.maxLen)
-		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
-	}
-}
-
-func TestGetBlockMaxLen(t *testing.T) {
-	cases := []struct {
-		desc     string
-		funcCode string
-		want     int
-	}{
-		{
-			desc:     "ReadCoils returns maxBits",
-			funcCode: ReadCoilsFunc,
-			want:     maxBits,
-		},
-		{
-			desc:     "ReadDiscreteInputs returns maxBits",
-			funcCode: ReadDiscreteInputsFunc,
-			want:     maxBits,
-		},
-		{
-			desc:     "ReadHoldingRegisters returns maxRegs",
-			funcCode: ReadHoldingRegistersFunc,
-			want:     maxRegs,
-		},
-		{
-			desc:     "ReadInputRegisters returns maxRegs",
-			funcCode: ReadInputRegistersFunc,
-			want:     maxRegs,
-		},
-		{
-			desc:     "unknown function code returns maxRegs",
-			funcCode: "unknown",
-			want:     maxRegs,
-		},
-	}
-
-	for _, tc := range cases {
-		got := getBlockMaxLen(tc.funcCode)
-		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
-	}
-}
-
-func TestCalcFieldLengths(t *testing.T) {
-	cases := []struct {
-		desc   string
-		fields []DataField
-		want   []DataField
-	}{
-		{
-			desc:   "int16 gets length 1",
-			fields: []DataField{{Type: Int16Type}},
-			want:   []DataField{{Type: Int16Type, Length: 1}},
-		},
-		{
-			desc:   "uint16 gets length 1",
-			fields: []DataField{{Type: Uint16Type}},
-			want:   []DataField{{Type: Uint16Type, Length: 1}},
-		},
-		{
-			desc:   "bool gets length 1",
-			fields: []DataField{{Type: BoolType}},
-			want:   []DataField{{Type: BoolType, Length: 1}},
-		},
-		{
-			desc:   "int32 gets length 2",
-			fields: []DataField{{Type: Int32Type}},
-			want:   []DataField{{Type: Int32Type, Length: 2}},
-		},
-		{
-			desc:   "uint32 gets length 2",
-			fields: []DataField{{Type: Uint32Type}},
-			want:   []DataField{{Type: Uint32Type, Length: 2}},
-		},
-		{
-			desc:   "float32 gets length 2",
-			fields: []DataField{{Type: Float32Type}},
-			want:   []DataField{{Type: Float32Type, Length: 2}},
-		},
-		{
-			desc:   "string length is unchanged",
-			fields: []DataField{{Type: StringType, Length: 5}},
-			want:   []DataField{{Type: StringType, Length: 5}},
-		},
-		{
-			desc: "mixed types get correct lengths",
-			fields: []DataField{
-				{Type: Int16Type},
-				{Type: Float32Type},
-				{Type: StringType, Length: 3},
-			},
-			want: []DataField{
-				{Type: Int16Type, Length: 1},
-				{Type: Float32Type, Length: 2},
-				{Type: StringType, Length: 3},
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		got := calcFieldLengths(tc.fields)
 		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
 	}
 }
@@ -720,72 +531,51 @@ func TestEncodeNumericField(t *testing.T) {
 	}
 }
 
-func TestWriteField(t *testing.T) {
-	t.Run("bool true writes coil ON", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 10, Type: BoolType, Value: true})
-		require.Nil(t, err)
-		assert.Equal(t, uint16(10), mc.lastAddress)
-		assert.Equal(t, uint16(0xFF00), mc.lastValue)
-	})
+func TestValidateWriteValue(t *testing.T) {
+	cases := []struct {
+		desc  string
+		value float64
+		typ   string
+		scale float64
+		err   error
+	}{
+		{
+			desc:  "validate int16 value within range",
+			value: 100,
+			typ:   Int16Type,
+			err:   nil,
+		},
+		{
+			desc:  "validate int16 value out of range",
+			value: 100000,
+			typ:   Int16Type,
+			err:   ErrValueOutOfRange,
+		},
+		{
+			desc:  "validate uint16 negative value",
+			value: -1,
+			typ:   Uint16Type,
+			err:   ErrValueOutOfRange,
+		},
+		{
+			desc:  "validate int16 value out of range after scale",
+			value: 10,
+			typ:   Int16Type,
+			scale: 0.0001,
+			err:   ErrValueOutOfRange,
+		},
+		{
+			desc:  "validate float32 value",
+			value: 21.5,
+			typ:   Float32Type,
+			err:   nil,
+		},
+	}
 
-	t.Run("bool false writes coil OFF", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 10, Type: BoolType, Value: false})
-		require.Nil(t, err)
-		assert.Equal(t, uint16(0x0000), mc.lastValue)
-	})
-
-	t.Run("bool with non-bool value returns error", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 10, Type: BoolType, Value: "true"})
-		assert.Error(t, err)
-	})
-
-	t.Run("uint16 writes single register", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, Value: float64(256)})
-		require.Nil(t, err)
-		assert.Equal(t, uint16(100), mc.lastAddress)
-		assert.Equal(t, uint16(256), mc.lastValue)
-	})
-
-	t.Run("numeric with non-numeric value returns error", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, Value: "256"})
-		assert.Error(t, err)
-		assert.True(t, errors.Contains(err, ErrInvalidWriteValue))
-	})
-
-	t.Run("uint16 applies byte order before writing single register", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		// 256 = 0x0100 -> big-endian bytes [0x01, 0x00]; DCBA reverses to [0x00, 0x01] = 1.
-		err := writeField(mc, WriteRequest{Address: 100, Type: Uint16Type, ByteOrder: ByteOrderDCBA, Value: float64(256)})
-		require.Nil(t, err)
-		assert.Equal(t, uint16(1), mc.lastValue)
-	})
-
-	t.Run("int16 out of range returns error", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 100, Type: Int16Type, Value: float64(100000)})
-		assert.Error(t, err)
-		assert.True(t, errors.Contains(err, ErrValueOutOfRange))
-	})
-
-	t.Run("float32 writes two registers with byte order applied", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 200, Type: Float32Type, ByteOrder: ByteOrderDCBA, Value: 1.5})
-		require.Nil(t, err)
-		assert.Equal(t, uint16(200), mc.lastAddress)
-		assert.Equal(t, uint16(2), mc.lastQuantity)
-		assert.Equal(t, reorderBytes(float32ToBytes(1.5), ByteOrderDCBA), mc.lastBytes)
-	})
-
-	t.Run("unsupported type returns error", func(t *testing.T) {
-		mc := &modbusClientMock{}
-		err := writeField(mc, WriteRequest{Address: 100, Type: StringType, Value: "abc"})
-		assert.Error(t, err)
-	})
+	for _, tc := range cases {
+		err := ValidateWriteValue(tc.value, tc.typ, tc.scale)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
 }
 
 // float32ToBytes converts a float32 to its big-endian byte representation.

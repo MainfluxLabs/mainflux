@@ -4,9 +4,12 @@
 package http_test
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -154,4 +157,87 @@ func TestRangeRequest(t *testing.T) {
 			assert.Equal(t, int64(len(tc.body)), res.ContentLength, fmt.Sprintf("%s: Content-Length mismatch", tc.desc))
 		}
 	}
+}
+
+func TestSaveFileFormats(t *testing.T) {
+	srv := newServer(t)
+
+	cases := []struct {
+		desc    string
+		name    string
+		content []byte
+		status  int
+	}{
+		{
+			desc:    "upload bin firmware",
+			name:    "app.bin",
+			content: []byte{0x00, 0xff, 0x10, 0x20},
+			status:  http.StatusCreated,
+		},
+		{
+			desc:    "upload hex firmware",
+			name:    "app.hex",
+			content: []byte(":10010000214601360121470136007EFE09D2190140\n:00000001FF\n"),
+			status:  http.StatusCreated,
+		},
+		{
+			desc:    "upload hex with binary content",
+			name:    "bad.hex",
+			content: []byte{0x00, 0xff, 0x10, 0x20},
+			status:  http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:    "upload zip archive",
+			name:    "app.zip",
+			content: zipArchive(t),
+			status:  http.StatusCreated,
+		},
+		{
+			desc:    "upload zip with non-zip content",
+			name:    "bad.zip",
+			content: []byte(fileContent),
+			status:  http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:    "upload unsupported format",
+			name:    "app.elf",
+			content: []byte(fileContent),
+			status:  http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		body := &bytes.Buffer{}
+		mw := multipart.NewWriter(body)
+		fw, err := mw.CreateFormFile("file", tc.name)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		_, err = fw.Write(tc.content)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		require.Nil(t, mw.Close(), fmt.Sprintf("%s: closing multipart writer failed", tc.desc))
+
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/files", srv.URL), body)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+thingKey)
+		req.Header.Set("Content-Type", mw.FormDataContentType())
+
+		res, err := srv.Client().Do(req)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		res.Body.Close()
+
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
+func zipArchive(t *testing.T) []byte {
+	t.Helper()
+
+	buf := &bytes.Buffer{}
+	zw := zip.NewWriter(buf)
+	w, err := zw.Create("app.bin")
+	require.Nil(t, err, fmt.Sprintf("creating zip entry failed: %s", err))
+	_, err = w.Write([]byte(fileContent))
+	require.Nil(t, err, fmt.Sprintf("writing zip entry failed: %s", err))
+	require.Nil(t, zw.Close(), "closing zip writer failed")
+
+	return buf.Bytes()
 }

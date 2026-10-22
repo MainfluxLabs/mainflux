@@ -137,6 +137,9 @@ func readRegisterEndpoint(svc modbus.Service) endpoint.Endpoint {
 		}
 
 		rr := modbus.ReadRequest{
+			ThingID:      req.ThingID,
+			Name:         req.Name,
+			Unit:         req.Unit,
 			IPAddress:    req.IPAddress,
 			Port:         req.Port,
 			SlaveID:      req.SlaveID,
@@ -165,6 +168,9 @@ func writeRegisterEndpoint(svc modbus.Service) endpoint.Endpoint {
 		}
 
 		wr := modbus.WriteRequest{
+			ThingID:   req.ThingID,
+			Name:      req.Name,
+			Unit:      req.Unit,
 			IPAddress: req.IPAddress,
 			Port:      req.Port,
 			SlaveID:   req.SlaveID,
@@ -239,6 +245,7 @@ func toDataFields(fields []field) []modbus.DataField {
 			ByteOrder: f.ByteOrder,
 			Address:   *f.Address,
 			Length:    f.Length,
+			Value:     f.Value,
 		}
 	}
 	return res
@@ -255,6 +262,7 @@ func toDataFieldsRes(fields []modbus.DataField) []field {
 			ByteOrder: f.ByteOrder,
 			Address:   &f.Address,
 			Length:    f.Length,
+			Value:     f.Value,
 		}
 	}
 	return res

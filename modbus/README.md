@@ -1,10 +1,10 @@
 # Modbus Service
 
-The Modbus service manages Modbus TCP polling clients for things and groups. Each client connects to a Modbus TCP device on a schedule, reads the configured registers or coils using the specified function code, and publishes the result as a JSON message to the platform on behalf of the associated thing.
+The Modbus service manages Modbus TCP clients for things and groups. Each client connects to a Modbus TCP device on a schedule. A read client reads the configured registers or coils, and a write client writes the configured values and reads them back; both publish the values as a JSON message on behalf of the associated thing.
 
 ## Modbus Clients
 
-A Modbus client defines the connection parameters, poll schedule, and data fields to read from a Modbus TCP device.
+A Modbus client defines the connection parameters, schedule, and data fields to read from or write to a Modbus TCP device.
 
 | Field           | Description                                                  |
 | --------------- | ------------------------------------------------------------ |
@@ -15,27 +15,31 @@ A Modbus client defines the connection parameters, poll schedule, and data field
 | `ip_address`    | IP address of the Modbus TCP device                          |
 | `port`          | TCP port of the Modbus device (default Modbus port is `502`) |
 | `slave_id`      | Modbus slave/unit ID (0–255)                                 |
-| `function_code` | Modbus read function code (see below)                        |
-| `scheduler`     | Poll schedule configuration (see below)                      |
-| `data_fields`   | List of registers or coils to read (see below)               |
+| `function_code` | Modbus read or write function code (see below)               |
+| `scheduler`     | Schedule configuration (see below)                           |
+| `data_fields`   | List of registers or coils to read or write (see below)      |
 | `metadata`      | Arbitrary key-value pairs for custom attributes              |
 
 ### Function Codes
 
-| Value                  | Modbus Code | Description                                |
-| ---------------------- | ----------- | ------------------------------------------ |
-| `ReadCoils`            | 0x01        | Read output coils (digital output)         |
-| `ReadDiscreteInputs`   | 0x02        | Read discrete inputs (digital input)       |
-| `ReadHoldingRegisters` | 0x03        | Read holding registers (read/write analog) |
-| `ReadInputRegisters`   | 0x04        | Read input registers (read-only analog)    |
+| Value                   | Modbus Code | Description                                 |
+| ----------------------- | ----------- | ------------------------------------------- |
+| `ReadCoils`             | 0x01        | Read output coils (digital output)          |
+| `ReadDiscreteInputs`    | 0x02        | Read discrete inputs (digital input)        |
+| `ReadHoldingRegisters`  | 0x03        | Read holding registers (read/write analog)  |
+| `ReadInputRegisters`    | 0x04        | Read input registers (read-only analog)     |
+| `WriteCoils`            | 0x05, 0x0F  | Write output coils (digital output)         |
+| `WriteHoldingRegisters` | 0x06, 0x10  | Write holding registers (read/write analog) |
+
+A client with a write function code writes the `value` of each data field on every scheduled run, then reads the written registers or coils back and publishes them in the same format as a read client. Adjacent fields are written in one request; a block of one coil or register uses 0x05 or 0x06, and a longer block uses 0x0F or 0x10. `WriteCoils` fields must have the `bool` type, and `string` fields are not writable.
 
 ### Scheduler
 
-The `scheduler` object controls when the client polls the device.
+The `scheduler` object controls when the client reads from or writes to the device.
 
 | Field       | Description                                                                                                                                                            |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `frequency` | Poll frequency: `once`, `minutely`, `hourly`, `daily`, or `weekly`                                                                                                     |
+| `frequency` | Frequency: `once`, `minutely`, `hourly`, `daily`, or `weekly`                                                                                                          |
 | `time_zone` | IANA timezone name (e.g. `Europe/Berlin`, `UTC`)                                                                                                                       |
 | `date_time` | Date and time in `YYYY-MM-DD HH:MM` format (e.g. `2026-03-25 14:30`). Required when `frequency` is `once`; ignored otherwise. Must be at least 1 minute in the future. |
 | `minute`    | Minute interval (1–59). Used with `minutely` frequency                                                                                                                 |
@@ -45,7 +49,7 @@ The `scheduler` object controls when the client polls the device.
 
 ### Data Fields
 
-Each entry in `data_fields` describes a single register or coil to read.
+Each entry in `data_fields` describes a single register or coil to read or write.
 
 | Field        | Description                                                                                                           |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
@@ -56,8 +60,9 @@ Each entry in `data_fields` describes a single register or coil to read.
 | `byte_order` | Multi-byte word order: `ABCD` (big-endian), `DCBA` (little-endian), `CDAB` (PDP/middle-endian), `BADC` (byte-swapped) |
 | `address`    | Starting register or coil address                                                                                     |
 | `length`     | Register count. For numeric types this is calculated automatically from `type`; set manually for `string` fields only |
+| `value`      | Value written by a write client: boolean for `bool`, numeric otherwise. Required for write function codes             |
 
-The poll result is published as a JSON object keyed by field `name`, for example:
+The read result is published as a JSON object keyed by field `name`, for example:
 
 ```json
 {"temperature": 23.5, "humidity": 61}
