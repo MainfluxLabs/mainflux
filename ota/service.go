@@ -11,7 +11,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -22,11 +21,8 @@ import (
 
 const (
 	defaultTimeout = 24 * time.Hour
+	maxErrorLen    = 255
 	commandSource  = "ota"
-
-	errTimedOut        = "timed out"
-	errVersionMismatch = "version mismatch: reported %s"
-	errSuperseded      = "superseded by update %s"
 )
 
 var (
@@ -84,7 +80,7 @@ type Service interface {
 	// ReportStatus records the progress of an update reported by the thing identified by the key.
 	ReportStatus(ctx context.Context, key domain.ThingKey, report StatusReport) error
 
-	// FailTimedOut marks thing updates whose deadline passed as failed.
+	// FailTimedOut marks thing updates without progress for their update's timeout as failed.
 	FailTimedOut(ctx context.Context) error
 
 	// RemoveThingUpdatesByThing removes thing updates of the given thing.
@@ -138,22 +134,8 @@ func (ots *otaService) CreateUpdate(ctx context.Context, token, groupID string, 
 	if u.Timeout <= 0 {
 		u.Timeout = defaultTimeout
 	}
-	if identity, ok := authn.IdentityFromCtx(ctx); ok {
-		u.CreatedBy = identity.ID
-	}
 
-	tus := make([]ThingUpdate, 0, len(thingIDs))
-	for _, thingID := range thingIDs {
-		tus = append(tus, ThingUpdate{
-			UpdateID:  u.ID,
-			ThingID:   thingID,
-			Status:    StatusPending,
-			Deadline:  now.Add(u.Timeout),
-			UpdatedAt: now,
-		})
-	}
-
-	if err := ots.updates.Save(ctx, u, fmt.Sprintf(errSuperseded, u.ID), tus...); err != nil {
+	if err := ots.updates.Save(ctx, u, thingIDs...); err != nil {
 		return Update{}, err
 	}
 
@@ -202,7 +184,7 @@ func (ots *otaService) RetryFailed(ctx context.Context, token, updateID string) 
 		return err
 	}
 
-	thingIDs, err := ots.updates.RetryFailed(ctx, updateID, time.Now().UTC().Add(u.Timeout))
+	thingIDs, err := ots.updates.RetryFailed(ctx, updateID)
 	if err != nil {
 		return err
 	}
@@ -249,7 +231,7 @@ func (ots *otaService) ReportStatus(ctx context.Context, key domain.ThingKey, re
 }
 
 func (ots *otaService) FailTimedOut(ctx context.Context) error {
-	return ots.updates.FailTimedOut(ctx, time.Now().UTC(), errTimedOut)
+	return ots.updates.FailTimedOut(ctx, time.Now().UTC())
 }
 
 func (ots *otaService) RemoveThingUpdatesByThing(ctx context.Context, thingID string) error {
@@ -286,7 +268,7 @@ func (ots *otaService) reportStatus(ctx context.Context, thingID string, report 
 	}
 
 	tu.Status = report.Status
-	tu.Error = report.Error
+	tu.Error = truncate(report.Error, maxErrorLen)
 	tu.UpdatedAt = time.Now().UTC()
 	if report.Version != "" {
 		tu.ReportedVersion = report.Version
@@ -300,7 +282,7 @@ func (ots *otaService) reportStatus(ctx context.Context, thingID string, report 
 
 		if report.Version != u.Version {
 			tu.Status = StatusFailed
-			tu.Error = fmt.Sprintf(errVersionMismatch, report.Version)
+			tu.Error = fmt.Sprintf(ErrMsgVersionMismatch, report.Version)
 		}
 	}
 
@@ -346,4 +328,14 @@ func newCommand(u Update) command {
 		Size:     u.FileSize,
 		Checksum: u.Checksum,
 	}
+}
+
+// truncate shortens device-reported text so it fits the stored column.
+func truncate(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+
+	return string(runes[:max])
 }

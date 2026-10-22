@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"sort"
 	"sync"
@@ -38,7 +39,7 @@ func isActive(status string) bool {
 	return slices.Contains(ota.ActiveStatuses, status)
 }
 
-func (urm *updateRepositoryMock) Save(_ context.Context, u ota.Update, errSuperseded string, tus ...ota.ThingUpdate) error {
+func (urm *updateRepositoryMock) Save(_ context.Context, u ota.Update, thingIDs ...string) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
@@ -46,20 +47,25 @@ func (urm *updateRepositoryMock) Save(_ context.Context, u ota.Update, errSupers
 		return dbutil.ErrConflict
 	}
 
-	for _, tu := range tus {
+	for _, thingID := range thingIDs {
 		for k, old := range urm.thingUpdates {
-			if old.ThingID == tu.ThingID && isActive(old.Status) {
+			if old.ThingID == thingID && isActive(old.Status) {
 				old.Status = ota.StatusFailed
-				old.Error = errSuperseded
-				old.UpdatedAt = tu.UpdatedAt
+				old.Error = fmt.Sprintf(ota.ErrMsgSuperseded, u.ID)
+				old.UpdatedAt = u.CreatedAt
 				urm.thingUpdates[k] = old
 			}
 		}
 	}
 
 	urm.updates[u.ID] = u
-	for _, tu := range tus {
-		urm.thingUpdates[thingUpdateKey(tu.UpdateID, tu.ThingID)] = tu
+	for _, thingID := range thingIDs {
+		urm.thingUpdates[thingUpdateKey(u.ID, thingID)] = ota.ThingUpdate{
+			UpdateID:  u.ID,
+			ThingID:   thingID,
+			Status:    ota.StatusPending,
+			UpdatedAt: u.CreatedAt,
+		}
 	}
 
 	return nil
@@ -202,7 +208,7 @@ func (urm *updateRepositoryMock) UpdateThingUpdate(_ context.Context, tu ota.Thi
 	return nil
 }
 
-func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string, deadline time.Time) ([]string, error) {
+func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string) ([]string, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
@@ -213,7 +219,6 @@ func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string,
 		}
 		tu.Status = ota.StatusPending
 		tu.Error = ""
-		tu.Deadline = deadline
 		tu.UpdatedAt = time.Now().UTC()
 		urm.thingUpdates[k] = tu
 		thingIDs = append(thingIDs, tu.ThingID)
@@ -222,14 +227,14 @@ func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string,
 	return thingIDs, nil
 }
 
-func (urm *updateRepositoryMock) FailTimedOut(_ context.Context, now time.Time, errMsg string) error {
+func (urm *updateRepositoryMock) FailTimedOut(_ context.Context, now time.Time) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
 	for k, tu := range urm.thingUpdates {
-		if isActive(tu.Status) && tu.Deadline.Before(now) {
+		if isActive(tu.Status) && tu.UpdatedAt.Add(urm.updates[tu.UpdateID].Timeout).Before(now) {
 			tu.Status = ota.StatusFailed
-			tu.Error = errMsg
+			tu.Error = ota.ErrMsgTimedOut
 			tu.UpdatedAt = now
 			urm.thingUpdates[k] = tu
 		}
@@ -261,8 +266,10 @@ func (urm *updateRepositoryMock) stats(updateID string) ota.UpdateStats {
 		switch tu.Status {
 		case ota.StatusPending:
 			s.Pending++
-		case ota.StatusDownloading, ota.StatusInstalling:
-			s.InProgress++
+		case ota.StatusDownloading:
+			s.Downloading++
+		case ota.StatusInstalling:
+			s.Installing++
 		case ota.StatusSucceeded:
 			s.Succeeded++
 		case ota.StatusFailed:
