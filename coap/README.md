@@ -70,11 +70,11 @@ coap://localhost/things/<thing_id>/messages?auth=<thing_key>&type=<key_type>
 coap://localhost/things/<thing_id>/messages/<subtopic>?auth=<thing_key>&type=<key_type>
 ```
 
-The sending thing is determined by the auth key, not the path.
+The thing is determined by the auth key, not the path.
 
 ### Sending commands
 
-To send a command to a specific thing (M2M, authorized by sender thing key):
+To send a command to a specific thing (M2M, authorized by thing key):
 
 ```
 coap://localhost/things/<thing_id>/commands?auth=<thing_key>&type=<key_type>
@@ -93,4 +93,4 @@ coap://localhost/things/<thing_id>/commands/<subtopic>?auth=<thing_key>&type=<ke
 coap://localhost/groups/<group_id>/commands/<subtopic>?auth=<thing_key>&type=<key_type>
 ```
 
-Commands use `POST` (same as publishing messages). The sending thing must have command permission over the target thing or group.
+Commands use `POST` (same as publishing messages). The thing must have command permission over the target thing or group.

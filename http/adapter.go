@@ -19,12 +19,12 @@ type Service interface {
 	// Publish Message
 	Publish(ctx context.Context, key domain.ThingKey, msg protomfx.Message) error
 	// SendCommandToThing publishes a command to the specified thing.
-	SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error
-	// SendCommandToThingByKey publishes a command to the specified thing, authorized by sender thing key (M2M).
-	SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error
+	SendCommandToThing(ctx context.Context, token, recipientID string, cmd protomfx.Command) error
+	// SendCommandToThingByKey publishes a command to the specified thing, authorized by thing key (M2M).
+	SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) error
 	// SendCommandToGroup publishes a command to things that belong to a specified group, authorized by user token.
 	SendCommandToGroup(ctx context.Context, token, groupID string, cmd protomfx.Command) error
-	// SendCommandToGroupByKey publishes a command to a group, authorized by sender thing key (M2M).
+	// SendCommandToGroupByKey publishes a command to a group, authorized by thing key (M2M).
 	SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
@@ -62,13 +62,13 @@ func (as *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg 
 	return as.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
-func (as *adapterService) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) error {
-	if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupEditor}); err != nil {
+func (as *adapterService) SendCommandToThing(ctx context.Context, token, recipientID string, cmd protomfx.Command) error {
+	if err := as.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: recipientID, Action: domain.GroupEditor}); err != nil {
 		return err
 	}
 
-	cmd.RecipientId = thingID
-	if err := as.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd); err != nil {
+	cmd.RecipientId = recipientID
+	if err := as.publisher.PublishCommand(nats.GetThingCommandsSubject(recipientID, cmd.Subtopic), cmd); err != nil {
 		return err
 	}
 
@@ -87,19 +87,19 @@ func (as *adapterService) SendCommandToGroup(ctx context.Context, token, groupID
 	return nil
 }
 
-func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {
-	senderThingID, err := as.things.Identify(ctx, key)
+func (as *adapterService) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) error {
+	thingID, err := as.things.Identify(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{ThingID: senderThingID, RecipientID: thingID}); err != nil {
+	if err := as.things.CanThingCommand(ctx, domain.ThingCommandReq{ThingID: thingID, RecipientID: recipientID}); err != nil {
 		return err
 	}
 
-	cmd.ThingId = senderThingID
-	cmd.RecipientId = thingID
-	return as.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
+	cmd.ThingId = thingID
+	cmd.RecipientId = recipientID
+	return as.publisher.PublishCommand(nats.GetThingCommandsSubject(recipientID, cmd.Subtopic), cmd)
 }
 
 func (as *adapterService) SendCommandToGroupByKey(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error {
