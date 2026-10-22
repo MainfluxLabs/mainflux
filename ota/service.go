@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -51,6 +53,16 @@ type StatusReport struct {
 	Error    string `json:"error,omitempty"`
 }
 
+// Command tells a thing which firmware to install and where to download it from.
+type Command struct {
+	UpdateID string `json:"update_id"`
+	Version  string `json:"version"`
+	FileName string `json:"file_name"`
+	URL      string `json:"url"`
+	Size     int64  `json:"size"`
+	Checksum string `json:"checksum"`
+}
+
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
@@ -74,8 +86,8 @@ type Service interface {
 	// RemoveUpdate removes the update identified by the given ID.
 	RemoveUpdate(ctx context.Context, token, id string) error
 
-	// ViewPending retrieves the update the thing identified by the key should apply.
-	ViewPending(ctx context.Context, key domain.ThingKey) (Update, error)
+	// ViewPending retrieves the command for the update the thing identified by the key should apply.
+	ViewPending(ctx context.Context, key domain.ThingKey) (Command, error)
 
 	// ReportStatus records the progress of an update reported by the thing identified by the key.
 	ReportStatus(ctx context.Context, key domain.ThingKey, report StatusReport) error
@@ -93,23 +105,26 @@ type Service interface {
 }
 
 type otaService struct {
-	things     domain.ThingsClient
-	updates    UpdateRepository
-	publisher  messaging.CommandPublisher
-	idProvider uuid.IDProvider
-	logger     logger.Logger
+	things      domain.ThingsClient
+	updates     UpdateRepository
+	publisher   messaging.CommandPublisher
+	idProvider  uuid.IDProvider
+	firmwareURL string
+	logger      logger.Logger
 }
 
 var _ Service = (*otaService)(nil)
 
 // New instantiates the ota service implementation.
-func New(things domain.ThingsClient, updates UpdateRepository, publisher messaging.CommandPublisher, idp uuid.IDProvider, logger logger.Logger) Service {
+// firmwareURL is the public base URL things download firmware files from.
+func New(things domain.ThingsClient, updates UpdateRepository, publisher messaging.CommandPublisher, idp uuid.IDProvider, firmwareURL string, logger logger.Logger) Service {
 	return &otaService{
-		things:     things,
-		updates:    updates,
-		publisher:  publisher,
-		idProvider: idp,
-		logger:     logger,
+		things:      things,
+		updates:     updates,
+		publisher:   publisher,
+		idProvider:  idp,
+		firmwareURL: strings.TrimSuffix(firmwareURL, "/"),
+		logger:      logger,
 	}
 }
 
@@ -207,18 +222,23 @@ func (ots *otaService) RemoveUpdate(ctx context.Context, token, id string) error
 	return ots.updates.Remove(ctx, id)
 }
 
-func (ots *otaService) ViewPending(ctx context.Context, key domain.ThingKey) (Update, error) {
+func (ots *otaService) ViewPending(ctx context.Context, key domain.ThingKey) (Command, error) {
 	thingID, err := ots.things.Identify(ctx, key)
 	if err != nil {
-		return Update{}, err
+		return Command{}, err
 	}
 
 	tu, err := ots.updates.RetrieveActiveThingUpdate(ctx, thingID)
 	if err != nil {
-		return Update{}, err
+		return Command{}, err
 	}
 
-	return ots.updates.RetrieveByID(ctx, tu.UpdateID)
+	u, err := ots.updates.RetrieveByID(ctx, tu.UpdateID)
+	if err != nil {
+		return Command{}, err
+	}
+
+	return ots.newCommand(u), nil
 }
 
 func (ots *otaService) ReportStatus(ctx context.Context, key domain.ThingKey, report StatusReport) error {
@@ -291,7 +311,7 @@ func (ots *otaService) reportStatus(ctx context.Context, thingID string, report 
 
 // notify sends the ota command to the given things; offline things pick the update up through ViewPending.
 func (ots *otaService) notify(u Update, thingIDs ...string) {
-	payload, err := json.Marshal(newCommand(u))
+	payload, err := json.Marshal(ots.newCommand(u))
 	if err != nil {
 		ots.logger.Error(fmt.Sprintf("failed to encode ota command for update %s: %s", u.ID, err))
 		return
@@ -312,19 +332,12 @@ func (ots *otaService) notify(u Update, thingIDs ...string) {
 	}
 }
 
-type command struct {
-	UpdateID string `json:"update_id"`
-	Version  string `json:"version"`
-	FileName string `json:"file_name"`
-	Size     int64  `json:"size"`
-	Checksum string `json:"checksum"`
-}
-
-func newCommand(u Update) command {
-	return command{
+func (ots *otaService) newCommand(u Update) Command {
+	return Command{
 		UpdateID: u.ID,
 		Version:  u.Version,
 		FileName: u.FileName,
+		URL:      ots.firmwareURL + "/" + url.PathEscape(u.FileName),
 		Size:     u.FileSize,
 		Checksum: u.Checksum,
 	}

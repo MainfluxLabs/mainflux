@@ -32,6 +32,7 @@ const (
 	groupID      = "574106f7-030e-4881-8ab0-151195c29f94"
 	thingKey     = "8384fb1c-d0ae-4cbe-be52-c54223150fe2"
 	fwVersion    = "1.4.0"
+	firmwareURL  = "https://localhost/fs/groupfiles"
 )
 
 var firmware = ota.Update{
@@ -51,7 +52,7 @@ func newService() (ota.Service, *otamocks.CommandPublisher) {
 	tc := mocks.NewThingsServiceClient(nil, things, groups)
 	pub := otamocks.NewCommandPublisher()
 
-	return ota.New(tc, otamocks.NewUpdateRepository(), pub, uuid.NewMock(), logger.NewMock()), pub
+	return ota.New(tc, otamocks.NewUpdateRepository(), pub, uuid.NewMock(), firmwareURL, logger.NewMock()), pub
 }
 
 func createUpdate(t *testing.T, svc ota.Service, u ota.Update) ota.Update {
@@ -119,6 +120,7 @@ func TestCreateUpdate(t *testing.T) {
 		require.Nil(t, json.Unmarshal(cmds[0].Payload, &payload), fmt.Sprintf("%s: invalid command payload", tc.desc))
 		assert.Equal(t, u.ID, payload["update_id"], fmt.Sprintf("%s: command update_id mismatch", tc.desc))
 		assert.Equal(t, fwVersion, payload["version"], fmt.Sprintf("%s: command version mismatch", tc.desc))
+		assert.Equal(t, firmwareURL+"/"+firmware.FileName, payload["url"], fmt.Sprintf("%s: command url mismatch", tc.desc))
 	}
 }
 
@@ -135,7 +137,7 @@ func TestCreateUpdateSupersedes(t *testing.T) {
 
 	pending, err := svc.ViewPending(context.Background(), key())
 	require.Nil(t, err, fmt.Sprintf("viewing pending update failed: %s", err))
-	assert.Equal(t, second.ID, pending.ID, "pending update must be the newest one")
+	assert.Equal(t, second.ID, pending.UpdateID, "pending update must be the newest one")
 }
 
 func TestViewUpdate(t *testing.T) {
@@ -315,7 +317,8 @@ func TestViewPending(t *testing.T) {
 	u := createUpdate(t, svc, firmware)
 	pending, err := svc.ViewPending(context.Background(), key())
 	require.Nil(t, err, fmt.Sprintf("viewing pending update failed: %s", err))
-	assert.Equal(t, u.ID, pending.ID, "pending update mismatch")
+	assert.Equal(t, u.ID, pending.UpdateID, "pending update mismatch")
+	assert.Equal(t, firmwareURL+"/"+firmware.FileName, pending.URL, "pending url mismatch")
 
 	err = svc.ReportStatus(context.Background(), key(), ota.StatusReport{UpdateID: u.ID, Status: ota.StatusSucceeded, Version: fwVersion})
 	require.Nil(t, err, fmt.Sprintf("reporting status failed: %s", err))

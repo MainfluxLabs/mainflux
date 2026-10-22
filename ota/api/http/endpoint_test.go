@@ -35,6 +35,7 @@ const (
 	thingID     = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	thingKey    = "8384fb1c-d0ae-4cbe-be52-c54223150fe2"
 	fwVersion   = "1.4.0"
+	firmwareURL = "https://localhost/fs/groupfiles"
 )
 
 var firmware = ota.Update{
@@ -53,7 +54,7 @@ func newService() ota.Service {
 	groups := map[string]domain.Group{token: {ID: groupID}}
 	tc := mocks.NewThingsServiceClient(nil, things, groups)
 
-	return ota.New(tc, otamocks.NewUpdateRepository(), otamocks.NewCommandPublisher(), uuid.NewMock(), logger.NewMock())
+	return ota.New(tc, otamocks.NewUpdateRepository(), otamocks.NewCommandPublisher(), uuid.NewMock(), firmwareURL, logger.NewMock())
 }
 
 func newHTTPServer(svc ota.Service) *httptest.Server {
@@ -493,6 +494,7 @@ func TestViewPending(t *testing.T) {
 	res.Body.Close()
 	assert.Equal(t, u.ID, body["update_id"], "update id mismatch")
 	assert.Equal(t, firmware.FileName, body["file_name"], "file name mismatch")
+	assert.Equal(t, firmwareURL+"/"+firmware.FileName, body["url"], "url mismatch")
 
 	res = pending(wrongValue)
 	res.Body.Close()
