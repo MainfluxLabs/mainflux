@@ -302,6 +302,7 @@ components:
           example: "ABCD"
         address:
           type: integer
+          description: Starting register or coil address. The field must end at or before address 65535.
           example: 0
         length:
           type: integer
@@ -595,6 +596,7 @@ components:
                 example: "ReadHoldingRegisters"
               address:
                 type: integer
+                description: Starting register or coil address. The value must end at or before address 65535.
                 example: 100
               type:
                 type: string
@@ -661,6 +663,7 @@ components:
                 example: 1
               address:
                 type: integer
+                description: Starting register or coil address. The value must end at or before address 65535.
                 example: 100
               type:
                 type: string

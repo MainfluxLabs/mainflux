@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,6 +63,15 @@ func TestCreateBlocks(t *testing.T) {
 			},
 			maxLen: 125,
 			want:   []Block{{Start: 0, Length: 6}},
+		},
+		{
+			desc: "field ending at last address extends the block",
+			fields: []DataField{
+				{Address: 65533, Length: 1},
+				{Address: 65534, Length: 2},
+			},
+			maxLen: 125,
+			want:   []Block{{Start: 65533, Length: 3}},
 		},
 	}
 
@@ -234,5 +244,34 @@ func TestCalcFieldLengths(t *testing.T) {
 	for _, tc := range cases {
 		got := calcFieldLengths(tc.fields)
 		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
+	}
+}
+
+func TestValidateFieldAddresses(t *testing.T) {
+	cases := []struct {
+		desc   string
+		fields []DataField
+		err    error
+	}{
+		{
+			desc: "validate field ending at the last address",
+			fields: []DataField{
+				{Name: "last", Address: 65534, Length: 2},
+			},
+			err: nil,
+		},
+		{
+			desc: "validate field ending past the last address",
+			fields: []DataField{
+				{Name: "wrapped", Address: 65535, Length: 2},
+			},
+			err: ErrAddressOutOfRange,
+		},
+	}
+
+	for _, tc := range cases {
+		err := validateFieldAddresses(tc.fields)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 }

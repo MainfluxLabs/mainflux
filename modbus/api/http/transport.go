@@ -404,7 +404,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		err == ErrInvalidValue,
 		err == ErrValueOutOfRange,
 		errors.Contains(err, modbus.ErrInvalidWriteValue),
-		errors.Contains(err, modbus.ErrValueOutOfRange):
+		errors.Contains(err, modbus.ErrValueOutOfRange),
+		errors.Contains(err, modbus.ErrUnsupportedWriteType),
+		errors.Contains(err, modbus.ErrAddressOutOfRange):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, modbus.ErrDeviceRejected):
 		w.WriteHeader(http.StatusUnprocessableEntity)

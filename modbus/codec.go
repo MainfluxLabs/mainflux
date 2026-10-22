@@ -11,6 +11,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
+// errNotEnoughBytes indicates a device response holds fewer bytes than the requested fields need.
+var errNotEnoughBytes = errors.New("not enough bytes to read")
+
 // encodeBlock converts the field values of a block into its write request payload.
 func encodeBlock(funcCode string, block Block, fields []DataField) ([]byte, error) {
 	switch funcCode {
@@ -120,11 +123,15 @@ func encodeNumericField(value float64, typ string, scale float64) ([]byte, error
 		binary.BigEndian.PutUint32(b, uint32(rounded))
 		return b, nil
 	case Float32Type:
+		if math.Abs(value) > math.MaxFloat32 {
+			err := fmt.Errorf("%v out of range for %s", value, typ)
+			return nil, errors.Wrap(ErrValueOutOfRange, err)
+		}
 		b := make([]byte, 4)
 		binary.BigEndian.PutUint32(b, math.Float32bits(float32(value)))
 		return b, nil
 	default:
-		return nil, fmt.Errorf("%s: %s", errUnsupportedWriteType, typ)
+		return nil, errors.Wrap(ErrUnsupportedWriteType, fmt.Errorf("type %s is not writable", typ))
 	}
 }
 
@@ -133,27 +140,32 @@ func readNumericField[T int16 | uint16 | int32 | uint32 | float32](data []byte, 
 	switch any(value).(type) {
 	case int16:
 		if len(data) < 2 {
-			return nil, fmt.Errorf("%s: expected 2 bytes for int16, got %d", errNotEnoughBytes, len(data))
+			err := fmt.Errorf("expected 2 bytes for int16, got %d", len(data))
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 		value = T(int16(binary.BigEndian.Uint16(data)))
 	case uint16:
 		if len(data) < 2 {
-			return nil, fmt.Errorf("%s: expected 2 bytes for uint16, got %d", errNotEnoughBytes, len(data))
+			err := fmt.Errorf("expected 2 bytes for uint16, got %d", len(data))
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 		value = T(binary.BigEndian.Uint16(data))
 	case int32:
 		if len(data) < 4 {
-			return nil, fmt.Errorf("%s: expected 4 bytes for int32, got %d", errNotEnoughBytes, len(data))
+			err := fmt.Errorf("expected 4 bytes for int32, got %d", len(data))
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 		value = T(int32(binary.BigEndian.Uint32(data)))
 	case uint32:
 		if len(data) < 4 {
-			return nil, fmt.Errorf("%s: expected 4 bytes for uint32, got %d", errNotEnoughBytes, len(data))
+			err := fmt.Errorf("expected 4 bytes for uint32, got %d", len(data))
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 		value = T(binary.BigEndian.Uint32(data))
 	case float32:
 		if len(data) < 4 {
-			return nil, fmt.Errorf("%s: expected 4 bytes for float32, got %d", errNotEnoughBytes, len(data))
+			err := fmt.Errorf("expected 4 bytes for float32, got %d", len(data))
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 		bits := binary.BigEndian.Uint32(data)
 		value = T(math.Float32frombits(bits))
@@ -197,7 +209,11 @@ func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string
 		bitIndex := uint(bitOffset % 8)
 
 		if byteIndex >= len(raw) {
-			return nil, fmt.Errorf("field %s at address %d: out of range for coil block starting at %d, length %d", field.Name, field.Address, block.Start, block.Length)
+			err := fmt.Errorf(
+				"field %s at address %d: out of range for coil block starting at %d, length %d",
+				field.Name, field.Address, block.Start, block.Length,
+			)
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 
 		// extract bit: mask byte and check if bit is set
@@ -215,7 +231,12 @@ func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string
 		lenByte := int(field.Length) * 2
 
 		if startByte+lenByte > len(raw) {
-			return nil, fmt.Errorf("field %s at address %d, length %d: out of range for register block starting at %d, length %d", field.Name, field.Address, field.Length, block.Start, block.Length)
+			err := fmt.Errorf(
+				"field %s at address %d, length %d: out of range for register block "+
+					"starting at %d, length %d",
+				field.Name, field.Address, field.Length, block.Start, block.Length,
+			)
+			return nil, errors.Wrap(errNotEnoughBytes, err)
 		}
 
 		return raw[startByte : startByte+lenByte], nil
@@ -259,7 +280,8 @@ func buildRegisterValues(data map[string][]byte, fields []DataField) (map[string
 		switch f.Type {
 		case BoolType:
 			if len(raw) < 2 {
-				return nil, fmt.Errorf("%s: expected 2 bytes for bool, got %d", errNotEnoughBytes, len(raw))
+				err = fmt.Errorf("expected 2 bytes for bool, got %d", len(raw))
+				return nil, errors.Wrap(errNotEnoughBytes, err)
 			}
 			bv := binary.BigEndian.Uint16(raw)
 			value = bv == 1

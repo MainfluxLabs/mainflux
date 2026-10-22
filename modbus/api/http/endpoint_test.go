@@ -202,6 +202,11 @@ func TestCreateClients(t *testing.T) {
 	outOfRangeValueClient := writeRegistersClient
 	outOfRangeValueClient.DataFields = []fieldReq{{Name: "mode", Type: modbus.Int16Type, Value: 100000}}
 
+	addressOutOfRangeClient := writeRegistersClient
+	addressOutOfRangeClient.DataFields = []fieldReq{
+		{Name: "setpoint", Type: modbus.Float32Type, Address: 65535, Value: 21.5},
+	}
+
 	invalidValueClient := writeRegistersClient
 	invalidValueClient.DataFields = []fieldReq{{Name: "setpoint", Type: modbus.Float32Type, Value: true}}
 
@@ -374,6 +379,14 @@ func TestCreateClients(t *testing.T) {
 		{
 			desc:        "create write client with value out of range",
 			body:        toJSON([]clientReq{outOfRangeValueClient}),
+			thingID:     thingID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create write client with field past the last address",
+			body:        toJSON([]clientReq{addressOutOfRangeClient}),
 			thingID:     thingID,
 			contentType: contentType,
 			token:       token,
@@ -663,6 +676,7 @@ func TestReadRegister(t *testing.T) {
 	defer ts.Close()
 
 	validBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, thingID, testIP, testPort, testFuncCode)
+	outOfRangeBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":65535,"type":"uint32"}`, thingID, testIP, testPort, testFuncCode)
 
 	cases := []struct {
 		desc        string
@@ -728,6 +742,13 @@ func TestReadRegister(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:        "read register past the last address",
+			token:       token,
+			body:        outOfRangeBody,
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "read register with wrong token",
 			token:       wrongToken,
 			body:        validBody,
@@ -764,6 +785,7 @@ func TestWriteRegister(t *testing.T) {
 	defer ts.Close()
 
 	validBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"uint16","value":42}`, thingID, testIP, testPort)
+	outOfRangeBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":65535,"type":"uint32","value":42}`, thingID, testIP, testPort)
 
 	cases := []struct {
 		desc        string
@@ -825,6 +847,13 @@ func TestWriteRegister(t *testing.T) {
 			desc:        "write register with invalid byte order",
 			token:       token,
 			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"int32","byte_order":"ZZZZ","value":42}`, thingID, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "write register past the last address",
+			token:       token,
+			body:        outOfRangeBody,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},

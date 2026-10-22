@@ -517,6 +517,7 @@ func TestEncodeNumericField(t *testing.T) {
 		{desc: "uint32", value: 100000, typ: Uint32Type, want: []byte{0x00, 0x01, 0x86, 0xA0}},
 		{desc: "float32", value: 1.5, typ: Float32Type, want: float32ToBytes(1.5)},
 		{desc: "int16 with scale divides value before encoding", value: 10.0, typ: Int16Type, scale: 0.1, want: []byte{0x00, 0x64}},
+		{desc: "float32 out of range returns error", value: 1e39, typ: Float32Type, wantErr: true},
 		{desc: "unsupported type returns error", value: 1, typ: StringType, wantErr: true},
 	}
 
@@ -569,6 +570,18 @@ func TestValidateWriteValue(t *testing.T) {
 			value: 21.5,
 			typ:   Float32Type,
 			err:   nil,
+		},
+		{
+			desc:  "validate float32 value out of range",
+			value: 1e39,
+			typ:   Float32Type,
+			err:   ErrValueOutOfRange,
+		},
+		{
+			desc:  "validate unsupported type",
+			value: 1,
+			typ:   StringType,
+			err:   ErrUnsupportedWriteType,
 		},
 	}
 
