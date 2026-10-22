@@ -125,7 +125,7 @@ func viewPendingEndpoint(svc ota.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		u, err := svc.ViewPending(ctx, req.key)
+		cmd, err := svc.ViewPending(ctx, req.key)
 		switch {
 		case errors.Contains(err, dbutil.ErrNotFound):
 			return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
@@ -133,7 +133,7 @@ func viewPendingEndpoint(svc ota.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return buildPendingRes(u), nil
+		return buildPendingRes(cmd), nil
 	}
 }
 
