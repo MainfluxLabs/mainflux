@@ -159,7 +159,8 @@ func deviceError(err error) error {
 func isRequestError(err error) bool {
 	return errors.Contains(err, ErrInvalidWriteValue) ||
 		errors.Contains(err, ErrValueOutOfRange) ||
-		errors.Contains(err, ErrUnsupportedWriteType)
+		errors.Contains(err, ErrUnsupportedWriteType) ||
+		errors.Contains(err, ErrAddressOutOfRange)
 }
 
 func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {

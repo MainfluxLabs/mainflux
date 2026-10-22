@@ -64,6 +64,15 @@ func TestCreateBlocks(t *testing.T) {
 			maxLen: 125,
 			want:   []Block{{Start: 0, Length: 6}},
 		},
+		{
+			desc: "field ending at last address extends the block",
+			fields: []DataField{
+				{Address: 65533, Length: 1},
+				{Address: 65534, Length: 2},
+			},
+			maxLen: 125,
+			want:   []Block{{Start: 65533, Length: 3}},
+		},
 	}
 
 	for _, tc := range cases {

@@ -26,15 +26,16 @@ func createBlocks(fields []DataField, maxLen int) []Block {
 
 	var blocks []Block
 	blockStart := fields[0].Address
-	blockEnd := fields[0].Address + fields[0].Length
+	// The block end is kept as int because a field ending at the last address wraps to 0 in uint16.
+	blockEnd := int(fields[0].Address) + int(fields[0].Length)
 
 	for _, field := range fields[1:] {
 		// distance from start of block to end of current field
 		distance := int(field.Address + field.Length - 1 - blockStart)
 
 		if distance < maxLen {
-			if field.Address+field.Length > blockEnd {
-				blockEnd = field.Address + field.Length
+			if end := int(field.Address) + int(field.Length); end > blockEnd {
+				blockEnd = end
 			}
 			continue
 		}
@@ -42,18 +43,18 @@ func createBlocks(fields []DataField, maxLen int) []Block {
 		// close current block
 		blocks = append(blocks, Block{
 			Start:  blockStart,
-			Length: blockEnd - blockStart,
+			Length: uint16(blockEnd - int(blockStart)),
 		})
 
 		// start new block
 		blockStart = field.Address
-		blockEnd = field.Address + field.Length
+		blockEnd = int(field.Address) + int(field.Length)
 	}
 
 	// add last block
 	blocks = append(blocks, Block{
 		Start:  blockStart,
-		Length: blockEnd - blockStart,
+		Length: uint16(blockEnd - int(blockStart)),
 	})
 
 	return blocks
@@ -90,7 +91,7 @@ func createWriteBlocks(fields []DataField, maxLen int) []Block {
 func blockFields(fields []DataField, block Block) []DataField {
 	res := make([]DataField, 0, len(fields))
 	for _, field := range fields {
-		if field.Address >= block.Start && field.Address < block.Start+block.Length {
+		if field.Address >= block.Start && int(field.Address) < int(block.Start)+int(block.Length) {
 			res = append(res, field)
 		}
 	}

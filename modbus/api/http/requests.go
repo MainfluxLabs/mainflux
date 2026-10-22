@@ -170,10 +170,6 @@ func validateWriteValue(f field) error {
 		}
 
 		if err := modbus.ValidateWriteValue(v, f.Type, f.Scale); err != nil {
-			if errors.Contains(err, modbus.ErrUnsupportedWriteType) {
-				return ErrInvalidFieldType
-			}
-
 			return ErrValueOutOfRange
 		}
 
