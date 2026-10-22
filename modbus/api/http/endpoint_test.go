@@ -676,6 +676,7 @@ func TestReadRegister(t *testing.T) {
 	defer ts.Close()
 
 	validBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":100,"type":"uint16"}`, thingID, testIP, testPort, testFuncCode)
+	outOfRangeBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":65535,"type":"uint32"}`, thingID, testIP, testPort, testFuncCode)
 
 	cases := []struct {
 		desc        string
@@ -741,12 +742,9 @@ func TestReadRegister(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:  "read register past the last address",
-			token: token,
-			body: fmt.Sprintf(
-				`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":65535,"type":"uint32"}`,
-				thingID, testIP, testPort, testFuncCode,
-			),
+			desc:        "read register past the last address",
+			token:       token,
+			body:        outOfRangeBody,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
@@ -787,6 +785,7 @@ func TestWriteRegister(t *testing.T) {
 	defer ts.Close()
 
 	validBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"uint16","value":42}`, thingID, testIP, testPort)
+	outOfRangeBody := fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":65535,"type":"uint32","value":42}`, thingID, testIP, testPort)
 
 	cases := []struct {
 		desc        string
@@ -852,12 +851,9 @@ func TestWriteRegister(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:  "write register past the last address",
-			token: token,
-			body: fmt.Sprintf(
-				`{"thing_id":"%s","ip_address":"%s","port":"%s","address":65535,"type":"uint32","value":42}`,
-				thingID, testIP, testPort,
-			),
+			desc:        "write register past the last address",
+			token:       token,
+			body:        outOfRangeBody,
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
