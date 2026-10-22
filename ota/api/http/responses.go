@@ -112,6 +112,7 @@ type pendingRes struct {
 	UpdateID string `json:"update_id"`
 	Version  string `json:"version"`
 	FileName string `json:"file_name"`
+	URL      string `json:"url"`
 	Size     int64  `json:"size"`
 	Checksum string `json:"checksum"`
 }
@@ -196,12 +197,13 @@ func buildThingUpdatesPageRes(page ota.ThingUpdatesPage, pm ota.PageMetadata) th
 	return res
 }
 
-func buildPendingRes(u ota.Update) pendingRes {
+func buildPendingRes(cmd ota.Command) pendingRes {
 	return pendingRes{
-		UpdateID: u.ID,
-		Version:  u.Version,
-		FileName: u.FileName,
-		Size:     u.FileSize,
-		Checksum: u.Checksum,
+		UpdateID: cmd.UpdateID,
+		Version:  cmd.Version,
+		FileName: cmd.FileName,
+		URL:      cmd.URL,
+		Size:     cmd.Size,
+		Checksum: cmd.Checksum,
 	}
 }
