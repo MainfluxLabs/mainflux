@@ -21,6 +21,15 @@ const (
 	StatusFailed = "failed"
 )
 
+const (
+	// ErrMsgTimedOut is stored for a thing update without progress for its update's timeout.
+	ErrMsgTimedOut = "timed out"
+	// ErrMsgVersionMismatch is stored when a thing reports success with a different version.
+	ErrMsgVersionMismatch = "version mismatch: reported %s"
+	// ErrMsgSuperseded is stored for an active thing update replaced by a newer update.
+	ErrMsgSuperseded = "superseded by update %s"
+)
+
 // ActiveStatuses are the statuses of a thing update that is still running.
 var ActiveStatuses = []string{StatusPending, StatusDownloading, StatusInstalling}
 
@@ -34,18 +43,18 @@ type Update struct {
 	Checksum    string
 	Description string
 	Timeout     time.Duration
-	CreatedBy   string
 	CreatedAt   time.Time
 	Stats       UpdateStats
 }
 
 // UpdateStats counts the things of an update by status.
 type UpdateStats struct {
-	Targets    uint64
-	Pending    uint64
-	InProgress uint64
-	Succeeded  uint64
-	Failed     uint64
+	Targets     uint64
+	Pending     uint64
+	Downloading uint64
+	Installing  uint64
+	Succeeded   uint64
+	Failed      uint64
 }
 
 // ThingUpdate is the progress of one thing within an update.
@@ -55,7 +64,6 @@ type ThingUpdate struct {
 	Status          string
 	Error           string
 	ReportedVersion string
-	Deadline        time.Time
 	UpdatedAt       time.Time
 }
 
@@ -73,21 +81,23 @@ type ThingUpdatesPage struct {
 
 // UpdateOrderFields maps API-facing order keys to SQL column expressions for the updates table.
 var UpdateOrderFields = map[string]string{
+	"id":         "id",
 	"created_at": "created_at",
 	"version":    "version",
 }
 
 // ThingUpdateOrderFields maps API-facing order keys to SQL column expressions for the thing updates table.
 var ThingUpdateOrderFields = map[string]string{
+	"id":         "thing_id",
 	"updated_at": "updated_at",
 	"status":     "status",
 }
 
 // UpdateRepository specifies the persistence API for updates and their thing updates.
 type UpdateRepository interface {
-	// Save persists the update with its thing updates. Older active thing updates
-	// of the same things are marked failed with the given error in the same transaction.
-	Save(ctx context.Context, u Update, errSuperseded string, tus ...ThingUpdate) error
+	// Save persists the update with a pending thing update for each given thing. Older active
+	// thing updates of the same things are marked failed as superseded in the same transaction.
+	Save(ctx context.Context, u Update, thingIDs ...string) error
 
 	// RetrieveByID retrieves the update with the given ID, including its stats.
 	RetrieveByID(ctx context.Context, id string) (Update, error)
@@ -114,11 +124,11 @@ type UpdateRepository interface {
 	UpdateThingUpdate(ctx context.Context, tu ThingUpdate) error
 
 	// RetryFailed moves the failed thing updates of the given update back to pending
-	// with a new deadline and returns the IDs of the affected things.
-	RetryFailed(ctx context.Context, updateID string, deadline time.Time) ([]string, error)
+	// and returns the IDs of the affected things.
+	RetryFailed(ctx context.Context, updateID string) ([]string, error)
 
-	// FailTimedOut marks active thing updates whose deadline passed as failed with the given error.
-	FailTimedOut(ctx context.Context, now time.Time, errMsg string) error
+	// FailTimedOut marks active thing updates without progress for their update's timeout as failed.
+	FailTimedOut(ctx context.Context, now time.Time) error
 
 	// RemoveThingUpdatesByThing removes all thing updates of the given thing.
 	RemoveThingUpdatesByThing(ctx context.Context, thingID string) error
