@@ -72,10 +72,10 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKe
 	return lm.svc.Unsubscribe(ctx, key, subtopic)
 }
 
-func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, thingID string, cmd protomfx.Command) (err error) {
+func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, recipientID string, cmd protomfx.Command) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method send_command_to_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
+		message := fmt.Sprintf("Method send_command_to_thing by user %s, recipient id %s took %s to complete", email, recipientID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -83,7 +83,7 @@ func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, token, thin
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendCommandToThing(ctx, token, thingID, cmd)
+	return lm.svc.SendCommandToThing(ctx, token, recipientID, cmd)
 }
 
 func (lm *loggingMiddleware) SendCommandToThingByKey(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) (err error) {
