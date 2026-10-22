@@ -741,6 +741,16 @@ func TestReadRegister(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:  "read register past the last address",
+			token: token,
+			body: fmt.Sprintf(
+				`{"thing_id":"%s","ip_address":"%s","port":"%s","function_code":"%s","address":65535,"type":"uint32"}`,
+				thingID, testIP, testPort, testFuncCode,
+			),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "read register with wrong token",
 			token:       wrongToken,
 			body:        validBody,
@@ -838,6 +848,16 @@ func TestWriteRegister(t *testing.T) {
 			desc:        "write register with invalid byte order",
 			token:       token,
 			body:        fmt.Sprintf(`{"thing_id":"%s","ip_address":"%s","port":"%s","address":100,"type":"int32","byte_order":"ZZZZ","value":42}`, thingID, testIP, testPort),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:  "write register past the last address",
+			token: token,
+			body: fmt.Sprintf(
+				`{"thing_id":"%s","ip_address":"%s","port":"%s","address":65535,"type":"uint32","value":42}`,
+				thingID, testIP, testPort,
+			),
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},

@@ -277,12 +277,6 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 		return nil, err
 	}
 
-	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
-	if err != nil {
-		return nil, deviceError(err)
-	}
-	defer mu.Unlock()
-
 	field := DataField{
 		Name:    messageKey(req.Name, req.Address),
 		Unit:    req.Unit,
@@ -302,6 +296,12 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	if err := validateFieldAddresses(fields); err != nil {
 		return nil, err
 	}
+
+	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
+	if err != nil {
+		return nil, deviceError(err)
+	}
+	defer mu.Unlock()
 
 	maxLen := getBlockMaxLen(req.FunctionCode)
 	blocks := createBlocks(fields, maxLen)
@@ -365,12 +365,6 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 		return err
 	}
 
-	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
-	if err != nil {
-		return deviceError(err)
-	}
-	defer mu.Unlock()
-
 	funcCode := WriteHoldingRegistersFunc
 	if req.Type == BoolType {
 		funcCode = WriteCoilsFunc
@@ -389,6 +383,12 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 	if err := validateFieldAddresses(fields); err != nil {
 		return err
 	}
+
+	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
+	if err != nil {
+		return deviceError(err)
+	}
+	defer mu.Unlock()
 
 	client := Client{FunctionCode: funcCode, DataFields: fields}
 	blocks := createWriteBlocks(fields, getBlockMaxLen(funcCode))
