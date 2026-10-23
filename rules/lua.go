@@ -120,7 +120,7 @@ type luaAPIFunc struct {
 
 // Initializes and returns a new script environment associated with a specific Lua script and Mainflux message.
 // The following is made available to the Lua environment as part of an "mfx" table in the global namespace:
-//  1. The associated Message payload, subtopic, creation timestamp, and publisher ID
+//  1. The associated Message payload, subtopic, creation timestamp, and thing ID
 //  2. API functions
 func NewLuaEnv(service *rulesService, script *LuaScript, ruleID string, message *protomfx.Message, payload map[string]any, functions ...luaAPIFunc) (*luaEnv, error) {
 	state := lua.NewState()
@@ -237,13 +237,13 @@ func (rs *rulesService) runScriptCondition(ctx context.Context, msg *protomfx.Me
 //   - "payload": a table containing the Message payload
 //   - "subtopic": the subtopic the message was published to
 //   - "created": message creation time (unix timestamp)
-//   - "publisher_id": ID of thing the message was published by
+//   - "thing_id": ID of thing the message was published by
 func pushMfxMessageTable(ls *lua.State, message *protomfx.Message, payload map[string]any) {
 	msgTable := map[string]any{
-		"subtopic":     message.Subtopic,
-		"created":      message.Created,
-		"publisher_id": message.ThingId,
-		"payload":      payload,
+		"subtopic": message.Subtopic,
+		"created":  message.Created,
+		"thing_id": message.ThingId,
+		"payload":  payload,
 	}
 
 	luautil.DeepPush(ls, msgTable)
