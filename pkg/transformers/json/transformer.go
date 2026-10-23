@@ -150,15 +150,6 @@ func extractPayload(payload any, dataField string) any {
 }
 
 func extractItemsValue(items []any, key string) any {
-	// A single item keeps the object output that existing transformers produce.
-	if len(items) == 1 {
-		item, ok := items[0].(map[string]any)
-		if !ok {
-			return nil
-		}
-		return item[key]
-	}
-
 	var values []any
 	for _, entry := range items {
 		item, ok := entry.(map[string]any)
@@ -169,6 +160,11 @@ func extractItemsValue(items []any, key string) any {
 		current, exists := item[key]
 		if !exists {
 			continue
+		}
+
+		// A single item keeps the object output that existing transformers produce.
+		if len(items) == 1 {
+			return current
 		}
 
 		if arr, ok := current.([]any); ok {
