@@ -41,6 +41,10 @@ const (
 	tsListFilterResPayload = `[{"Created":1638310819000000000,"key1":"val1"}]`
 	missingKeyResPayload   = `[{"key1":"val1"},{"key1":"val2"}]`
 	singlePointResPayload  = `{"Time":"1638310819","key1":"val1"}`
+	partialResPayload      = `[{"Created":1638310819000000000,"Time":"1638310819","key1":"val1"}]`
+
+	partialPayload = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}, ` +
+		`{"PointId": 2}]}`
 
 	pointsPayload = `{"Points": [` +
 		`{"PointId": 1, "Value": [{"Value": "63.6", "Time": "1638310819"}, ` +
@@ -228,6 +232,9 @@ func TestTransformJSONArray(t *testing.T) {
 	singlePointMsg := msg
 	singlePointMsg.Payload = []byte(singlePointPayload)
 
+	partialMsg := msg
+	partialMsg.Payload = []byte(partialPayload)
+
 	invalidPointsMsg := msg
 	invalidPointsMsg.Payload = []byte(invalidPointsPayload)
 
@@ -270,6 +277,9 @@ func TestTransformJSONArray(t *testing.T) {
 	singlePointRes.Payload = []byte(singlePointResPayload)
 	singlePointRes.Created = tsCreated
 
+	partialRes := partialMsg
+	partialRes.Payload = []byte(partialResPayload)
+
 	cases := []struct {
 		desc        string
 		transformer domain.Transformer
@@ -310,6 +320,13 @@ func TestTransformJSONArray(t *testing.T) {
 			transformer: pointsTr,
 			msg:         singlePointMsg,
 			res:         singlePointRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON with data field in one of several array items",
+			transformer: pointsTr,
+			msg:         partialMsg,
+			res:         partialRes,
 			err:         nil,
 		},
 		{
