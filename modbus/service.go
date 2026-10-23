@@ -589,10 +589,7 @@ func (cs *clientsService) scheduleTask(c Client, cfg *domain.ProfileConfig) erro
 }
 
 func (cs *clientsService) unscheduleTask(c Client) {
-	if c.Scheduler.Frequency != cron.OnceFreq {
-		cs.scheduler.RemoveCronEntry(c.ID, c.Scheduler.TimeZone)
-	}
-
+	cs.scheduler.RemoveCronEntry(c.ID)
 	cs.scheduler.RemoveTimer(c.ID)
 }
 

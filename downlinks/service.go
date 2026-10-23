@@ -342,10 +342,7 @@ func (ds *downlinksService) scheduleTask(d Downlink, cfg *domain.ProfileConfig) 
 }
 
 func (ds *downlinksService) unscheduleTask(d Downlink) {
-	if d.Scheduler.Frequency != cron.OnceFreq {
-		ds.scheduler.RemoveCronEntry(d.ID, d.Scheduler.TimeZone)
-	}
-
+	ds.scheduler.RemoveCronEntry(d.ID)
 	ds.scheduler.RemoveTimer(d.ID)
 }
 
