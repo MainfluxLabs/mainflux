@@ -31,6 +31,33 @@ const (
 	timeFieldName     = "custom_ts_key"
 )
 
+const (
+	pointsDataField        = "Points.Value"
+	pointsTimeField        = "Time"
+	tsCreated              = int64(1638310819000000000)
+	tsListPayload          = `[{"custom_ts_key": "1638310819", "key1": "val1", "key5": "val5"}]`
+	singlePointPayload     = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}]}`
+	invalidPointsPayload   = `{"Points": [{"Value": {"key1": "val1"}}, "val2"]}`
+	tsListFilterResPayload = `[{"Created":1638310819000000000,"key1":"val1"}]`
+	missingKeyResPayload   = `[{"key1":"val1"},{"key1":"val2"}]`
+	singlePointResPayload  = `{"Time":"1638310819","key1":"val1"}`
+
+	pointsPayload = `{"Points": [` +
+		`{"PointId": 1, "Value": [{"Value": "63.6", "Time": "1638310819"}, ` +
+		`{"Value": "63.8", "Time": "1638310820"}]}, ` +
+		`{"PointId": 2, "Value": [{"Value": "12.1", "Time": "1638310821"}]}]}`
+
+	missingKeyPayload = `{"Points": [{"Value": {"key1": "val1"}}, {"PointId": 2}, ` +
+		`{"Value": {"key1": "val2"}}]}`
+
+	tsListResPayload = `[{"Created":1638310819000000000,"custom_ts_key":"1638310819",` +
+		`"key1":"val1","key5":"val5"}]`
+
+	pointsResPayload = `[{"Created":1638310819000000000,"Value":"63.6"},` +
+		`{"Created":1638310820000000000,"Value":"63.8"},` +
+		`{"Created":1638310821000000000,"Value":"12.1"}]`
+)
+
 var (
 	dataFilters = []string{"key1", "key2", "key3"}
 )
@@ -176,5 +203,129 @@ func TestTransformJSON(t *testing.T) {
 	for _, tc := range cases {
 		err := mfjson.TransformPayload(tc.transformer, &tc.msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestTransformJSONArray(t *testing.T) {
+	now := time.Now().UnixNano()
+
+	msg := protomfx.Message{
+		Subtopic: subtopic,
+		ThingId:  "thing-1",
+		Protocol: "protocol",
+		Created:  now,
+	}
+
+	tsListMsg := msg
+	tsListMsg.Payload = []byte(tsListPayload)
+
+	pointsMsg := msg
+	pointsMsg.Payload = []byte(pointsPayload)
+
+	missingKeyMsg := msg
+	missingKeyMsg.Payload = []byte(missingKeyPayload)
+
+	singlePointMsg := msg
+	singlePointMsg.Payload = []byte(singlePointPayload)
+
+	invalidPointsMsg := msg
+	invalidPointsMsg.Payload = []byte(invalidPointsPayload)
+
+	tsTr := domain.Transformer{
+		TimeField:    timeFieldName,
+		TimeFormat:   timeFieldFormat,
+		TimeLocation: timeFieldLocation,
+	}
+
+	tsFilterTr := tsTr
+	tsFilterTr.DataFilters = []string{"key1"}
+
+	pointsTr := domain.Transformer{
+		DataField:    pointsDataField,
+		TimeField:    pointsTimeField,
+		TimeFormat:   timeFieldFormat,
+		TimeLocation: timeFieldLocation,
+	}
+
+	pointsFilterTr := pointsTr
+	pointsFilterTr.DataFilters = []string{"Value"}
+
+	dataFieldTr := domain.Transformer{
+		DataField: pointsDataField,
+	}
+
+	tsListRes := tsListMsg
+	tsListRes.Payload = []byte(tsListResPayload)
+
+	tsListFilterRes := tsListMsg
+	tsListFilterRes.Payload = []byte(tsListFilterResPayload)
+
+	pointsRes := pointsMsg
+	pointsRes.Payload = []byte(pointsResPayload)
+
+	missingKeyRes := missingKeyMsg
+	missingKeyRes.Payload = []byte(missingKeyResPayload)
+
+	singlePointRes := singlePointMsg
+	singlePointRes.Payload = []byte(singlePointResPayload)
+	singlePointRes.Created = tsCreated
+
+	cases := []struct {
+		desc        string
+		transformer domain.Transformer
+		msg         protomfx.Message
+		res         protomfx.Message
+		err         error
+	}{
+		{
+			desc:        "transform JSON array with time field",
+			transformer: tsTr,
+			msg:         tsListMsg,
+			res:         tsListRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON array with time field and data filters",
+			transformer: tsFilterTr,
+			msg:         tsListMsg,
+			res:         tsListFilterRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON with data field in all array items",
+			transformer: pointsFilterTr,
+			msg:         pointsMsg,
+			res:         pointsRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON with data field missing in some array items",
+			transformer: dataFieldTr,
+			msg:         missingKeyMsg,
+			res:         missingKeyRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON with data field in single array item",
+			transformer: pointsTr,
+			msg:         singlePointMsg,
+			res:         singlePointRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON with data field in non-object array items",
+			transformer: dataFieldTr,
+			msg:         invalidPointsMsg,
+			res:         invalidPointsMsg,
+			err:         mfjson.ErrTransform,
+		},
+	}
+
+	for _, tc := range cases {
+		err := mfjson.TransformPayload(tc.transformer, &tc.msg)
+		errMsg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), errMsg)
+		resMsg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.res, tc.msg)
+		assert.Equal(t, tc.res, tc.msg, resMsg)
 	}
 }
