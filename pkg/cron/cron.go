@@ -42,6 +42,16 @@ func (sm *ScheduleManager) RemoveCronEntry(entityID, timezone string) {
 	}
 }
 
+func (sm *ScheduleManager) RemoveTimer(entityID string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	if t, ok := sm.TimerByID[entityID]; ok {
+		t.Stop()
+		delete(sm.TimerByID, entityID)
+	}
+}
+
 func (sm *ScheduleManager) InitCron(timezone string) (*cron.Cron, error) {
 	sm.mu.RLock()
 	c, exists := sm.CronByTZ[timezone]
@@ -80,15 +90,20 @@ func (sm *ScheduleManager) ScheduleOneTimeTask(task func(), scheduler Scheduler,
 	now := time.Now().In(scheduledDateTime.Location())
 	duration := scheduledDateTime.Sub(now)
 
-	timer := time.AfterFunc(duration, func() {
+	// The lock is held until the timer is stored, because a timer with a past time fires at once.
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	var timer *time.Timer
+	timer = time.AfterFunc(duration, func() {
 		task()
 		sm.mu.Lock()
 		defer sm.mu.Unlock()
-		delete(sm.TimerByID, entityID)
+		// A rescheduled entity stores a new timer under the same ID, which must not be removed.
+		if sm.TimerByID[entityID] == timer {
+			delete(sm.TimerByID, entityID)
+		}
 	})
-
-	sm.mu.Lock()
-	defer sm.mu.Unlock()
 	sm.TimerByID[entityID] = timer
 
 	return nil
