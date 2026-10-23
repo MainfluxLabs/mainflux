@@ -969,6 +969,14 @@ func TestUpdateClient(t *testing.T) {
 			contentType: contentType,
 			status:      http.StatusBadRequest,
 		},
+		{
+			desc:        "update client with field past the last address",
+			token:       token,
+			id:          clID,
+			body:        fmt.Sprintf(`{%s,%s,"data_fields":[{"name":"temperature","type":"float32","byte_order":"ABCD","address":65535}]}`, baseClientJSON, validScheduler),
+			contentType: contentType,
+			status:      http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range cases {

@@ -247,6 +247,44 @@ func TestCalcFieldLengths(t *testing.T) {
 	}
 }
 
+func TestBlockFields(t *testing.T) {
+	cases := []struct {
+		desc   string
+		fields []DataField
+		block  Block
+		want   []DataField
+	}{
+		{
+			desc: "fields inside the block are returned",
+			fields: []DataField{
+				{Name: "first", Address: 0, Length: 1},
+				{Name: "second", Address: 1, Length: 2},
+				{Name: "outside", Address: 3, Length: 1},
+			},
+			block: Block{Start: 0, Length: 3},
+			want: []DataField{
+				{Name: "first", Address: 0, Length: 1},
+				{Name: "second", Address: 1, Length: 2},
+			},
+		},
+		{
+			desc: "field ending at the last address is returned",
+			fields: []DataField{
+				{Name: "last", Address: 65534, Length: 2},
+			},
+			block: Block{Start: 65534, Length: 2},
+			want: []DataField{
+				{Name: "last", Address: 65534, Length: 2},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		got := blockFields(tc.fields, tc.block)
+		assert.Equal(t, tc.want, got, fmt.Sprintf("%s: unexpected result", tc.desc))
+	}
+}
+
 func TestValidateFieldAddresses(t *testing.T) {
 	cases := []struct {
 		desc   string

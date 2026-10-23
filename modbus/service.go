@@ -432,12 +432,13 @@ func (cs *clientsService) connect(ctx context.Context, ipAddress, port string, s
 		return nil, nil, fmt.Errorf("%s: %w", errRateLimiter, err)
 	}
 
-	handler, mu, err := cs.connPool.Get(key)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", errGetConnection, err)
-	}
+	handler, mu := cs.connPool.Get(key)
 
 	mu.Lock()
+	if err := handler.Connect(); err != nil {
+		mu.Unlock()
+		return nil, nil, fmt.Errorf("%s: %w", errGetConnection, err)
+	}
 	handler.SlaveId = slaveID
 
 	return handler, mu, nil
@@ -458,11 +459,11 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	cs.unscheduleTask(c)
-
 	if err = cs.clients.Update(ctx, client); err != nil {
 		return err
 	}
+
+	cs.unscheduleTask(c)
 	client.ThingID = c.ThingID
 
 	return cs.scheduleTasks(ctx, client)
@@ -485,11 +486,15 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 		return err
 	}
 
+	if err := cs.clients.Remove(ctx, ids...); err != nil {
+		return err
+	}
+
 	for _, client := range cls {
 		cs.unscheduleTask(client)
 	}
 
-	return cs.clients.Remove(ctx, ids...)
+	return nil
 }
 
 func (cs *clientsService) RemoveClientsByThing(ctx context.Context, thingID string) error {
@@ -588,10 +593,7 @@ func (cs *clientsService) unscheduleTask(c Client) {
 		cs.scheduler.RemoveCronEntry(c.ID, c.Scheduler.TimeZone)
 	}
 
-	if t, ok := cs.scheduler.TimerByID[c.ID]; ok {
-		t.Stop()
-		delete(cs.scheduler.TimerByID, c.ID)
-	}
+	cs.scheduler.RemoveTimer(c.ID)
 }
 
 func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig) func() {

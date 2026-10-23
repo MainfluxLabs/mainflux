@@ -282,7 +282,7 @@ func (cr clientRepository) Update(ctx context.Context, c modbus.Client) error {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			case pgerrcode.StringDataRightTruncationDataException:
-				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				return errors.Wrap(dbutil.ErrMalformedEntity, errdb)
 			}
 		}
 

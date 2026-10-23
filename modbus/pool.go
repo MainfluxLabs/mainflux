@@ -1,7 +1,6 @@
 package modbus
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -40,17 +39,19 @@ func newModbusConnectionPool(ttl, cleanFreq time.Duration) *modbusConnectionPool
 // Get returns a handler for the given address (creating one if needed) along with
 // its mutex. Callers must hold the mutex for the full request, from setting
 // handler.SlaveId through the actual I/O, since the connection may be shared.
-func (p *modbusConnectionPool) Get(address string) (*modbus.TCPClientHandler, *sync.Mutex, error) {
+// The handler is not connected, because dialing under the pool lock would block
+// requests to every other address until the dial times out.
+func (p *modbusConnectionPool) Get(address string) (*modbus.TCPClientHandler, *sync.Mutex) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	// Reuse existing connection
 	if conn, ok := p.conns[address]; ok {
 		if time.Since(conn.created) < p.ttl {
-			return conn.handler, &conn.mu, nil
+			return conn.handler, &conn.mu
 		}
-		// expired
-		conn.handler.Close()
+		// Close waits for an in-flight request, so it runs outside the pool lock.
+		go conn.handler.Close()
 		delete(p.conns, address)
 	}
 
@@ -58,16 +59,13 @@ func (p *modbusConnectionPool) Get(address string) (*modbus.TCPClientHandler, *s
 	handler := modbus.NewTCPClientHandler(address)
 	handler.Timeout = 10 * time.Second
 	handler.IdleTimeout = p.ttl
-	if err := handler.Connect(); err != nil {
-		return nil, nil, fmt.Errorf("failed to connect to %s: %w", address, err)
-	}
 
 	conn := &connection{
 		handler: handler,
 		created: time.Now(),
 	}
 	p.conns[address] = conn
-	return conn.handler, &conn.mu, nil
+	return conn.handler, &conn.mu
 }
 
 // Close all connections
@@ -99,12 +97,18 @@ func (p *modbusConnectionPool) cleanupLoop() {
 // Removes expired connections
 func (p *modbusConnectionPool) cleanup() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 	now := time.Now()
+	var expired []*connection
 	for addr, conn := range p.conns {
 		if now.Sub(conn.created) > p.ttl {
-			conn.handler.Close()
+			expired = append(expired, conn)
 			delete(p.conns, addr)
 		}
+	}
+	p.mu.Unlock()
+
+	// Close waits for an in-flight request, so it runs outside the pool lock.
+	for _, conn := range expired {
+		conn.handler.Close()
 	}
 }
