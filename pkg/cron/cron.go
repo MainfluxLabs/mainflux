@@ -18,34 +18,49 @@ var (
 type ScheduleManager struct {
 	mu        sync.RWMutex
 	CronByTZ  map[string]*cron.Cron
-	EntryByID map[string]cron.EntryID
+	EntryByID map[string]Entry
 	TimerByID map[string]*time.Timer
+}
+
+// Entry identifies a cron entry together with the time zone of the cron that runs it,
+// because entry IDs are only unique within a single cron.
+type Entry struct {
+	ID       cron.EntryID
+	TimeZone string
 }
 
 func NewScheduleManager() *ScheduleManager {
 	return &ScheduleManager{
 		CronByTZ:  make(map[string]*cron.Cron),
-		EntryByID: make(map[string]cron.EntryID),
+		EntryByID: make(map[string]Entry),
 		TimerByID: make(map[string]*time.Timer),
 	}
 }
 
-func (sm *ScheduleManager) RemoveCronEntry(entityID, timezone string) {
+func (sm *ScheduleManager) RemoveCronEntry(entityID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	if entryID, ok := sm.EntryByID[entityID]; ok {
-		if c, ok := sm.CronByTZ[timezone]; ok {
-			c.Remove(entryID)
-		}
-		delete(sm.EntryByID, entityID)
-	}
+	sm.removeCronEntry(entityID)
 }
 
 func (sm *ScheduleManager) RemoveTimer(entityID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
+	sm.removeTimer(entityID)
+}
+
+func (sm *ScheduleManager) removeCronEntry(entityID string) {
+	if entry, ok := sm.EntryByID[entityID]; ok {
+		if c, ok := sm.CronByTZ[entry.TimeZone]; ok {
+			c.Remove(entry.ID)
+		}
+		delete(sm.EntryByID, entityID)
+	}
+}
+
+func (sm *ScheduleManager) removeTimer(entityID string) {
 	if t, ok := sm.TimerByID[entityID]; ok {
 		t.Stop()
 		delete(sm.TimerByID, entityID)
@@ -94,6 +109,10 @@ func (sm *ScheduleManager) ScheduleOneTimeTask(task func(), scheduler Scheduler,
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
+	// Concurrent updates of the same entity can each schedule a task, so the previous one is removed.
+	sm.removeCronEntry(entityID)
+	sm.removeTimer(entityID)
+
 	var timer *time.Timer
 	timer = time.AfterFunc(duration, func() {
 		task()
@@ -128,7 +147,11 @@ func (sm *ScheduleManager) ScheduleRepeatingTask(task func(), scheduler Schedule
 		return errors.Wrap(errAddFunc, err)
 	}
 
-	sm.EntryByID[entityID] = entryID
+	// Concurrent updates of the same entity can each schedule a task, so the previous one is removed.
+	sm.removeCronEntry(entityID)
+	sm.removeTimer(entityID)
+
+	sm.EntryByID[entityID] = Entry{ID: entryID, TimeZone: scheduler.TimeZone}
 
 	return nil
 }
