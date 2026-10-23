@@ -62,11 +62,11 @@ func TransformPayload(transformer domain.Transformer, msg *protomfx.Message) err
 				return errors.Wrap(ErrInvalidTimeField, err)
 			}
 
+			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
 			if ts != 0 {
-				v["Created"] = ts
+				formattedPayload["Created"] = ts
 			}
 
-			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
 			payloads = append(payloads, formattedPayload)
 		}
 
@@ -139,18 +139,7 @@ func extractPayload(payload any, dataField string) any {
 			value = current
 
 		case []any:
-			if len(v) == 0 {
-				return nil
-			}
-			firstItem, ok := v[0].(map[string]any)
-			if !ok {
-				return nil
-			}
-			current, exists := firstItem[k]
-			if !exists {
-				return nil
-			}
-			value = current
+			value = extractItemsValue(v, k)
 
 		default:
 			return nil
@@ -158,6 +147,38 @@ func extractPayload(payload any, dataField string) any {
 	}
 
 	return value
+}
+
+func extractItemsValue(items []any, key string) any {
+	var values []any
+	for _, entry := range items {
+		item, ok := entry.(map[string]any)
+		if !ok {
+			return nil
+		}
+
+		current, exists := item[key]
+		if !exists {
+			continue
+		}
+
+		// A single item keeps the object output that existing transformers produce.
+		if len(items) == 1 {
+			return current
+		}
+
+		if arr, ok := current.([]any); ok {
+			values = append(values, arr...)
+			continue
+		}
+		values = append(values, current)
+	}
+
+	if len(values) == 0 {
+		return nil
+	}
+
+	return values
 }
 
 func filterPayloadFields(payload map[string]any, dataFilters []string) map[string]any {
