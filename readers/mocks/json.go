@@ -76,8 +76,8 @@ func messageThingID(m readers.Message) string {
 	case mfjson.Message:
 		return msg.ThingID
 	case map[string]any:
-		if pub, ok := msg["thing_id"].(string); ok {
-			return pub
+		if thingID, ok := msg["thing_id"].(string); ok {
+			return thingID
 		}
 	}
 	return ""
@@ -181,7 +181,7 @@ func (repo *jsonRepositoryMock) checkJSONMapFilter(jsonMap map[string]any, rpm r
 		}
 	}
 	if rpm.ThingID != "" {
-		if thing_id, ok := jsonMap["thing_id"].(string); !ok || thing_id != rpm.ThingID {
+		if thingID, ok := jsonMap["thing_id"].(string); !ok || thingID != rpm.ThingID {
 			return false
 		}
 	}
