@@ -163,11 +163,11 @@ func TestBuildTimeIntervals(t *testing.T) {
 			qp: queryParams{
 				table:       mfreaders.SenMLTable,
 				timeColumn:  mfreaders.SenMLOrder,
-				condition:   "WHERE publisher = :publisher",
+				condition:   "WHERE thing_id = :thing_id",
 				aggValue:    1,
 				aggInterval: "hour",
 			},
-			resPart: "WHERE publisher = :publisher",
+			resPart: "WHERE thing_id = :thing_id",
 		},
 	}
 
@@ -457,7 +457,7 @@ func TestBaseConditions(t *testing.T) {
 			timeColumn: "time",
 			res: []string{
 				"subtopic = :subtopic",
-				"publisher = :publisher",
+				"thing_id = :thing_id",
 				"protocol = :protocol",
 				"time >= :from",
 				"time < :to",
@@ -469,7 +469,7 @@ func TestBaseConditions(t *testing.T) {
 			from:       1000,
 			timeColumn: "created",
 			res: []string{
-				"publisher = :publisher",
+				"thing_id = :thing_id",
 				"created >= :from",
 			},
 		},
@@ -478,11 +478,11 @@ func TestBaseConditions(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			result := mfreaders.BaseConditions(readers.MessagesPageMetadata{
-				Subtopic:  tc.subtopic,
-				Publisher: tc.thingID,
-				Protocol:  tc.protocol,
-				From:      tc.from,
-				To:        tc.to,
+				Subtopic: tc.subtopic,
+				ThingID:  tc.thingID,
+				Protocol: tc.protocol,
+				From:     tc.from,
+				To:       tc.to,
 			}, tc.timeColumn)
 			assert.Equal(t, tc.res, result)
 		})
@@ -492,16 +492,16 @@ func TestBaseConditions(t *testing.T) {
 func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
 		MessagesPageMetadata: readers.MessagesPageMetadata{
-			Subtopic:  "test",
-			Publisher: "thing1",
-			From:      1000,
+			Subtopic: "test",
+			ThingID:  "thing1",
+			From:     1000,
 		},
 	}
 
 	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JSONOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
-	assert.Contains(t, result, "publisher = :publisher")
+	assert.Contains(t, result, "thing_id = :thing_id")
 	assert.Contains(t, result, "created >= :from")
 }
 
@@ -565,7 +565,7 @@ func TestBuildAggQuery(t *testing.T) {
 		aggInterval:      "hour",
 		aggFields:        []string{"value"},
 		aggType:          readers.AggregationMax,
-		conditionForJoin: "AND publisher = :publisher",
+		conditionForJoin: "AND thing_id = :thing_id",
 		dir:              "desc",
 	}
 	strategy := sqlAggFunc("MAX")
@@ -586,7 +586,7 @@ func TestBuildAggCountQuery(t *testing.T) {
 		aggValue:         1,
 		aggInterval:      "hour",
 		aggFields:        []string{"value"},
-		conditionForJoin: "AND publisher = :publisher",
+		conditionForJoin: "AND thing_id = :thing_id",
 	}
 
 	result := buildAggCountQuery(qp)

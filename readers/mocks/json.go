@@ -60,7 +60,7 @@ func (repo *jsonRepositoryMock) RemoveByThing(ctx context.Context, thingID strin
 	for profileID, messages := range repo.messages {
 		var remaining []readers.Message
 		for _, m := range messages {
-			if messagePublisher(m) == thingID {
+			if messageThingID(m) == thingID {
 				continue
 			}
 			remaining = append(remaining, m)
@@ -71,13 +71,13 @@ func (repo *jsonRepositoryMock) RemoveByThing(ctx context.Context, thingID strin
 	return nil
 }
 
-func messagePublisher(m readers.Message) string {
+func messageThingID(m readers.Message) string {
 	switch msg := m.(type) {
 	case mfjson.Message:
-		return msg.Publisher
+		return msg.ThingID
 	case map[string]any:
-		if pub, ok := msg["publisher"].(string); ok {
-			return pub
+		if thingID, ok := msg["thing_id"].(string); ok {
+			return thingID
 		}
 	}
 	return ""
@@ -102,11 +102,11 @@ func (repo *jsonRepositoryMock) readAll(rpm readers.JSONPageMetadata) (readers.J
 				switch msg := m.(type) {
 				case mfjson.Message:
 					msgMap := map[string]any{
-						"created":   msg.Created,
-						"subtopic":  msg.Subtopic,
-						"publisher": msg.Publisher,
-						"protocol":  msg.Protocol,
-						"payload":   msg.Payload,
+						"created":  msg.Created,
+						"subtopic": msg.Subtopic,
+						"thing_id": msg.ThingID,
+						"protocol": msg.Protocol,
+						"payload":  msg.Payload,
 					}
 					filteredMessages = append(filteredMessages, msgMap)
 				case map[string]any:
@@ -159,7 +159,7 @@ func (repo *jsonRepositoryMock) checkJSONMessageFilter(jsonMsg mfjson.Message, r
 	if rpm.Subtopic != "" && rpm.Subtopic != jsonMsg.Subtopic {
 		return false
 	}
-	if rpm.Publisher != "" && rpm.Publisher != jsonMsg.Publisher {
+	if rpm.ThingID != "" && rpm.ThingID != jsonMsg.ThingID {
 		return false
 	}
 	if rpm.Protocol != "" && rpm.Protocol != jsonMsg.Protocol {
@@ -180,8 +180,8 @@ func (repo *jsonRepositoryMock) checkJSONMapFilter(jsonMap map[string]any, rpm r
 			return false
 		}
 	}
-	if rpm.Publisher != "" {
-		if publisher, ok := jsonMap["publisher"].(string); !ok || publisher != rpm.Publisher {
+	if rpm.ThingID != "" {
+		if thingID, ok := jsonMap["thing_id"].(string); !ok || thingID != rpm.ThingID {
 			return false
 		}
 	}

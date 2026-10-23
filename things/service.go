@@ -709,7 +709,7 @@ func (ts *thingsService) CanThingAccessGroup(ctx context.Context, req ThingAcces
 }
 
 func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandReq) error {
-	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.ThingID)
+	thingGroupID, thingType, err := ts.getThingGroupAndType(ctx, req.ThingID)
 	if err != nil {
 		return err
 	}
@@ -719,24 +719,24 @@ func (ts *thingsService) CanThingCommand(ctx context.Context, req ThingCommandRe
 		return err
 	}
 
-	if pubGroupID != recGroupID {
+	if thingGroupID != recGroupID {
 		return errors.ErrAuthorization
 	}
 
-	return CanCommand(pubType, recType)
+	return CanCommand(thingType, recType)
 }
 
 func (ts *thingsService) CanThingGroupCommand(ctx context.Context, req ThingGroupCommandReq) error {
-	pubGroupID, pubType, err := ts.getThingGroupAndType(ctx, req.ThingID)
+	thingGroupID, thingType, err := ts.getThingGroupAndType(ctx, req.ThingID)
 	if err != nil {
 		return err
 	}
 
-	if pubGroupID != req.GroupID {
+	if thingGroupID != req.GroupID {
 		return errors.ErrAuthorization
 	}
 
-	return CanGroupCommand(pubType)
+	return CanGroupCommand(thingType)
 }
 
 func (ts *thingsService) Identify(ctx context.Context, key ThingKey) (string, error) {

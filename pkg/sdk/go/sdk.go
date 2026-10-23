@@ -93,7 +93,7 @@ type JSONPageMetadata struct {
 	Offset      uint64   `json:"offset"`
 	Limit       uint64   `json:"limit"`
 	Subtopic    string   `json:"subtopic,omitempty"`
-	Publisher   string   `json:"publisher,omitempty"`
+	ThingID     string   `json:"thing_id,omitempty"`
 	Protocol    string   `json:"protocol,omitempty"`
 	From        int64    `json:"from,omitempty"`
 	To          int64    `json:"to,omitempty"`
@@ -112,7 +112,7 @@ type SenMLPageMetadata struct {
 	Offset      uint64   `json:"offset"`
 	Limit       uint64   `json:"limit"`
 	Subtopic    string   `json:"subtopic,omitempty"`
-	Publisher   string   `json:"publisher,omitempty"`
+	ThingID     string   `json:"thing_id,omitempty"`
 	Protocol    string   `json:"protocol,omitempty"`
 	Name        string   `json:"name,omitempty"`
 	Value       float64  `json:"v,omitempty"`
@@ -386,11 +386,11 @@ type SDK interface {
 	// ListSenMLMessages lists SenML messages with filtering.
 	ListSenMLMessages(pm SenMLPageMetadata, token string, key domain.ThingKey) (map[string]any, error)
 
-	// DeleteJSONMessages deletes JSON messages by publisher.
-	DeleteJSONMessages(publisherID, token string, pm JSONPageMetadata) error
+	// DeleteJSONMessages deletes JSON messages by thing ID.
+	DeleteJSONMessages(thingID, token string, pm JSONPageMetadata) error
 
-	// DeleteSenMLMessages deletes SenML messages by publisher.
-	DeleteSenMLMessages(publisherID, token string, pm SenMLPageMetadata) error
+	// DeleteSenMLMessages deletes SenML messages by thing ID.
+	DeleteSenMLMessages(thingID, token string, pm SenMLPageMetadata) error
 
 	// DeleteAllJSONMessages deletes all JSON messages (admin only).
 	DeleteAllJSONMessages(token string, pm JSONPageMetadata) error

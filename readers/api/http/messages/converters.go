@@ -17,7 +17,7 @@ import (
 
 var senmlHeader = []string{
 	"subtopic",
-	"publisher",
+	"thing_id",
 	"protocol",
 	"name",
 	"unit",
@@ -33,7 +33,7 @@ var senmlHeader = []string{
 var jsonHeader = []string{
 	"created",
 	"subtopic",
-	"publisher",
+	"thing_id",
 	"protocol",
 }
 
@@ -49,7 +49,7 @@ func ConvertSenMLToCSVFile(page readers.SenMLMessagesPage, timeFormat string) ([
 		if m, ok := msg.(senml.Message); ok {
 			row := []string{
 				m.Subtopic,
-				m.Publisher,
+				m.ThingID,
 				m.Protocol,
 				m.Name,
 				m.Unit,
@@ -124,7 +124,7 @@ func ConvertJSONToCSVFile(page readers.JSONMessagesPage, timeFormat string) ([]b
 		row := []string{
 			created,
 			getStringValue(m, "subtopic"),
-			getStringValue(m, "publisher"),
+			getStringValue(m, "thing_id"),
 			getStringValue(m, "protocol"),
 		}
 
@@ -242,11 +242,11 @@ func ConvertSenMLToJSONFile(page readers.SenMLMessagesPage, timeFormat string) (
 	for _, msg := range page.MessagesPage.Messages {
 		if m, ok := msg.(senml.Message); ok {
 			msgMap := map[string]any{
-				"value":     m.Value,
-				"publisher": m.Publisher,
-				"protocol":  m.Protocol,
-				"name":      m.Name,
-				"time":      formatTime(m.Time, timeFormat),
+				"value":    m.Value,
+				"thing_id": m.ThingID,
+				"protocol": m.Protocol,
+				"name":     m.Name,
+				"time":     formatTime(m.Time, timeFormat),
 			}
 
 			if m.Subtopic != "" {
@@ -281,11 +281,11 @@ func ConvertSenMLToJSONFile(page readers.SenMLMessagesPage, timeFormat string) (
 func ConvertJSONToJSONMessages(data []byte) ([]mfjson.Message, error) {
 	// this was used because mfjson.Message uses []byte but json stores map[string]any
 	var tempMessages []struct {
-		Created   int64          `json:"created"`
-		Subtopic  string         `json:"subtopic"`
-		Publisher string         `json:"publisher"`
-		Protocol  string         `json:"protocol"`
-		Payload   map[string]any `json:"payload"`
+		Created  int64          `json:"created"`
+		Subtopic string         `json:"subtopic"`
+		ThingID  string         `json:"thing_id"`
+		Protocol string         `json:"protocol"`
+		Payload  map[string]any `json:"payload"`
 	}
 
 	if err := json.Unmarshal(data, &tempMessages); err != nil {
@@ -299,11 +299,11 @@ func ConvertJSONToJSONMessages(data []byte) ([]mfjson.Message, error) {
 		}
 
 		messages[i] = mfjson.Message{
-			Created:   temp.Created,
-			Subtopic:  temp.Subtopic,
-			Publisher: temp.Publisher,
-			Protocol:  temp.Protocol,
-			Payload:   payloadBytes,
+			Created:  temp.Created,
+			Subtopic: temp.Subtopic,
+			ThingID:  temp.ThingID,
+			Protocol: temp.Protocol,
+			Payload:  payloadBytes,
 		}
 	}
 
@@ -345,8 +345,8 @@ func ConvertCSVToSenMLMessages(data []byte) ([]senml.Message, error) {
 			switch header[i] {
 			case "subtopic":
 				msg.Subtopic = value
-			case "publisher":
-				msg.Publisher = value
+			case "thing_id":
+				msg.ThingID = value
 			case "protocol":
 				msg.Protocol = value
 			case "name":
@@ -419,8 +419,8 @@ func ConvertCSVToJSONMessages(csvMessages []byte) ([]mfjson.Message, error) {
 				}
 			case "subtopic":
 				msg.Subtopic = value
-			case "publisher":
-				msg.Publisher = value
+			case "thing_id":
+				msg.ThingID = value
 			case "protocol":
 				msg.Protocol = value
 			case "payload":

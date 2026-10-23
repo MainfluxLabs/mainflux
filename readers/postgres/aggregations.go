@@ -81,7 +81,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 			"limit":        rpm.Limit,
 			"offset":       rpm.Offset,
 			"subtopic":     rpm.Subtopic,
-			"publisher":    rpm.Publisher,
+			"thing_id":     rpm.ThingID,
 			"name":         rpm.Name,
 			"protocol":     rpm.Protocol,
 			"value":        rpm.Value,
@@ -162,7 +162,7 @@ func buildAggQuery(qp queryParams, strategy aggStrategy) string {
 				{{.AggExpression}},
 				MAX(m.{{.TimeColumn}}) as max_time,
 				MAX(CAST(m.subtopic AS text)) as subtopic,
-				MAX(CAST(m.publisher AS text)) as publisher,
+				MAX(CAST(m.thing_id AS text)) as thing_id,
 				MAX(CAST(m.protocol AS text)) as protocol
 			FROM time_intervals ti
 			LEFT JOIN {{.Table}} m ON {{.TimeJoinCondition}}
@@ -278,13 +278,13 @@ func firstLastSelectedFields(qp queryParams) string {
 		return senmlFirstLastSelected()
 	}
 	if len(qp.aggFields) == 0 {
-		return `ia.agg_time AS created, ia.subtopic, ia.publisher, ia.protocol, ia.agg_payload AS payload`
+		return `ia.agg_time AS created, ia.subtopic, ia.thing_id, ia.protocol, ia.agg_payload AS payload`
 	}
 	var pairs []string
 	for _, field := range qp.aggFields {
 		pairs = append(pairs, fmt.Sprintf("'%s', ia.agg_payload->>'%s'", field, field))
 	}
-	return fmt.Sprintf(`ia.agg_time AS created, ia.subtopic, ia.publisher, ia.protocol,
+	return fmt.Sprintf(`ia.agg_time AS created, ia.subtopic, ia.thing_id, ia.protocol,
 		jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", "))
 }
 
@@ -300,7 +300,7 @@ func buildSenMLFirstLastExpr(col, dir string) string {
 }
 
 func senmlFirstLastSelected() string {
-	return `ia.agg_time AS time, ia.subtopic, ia.publisher, ia.protocol,
+	return `ia.agg_time AS time, ia.subtopic, ia.thing_id, ia.protocol,
 		ia.agg_name AS name, ia.agg_unit AS unit,
 		ia.agg_value AS value,
 		ia.agg_string_value AS string_value, ia.agg_bool_value AS bool_value,
@@ -310,7 +310,7 @@ func senmlFirstLastSelected() string {
 
 func (f sqlAggFunc) selectedFields(qp queryParams) string {
 	if qp.table == mfreaders.SenMLTable {
-		return `ia.max_time as time, ia.subtopic, ia.publisher, ia.protocol,
+		return `ia.max_time as time, ia.subtopic, ia.thing_id, ia.protocol,
 		'' as name, '' as unit,
 		ia.agg_value as value,
 		'' as string_value, false as bool_value, '' as data_value,
@@ -431,7 +431,7 @@ func buildJSONPath(field string) string {
 
 func buildJSONSelect(aggFields []string) string {
 	if len(aggFields) == 0 {
-		return "ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol, CAST('{}' AS jsonb) as payload"
+		return "ia.max_time as created, ia.subtopic, ia.thing_id, ia.protocol, CAST('{}' AS jsonb) as payload"
 	}
 
 	var pairs []string
@@ -439,6 +439,6 @@ func buildJSONSelect(aggFields []string) string {
 		pairs = append(pairs, fmt.Sprintf("'%s', ia.agg_value_%d", field, i))
 	}
 
-	return fmt.Sprintf(`ia.max_time as created, ia.subtopic, ia.publisher, ia.protocol,
+	return fmt.Sprintf(`ia.max_time as created, ia.subtopic, ia.thing_id, ia.protocol,
 		jsonb_build_object(%s) as payload`, strings.Join(pairs, ", "))
 }

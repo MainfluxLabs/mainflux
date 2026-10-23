@@ -31,10 +31,10 @@ type Service interface {
 	// Unsubscribe method is used to stop observing resource.
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
 
-	// SendCommandToThing publishes a command to the specified thing, authorized by publisher thing key (M2M).
-	SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error
+	// SendCommandToThing publishes a command to the specified thing, authorized by thing key (M2M).
+	SendCommandToThing(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) error
 
-	// SendCommandToGroup publishes a command to a group, authorized by publisher thing key (M2M).
+	// SendCommandToGroup publishes a command to a group, authorized by thing key (M2M).
 	SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error
 }
 
@@ -147,19 +147,19 @@ func authorizeSubjectType(elems []string) error {
 	return nil
 }
 
-func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) error {
-	res, err := svc.things.Identify(ctx, key)
+func (svc *adapterService) SendCommandToThing(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) error {
+	thingID, err := svc.things.Identify(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{ThingID: res, RecipientID: thingID}); err != nil {
+	if err := svc.things.CanThingCommand(ctx, domain.ThingCommandReq{ThingID: thingID, RecipientID: recipientID}); err != nil {
 		return err
 	}
 
-	cmd.ThingId = res
-	cmd.RecipientId = thingID
-	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(thingID, cmd.Subtopic), cmd)
+	cmd.ThingId = thingID
+	cmd.RecipientId = recipientID
+	return svc.pubsub.PublishCommand(nats.GetThingCommandsSubject(recipientID, cmd.Subtopic), cmd)
 }
 
 func (svc *adapterService) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) error {

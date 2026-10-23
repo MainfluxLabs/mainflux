@@ -99,12 +99,12 @@ A Lua script is a group-scoped resource, referenced by ID from a rule's [script 
 
 Each execution receives an isolated Lua environment: the standard `base`, `math`, `string`, and `table` libraries, and an `mfx` table exposing the triggering message:
 
-| Field                      | Type   | Description                                        |
-| -------------------------- | ------ | -------------------------------------------------- |
-| `mfx.message.payload`      | table  | Parsed message payload (JSON object or array item) |
-| `mfx.message.subtopic`     | string | Message subtopic                                   |
-| `mfx.message.created`      | number | Message creation timestamp (Unix)                  |
-| `mfx.message.publisher_id` | string | Thing ID that published the message                |
+| Field                  | Type   | Description                                        |
+| ---------------------- | ------ | -------------------------------------------------- |
+| `mfx.message.payload`  | table  | Parsed message payload (JSON object or array item) |
+| `mfx.message.subtopic` | string | Message subtopic                                   |
+| `mfx.message.created`  | number | Message creation timestamp (Unix)                  |
+| `mfx.message.thing_id` | string | ID of the thing that published the message         |
 
 As a condition, the only bound API function is `mfx.log(message)` — appends a message to the run's log (max 256 lines, 2048 chars each). Execution is capped at 1,000,000 VM instructions.
 

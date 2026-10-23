@@ -172,8 +172,8 @@ func (req deleteJSONMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMeta.Publisher == "" {
-		return apiutil.ErrMissingPublisherID
+	if req.pageMeta.ThingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil
@@ -189,8 +189,8 @@ func (req deleteSenMLMessagesReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.pageMeta.Publisher == "" {
-		return apiutil.ErrMissingPublisherID
+	if req.pageMeta.ThingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	return nil

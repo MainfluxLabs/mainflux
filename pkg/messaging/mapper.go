@@ -56,11 +56,11 @@ func ToJSONMessage(message protomfx.Message) mfjson.Message {
 	created, payload := extractCreated(message.Payload, message.Created)
 
 	return mfjson.Message{
-		Created:   created,
-		Subtopic:  message.Subtopic,
-		Publisher: message.ThingId,
-		Protocol:  message.Protocol,
-		Payload:   payload,
+		Created:  created,
+		Subtopic: message.Subtopic,
+		ThingID:  message.ThingId,
+		Protocol: message.Protocol,
+		Payload:  payload,
 	}
 }
 
@@ -70,7 +70,7 @@ func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 	return mfjson.Command{
 		Created:     created,
 		Subtopic:    cmd.Subtopic,
-		Publisher:   cmd.ThingId,
+		ThingID:     cmd.ThingId,
 		RecipientID: cmd.RecipientId,
 		Protocol:    cmd.Protocol,
 		Payload:     payload,
@@ -103,7 +103,7 @@ func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
 		return senml.Message{}, err
 	}
 
-	msg.Publisher = message.ThingId
+	msg.ThingID = message.ThingId
 	msg.Subtopic = message.Subtopic
 	msg.Protocol = message.Protocol
 

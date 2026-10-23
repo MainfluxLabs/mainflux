@@ -199,10 +199,10 @@ func main() {
 	)
 
 	rootCmd.PersistentFlags().StringVar(
-		&cli.Publisher,
-		"publisher",
+		&cli.ThingID,
+		"thing-id",
 		"",
-		"Publisher ID query parameter",
+		"Thing ID query parameter",
 	)
 
 	rootCmd.PersistentFlags().StringVar(

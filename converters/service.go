@@ -28,10 +28,10 @@ var ErrInvalidTimeField = errors.New("invalid time field")
 
 // reservedFields are message keys that must not appear inside the payload.
 var reservedFields = map[string]bool{
-	"protocol":  true,
-	"publisher": true,
-	"subtopic":  true,
-	"created":   true,
+	"protocol": true,
+	"thing_id": true,
+	"subtopic": true,
+	"created":  true,
 }
 
 // Service specifies coap service API.

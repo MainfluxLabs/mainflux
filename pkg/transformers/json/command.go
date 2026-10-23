@@ -11,7 +11,7 @@ import (
 type Command struct {
 	Created     int64           `json:"created,omitempty" db:"created" bson:"created"`
 	Subtopic    string          `json:"subtopic,omitempty" db:"subtopic" bson:"subtopic,omitempty"`
-	Publisher   string          `json:"publisher,omitempty" db:"publisher" bson:"publisher"`
+	ThingID     string          `json:"thing_id,omitempty" db:"thing_id" bson:"thing_id"`
 	RecipientID string          `json:"recipientID,omitempty" db:"recipient_id" bson:"recipientID,omitempty"`
 	Protocol    string          `json:"protocol,omitempty" db:"protocol" bson:"protocol"`
 	Payload     json.RawMessage `json:"payload,omitempty" db:"payload" bson:"payload,omitempty"`

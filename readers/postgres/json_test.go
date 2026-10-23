@@ -146,7 +146,7 @@ func TestJSONAggregation(t *testing.T) {
 	reader := preader.NewJSONRepository(db)
 	writer := pwriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	pyd := map[string]any{
@@ -162,7 +162,7 @@ func TestJSONAggregation(t *testing.T) {
 	now := time.Now().Unix()
 	for i := 0; i < 10; i++ {
 		msg := protomfx.Message{
-			ThingId:     pubID,
+			ThingId:     thingID,
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
 			Payload:     payload,
@@ -180,7 +180,7 @@ func TestJSONAggregation(t *testing.T) {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
-					Publisher:   pubID,
+					ThingID:     thingID,
 					AggType:     maxAgg,
 					AggInterval: "hour",
 					AggValue:    1,
@@ -192,7 +192,7 @@ func TestJSONAggregation(t *testing.T) {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
-					Publisher:   pubID,
+					ThingID:     thingID,
 					AggType:     avgAgg,
 					AggInterval: "hour",
 					AggValue:    1,
@@ -204,7 +204,7 @@ func TestJSONAggregation(t *testing.T) {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
-					Publisher:   pubID,
+					ThingID:     thingID,
 					AggType:     countAgg,
 					AggInterval: "hour",
 					AggValue:    1,
@@ -216,7 +216,7 @@ func TestJSONAggregation(t *testing.T) {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
 					Limit:       noLimit,
-					Publisher:   pubID,
+					ThingID:     thingID,
 					AggType:     maxAgg,
 					AggInterval: "hour",
 					AggValue:    1,
@@ -308,35 +308,35 @@ func TestDeleteJSONMessages(t *testing.T) {
 		expectedCount uint64
 		description   string
 	}{
-		"delete JSON messages with publisher id1": {
+		"delete JSON messages with thing ID id1": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: id1,
-					From:      0,
-					To:        int64(created + int64(msgsNum)),
+					ThingID: id1,
+					From:    0,
+					To:      int64(created + int64(msgsNum)),
 				},
 			},
 			expectedCount: uint64(msgsNum),
-			description:   "should delete JSON messages from specific publisher id1",
+			description:   "should delete JSON messages from specific thing id1",
 		},
-		"delete JSON messages with publisher id2": {
+		"delete JSON messages with thing ID id2": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: id2,
-					From:      0,
-					To:        int64(created + int64(msgsNum)),
+					ThingID: id2,
+					From:    0,
+					To:      int64(created + int64(msgsNum)),
 				},
 			},
 			expectedCount: uint64(msgsNum),
-			description:   "should delete JSON messages from specific publisher id2",
+			description:   "should delete JSON messages from specific thing id2",
 		},
 		"delete JSON messages with protocol": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: id2,
-					Protocol:  httpProt,
-					From:      0,
-					To:        int64(created + int64(msgsNum)),
+					ThingID:  id2,
+					Protocol: httpProt,
+					From:     0,
+					To:       int64(created + int64(msgsNum)),
 				},
 			},
 			expectedCount: uint64(httpMsgCount),
@@ -345,10 +345,10 @@ func TestDeleteJSONMessages(t *testing.T) {
 		"delete JSON messages with subtopic": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: id1,
-					Subtopic:  subtopic,
-					From:      0,
-					To:        int64(created + int64(msgsNum)),
+					ThingID:  id1,
+					Subtopic: subtopic,
+					From:     0,
+					To:       int64(created + int64(msgsNum)),
 				},
 			},
 			expectedCount: uint64(msgsNum),
@@ -357,9 +357,9 @@ func TestDeleteJSONMessages(t *testing.T) {
 		"delete JSON messages with time range": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: readers.MessagesPageMetadata{
-					Publisher: id1,
-					From:      int64(created + fromIndex),
-					To:        int64(created + toIndex + 1),
+					ThingID: id1,
+					From:    int64(created + fromIndex),
+					To:      int64(created + toIndex + 1),
 				},
 			},
 			expectedCount: uint64(toIndex - fromIndex + 1),
@@ -370,17 +370,17 @@ func TestDeleteJSONMessages(t *testing.T) {
 	for desc, tc := range cases {
 		_ = reader.Remove(context.Background(), readers.JSONPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: id1,
-				From:      0,
-				To:        int64(created + int64(msgsNum)),
+				ThingID: id1,
+				From:    0,
+				To:      int64(created + int64(msgsNum)),
 			},
 		})
 
 		_ = reader.Remove(context.Background(), readers.JSONPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: id2,
-				From:      0,
-				To:        int64(created + int64(msgsNum)),
+				ThingID: id2,
+				From:    0,
+				To:      int64(created + int64(msgsNum)),
 			},
 		})
 
@@ -391,12 +391,12 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 		beforePage, err := reader.Retrieve(context.Background(), readers.JSONPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: tc.pageMeta.Publisher,
-				Subtopic:  tc.pageMeta.Subtopic,
-				Protocol:  tc.pageMeta.Protocol,
-				From:      tc.pageMeta.From,
-				To:        tc.pageMeta.To,
-				Limit:     noLimit,
+				ThingID:  tc.pageMeta.ThingID,
+				Subtopic: tc.pageMeta.Subtopic,
+				Protocol: tc.pageMeta.Protocol,
+				From:     tc.pageMeta.From,
+				To:       tc.pageMeta.To,
+				Limit:    noLimit,
 			},
 		})
 		require.Nil(t, err)
@@ -407,12 +407,12 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 		afterPage, err := reader.Retrieve(context.Background(), readers.JSONPageMetadata{
 			MessagesPageMetadata: readers.MessagesPageMetadata{
-				Publisher: tc.pageMeta.Publisher,
-				Subtopic:  tc.pageMeta.Subtopic,
-				Protocol:  tc.pageMeta.Protocol,
-				From:      tc.pageMeta.From,
-				To:        tc.pageMeta.To,
-				Limit:     noLimit,
+				ThingID:  tc.pageMeta.ThingID,
+				Subtopic: tc.pageMeta.Subtopic,
+				Protocol: tc.pageMeta.Protocol,
+				From:     tc.pageMeta.From,
+				To:       tc.pageMeta.To,
+				Limit:    noLimit,
 			},
 		})
 		require.Nil(t, err)
@@ -427,7 +427,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 	reader := preader.NewJSONRepository(db)
 	writer := pwriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	pyd := map[string]any{
@@ -461,7 +461,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		msg := protomfx.Message{
-			ThingId:     pubID,
+			ThingId:     thingID,
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
 			Payload:     payload,
@@ -477,8 +477,8 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 	}
 
 	pageMeta := readers.MessagesPageMetadata{
-		Limit:     noLimit,
-		Publisher: pubID,
+		Limit:   noLimit,
+		ThingID: thingID,
 	}
 
 	cases := map[string]struct {
@@ -680,10 +680,10 @@ func toMap(msg protomfx.Message) (map[string]any, error) {
 	}
 
 	return map[string]any{
-		"created":   msg.Created,
-		"subtopic":  msg.Subtopic,
-		"publisher": msg.ThingId,
-		"protocol":  msg.Protocol,
-		"payload":   payload,
+		"created":  msg.Created,
+		"subtopic": msg.Subtopic,
+		"thing_id": msg.ThingId,
+		"protocol": msg.Protocol,
+		"payload":  payload,
 	}, nil
 }

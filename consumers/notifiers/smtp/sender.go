@@ -32,7 +32,7 @@ func (n *sender) Send(to []string, notification protomfx.Notification) error {
 	values := string(notification.Payload)
 
 	templateData := map[string]any{
-		"PublisherID":    notification.ThingId,
+		"ThingID":        notification.ThingId,
 		"Protocol":       notification.Protocol,
 		"MessageContent": values,
 	}

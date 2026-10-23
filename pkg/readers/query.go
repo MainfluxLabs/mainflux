@@ -72,8 +72,8 @@ func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string 
 	if pm.Subtopic != "" {
 		conds = append(conds, "subtopic = :subtopic")
 	}
-	if pm.Publisher != "" {
-		conds = append(conds, "publisher = :publisher")
+	if pm.ThingID != "" {
+		conds = append(conds, "thing_id = :thing_id")
 	}
 	if pm.Protocol != "" {
 		conds = append(conds, "protocol = :protocol")
@@ -90,13 +90,13 @@ func BaseConditions(pm domain.MessagesPageMetadata, timeColumn string) []string 
 
 func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 	return map[string]any{
-		"limit":     pm.Limit,
-		"offset":    pm.Offset,
-		"subtopic":  pm.Subtopic,
-		"publisher": pm.Publisher,
-		"protocol":  pm.Protocol,
-		"from":      pm.From,
-		"to":        pm.To,
+		"limit":    pm.Limit,
+		"offset":   pm.Offset,
+		"subtopic": pm.Subtopic,
+		"thing_id": pm.ThingID,
+		"protocol": pm.Protocol,
+		"from":     pm.From,
+		"to":       pm.To,
 	}
 }
 

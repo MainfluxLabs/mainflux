@@ -94,6 +94,21 @@ func migrateDB(db *sqlx.DB) error {
 					"ALTER TABLE json DROP COLUMN IF EXISTS payload_hash",
 				},
 			},
+			{
+				Id: "messages_3",
+				Up: []string{
+					`ALTER TABLE json RENAME COLUMN publisher TO thing_id`,
+					`ALTER TABLE senml RENAME COLUMN publisher TO thing_id`,
+					`ALTER INDEX IF EXISTS idx_json_publisher_created RENAME TO idx_json_thing_id_created`,
+					`ALTER INDEX IF EXISTS idx_senml_publisher_time RENAME TO idx_senml_thing_id_time`,
+				},
+				Down: []string{
+					`ALTER INDEX IF EXISTS idx_senml_thing_id_time RENAME TO idx_senml_publisher_time`,
+					`ALTER INDEX IF EXISTS idx_json_thing_id_created RENAME TO idx_json_publisher_created`,
+					`ALTER TABLE senml RENAME COLUMN thing_id TO publisher`,
+					`ALTER TABLE json RENAME COLUMN thing_id TO publisher`,
+				},
+			},
 		},
 	}
 

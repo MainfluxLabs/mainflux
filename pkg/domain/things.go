@@ -110,7 +110,7 @@ type OrgAccessReq struct {
 	Token string
 }
 
-// PubConfigInfo represents publisher config from GetPubConfigByKey.
+// PubConfigInfo represents publish config from GetPubConfigByKey.
 type PubConfigInfo struct {
 	ThingID       string
 	ProfileConfig *ProfileConfig

@@ -36,10 +36,10 @@ type Service interface {
 	// Restore restores json and senml messages.
 	Restore(ctx context.Context, token string, backup Backup) error
 
-	// DeleteJSONMessages deletes the json messages by publisher within a time range.
+	// DeleteJSONMessages deletes the json messages by thing ID within a time range.
 	DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error
 
-	// DeleteSenMLMessages deletes the senml messages by publisher within a time range.
+	// DeleteSenMLMessages deletes the senml messages by thing ID within a time range.
 	DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error
 
 	// DeleteAllJSONMessages deletes the senml messages within a time range, requires admin privileges.
@@ -70,8 +70,8 @@ func New(auth domain.AuthClient, things domain.ThingsClient, json JSONMessageRep
 
 func (rs *readersService) ListJSONMessages(ctx context.Context, token string, key domain.ThingKey, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
-	case rpm.Publisher != "":
-		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domain.GroupViewer})
+	case rpm.ThingID != "":
+		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.ThingID, Action: domain.GroupViewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -80,7 +80,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
-		rpm.Publisher = pc.ThingID
+		rpm.ThingID = pc.ThingID
 	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return JSONMessagesPage{}, err
@@ -92,8 +92,8 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 
 func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, key domain.ThingKey, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
-	case rpm.Publisher != "":
-		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domain.GroupViewer})
+	case rpm.ThingID != "":
+		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.ThingID, Action: domain.GroupViewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -102,7 +102,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
-		rpm.Publisher = pc.ThingID
+		rpm.ThingID = pc.ThingID
 	default:
 		if err := rs.isAdmin(ctx, token); err != nil {
 			return SenMLMessagesPage{}, err
@@ -114,8 +114,8 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 
 func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) (JSONMessagesPage, error) {
 	switch {
-	case rpm.Publisher != "":
-		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domain.GroupViewer})
+	case rpm.ThingID != "":
+		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.ThingID, Action: domain.GroupViewer})
 		if err != nil {
 			return JSONMessagesPage{}, err
 		}
@@ -130,8 +130,8 @@ func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, 
 
 func (rs *readersService) ExportSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) (SenMLMessagesPage, error) {
 	switch {
-	case rpm.Publisher != "":
-		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domain.GroupViewer})
+	case rpm.ThingID != "":
+		err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.ThingID, Action: domain.GroupViewer})
 		if err != nil {
 			return SenMLMessagesPage{}, err
 		}
@@ -188,7 +188,7 @@ func (rs *readersService) Restore(ctx context.Context, token string, backup Back
 }
 
 func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
-	err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domain.GroupAdmin})
+	err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.ThingID, Action: domain.GroupAdmin})
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (rs *readersService) DeleteJSONMessages(ctx context.Context, token string, 
 }
 
 func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
-	err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.Publisher, Action: domain.GroupAdmin})
+	err := rs.thingc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: rpm.ThingID, Action: domain.GroupAdmin})
 	if err != nil {
 		return err
 	}

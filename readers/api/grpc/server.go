@@ -81,7 +81,7 @@ func decodeMessagesPageMetadata(req messagesPageMetadataReq) domain.MessagesPage
 		Offset:      req.GetOffset(),
 		Limit:       req.GetLimit(),
 		Subtopic:    req.GetSubtopic(),
-		Publisher:   req.GetThingId(),
+		ThingID:     req.GetThingId(),
 		Protocol:    req.GetProtocol(),
 		From:        req.GetFrom(),
 		To:          req.GetTo(),
@@ -153,7 +153,7 @@ func encodeListSenMLMessagesResponse(_ context.Context, grpcRes any) (any, error
 			continue
 		}
 		msgs = append(msgs, &protomfx.Message{
-			ThingId:     sm.Publisher,
+			ThingId:     sm.ThingID,
 			Subtopic:    sm.Subtopic,
 			Protocol:    sm.Protocol,
 			Payload:     payload,

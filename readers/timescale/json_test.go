@@ -141,7 +141,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 	reader := treader.NewJSONRepository(db)
 	writer := twriter.New(db)
 
-	pubID, err := idProvider.ID()
+	thingID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	pyd := map[string]any{
@@ -175,7 +175,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 		msg := protomfx.Message{
-			ThingId:     pubID,
+			ThingId:     thingID,
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
 			Payload:     payload,
@@ -191,8 +191,8 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 	}
 
 	pageMeta := readers.MessagesPageMetadata{
-		Limit:     noLimit,
-		Publisher: pubID,
+		Limit:   noLimit,
+		ThingID: thingID,
 	}
 
 	cases := map[string]struct {
@@ -394,10 +394,10 @@ func toMap(msg protomfx.Message) (map[string]any, error) {
 	}
 
 	return map[string]any{
-		"created":   msg.Created,
-		"subtopic":  msg.Subtopic,
-		"publisher": msg.ThingId,
-		"protocol":  msg.Protocol,
-		"payload":   payload,
+		"created":  msg.Created,
+		"subtopic": msg.Subtopic,
+		"thing_id": msg.ThingId,
+		"protocol": msg.Protocol,
+		"payload":  payload,
 	}, nil
 }

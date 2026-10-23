@@ -12,7 +12,7 @@ paths:
         Parses the uploaded CSV file and publishes its rows as SenML or JSON records, depending on the `to` query parameter.
 
         **CSV → SenML (`?to=senml`):**
-        - Row 1 (header): `name`, `time`, `value`, `string_value`, `bool_value`, `data_value`, `unit`, `sum` columns (reader-export format). Envelope columns (`subtopic`, `publisher`, `protocol`, `update_time`) are ignored.
+        - Row 1 (header): `name`, `time`, `value`, `string_value`, `bool_value`, `data_value`, `unit`, `sum` columns (reader-export format). Envelope columns (`subtopic`, `thing_id`, `protocol`, `update_time`) are ignored.
         - Each data row produces one SenML record. The `time` column is treated as nanoseconds and converted to seconds.
 
         **CSV → JSON (`?to=json`):**

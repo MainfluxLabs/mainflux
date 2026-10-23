@@ -3919,7 +3919,7 @@ func TestCanThingCommand(t *testing.T) {
 			err: errors.ErrAuthorization,
 		},
 		{
-			desc: "publisher sends command to itself",
+			desc: "thing sends command to itself",
 			req: things.ThingCommandReq{
 				ThingID:     ctrl.ID,
 				RecipientID: ctrl.ID,

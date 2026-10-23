@@ -19,7 +19,7 @@ paths:
       tags:
         - json messages
       parameters:
-        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ThingID"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Subtopic"
@@ -48,12 +48,12 @@ paths:
         - bearerAuth: []
         - thingAuth: []
       description: |
-        Deletes JSON messages for a publisher within the specified time range and optional filters.
+        Deletes JSON messages for a thing within the specified time range and optional filters.
       tags:
         - json messages
       parameters:
         - $ref: "#/components/parameters/Subtopic"
-        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ThingID"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -66,20 +66,20 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /json/{publisherId}:
+  /json/{thingId}:
     delete:
-      summary: Delete JSON messages by publisher ID
+      summary: Delete JSON messages by thing ID
       security:
         - bearerAuth: []
       description: |
-        Deletes JSON messages for a specific publisher ID within the specified time range and optional filters.
+        Deletes JSON messages for a specific thing ID within the specified time range and optional filters.
       tags:
         - json messages
       parameters:
-        - name: publisherId
+        - name: thingId
           in: path
           required: true
-          description: Publisher's unique identifier.
+          description: Thing's unique identifier.
           schema:
             type: string
         - $ref: "#/components/parameters/Subtopic"
@@ -98,7 +98,7 @@ paths:
 
   /json/search:
     post:
-      summary: Search JSON messages across multiple publishers
+      summary: Search JSON messages across multiple things
       security:
         - bearerAuth: []
       description: |
@@ -117,10 +117,10 @@ paths:
                 $ref: "#/components/schemas/JSONSearchRequest"
               minItems: 1
             example:
-              - publisher: "f9b2815c-8d8f-44f0-a1fe-6d72f15f5021"
+              - thing_id: "f9b2815c-8d8f-44f0-a1fe-6d72f15f5021"
                 limit: 10
                 offset: 0
-              - publisher: "a1b2c3d4-0000-1111-2222-333344445555"
+              - thing_id: "a1b2c3d4-0000-1111-2222-333344445555"
                 agg_type: "max"
                 agg_interval: "day"
                 agg_value: 1
@@ -171,7 +171,7 @@ paths:
       tags:
         - senml messages
       parameters:
-        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ThingID"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/Name"
@@ -203,11 +203,11 @@ paths:
         - thingAuth: []
       summary: Delete SenML messages
       description: |
-        Deletes SenML messages for a publisher within the specified time range.
+        Deletes SenML messages for a thing within the specified time range.
       tags:
         - senml messages
       parameters:
-        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ThingID"
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
@@ -221,20 +221,20 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
 
-  /senml/{publisherId}:
+  /senml/{thingId}:
     delete:
-      summary: Delete SenML messages by publisher ID
+      summary: Delete SenML messages by thing ID
       security:
         - bearerAuth: []
       description: |
-        Deletes SenML messages for a specific publisher ID within the specified time range.
+        Deletes SenML messages for a specific thing ID within the specified time range.
       tags:
         - senml messages
       parameters:
-        - name: publisherId
+        - name: thingId
           in: path
           required: true
-          description: Publisher's unique identifier.
+          description: Thing's unique identifier.
           schema:
             type: string
         - $ref: "#/components/parameters/Subtopic"
@@ -253,7 +253,7 @@ paths:
 
   /senml/search:
     post:
-      summary: Search SenML messages across multiple publishers
+      summary: Search SenML messages across multiple things
       security:
         - bearerAuth: []
       description: |
@@ -272,10 +272,10 @@ paths:
                 $ref: "#/components/schemas/SenMLSearchRequest"
               minItems: 1
             example:
-              - publisher: "4f611fd7-15d5-4575-b5d5-8c1075beb6e2"
+              - thing_id: "4f611fd7-15d5-4575-b5d5-8c1075beb6e2"
                 name: "temperature"
                 limit: 5
-              - publisher: "4f611fd7-15d5-4575-b5d5-8c1075beb6e2"
+              - thing_id: "4f611fd7-15d5-4575-b5d5-8c1075beb6e2"
                 name: "humidity"
                 comparator: "gt"
                 v: 60
@@ -321,7 +321,7 @@ paths:
       tags:
         - json messages
       parameters:
-        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ThingID"
         - $ref: "#/components/parameters/ConvertFormat"
         - $ref: "#/components/parameters/Subtopic"
         - $ref: "#/components/parameters/Protocol"
@@ -356,7 +356,7 @@ paths:
       tags:
         - senml messages
       parameters:
-        - $ref: "#/components/parameters/Publisher"
+        - $ref: "#/components/parameters/ThingID"
         - $ref: "#/components/parameters/ConvertFormat"
         - $ref: "#/components/parameters/Name"
         - $ref: "#/components/parameters/Subtopic"
@@ -486,9 +486,9 @@ components:
     SenMLMessage:
       type: object
       properties:
-        publisher:
+        thing_id:
           type: string
-          description: Publisher's unique identifier.
+          description: Thing's unique identifier.
         protocol:
           type: string
           description: Protocol name.
@@ -528,9 +528,9 @@ components:
     JSONMessage:
       type: object
       properties:
-        publisher:
+        thing_id:
           type: string
-          description: Publisher's unique identifier.
+          description: Thing's unique identifier.
         protocol:
           type: string
           description: Protocol name.
@@ -588,9 +588,9 @@ components:
     JSONSearchRequest:
       type: object
       properties:
-        publisher:
+        thing_id:
           type: string
-          description: Publisher's unique identifier.
+          description: Thing's unique identifier.
         offset:
           type: integer
           default: 0
@@ -646,9 +646,9 @@ components:
     SenMLSearchRequest:
       type: object
       properties:
-        publisher:
+        thing_id:
           type: string
-          description: Publisher's unique identifier.
+          description: Thing's unique identifier.
         offset:
           type: integer
           default: 0
@@ -734,9 +734,9 @@ components:
           description: Error message if this particular query failed.
 
   parameters:
-    Publisher:
-      name: publisher
-      description: Publisher's unique identifier.
+    ThingID:
+      name: thing_id
+      description: Thing's unique identifier.
       in: query
       schema:
         type: string
