@@ -1,0 +1,515 @@
+openapi: 3.0.1
+info:
+  title: Mainflux OTA service
+  description: |
+    HTTP API for over-the-air firmware updates. Users roll out firmware stored in
+    the filestore service to things of a group and track the progress per thing.
+    Things fetch pending updates and report their progress.
+  version: 1.0.0
+
+paths:
+  /groups/{groupId}/updates:
+    post:
+      summary: Creates an update
+      description: |
+        Creates a firmware update for the given things of the group and sends the
+        `ota` command to them. Older running updates of the same things are marked
+        failed as superseded.
+      tags:
+        - updates
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateUpdateReq"
+      responses:
+        '201':
+          $ref: "#/components/responses/UpdateRes"
+        '400':
+          description: Failed due to malformed JSON or invalid fields.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    get:
+      summary: Retrieves updates by group
+      description: Retrieves a page of updates of the group, each with its thing counts by status.
+      tags:
+        - updates
+      parameters:
+        - $ref: "#/components/parameters/GroupId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/UpdateOrder"
+        - $ref: "#/components/parameters/Direction"
+      responses:
+        '200':
+          $ref: "#/components/responses/UpdatesPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /updates/{updateId}:
+    get:
+      summary: Retrieves an update
+      description: Retrieves the update with its thing counts by status.
+      tags:
+        - updates
+      parameters:
+        - $ref: "#/components/parameters/UpdateId"
+      responses:
+        '200':
+          $ref: "#/components/responses/UpdateRes"
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Update does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Removes an update
+      description: Removes the update together with the progress of its things.
+      tags:
+        - updates
+      parameters:
+        - $ref: "#/components/parameters/UpdateId"
+      responses:
+        '204':
+          description: Update removed.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Update does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /updates/{updateId}/things:
+    get:
+      summary: Retrieves the progress of things
+      description: Retrieves a page of the update's things with their status.
+      tags:
+        - updates
+      parameters:
+        - $ref: "#/components/parameters/UpdateId"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/ThingUpdateOrder"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/Status"
+      responses:
+        '200':
+          $ref: "#/components/responses/ThingUpdatesPageRes"
+        '400':
+          description: Failed due to malformed query parameters.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Update does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /updates/{updateId}/retry:
+    post:
+      summary: Retries failed things
+      description: |
+        Moves the update's failed things back to pending and sends them the `ota`
+        command again.
+      tags:
+        - updates
+      parameters:
+        - $ref: "#/components/parameters/UpdateId"
+      responses:
+        '200':
+          description: Failed things retried.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Failed to perform authorization over the entity.
+        '404':
+          description: Update does not exist.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /ota/pending:
+    get:
+      summary: Retrieves the pending update of a thing
+      description: |
+        Retrieves the update the thing should apply, e.g. after it reconnects and
+        missed the `ota` command.
+      tags:
+        - things
+      security:
+        - thingKeyAuth: []
+      responses:
+        '200':
+          $ref: "#/components/responses/CommandRes"
+        '204':
+          description: The thing has no pending update.
+        '401':
+          description: Missing or invalid thing key provided.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+  /ota/status:
+    post:
+      summary: Reports the progress of an update
+      description: |
+        Records the progress reported by the thing. The same report can be published
+        on the `ota` subtopic of the thing's messages over any protocol.
+      tags:
+        - things
+      security:
+        - thingKeyAuth: []
+      requestBody:
+        $ref: "#/components/requestBodies/StatusReportReq"
+      responses:
+        '200':
+          description: Status recorded.
+        '400':
+          description: Failed due to malformed JSON, invalid status or missing version on `succeeded`.
+        '401':
+          description: Missing or invalid thing key provided.
+        '404':
+          description: Update does not exist for the thing.
+        '409':
+          description: Update has already succeeded or failed for the thing.
+        '415':
+          description: Missing or invalid content type.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+
+components:
+  schemas:
+    CreateUpdateReqSchema:
+      type: object
+      properties:
+        file_name:
+          type: string
+          maxLength: 255
+          description: Name of the firmware group file in the filestore service.
+          example: fw-sensor-1.4.0.bin
+        version:
+          type: string
+          maxLength: 254
+          description: Firmware version things must report on success.
+          example: 1.4.0
+        file_size:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Firmware size in bytes.
+          example: 421888
+        checksum:
+          type: string
+          maxLength: 64
+          description: Hex-encoded SHA-256 of the firmware.
+          example: 9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e
+        description:
+          type: string
+          example: Fixes Wi-Fi reconnect
+        timeout:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Seconds without progress after which a thing is marked failed. Defaults
+            to 86400 (24 hours) when omitted or 0.
+          example: 86400
+        thing_ids:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: string
+            format: uuid
+          description: Things of the group to update.
+      required:
+        - file_name
+        - version
+        - thing_ids
+    StatsSchema:
+      type: object
+      description: Number of the update's things by status.
+      properties:
+        targets:
+          type: integer
+        pending:
+          type: integer
+        downloading:
+          type: integer
+        installing:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+    UpdateResSchema:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        file_name:
+          type: string
+        version:
+          type: string
+        file_size:
+          type: integer
+          format: int64
+        checksum:
+          type: string
+        description:
+          type: string
+        timeout:
+          type: integer
+          format: int64
+          description: Seconds without progress after which a thing is marked failed.
+        created_at:
+          type: string
+          format: date-time
+        stats:
+          $ref: "#/components/schemas/StatsSchema"
+    UpdatesPage:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+        order:
+          type: string
+        dir:
+          type: string
+        updates:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpdateResSchema"
+    ThingUpdateResSchema:
+      type: object
+      properties:
+        thing_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/Status"
+        error:
+          type: string
+          description: Reason of the failure, e.g. reported by the thing or "timed out".
+        reported_version:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    ThingUpdatesPage:
+      type: object
+      properties:
+        total:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+        order:
+          type: string
+        dir:
+          type: string
+        status:
+          type: string
+        thing_updates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThingUpdateResSchema"
+    CommandSchema:
+      type: object
+      description: The update a thing should apply. Also sent as the `ota` command payload.
+      properties:
+        update_id:
+          type: string
+          format: uuid
+        version:
+          type: string
+        file_name:
+          type: string
+        url:
+          type: string
+          description: Download URL of the firmware; supports HTTP Range requests.
+          example: https://localhost/fs/groupfiles/fw-sensor-1.4.0.bin
+        size:
+          type: integer
+          format: int64
+        checksum:
+          type: string
+    StatusReportSchema:
+      type: object
+      properties:
+        update_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [downloading, installing, succeeded, failed]
+        version:
+          type: string
+          description: |
+            Installed version. Required on `succeeded`; if it differs from the update's
+            version, the thing is marked failed.
+        error:
+          type: string
+          description: Failure reason; stored up to 255 characters.
+      required:
+        - update_id
+        - status
+    Status:
+      type: string
+      enum: [pending, downloading, installing, succeeded, failed]
+
+  parameters:
+    GroupId:
+      name: groupId
+      description: Unique group identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    UpdateId:
+      name: updateId
+      description: Unique update identifier.
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    Offset:
+      name: offset
+      description: Number of items to skip during retrieval.
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+      required: false
+    Limit:
+      name: limit
+      description: Size of the subset to retrieve.
+      in: query
+      schema:
+        type: integer
+        default: 10
+        maximum: 200
+        minimum: 1
+      required: false
+    UpdateOrder:
+      name: order
+      description: Order the updates by the given field.
+      in: query
+      schema:
+        type: string
+        default: id
+        enum: [id, created_at, version]
+      required: false
+    ThingUpdateOrder:
+      name: order
+      description: Order the things by the given field; `id` orders by thing ID.
+      in: query
+      schema:
+        type: string
+        default: id
+        enum: [id, updated_at, status]
+      required: false
+    Direction:
+      name: dir
+      description: Order direction.
+      in: query
+      schema:
+        type: string
+        default: desc
+        enum: [asc, desc]
+      required: false
+    Status:
+      name: status
+      description: Filter things by status.
+      in: query
+      schema:
+        $ref: "#/components/schemas/Status"
+      required: false
+
+  requestBodies:
+    CreateUpdateReq:
+      description: JSON-formatted document describing the new update.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CreateUpdateReqSchema"
+    StatusReportReq:
+      description: JSON-formatted document describing the thing's progress.
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusReportSchema"
+
+  responses:
+    UpdateRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdateResSchema"
+    UpdatesPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UpdatesPage"
+    ThingUpdatesPageRes:
+      description: Data retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ThingUpdatesPage"
+    CommandRes:
+      description: Pending update retrieved.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CommandSchema"
+    ServiceError:
+      description: Unexpected server-side error occurred.
+      content:
+        application/json:
+          schema:
+            type: string
+            format: byte
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        * Users access: "Authorization: Bearer <user_token>"
+    thingKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        * Things access: "Authorization: Thing <thing_key>"
+
+security:
+  - bearerAuth: []
