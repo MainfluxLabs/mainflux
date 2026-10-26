@@ -225,7 +225,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrInvalidChecksum),
 		errors.Contains(err, ErrInvalidFileSize),
 		errors.Contains(err, ErrInvalidTimeout),
-		errors.Contains(err, ota.ErrInvalidStatus):
+		errors.Contains(err, ota.ErrInvalidStatus),
+		errors.Contains(err, ota.ErrMissingReportedVersion):
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, ota.ErrUpdateFinished):
 		w.WriteHeader(http.StatusConflict)

@@ -33,6 +33,9 @@ var (
 
 	// ErrUpdateFinished indicates a status report for a thing update that already succeeded or failed.
 	ErrUpdateFinished = errors.New("ota update already finished")
+
+	// ErrMissingReportedVersion indicates a succeeded status report without the installed version.
+	ErrMissingReportedVersion = errors.New("missing reported version")
 )
 
 // PageMetadata contains page metadata that helps navigation.
@@ -276,6 +279,10 @@ func (ots *otaService) reportStatus(ctx context.Context, thingID string, report 
 	case StatusDownloading, StatusInstalling, StatusSucceeded, StatusFailed:
 	default:
 		return ErrInvalidStatus
+	}
+
+	if report.Status == StatusSucceeded && report.Version == "" {
+		return ErrMissingReportedVersion
 	}
 
 	tu, err := ots.updates.RetrieveThingUpdate(ctx, report.UpdateID, thingID)
