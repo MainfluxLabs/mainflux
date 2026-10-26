@@ -557,6 +557,13 @@ func TestReportStatus(t *testing.T) {
 			status:      http.StatusUnsupportedMediaType,
 		},
 		{
+			desc:        "report succeeded without version",
+			data:        fmt.Sprintf(`{"update_id":"%s","status":"succeeded"}`, u.ID),
+			contentType: contentType,
+			key:         thingKey,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "report succeeded",
 			data:        fmt.Sprintf(`{"update_id":"%s","status":"succeeded","version":"%s"}`, u.ID, fwVersion),
 			contentType: contentType,
