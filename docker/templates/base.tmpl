@@ -4,7 +4,7 @@
 
     <head>
         <meta charset="UTF-8" />
-        <title>{{ .Title }}</title>
+        <title>{{ .subject }}</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -65,6 +65,73 @@
                 font-family: monospace;
                 white-space: pre-wrap;
                 word-break: break-word;
+            }
+            .section-title {
+                margin: 24px 0 8px 0;
+                font-size: 15px;
+                font-weight: bold;
+                color: #222;
+            }
+            .details {
+                width: 100%;
+                margin-bottom: 16px;
+                border-collapse: collapse;
+                font-size: 14px;
+            }
+            .details__label {
+                width: 35%;
+                padding: 8px 12px;
+                border-bottom: 1px solid #e3e9f1;
+                color: #7a8291;
+                text-align: left;
+                vertical-align: middle;
+            }
+            .details__header {
+                padding: 8px 12px;
+                border-bottom: 1px solid #e3e9f1;
+                background-color: #f1f3f6;
+                color: #7a8291;
+                text-align: left;
+                font-weight: bold;
+            }
+            .details__value {
+                padding: 8px 12px;
+                border-bottom: 1px solid #e3e9f1;
+                color: #222;
+            }
+            .level-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                border-width: 1px;
+                border-style: solid;
+                border-radius: 100px;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            .level-badge--critical {
+                background-color: #faf0f0;
+                border-color: #d10f3f;
+                color: #9c0013;
+            }
+            .level-badge--high {
+                background-color: #f8f5ef;
+                border-color: #cd8400;
+                color: #822400;
+            }
+            .level-badge--medium {
+                background-color: #f6f5ef;
+                border-color: #ae9500;
+                color: #654100;
+            }
+            .level-badge--low {
+                background-color: #f2f5fb;
+                border-color: #2764ec;
+                color: #0030ba;
+            }
+            .level-badge--info {
+                background-color: #f0f7f3;
+                border-color: #00944a;
+                color: #00651f;
             }
             .btn-wrapper {
                 text-align: center;

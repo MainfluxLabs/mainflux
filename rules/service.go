@@ -513,6 +513,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 					Protocol: msg.Protocol,
 					Payload:  msg.Payload,
 					Created:  msg.Created,
+					Alarm:    &alarm,
 				}
 				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:

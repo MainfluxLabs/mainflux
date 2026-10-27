@@ -46,6 +46,7 @@ message Notification {
     string protocol  = 3;
     bytes  payload   = 4;
     int64  created   = 5;
+    Alarm  alarm     = 6; // Set only when the notification is triggered by an alarm
 }
 
 message Webhook {

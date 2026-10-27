@@ -1,8 +1,41 @@
 {{ define "content" }}
     <p class="mb-16">
-        A thing with ID <strong>{{ .ThingID }}</strong> sent a message over
-        <strong>{{ .Protocol }}</strong> with the following values:
+        A message from the thing with ID <strong>{{ .ThingID }}</strong> matched a rule.
     </p>
 
+    <table class="details">
+        {{ if .Subtopic }}
+        <tr>
+            <th class="details__label">Subtopic</th>
+            <td class="details__value">{{ .Subtopic }}</td>
+        </tr>
+        {{ end }}
+        <tr>
+            <th class="details__label">Protocol</th>
+            <td class="details__value">{{ .Protocol }}</td>
+        </tr>
+        <tr>
+            <th class="details__label">Time</th>
+            <td class="details__value">{{ .Time }}</td>
+        </tr>
+    </table>
+
+    <p class="section-title">Values</p>
+
+    {{ if .Fields }}
+    <table class="details">
+        <tr>
+            <th class="details__header">Name</th>
+            <th class="details__header">Value</th>
+        </tr>
+        {{ range .Fields }}
+        <tr>
+            <td class="details__value">{{ .Name }}</td>
+            <td class="details__value">{{ .Value }}</td>
+        </tr>
+        {{ end }}
+    </table>
+    {{ else }}
     <pre class="code-block">{{ .MessageContent }}</pre>
+    {{ end }}
 {{ end }}

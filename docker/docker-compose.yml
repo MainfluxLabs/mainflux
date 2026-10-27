@@ -754,6 +754,7 @@ services:
     volumes:
       - ./templates/base.tmpl:/base.tmpl
       - ./templates/smtp/notification.tmpl:/notification.tmpl
+      - ./templates/smtp/alarm.tmpl:/alarm.tmpl
 
   downlinks-db:
     image: postgres:13.3-alpine
