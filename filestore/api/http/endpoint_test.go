@@ -83,6 +83,7 @@ func TestRangeRequest(t *testing.T) {
 	}{
 		{
 			desc:        "view file without range",
+			file:        fileName,
 			rangeHeader: "",
 			status:      http.StatusOK,
 			body:        fileContent,
@@ -103,6 +104,7 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:         "view file with bounded range",
+			file:         fileName,
 			rangeHeader:  "bytes=6-9",
 			status:       http.StatusPartialContent,
 			body:         "main",
@@ -110,6 +112,7 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:         "view file with open-ended range",
+			file:         fileName,
 			rangeHeader:  "bytes=6-",
 			status:       http.StatusPartialContent,
 			body:         "mainflux",
@@ -117,6 +120,7 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:         "view file with suffix range",
+			file:         fileName,
 			rangeHeader:  "bytes=-3",
 			status:       http.StatusPartialContent,
 			body:         "lux",
@@ -124,40 +128,41 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:        "view file with multiple ranges",
+			file:        fileName,
 			rangeHeader: "bytes=0-1,4-5",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
 			desc:        "view file with unsupported range unit",
+			file:        fileName,
 			rangeHeader: "items=0-1",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
 			desc:        "view file with malformed range",
+			file:        fileName,
 			rangeHeader: "bytes=5-2",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
 			desc:        "view file with range starting past file size",
+			file:        fileName,
 			rangeHeader: fmt.Sprintf("bytes=%d-", size),
 			status:      http.StatusRequestedRangeNotSatisfiable,
 		},
 		{
 			desc:        "view file with empty suffix range",
+			file:        fileName,
 			rangeHeader: "bytes=-0",
 			status:      http.StatusRequestedRangeNotSatisfiable,
 		},
 	}
 
 	for _, tc := range cases {
-		file := fileName
-		if tc.file != "" {
-			file = tc.file
-		}
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, file), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, tc.file), nil)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+thingKey)
 		if tc.rangeHeader != "" {
