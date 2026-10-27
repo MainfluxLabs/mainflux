@@ -57,7 +57,7 @@ func newServer(t *testing.T) *httptest.Server {
 
 	fi := filestore.FileInfo{Name: fileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader(fileContent), token, groupID, fi))
-	// Large enough that the HTTP server would otherwise switch to chunked encoding.
+	// Small files get Content-Length automatically, so only a large one exposes it missing.
 	large := filestore.FileInfo{Name: largeFileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), bytes.NewReader(make([]byte, largeFileSize)), token, groupID, large))
 
@@ -71,9 +71,11 @@ func newServer(t *testing.T) *httptest.Server {
 func TestRangeRequest(t *testing.T) {
 	srv := newServer(t)
 	size := len(fileContent)
+	largeContent := string(make([]byte, largeFileSize))
 
 	cases := []struct {
 		desc         string
+		file         string
 		rangeHeader  string
 		status       int
 		body         string
@@ -84,6 +86,20 @@ func TestRangeRequest(t *testing.T) {
 			rangeHeader: "",
 			status:      http.StatusOK,
 			body:        fileContent,
+		},
+		{
+			desc:   "view large file without range",
+			file:   largeFileName,
+			status: http.StatusOK,
+			body:   largeContent,
+		},
+		{
+			desc:         "view large file with open-ended range",
+			file:         largeFileName,
+			rangeHeader:  "bytes=1024-",
+			status:       http.StatusPartialContent,
+			body:         largeContent[1024:],
+			contentRange: fmt.Sprintf("bytes 1024-%d/%d", largeFileSize-1, largeFileSize),
 		},
 		{
 			desc:         "view file with bounded range",
@@ -137,7 +153,11 @@ func TestRangeRequest(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, fileName), nil)
+		file := fileName
+		if tc.file != "" {
+			file = tc.file
+		}
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, file), nil)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+thingKey)
 		if tc.rangeHeader != "" {
@@ -158,52 +178,8 @@ func TestRangeRequest(t *testing.T) {
 		assert.Equal(t, tc.body, string(body), fmt.Sprintf("%s: body mismatch", tc.desc))
 		assert.Equal(t, "bytes", res.Header.Get("Accept-Ranges"), fmt.Sprintf("%s: Accept-Ranges mismatch", tc.desc))
 		assert.Equal(t, tc.contentRange, res.Header.Get("Content-Range"), fmt.Sprintf("%s: Content-Range mismatch", tc.desc))
-		if tc.status == http.StatusPartialContent {
-			assert.Equal(t, int64(len(tc.body)), res.ContentLength, fmt.Sprintf("%s: Content-Length mismatch", tc.desc))
-		}
-	}
-}
-
-func TestContentLength(t *testing.T) {
-	srv := newServer(t)
-
-	cases := []struct {
-		desc        string
-		rangeHeader string
-		status      int
-		length      int64
-	}{
-		{
-			desc:   "view large file without range",
-			status: http.StatusOK,
-			length: largeFileSize,
-		},
-		{
-			desc:        "view large file with open-ended range",
-			rangeHeader: "bytes=1024-",
-			status:      http.StatusPartialContent,
-			length:      largeFileSize - 1024,
-		},
-	}
-
-	for _, tc := range cases {
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, largeFileName), nil)
-		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
-		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+thingKey)
-		if tc.rangeHeader != "" {
-			req.Header.Set("Range", tc.rangeHeader)
-		}
-
-		res, err := srv.Client().Do(req)
-		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
-		body, err := io.ReadAll(res.Body)
-		res.Body.Close()
-		require.Nil(t, err, fmt.Sprintf("%s: read failed: %s", tc.desc, err))
-
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
-		assert.Equal(t, tc.length, res.ContentLength, fmt.Sprintf("%s: Content-Length mismatch", tc.desc))
+		assert.Equal(t, int64(len(tc.body)), res.ContentLength, fmt.Sprintf("%s: Content-Length mismatch", tc.desc))
 		assert.Empty(t, res.TransferEncoding, fmt.Sprintf("%s: unexpected transfer encoding", tc.desc))
-		assert.Equal(t, tc.length, int64(len(body)), fmt.Sprintf("%s: body length mismatch", tc.desc))
 	}
 }
 
