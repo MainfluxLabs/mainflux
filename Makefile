@@ -5,9 +5,10 @@ MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap ws postgres-writer postgres-reader timescale-writer timescale-reader cli \
 	auth mqtt certs smtp-notifier smpp-notifier alarms rules filestore downlinks modbus \
-	uiconfigs converters webhooks audit shadows
-DOCKERS = $(addprefix docker_,$(SERVICES))
-DOCKERS_DEV = $(addprefix docker_dev_,$(SERVICES))
+	uiconfigs converters webhooks audit shadows pyscripts
+GENERIC_SERVICES = $(filter-out pyscripts,$(SERVICES))
+DOCKERS = $(addprefix docker_,$(GENERIC_SERVICES))
+DOCKERS_DEV = $(addprefix docker_dev_,$(GENERIC_SERVICES))
 CGO_ENABLED ?= 0
 GOARCH ?= amd64
 VERSION ?= $(shell git describe --abbrev=0 --tags)
@@ -27,6 +28,18 @@ define compile_service
 	-X 'github.com/MainfluxLabs/mainflux.Version=$(VERSION)' \
 	-X 'github.com/MainfluxLabs/mainflux.Commit=$(COMMIT)'" \
 	-o ${BUILD_DIR}/mainfluxlabs-$(1) cmd/$(1)/main.go
+endef
+
+define make_docker_python
+	docker build \
+		--no-cache \
+		--build-arg SVC=pyscripts \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg TIME=$(TIME) \
+		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/pyscripts:$(VERSION) \
+		--output type=docker \
+		-f docker/Dockerfile.python .
 endef
 
 define make_docker
@@ -55,7 +68,7 @@ endef
 
 all: $(SERVICES)
 
-.PHONY: all $(SERVICES) dockers dockers_dev $(DOCKERS_PUSH) latest release logs_%
+.PHONY: all $(SERVICES) dockers dockers_dev docker_pyscripts $(DOCKERS_PUSH) latest release logs_%
 
 clean:
 	rm -rf ${BUILD_DIR}
@@ -84,10 +97,13 @@ $(SERVICES):
 $(DOCKERS):
 	$(call make_docker,$(@),$(GOARCH))
 
+docker_pyscripts:
+	$(call make_docker_python)
+
 $(DOCKERS_DEV):
 	$(call make_docker_dev,$(@))
 
-dockers: $(DOCKERS)
+dockers: $(DOCKERS) docker_pyscripts
 dockers_dev: $(DOCKERS_DEV)
 
 define docker_push
@@ -116,16 +132,18 @@ define make_docker_push
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg TIME=$(TIME) \
 		--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$(svc):$(VERSION) \
-		-f docker/Dockerfile . --push
+		-f $(if $(filter pyscripts,$(svc)),docker/Dockerfile.python,docker/Dockerfile) . --push
 endef
 
-DOCKERS_PUSH = $(addsuffix _push,$(DOCKERS))
+DOCKERS_PUSH = $(addsuffix _push,$(DOCKERS) docker_pyscripts)
 
 $(DOCKERS_PUSH):
 	$(call make_docker_push,$(@))
 
 release:
 	for svc in $(SERVICES); do \
+		dockerfile=docker/Dockerfile; \
+		if [ "$$svc" = "pyscripts" ]; then dockerfile=docker/Dockerfile.python; fi; \
 		docker buildx build --platform=linux/amd64,linux/arm64 \
 			--no-cache \
 			--sbom=true \
@@ -135,7 +153,7 @@ release:
 			--build-arg COMMIT=$(COMMIT) \
 			--build-arg TIME=$(TIME) \
 			--tag=$(MF_DOCKER_IMAGE_NAME_PREFIX)/$$svc:$(VERSION) \
-			-f docker/Dockerfile . --push; \
+			-f $$dockerfile . --push; \
 	done
 
 rundev:
