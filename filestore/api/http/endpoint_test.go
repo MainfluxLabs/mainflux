@@ -57,7 +57,7 @@ func newServer(t *testing.T) *httptest.Server {
 
 	fi := filestore.FileInfo{Name: fileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader(fileContent), token, groupID, fi))
-	// Small files get Content-Length automatically, so only a large one exposes it missing.
+	// The server sets Content-Length itself for bodies that fit its write buffer.
 	large := filestore.FileInfo{Name: largeFileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), bytes.NewReader(make([]byte, largeFileSize)), token, groupID, large))
 
