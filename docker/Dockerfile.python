@@ -1,0 +1,39 @@
+FROM golang:1.26.8-alpine AS builder
+ARG SVC
+ARG VERSION
+ARG COMMIT
+ARG TIME
+ARG TARGETARCH
+
+WORKDIR /go/src/github.com/MainfluxLabs/mainflux
+COPY . .
+RUN apk update \
+    && apk add make \
+    && make $SVC GOARCH=${TARGETARCH:-amd64} \
+    && mv build/mainfluxlabs-$SVC /exe
+
+FROM python:3.12-slim
+
+#  pyseccomp is a pure-python ctypes wrapper that resolves libseccomp at import time, and pip
+# installing it succeeds whether or not the shared library is present. On this
+# base image the library happens to arrive because apt depends on it, at
+# Priority: optional - so slimming the image, dropping apt or moving to another
+# base would silently remove the only syscall sandbox the runner has.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libseccomp2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir numpy==2.1.3 pandas==2.2.3 pyseccomp==0.1.2 \
+    && find /usr/local -name '__pycache__' -type d -prune -exec rm -rf {} + \
+    && useradd --uid 65532 --create-home --shell /usr/sbin/nologin nonroot
+
+# Fail the build, not the deployment, if the sandbox cannot actually be built.
+# Constructing a filter needs no privilege, so this proves libseccomp resolved
+# and its API works rather than merely that the module imported.
+RUN python -c "import errno, pyseccomp; \
+    f = pyseccomp.SyscallFilter(pyseccomp.ALLOW); \
+    f.add_rule(pyseccomp.ERRNO(errno.EPERM), 'socket'); \
+    print('seccomp sandbox available')"
+
+COPY --from=builder /exe /exe
+USER nonroot
+ENTRYPOINT ["/exe"]
