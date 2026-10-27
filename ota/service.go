@@ -326,11 +326,11 @@ func (ots *otaService) notify(u Update, thingIDs ...string) {
 
 	for _, thingID := range thingIDs {
 		cmd := protomfx.Command{
-			ThingId:  thingID,
-			Subtopic: nats.SubtopicOTA,
-			Payload:  payload,
-			Protocol: commandSource,
-			Created:  time.Now().UnixNano(),
+			RecipientId: thingID,
+			Subtopic:    nats.SubtopicOTA,
+			Payload:     payload,
+			Protocol:    commandSource,
+			Created:     time.Now().UnixNano(),
 		}
 
 		if err := ots.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, nats.SubtopicOTA), cmd); err != nil {
