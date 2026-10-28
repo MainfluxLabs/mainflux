@@ -25,7 +25,8 @@ const (
 	groupsPrefix   = "groups"
 	messagesSuffix = "messages"
 	commandsSuffix = "commands"
-	otaSuffix      = "ota"
+
+	otaSubtopic = "ota"
 )
 
 type publisher struct {
@@ -110,10 +111,6 @@ func GetGroupCommandsSubject(groupID, subtopic string) string {
 	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
 }
 
-func GetOTASubject(thingID string) string {
-	return createSubject(thingsPrefix, thingID, otaSuffix, "")
-}
-
 // IsCommandsSubject reports whether subject is a thing or group commands subject.
 func IsCommandsSubject(subject string) bool {
 	elems := strings.SplitN(subject, ".", 4)
@@ -138,8 +135,8 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 		return nil
 	}
 
-	if msg.Subtopic == SubtopicOTA {
-		if err := pub.Publish(GetOTASubject(msg.ThingId), msg); err != nil {
+	if msg.Subtopic == otaSubtopic {
+		if err := pub.Publish(SubjectOTA, msg); err != nil {
 			return err
 		}
 	}
