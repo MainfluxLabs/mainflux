@@ -565,12 +565,20 @@ func (p *pool) spawn() (w *worker, err error) {
 	}
 
 	p.logger.Info(fmt.Sprintf("python worker ready: pid=%d %s", cmd.Process.Pid, ready.Loaded))
+
+	// Seccomp is the only thing keeping a script off the network and away from
+	// other processes, and the /proc hiding is what keeps it from forging an exit
+	// frame on the control channel. A worker reporting either missing is refused
+	// outright, so the service fails to boot rather than run untrusted code
+	// unconfined - there is no legitimate configuration that serves without them.
 	if ready.Sandbox != sandboxSeccomp {
-		p.logger.Warn(fmt.Sprintf("python worker has no seccomp filter available (%s): scripts are not prevented from using the network", ready.Sandbox))
+		w.stop()
+		return nil, errors.Wrap(ErrWorkerFailed, errors.New(fmt.Sprintf("worker reported no seccomp filter (%s)", ready.Sandbox)))
 	}
 
 	if !ready.Hidden {
-		p.logger.Warn("python worker could not hide its /proc entry: a script may be able to reopen the control channel and forge its own exit")
+		w.stop()
+		return nil, errors.Wrap(ErrWorkerFailed, errors.New("worker could not hide its /proc entry"))
 	}
 
 	return w, nil
