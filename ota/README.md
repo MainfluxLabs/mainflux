@@ -106,7 +106,7 @@ default values.
 | `MF_AUTH_GRPC_TIMEOUT`          | Auth service gRPC request timeout in seconds                               | 1s                              |
 | `MF_OTA_ES_URL`                 | Event store URL                                                            | redis://localhost:6379/0        |
 | `MF_OTA_FIRMWARE_URL`           | Public base URL things download firmware group files from                  | https://localhost/fs/groupfiles |
-| `MF_OTA_TIMEOUT_CHECK_INTERVAL` | How often things without progress are checked for timeout                  | 1m                              |
+| `MF_OTA_TIMEOUT_CHECK_INTERVAL` | How often things without progress are checked for timeout                  | 10m                             |
 
 ## Deployment
 
