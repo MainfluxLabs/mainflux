@@ -203,17 +203,26 @@ BLOCKED_SYSCALLS = (
     "io_uring_setup", "io_uring_enter", "io_uring_register",
 )
 
-# Signalling is denied to any target but the script's own process, so a run
-# cannot reach another worker or another group's run, and cannot take the
-# service down through os.kill(1, ...) - PID 1 is no protection, since the
-# service installs a SIGINT handler. The to-self calls carry the target pid or
-# tgid in arg 0, so the child's own pid is let through and everything else is
-# refused; tkill names a tid rather than a pid, and pidfd targets cannot be
-# compared to a pid at all, so both are denied outright.
 SIGNAL_TO_SELF = ("kill", "tgkill", "rt_sigqueueinfo", "rt_tgsigqueueinfo")
 SIGNAL_DENIED = ("tkill", "pidfd_send_signal", "pidfd_open")
 
 CLONE_THREAD = 0x00010000
+
+O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT = 0o3, 0o1, 0o2, 0o100
+
+MUTATING_SYSCALLS = (
+    "creat", "mkdir", "mkdirat", "rmdir",
+    "link", "linkat", "symlink", "symlinkat",
+    "rename", "renameat", "renameat2",
+    "unlink", "unlinkat",
+    "truncate", "ftruncate", "fallocate",
+    "mknod", "mknodat",
+    "chmod", "fchmod", "fchmodat",
+    "chown", "fchown", "lchown", "fchownat",
+    "utime", "utimes", "utimensat", "futimesat",
+    "setxattr", "lsetxattr", "fsetxattr",
+    "removexattr", "lremovexattr", "fremovexattr",
+)
 
 def deny_new_processes(f):
     try:
@@ -256,6 +265,24 @@ def deny_signals(f, own):
         except (ValueError, RuntimeError, OSError):
             pass
 
+def deny_writes(f):
+    for name, flags in (("open", 1), ("openat", 2)):
+        for mask, val in ((O_ACCMODE, O_WRONLY), (O_ACCMODE, O_RDWR), (O_CREAT, O_CREAT)):
+            try:
+                f.add_rule(pyseccomp.ERRNO(errno.EROFS), name,
+                           pyseccomp.Arg(flags, pyseccomp.MASKED_EQ, mask, val))
+            except (ValueError, RuntimeError, OSError, AttributeError):
+                pass
+    try:
+        f.add_rule(pyseccomp.ERRNO(errno.ENOSYS), "openat2")
+    except (ValueError, RuntimeError, OSError):
+        pass
+    for name in MUTATING_SYSCALLS:
+        try:
+            f.add_rule(pyseccomp.ERRNO(errno.EROFS), name)
+        except (ValueError, RuntimeError, OSError):
+            pass
+
 def deny_syscalls():
     if pyseccomp is None:
         return
@@ -268,6 +295,7 @@ def deny_syscalls():
             pass
     deny_new_processes(f)
     deny_signals(f, os.getpid())
+    deny_writes(f)
     f.load()
 
 def confine(lim):
