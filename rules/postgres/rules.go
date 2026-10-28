@@ -143,6 +143,34 @@ func (rr ruleRepository) RetrieveByThing(ctx context.Context, thingID string, pm
 	return rr.retrieveRules(ctx, q, qc, params)
 }
 
+func (rr ruleRepository) RetrieveByThingAndInputType(ctx context.Context, thingID, inputType string) ([]rules.Rule, error) {
+	if _, err := uuid.FromString(thingID); err != nil {
+		return nil, errors.Wrap(dbutil.ErrNotFound, err)
+	}
+
+	q := `SELECT r.id, r.group_id, r.name, r.description,
+		r.input_type, r.input_config, r.conditions, r.operator, r.actions
+		FROM rules r JOIN rules_things rt ON rt.rule_id = r.id
+		WHERE rt.thing_id = $1 AND r.input_type = $2
+		ORDER BY r.id;`
+
+	var dbRules []dbRule
+	if err := rr.db.SelectContext(ctx, &dbRules, q, thingID, inputType); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	items := make([]rules.Rule, 0, len(dbRules))
+	for _, dbr := range dbRules {
+		rule, err := toRule(dbr, nil)
+		if err != nil {
+			return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+		items = append(items, rule)
+	}
+
+	return items, nil
+}
+
 func (rr ruleRepository) RetrieveByID(ctx context.Context, id string) (rules.Rule, error) {
 	q := `SELECT id, group_id, name, description, input_type, input_config, conditions, operator, actions
 		FROM rules
