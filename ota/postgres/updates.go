@@ -268,11 +268,20 @@ func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUp
 }
 
 func (ur updateRepository) RetryFailed(ctx context.Context, updateID string) ([]string, error) {
-	q := `UPDATE thing_updates
+	// Things that got a newer update since are skipped, so a retry never rolls them back.
+	q := `UPDATE thing_updates t
 		SET status = :pending, error = '', updated_at = :updated_at
-		WHERE update_id = :update_id
-		AND status = :failed
-		RETURNING thing_id;`
+		FROM updates u
+		WHERE u.id = t.update_id
+		AND t.update_id = :update_id
+		AND t.status = :failed
+		AND NOT EXISTS (
+			SELECT 1 FROM thing_updates nt
+			JOIN updates nu ON nu.id = nt.update_id
+			WHERE nt.thing_id = t.thing_id
+			AND nu.created_at > u.created_at
+		)
+		RETURNING t.thing_id;`
 
 	params := map[string]any{
 		"pending":    ota.StatusPending,

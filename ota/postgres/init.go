@@ -71,6 +71,8 @@ func migrateDB(db *sqlx.DB) error {
 					)`,
 					`CREATE INDEX IF NOT EXISTS idx_thing_updates_thing_id_status ON thing_updates (thing_id, status)`,
 					`CREATE INDEX IF NOT EXISTS idx_thing_updates_status_updated_at ON thing_updates (status, updated_at)`,
+					`CREATE UNIQUE INDEX IF NOT EXISTS idx_thing_updates_one_active ON thing_updates (thing_id)
+						WHERE status IN ('pending', 'downloading', 'installing')`,
 				},
 				Down: []string{
 					"DROP TABLE thing_updates",

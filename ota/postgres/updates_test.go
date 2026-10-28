@@ -217,22 +217,69 @@ func TestUpdateThingUpdateNotFound(t *testing.T) {
 
 func TestRetryFailed(t *testing.T) {
 	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
-	thingIDs := []string{newID(t), newID(t)}
-	u := saveUpdate(t, repo, newID(t), time.Now().UTC(), thingIDs...)
 
-	err := repo.UpdateThingUpdate(context.Background(), ota.ThingUpdate{UpdateID: u.ID, ThingID: thingIDs[0], Status: ota.StatusFailed, Error: "checksum mismatch", UpdatedAt: time.Now().UTC()})
-	require.Nil(t, err, fmt.Sprintf("updating thing update failed: %s", err))
+	cases := []struct {
+		desc        string
+		newerStatus string
+		retried     bool
+	}{
+		{
+			desc:    "retry failed thing update",
+			retried: true,
+		},
+		{
+			desc:        "retry thing update superseded by an active update",
+			newerStatus: ota.StatusPending,
+		},
+		{
+			desc:        "retry thing update superseded by a finished update",
+			newerStatus: ota.StatusSucceeded,
+		},
+	}
 
-	before := time.Now().UTC()
-	retried, err := repo.RetryFailed(context.Background(), u.ID)
-	require.Nil(t, err, fmt.Sprintf("retrying failed thing updates failed: %s", err))
-	assert.Equal(t, []string{thingIDs[0]}, retried, "only failed things must be retried")
+	for _, tc := range cases {
+		groupID, thingID, otherThingID := newID(t), newID(t), newID(t)
+		now := time.Now().UTC()
+		u := saveUpdate(t, repo, groupID, now, thingID, otherThingID)
 
-	tu, err := repo.RetrieveThingUpdate(context.Background(), u.ID, thingIDs[0])
-	require.Nil(t, err, fmt.Sprintf("retrieving thing update failed: %s", err))
-	assert.Equal(t, ota.StatusPending, tu.Status, "retried thing update must be pending")
-	assert.Empty(t, tu.Error, "retry must clear the error")
-	assert.False(t, tu.UpdatedAt.Before(before.Truncate(time.Millisecond)), "retry must restart the timeout clock")
+		change := ota.ThingUpdate{UpdateID: u.ID, ThingID: thingID, Status: ota.StatusFailed, Error: "checksum mismatch", UpdatedAt: now}
+		if tc.newerStatus != "" {
+			newer := saveUpdate(t, repo, groupID, now.Add(time.Second), thingID)
+			change = ota.ThingUpdate{UpdateID: newer.ID, ThingID: thingID, Status: tc.newerStatus, UpdatedAt: now}
+		}
+		err := repo.UpdateThingUpdate(context.Background(), change)
+		require.Nil(t, err, fmt.Sprintf("%s: updating thing update failed: %s", tc.desc, err))
+
+		before := time.Now().UTC()
+		retried, err := repo.RetryFailed(context.Background(), u.ID)
+		require.Nil(t, err, fmt.Sprintf("%s: retrying failed thing updates failed: %s", tc.desc, err))
+
+		tu, err := repo.RetrieveThingUpdate(context.Background(), u.ID, thingID)
+		require.Nil(t, err, fmt.Sprintf("%s: retrieving thing update failed: %s", tc.desc, err))
+
+		if !tc.retried {
+			assert.Empty(t, retried, fmt.Sprintf("%s: things with a newer update must not be retried", tc.desc))
+			assert.Equal(t, ota.StatusFailed, tu.Status, fmt.Sprintf("%s: superseded thing update must stay failed", tc.desc))
+			continue
+		}
+
+		assert.Equal(t, []string{thingID}, retried, fmt.Sprintf("%s: only failed things must be retried", tc.desc))
+		assert.Equal(t, ota.StatusPending, tu.Status, fmt.Sprintf("%s: retried thing update must be pending", tc.desc))
+		assert.Empty(t, tu.Error, fmt.Sprintf("%s: retry must clear the error", tc.desc))
+		assert.False(t, tu.UpdatedAt.Before(before.Truncate(time.Millisecond)), fmt.Sprintf("%s: retry must restart the timeout clock", tc.desc))
+	}
+}
+
+func TestOneActiveUpdate(t *testing.T) {
+	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
+	groupID, thingID := newID(t), newID(t)
+	now := time.Now().UTC()
+
+	first := saveUpdate(t, repo, groupID, now, thingID)
+	saveUpdate(t, repo, groupID, now.Add(time.Second), thingID)
+
+	err := repo.UpdateThingUpdate(context.Background(), ota.ThingUpdate{UpdateID: first.ID, ThingID: thingID, Status: ota.StatusPending, UpdatedAt: time.Now().UTC()})
+	assert.True(t, errors.Contains(err, dbutil.ErrUpdateEntity), fmt.Sprintf("a second active update for a thing must be rejected: got %s", err))
 }
 
 func TestFailTimedOut(t *testing.T) {
