@@ -9,20 +9,11 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
-
-var levelLabels = map[int32]string{
-	1: "Info",
-	2: "Low",
-	3: "Medium",
-	4: "High",
-	5: "Critical",
-}
 
 // field is a single named value extracted from a message payload.
 // Time is set only for SenML records, which carry their own timestamp.
@@ -37,36 +28,6 @@ func formatTime(createdNs int64) string {
 	return time.Unix(0, createdNs).UTC().Format(time.DateTime) + " UTC"
 }
 
-// formatConditions renders the conditions of a rule as a single readable expression.
-func formatConditions(ruleInfo []byte) string {
-	var info domain.RuleInfo
-	if err := json.Unmarshal(ruleInfo, &info); err != nil {
-		return ""
-	}
-
-	conditions := make([]string, 0, len(info.Conditions))
-	for _, condition := range info.Conditions {
-		conditions = append(conditions, formatCondition(condition))
-	}
-
-	separator := fmt.Sprintf(" %s ", info.Operator)
-
-	return strings.Join(conditions, separator)
-}
-
-func formatCondition(condition domain.Condition) string {
-	if condition.ScriptID != "" {
-		return fmt.Sprintf("script %s", condition.ScriptID)
-	}
-
-	threshold := ""
-	if condition.Threshold != nil {
-		threshold = formatFloat(*condition.Threshold)
-	}
-
-	return fmt.Sprintf("%s %s %s", condition.Field, condition.Comparator, threshold)
-}
-
 // formatPayload returns the payload as indented JSON, or unchanged when it isn't valid JSON.
 func formatPayload(payload []byte) string {
 	var indented bytes.Buffer
@@ -77,10 +38,10 @@ func formatPayload(payload []byte) string {
 	return indented.String()
 }
 
-// payloadFields extracts named values from a SenML, JSON object or JSON array payload.
-func payloadFields(payload []byte) ([]field, bool) {
-	if fields, ok := senmlFields(payload); ok {
-		return fields, true
+// payloadFields extracts named values from a SenML payload, or from a JSON object or array payload.
+func payloadFields(payload []byte, contentType string) ([]field, bool) {
+	if contentType == messaging.SenMLContentType {
+		return senmlFields(payload)
 	}
 
 	var decoded any

@@ -10,8 +10,13 @@ import (
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// ErrNotify wraps sending notification errors,
-var ErrNotify = errors.New("failed to send notification")
+var (
+	// ErrNotify wraps sending notification errors,
+	ErrNotify = errors.New("failed to send notification")
+
+	// ErrMissingSource indicates a notification that carries neither a message nor an alarm.
+	ErrMissingSource = errors.New("notification has no source")
+)
 
 type Notifier struct {
 	ID       string

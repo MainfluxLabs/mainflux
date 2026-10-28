@@ -41,12 +41,10 @@ message Alarm {
 }
 
 message Notification {
-    string thing_id  = 1;
-    string subtopic  = 2;
-    string protocol  = 3;
-    bytes  payload   = 4;
-    int64  created   = 5;
-    Alarm  alarm     = 6; // Set only when the notification is triggered by an alarm
+    oneof source {
+        Alarm   alarm   = 6;
+        Message message = 7;
+    }
 }
 
 message Webhook {

@@ -105,11 +105,9 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 			}
 		case ActionTypeSMTP, ActionTypeSMPP:
 			notification := protomfx.Notification{
-				ThingId:  msg.ThingId,
-				Subtopic: msg.Subtopic,
-				Protocol: msg.Protocol,
-				Payload:  msg.Payload,
-				Created:  msg.Created,
+				Source: &protomfx.Notification_Message{
+					Message: msg,
+				},
 			}
 			if err := rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification); err != nil {
 				return err

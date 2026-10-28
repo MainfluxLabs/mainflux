@@ -508,12 +508,9 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			case ActionTypeSMTP, ActionTypeSMPP:
 				subject := fmt.Sprintf("%s.%s", action.Type, action.ID)
 				notification := protomfx.Notification{
-					ThingId:  msg.ThingId,
-					Subtopic: msg.Subtopic,
-					Protocol: msg.Protocol,
-					Payload:  msg.Payload,
-					Created:  msg.Created,
-					Alarm:    &alarm,
+					Source: &protomfx.Notification_Alarm{
+						Alarm: &alarm,
+					},
 				}
 				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:
