@@ -200,7 +200,18 @@ BLOCKED_SYSCALLS = (
     "accept", "accept4", "sendto", "sendmsg", "recvfrom", "recvmsg",
     "setsid", "setpgid", "unshare",
     "fork", "vfork", "execve", "execveat",
+    "io_uring_setup", "io_uring_enter", "io_uring_register",
 )
+
+# Signalling is denied to any target but the script's own process, so a run
+# cannot reach another worker or another group's run, and cannot take the
+# service down through os.kill(1, ...) - PID 1 is no protection, since the
+# service installs a SIGINT handler. The to-self calls carry the target pid or
+# tgid in arg 0, so the child's own pid is let through and everything else is
+# refused; tkill names a tid rather than a pid, and pidfd targets cannot be
+# compared to a pid at all, so both are denied outright.
+SIGNAL_TO_SELF = ("kill", "tgkill", "rt_sigqueueinfo", "rt_tgsigqueueinfo")
+SIGNAL_DENIED = ("tkill", "pidfd_send_signal", "pidfd_open")
 
 CLONE_THREAD = 0x00010000
 
@@ -227,6 +238,24 @@ def widen_arches(f):
         except Exception:
             pass
 
+def deny_signals(f, own):
+    for name in SIGNAL_TO_SELF:
+        try:
+            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name,
+                       pyseccomp.Arg(0, pyseccomp.NE, own))
+            continue
+        except (ValueError, RuntimeError, OSError, AttributeError):
+            pass
+        try:
+            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name)
+        except (ValueError, RuntimeError, OSError):
+            pass
+    for name in SIGNAL_DENIED:
+        try:
+            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name)
+        except (ValueError, RuntimeError, OSError):
+            pass
+
 def deny_syscalls():
     if pyseccomp is None:
         return
@@ -238,6 +267,7 @@ def deny_syscalls():
         except (ValueError, RuntimeError, OSError):
             pass
     deny_new_processes(f)
+    deny_signals(f, os.getpid())
     f.load()
 
 def confine(lim):
@@ -358,17 +388,10 @@ def execute(job, code):
 // anything it forked is not, and a survivor would write into the next run on
 // this worker.
 //
-// A cache miss is reported rather than failed: Go caches independently and may
-// believe this worker holds source it has evicted, and answers by resending it.
+// The source travels with every job rather than being cached here: a cache in
+// __main__ outlives the run that filled it and is readable by the next run's
+// forked child, which is another group's source disclosed across tenants.
 const pyLoop = `
-MAX_CACHED = 64
-cache = {}
-
-def remember(sha, code):
-    while len(cache) >= MAX_CACHED:
-        cache.pop(next(iter(cache)))
-    cache[sha] = code
-
 def answered(seq, status=0, sig=0):
     send(1, {"kind": "exit", "seq": seq, "status": status, "signal": sig})
 
@@ -404,13 +427,5 @@ while True:
         fork_and_wait(seq, lambda: check_source(job))
         continue
 
-    if "code" in job:
-        remember(job["checksum"], job["code"])
-
-    code = cache.get(job["checksum"])
-    if code is None:
-        send(1, {"kind": "miss", "seq": seq})
-        continue
-
-    fork_and_wait(seq, lambda: execute(job, code))
+    fork_and_wait(seq, lambda: execute(job, job.get("code") or ""))
 `

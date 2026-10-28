@@ -19,12 +19,11 @@ const maxFrame = 8 << 20
 var errBadFrame = errors.New("undecodable frame")
 
 type jobFrame struct {
-	Seq      uint64 `json:"seq"`
-	Checksum string `json:"checksum"`
-	Code     string `json:"code,omitempty"`
-	Input    Input  `json:"input"`
-	Limits   Limits `json:"limits"`
-	Check    bool   `json:"check,omitempty"`
+	Seq    uint64 `json:"seq"`
+	Code   string `json:"code,omitempty"`
+	Input  Input  `json:"input"`
+	Limits Limits `json:"limits"`
+	Check  bool   `json:"check,omitempty"`
 }
 
 // ctlFrame travels on the worker's stdout. The forked child has /dev/null on its

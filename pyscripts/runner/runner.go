@@ -26,10 +26,6 @@ const (
 	// run as finished before treating the worker as broken.
 	reapGrace = 5 * time.Second
 
-	// maxCachedSources bounds the per-worker source cache. Workers are long
-	// lived, so an unbounded cache holds every script version ever run on them.
-	maxCachedSources = 64
-
 	// maxWorkerAttempts bounds how many workers one job will try before giving
 	// up, so a pool full of corpses fails fast instead of looping.
 	maxWorkerAttempts = 3
@@ -83,11 +79,6 @@ var (
 	ErrBusy         = pyscripts.ErrRunnerBusy
 	ErrOutputLimit  = pyscripts.ErrOutputLimit
 	ErrClosed       = pyscripts.ErrRunnerClosed
-
-	// errCacheMiss is the worker parent reporting, on the control channel, that
-	// it no longer holds the source for a sha this pool believed it had. It
-	// never reaches a caller: run answers it by resending the source.
-	errCacheMiss = errors.New("worker does not hold this source")
 )
 
 type Limits struct {
@@ -552,7 +543,6 @@ func (p *pool) spawn() (w *worker, err error) {
 		ctl:    ctlR,
 		data:   dataR,
 		api:    apiW,
-		cache:  make(map[string]bool),
 		ctlCh:  make(chan ctlFrame, 8),
 		dataCh: make(chan dataMsg, 256),
 		errCh:  make(chan error, 2),
@@ -602,7 +592,6 @@ type worker struct {
 	ctl   *os.File
 	data  *os.File
 	api   *os.File
-	cache map[string]bool
 	seq   uint64
 	dirty bool
 	// crossed records that the last run saw a frame stamped with another job's
@@ -638,65 +627,11 @@ type worker struct {
 }
 
 func (w *worker) check(ctx context.Context, code string, cfg Config) (outcome, error) {
-	res, err := w.exchange(ctx, jobFrame{Code: code, Check: true, Limits: cfg.Limits}, cfg)
-
-	// A check carries its source inline and never consults the worker's cache,
-	// so a miss here is the worker misbehaving rather than a cache to refill.
-	if err == errCacheMiss {
-		return outcome{}, errors.Wrap(ErrWorkerFailed, err)
-	}
-
-	return res, err
+	return w.exchange(ctx, jobFrame{Code: code, Check: true, Limits: cfg.Limits}, cfg)
 }
 
 func (w *worker) run(ctx context.Context, src Source, in Input, cfg Config) (outcome, error) {
-	job := jobFrame{Checksum: src.Checksum, Input: in, Limits: cfg.Limits, Code: w.sourceFor(src)}
-
-	res, err := w.exchange(ctx, job, cfg)
-
-	// The two caches evict independently, so a miss is answered by resending the
-	// source rather than by trying to keep the eviction policies in step.
-	//
-	// The miss arrives on the control channel, which only the worker parent can
-	// write. Keying this on the result error instead - a string the child puts on
-	// fd 3 - let a cached script claim a miss and have itself executed a second
-	// time, side effects included, on one request.
-	if err == errCacheMiss && job.Code == "" {
-		job.Code = src.Code
-		res, err = w.exchange(ctx, job, cfg)
-	}
-
-	if err != nil {
-		// A miss answered with the source attached means the worker discarded a
-		// job it was handed outright, which is a broken worker rather than a
-		// cache that needs refilling.
-		if err == errCacheMiss {
-			err = errors.Wrap(ErrWorkerFailed, err)
-		}
-
-		return outcome{}, err
-	}
-
-	w.remember(src.Checksum)
-	return res, nil
-}
-
-// sourceFor returns the source to send with a job, or the empty string when this
-// worker is believed to hold it already.
-func (w *worker) sourceFor(src Source) string {
-	if w.cache[src.Checksum] {
-		return ""
-	}
-
-	return src.Code
-}
-
-func (w *worker) remember(sha string) {
-	if len(w.cache) >= maxCachedSources {
-		w.cache = make(map[string]bool, maxCachedSources)
-	}
-
-	w.cache[sha] = true
+	return w.exchange(ctx, jobFrame{Input: in, Limits: cfg.Limits, Code: src.Code}, cfg)
 }
 
 // exchange runs one job to completion: hand it over, wait for the worker to
@@ -795,11 +730,8 @@ func (w *worker) awaitStart(ctx context.Context, seq uint64) (int, error) {
 				continue
 			}
 
-			switch f.Kind {
-			case "pid":
+			if f.Kind == "pid" {
 				return f.PID, nil
-			case "miss":
-				return 0, errCacheMiss
 			}
 		case err := <-w.errCh:
 			w.killPending(seq)
@@ -872,12 +804,17 @@ func (w *worker) awaitFinish(ctx context.Context, seq uint64, pid int, cfg Confi
 
 			return c.finish(f, d), nil
 
-		case err := <-w.errCh:
-			// The child owns fd 3, so it can break this channel itself - an
-			// oversized length header is enough - and would otherwise go on
-			// running after the request had failed.
+		case <-w.errCh:
+			// The child owns fd 3 and can break this channel itself - an oversized
+			// length header is enough. The job was dispatched and a pid reported,
+			// so the run happened: it is recorded as a failed run and the worker
+			// retired, rather than lost as a 500 that leaves no trace of what ran.
 			w.killRun(pid)
-			return outcome{}, errors.Wrap(ErrWorkerFailed, err)
+			w.dirty = true
+			c.res.FinishedAt = time.Now()
+			c.res.Value = nil
+			c.res.Error = "run did not complete: the worker stopped responding"
+			return c.res, nil
 
 		case <-d.expire:
 			d.fire(ctx.Err())
