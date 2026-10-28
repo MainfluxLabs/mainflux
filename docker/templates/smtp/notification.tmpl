@@ -1,4 +1,6 @@
 {{ define "content" }}
+    {{ $showTime := and .Fields (index .Fields 0).Time }}
+
     <p class="mb-16">
         A message from the thing with ID <strong>{{ .ThingID }}</strong> matched a rule.
     </p>
@@ -14,10 +16,12 @@
             <th class="details__label">Protocol</th>
             <td class="details__value">{{ .Protocol }}</td>
         </tr>
+        {{ if not $showTime }}
         <tr>
             <th class="details__label">Time</th>
             <td class="details__value">{{ .Time }}</td>
         </tr>
+        {{ end }}
     </table>
 
     <p class="section-title">Values</p>
@@ -27,11 +31,17 @@
         <tr>
             <th class="details__header">Name</th>
             <th class="details__header">Value</th>
+            {{ if $showTime }}
+            <th class="details__header">Time</th>
+            {{ end }}
         </tr>
         {{ range .Fields }}
         <tr>
             <td class="details__value">{{ .Name }}</td>
             <td class="details__value">{{ .Value }}</td>
+            {{ if $showTime }}
+            <td class="details__value">{{ .Time }}</td>
+            {{ end }}
         </tr>
         {{ end }}
     </table>

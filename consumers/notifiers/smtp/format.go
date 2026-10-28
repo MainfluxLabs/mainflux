@@ -25,9 +25,11 @@ var levelLabels = map[int32]string{
 }
 
 // field is a single named value extracted from a message payload.
+// Time is set only for SenML records, which carry their own timestamp.
 type field struct {
 	Name  string
 	Value string
+	Time  string
 }
 
 // formatTime formats a Unix timestamp in nanoseconds as a UTC date and time.
@@ -75,20 +77,24 @@ func formatPayload(payload []byte) string {
 	return indented.String()
 }
 
-// payloadFields extracts named values from a SenML or JSON object payload.
+// payloadFields extracts named values from a SenML, JSON object or JSON array payload.
 func payloadFields(payload []byte) ([]field, bool) {
 	if fields, ok := senmlFields(payload); ok {
 		return fields, true
 	}
 
-	var object map[string]any
-	if err := json.Unmarshal(payload, &object); err != nil {
+	var decoded any
+	if err := json.Unmarshal(payload, &decoded); err != nil {
 		return nil, false
 	}
 
-	fields := flattenObject("", object)
-
-	return fields, len(fields) > 0
+	switch decoded.(type) {
+	case map[string]any, []any:
+		fields := flattenValue("", decoded)
+		return fields, len(fields) > 0
+	default:
+		return nil, false
+	}
 }
 
 // senmlFields converts normalized SenML messages to fields, returning false
@@ -113,6 +119,7 @@ func senmlFields(payload []byte) ([]field, bool) {
 		fields = append(fields, field{
 			Name:  message.Name,
 			Value: value,
+			Time:  formatTime(message.Time),
 		})
 	}
 
@@ -166,7 +173,11 @@ func flattenValue(name string, value any) []field {
 	case []any:
 		fields := []field{}
 		for i, element := range typed {
-			elementName := fmt.Sprintf("%s.%d", name, i)
+			elementName := strconv.Itoa(i)
+			if name != "" {
+				elementName = name + "." + elementName
+			}
+
 			fields = append(fields, flattenValue(elementName, element)...)
 		}
 
