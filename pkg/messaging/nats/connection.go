@@ -5,6 +5,7 @@ package nats
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	broker "github.com/nats-io/nats.go"
@@ -21,6 +22,7 @@ var streamSubjects = []string{
 	SubjectSmpp,
 	SubjectWebhooks,
 	SubjectRules,
+	SubjectOTA,
 }
 
 func connect(url string) (*broker.Conn, broker.JetStreamContext, error) {
@@ -44,9 +46,9 @@ func connect(url string) (*broker.Conn, broker.JetStreamContext, error) {
 }
 
 func ensureStream(js broker.JetStreamContext) error {
-	_, err := js.StreamInfo(streamName)
+	info, err := js.StreamInfo(streamName)
 	if err == nil {
-		return nil
+		return addMissingSubjects(js, info.Config)
 	}
 
 	if !errors.Is(err, broker.ErrStreamNotFound) {
@@ -63,6 +65,24 @@ func ensureStream(js broker.JetStreamContext) error {
 		return nil
 	}
 
+	return err
+}
+
+// addMissingSubjects extends a stream created by an older version, since JetStream rejects publishes to subjects outside the stream.
+func addMissingSubjects(js broker.JetStreamContext, config broker.StreamConfig) error {
+	missing := false
+	for _, subject := range streamSubjects {
+		if !slices.Contains(config.Subjects, subject) {
+			config.Subjects = append(config.Subjects, subject)
+			missing = true
+		}
+	}
+
+	if !missing {
+		return nil
+	}
+
+	_, err := js.UpdateStream(&config)
 	return err
 }
 
