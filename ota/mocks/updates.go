@@ -214,7 +214,7 @@ func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string)
 
 	var thingIDs []string
 	for k, tu := range urm.thingUpdates {
-		if tu.UpdateID != updateID || tu.Status != ota.StatusFailed {
+		if tu.UpdateID != updateID || tu.Status != ota.StatusFailed || urm.hasNewerUpdate(tu) {
 			continue
 		}
 		tu.Status = ota.StatusPending
@@ -254,6 +254,17 @@ func (urm *updateRepositoryMock) RemoveThingUpdatesByThing(_ context.Context, th
 	}
 
 	return nil
+}
+
+func (urm *updateRepositoryMock) hasNewerUpdate(tu ota.ThingUpdate) bool {
+	createdAt := urm.updates[tu.UpdateID].CreatedAt
+	for _, other := range urm.thingUpdates {
+		if other.ThingID == tu.ThingID && urm.updates[other.UpdateID].CreatedAt.After(createdAt) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (urm *updateRepositoryMock) stats(updateID string) ota.UpdateStats {
