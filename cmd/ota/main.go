@@ -68,7 +68,7 @@ const (
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
 	defFirmwareURL       = "https://localhost/fs/groupfiles"
-	defTimeoutInterval   = "1m"
+	defTimeoutInterval   = "10m"
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_OTA_LOG_LEVEL"
