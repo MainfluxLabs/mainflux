@@ -35,6 +35,7 @@ type ctlFrame struct {
 	PID     int    `json:"pid,omitempty"`
 	Status  int    `json:"status,omitempty"`
 	Signal  int    `json:"signal,omitempty"`
+	Nonce   string `json:"nonce,omitempty"`
 	Loaded  string `json:"loaded,omitempty"`
 	Sandbox string `json:"sandbox,omitempty"`
 	Hidden  bool   `json:"hidden,omitempty"`
@@ -53,6 +54,7 @@ type ctlFrame struct {
 type dataFrame struct {
 	Kind  string `json:"kind"`
 	Seq   uint64 `json:"seq"`
+	Nonce string `json:"nonce,omitempty"`
 	Text  string `json:"text,omitempty"`
 	Value any    `json:"value,omitempty"`
 	Error string `json:"error,omitempty"`

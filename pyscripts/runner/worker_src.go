@@ -420,8 +420,8 @@ def execute(job, code):
 // __main__ outlives the run that filled it and is readable by the next run's
 // forked child, which is another group's source disclosed across tenants.
 const pyLoop = `
-def answered(seq, status=0, sig=0):
-    send(1, {"kind": "exit", "seq": seq, "status": status, "signal": sig})
+def answered(seq, status, sig, nonce):
+    send(1, {"kind": "exit", "seq": seq, "status": status, "signal": sig, "nonce": nonce})
 
 def fork_and_wait(seq, target):
     pid = os.fork()
@@ -437,9 +437,19 @@ def fork_and_wait(seq, target):
     except (ProcessLookupError, PermissionError, OSError):
         pass
 
+    # A run that writes a partial length-prefixed frame to fd 3 and exits leaves
+    # the data stream mid-frame, and the next run's bytes would be read as the
+    # rest of it. The nonce is minted here, after the child is dead, so a script
+    # can never emit it: it rides the unforgeable control channel on the exit
+    # frame and is echoed on the data channel, where Go reaches it only if the
+    # stream is aligned - otherwise the echo is swallowed by the dangling frame
+    # and the worker is retired rather than handed on poisoned.
+    nonce = os.urandom(16).hex()
+    send(DATA, {"kind": "flush", "seq": seq, "nonce": nonce})
     answered(seq,
              os.WEXITSTATUS(status) if os.WIFEXITED(status) else 0,
-             os.WTERMSIG(status) if os.WIFSIGNALED(status) else 0)
+             os.WTERMSIG(status) if os.WIFSIGNALED(status) else 0,
+             nonce)
 
 send(1, {"kind": "ready", "loaded": LOADED, "sandbox": SANDBOX, "hidden": HIDDEN})
 

@@ -806,8 +806,8 @@ func (w *worker) awaitFinish(ctx context.Context, seq uint64, pid int, cfg Confi
 				continue
 			}
 
-			c.drain(w.dataCh, drainGrace)
-			w.dirty = c.spoiled(d)
+			aligned := c.drain(w.dataCh, f.Nonce)
+			w.dirty = c.spoiled(d) || !aligned
 			w.crossed = c.crossed
 
 			return c.finish(f, d), nil

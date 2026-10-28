@@ -9,24 +9,10 @@ import (
 	"time"
 )
 
-const (
-	// drainGrace is how long the tail of a run may stay quiet before its stream
-	// is taken to be empty.
-	//
-	// It is deliberately small, because every run pays it: the worker parent
-	// waits on the child and kills its process group *before* it writes the exit
-	// frame, so by the time a drain starts there is no writer left and nothing
-	// new can arrive. What the grace covers is only the hop between the pump
-	// goroutine reading a frame and delivering it on the channel. At 50ms it set
-	// a floor under every request - a trivial "1+1" measured ~102ms - and made a
-	// 32-script create batch spend over 1.5s waiting for frames that could not
-	// exist.
-	drainGrace = 5 * time.Millisecond
-
-	// maxDrain bounds the whole drain. Frames still arriving when it expires mean
-	// the stream was not emptied, so the worker cannot safely serve another run.
-	maxDrain = 500 * time.Millisecond
-)
+// maxDrain bounds the wait for a run's flush sentinel. Not reaching it in that
+// time means a frame was left half-written and is still swallowing the stream,
+// so the worker cannot safely serve another run.
+const maxDrain = 500 * time.Millisecond
 
 // collector accumulates what a run claims on the data channel and enforces the
 // output cap as it reads. Everything the child writes is a claim: it holds the
@@ -46,6 +32,11 @@ type collector struct {
 	overran bool
 	crossed bool
 	reaped  bool
+	// lastFlush is the nonce of the most recent flush frame seen for this run.
+	// The worker writes its flush last, after the child is dead, so in an aligned
+	// stream this ends up holding the exit frame's nonce; a half-written frame
+	// swallows that echo and leaves it set to something else, or unset.
+	lastFlush string
 	// kill ends the run this collector is reading. It is supplied rather than
 	// called directly so the collector does not need to know which worker hosts
 	// the run in order to signal it safely.
@@ -76,6 +67,14 @@ func newCollector(cfg Config, pid int, seq uint64, kill func(int)) *collector {
 func (c *collector) accept(m dataMsg) {
 	if m.frame.Seq != c.seq {
 		c.crossed = true
+		return
+	}
+
+	// The flush sentinel is the worker's, not the script's output: it is not
+	// charged against the cap and is never a log or result, only the proof the
+	// stream reached a frame boundary.
+	if m.frame.Kind == "flush" {
+		c.lastFlush = m.frame.Nonce
 		return
 	}
 
@@ -110,13 +109,13 @@ func (c *collector) accept(m dataMsg) {
 	}
 }
 
-// drain reads the frames a child had already written when the parent reported
-// the run over. It returns once the stream has been quiet for grace, rather than
-// after a flat interval, so a busy tail is still collected. If frames are
-// arriving when the overall budget expires the stream was not emptied, which is
-// recorded so the worker is retired instead of serving a run that would inherit
-// them.
-func (c *collector) drain(ch <-chan dataMsg, grace time.Duration) {
+// drain consumes the tail of a run's data stream up to the worker's flush
+// sentinel, which carries the nonce the exit frame named. Reaching it proves the
+// stream is frame-aligned at the run's end, so every frame the child wrote has
+// been read and the next run starts on a boundary. Failing to within maxDrain
+// means a length-prefixed frame was left half-written and is still consuming the
+// stream - the worker is retired rather than handed on. It reports alignment.
+func (c *collector) drain(ch <-chan dataMsg, nonce string) bool {
 	// A drain only ever runs after the exit frame, by which point the child has
 	// been waited on and its group killed.
 	c.reaped = true
@@ -124,28 +123,18 @@ func (c *collector) drain(ch <-chan dataMsg, grace time.Duration) {
 	budget := time.NewTimer(maxDrain)
 	defer budget.Stop()
 
-	quiet := time.NewTimer(grace)
-	defer quiet.Stop()
-
 	for {
+		if c.lastFlush == nonce {
+			return true
+		}
+
 		select {
 		case m := <-ch:
 			c.accept(m)
 
-			if !quiet.Stop() {
-				select {
-				case <-quiet.C:
-				default:
-				}
-			}
-			quiet.Reset(grace)
-
-		case <-quiet.C:
-			return
-
 		case <-budget.C:
 			c.overran = true
-			return
+			return false
 		}
 	}
 }
