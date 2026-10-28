@@ -280,7 +280,7 @@ func TestDispatchOTA(t *testing.T) {
 	}{
 		{
 			desc:     "dispatch ota status with all profile flags disabled",
-			subtopic: nats.SubtopicOTA,
+			subtopic: "ota",
 			received: true,
 		},
 		{
