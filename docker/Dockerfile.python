@@ -14,7 +14,7 @@ RUN apk update \
 
 FROM python:3.12-slim
 
-#  pyseccomp is a pure-python ctypes wrapper that resolves libseccomp at import time, and pip
+# pyseccomp is a pure-python ctypes wrapper that resolves libseccomp at import time, and pip
 # installing it succeeds whether or not the shared library is present. On this
 # base image the library happens to arrive because apt depends on it, at
 # Priority: optional - so slimming the image, dropping apt or moving to another
