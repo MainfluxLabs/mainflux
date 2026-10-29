@@ -35,6 +35,8 @@ const (
 	thingKey      = "thingkey-1"
 	fileName      = "fw.bin"
 	fileContent   = "hello mainflux"
+	largeFileName = "large.bin"
+	largeFileSize = 64 << 10
 	binariesClass = "binaries"
 	binFormat     = "bin"
 )
@@ -55,6 +57,9 @@ func newServer(t *testing.T) *httptest.Server {
 
 	fi := filestore.FileInfo{Name: fileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader(fileContent), token, groupID, fi))
+	// The server sets Content-Length itself for bodies that fit its write buffer.
+	large := filestore.FileInfo{Name: largeFileName, Class: binariesClass, Format: binFormat}
+	require.Nil(t, svc.SaveGroupFile(context.Background(), bytes.NewReader(make([]byte, largeFileSize)), token, groupID, large))
 
 	h := httpapi.MakeHandler(mocktracer.New(), svc, mocks.NewAuthService("", nil, nil), logger.NewMock())
 	srv := httptest.NewServer(h)
@@ -66,9 +71,11 @@ func newServer(t *testing.T) *httptest.Server {
 func TestRangeRequest(t *testing.T) {
 	srv := newServer(t)
 	size := len(fileContent)
+	largeContent := string(make([]byte, largeFileSize))
 
 	cases := []struct {
 		desc         string
+		file         string
 		rangeHeader  string
 		status       int
 		body         string
@@ -76,12 +83,28 @@ func TestRangeRequest(t *testing.T) {
 	}{
 		{
 			desc:        "view file without range",
+			file:        fileName,
 			rangeHeader: "",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
+			desc:   "view large file without range",
+			file:   largeFileName,
+			status: http.StatusOK,
+			body:   largeContent,
+		},
+		{
+			desc:         "view large file with open-ended range",
+			file:         largeFileName,
+			rangeHeader:  "bytes=1024-",
+			status:       http.StatusPartialContent,
+			body:         largeContent[1024:],
+			contentRange: fmt.Sprintf("bytes 1024-%d/%d", largeFileSize-1, largeFileSize),
+		},
+		{
 			desc:         "view file with bounded range",
+			file:         fileName,
 			rangeHeader:  "bytes=6-9",
 			status:       http.StatusPartialContent,
 			body:         "main",
@@ -89,6 +112,7 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:         "view file with open-ended range",
+			file:         fileName,
 			rangeHeader:  "bytes=6-",
 			status:       http.StatusPartialContent,
 			body:         "mainflux",
@@ -96,6 +120,7 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:         "view file with suffix range",
+			file:         fileName,
 			rangeHeader:  "bytes=-3",
 			status:       http.StatusPartialContent,
 			body:         "lux",
@@ -103,36 +128,41 @@ func TestRangeRequest(t *testing.T) {
 		},
 		{
 			desc:        "view file with multiple ranges",
+			file:        fileName,
 			rangeHeader: "bytes=0-1,4-5",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
 			desc:        "view file with unsupported range unit",
+			file:        fileName,
 			rangeHeader: "items=0-1",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
 			desc:        "view file with malformed range",
+			file:        fileName,
 			rangeHeader: "bytes=5-2",
 			status:      http.StatusOK,
 			body:        fileContent,
 		},
 		{
 			desc:        "view file with range starting past file size",
+			file:        fileName,
 			rangeHeader: fmt.Sprintf("bytes=%d-", size),
 			status:      http.StatusRequestedRangeNotSatisfiable,
 		},
 		{
 			desc:        "view file with empty suffix range",
+			file:        fileName,
 			rangeHeader: "bytes=-0",
 			status:      http.StatusRequestedRangeNotSatisfiable,
 		},
 	}
 
 	for _, tc := range cases {
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, fileName), nil)
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/groupfiles/%s", srv.URL, tc.file), nil)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		req.Header.Set("Authorization", apiutil.ThingKeyPrefixInternal+thingKey)
 		if tc.rangeHeader != "" {
@@ -153,9 +183,8 @@ func TestRangeRequest(t *testing.T) {
 		assert.Equal(t, tc.body, string(body), fmt.Sprintf("%s: body mismatch", tc.desc))
 		assert.Equal(t, "bytes", res.Header.Get("Accept-Ranges"), fmt.Sprintf("%s: Accept-Ranges mismatch", tc.desc))
 		assert.Equal(t, tc.contentRange, res.Header.Get("Content-Range"), fmt.Sprintf("%s: Content-Range mismatch", tc.desc))
-		if tc.status == http.StatusPartialContent {
-			assert.Equal(t, int64(len(tc.body)), res.ContentLength, fmt.Sprintf("%s: Content-Length mismatch", tc.desc))
-		}
+		assert.Equal(t, int64(len(tc.body)), res.ContentLength, fmt.Sprintf("%s: Content-Length mismatch", tc.desc))
+		assert.Empty(t, res.TransferEncoding, fmt.Sprintf("%s: unexpected transfer encoding", tc.desc))
 	}
 }
 
