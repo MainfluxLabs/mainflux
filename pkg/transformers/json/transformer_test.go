@@ -38,10 +38,10 @@ const (
 	tsListPayload          = `[{"custom_ts_key": "1638310819", "key1": "val1", "key5": "val5"}]`
 	singlePointPayload     = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}]}`
 	invalidPointsPayload   = `{"Points": [{"Value": {"key1": "val1"}}, "val2"]}`
-	tsListFilterResPayload = `[{"Created":1638310819000000000,"key1":"val1"}]`
+	tsListFilterResPayload = `[{"key1":"val1"}]`
 	missingKeyResPayload   = `[{"key1":"val1"},{"key1":"val2"}]`
 	singlePointResPayload  = `{"Time":"1638310819","key1":"val1"}`
-	partialResPayload      = `[{"Created":1638310819000000000,"Time":"1638310819","key1":"val1"}]`
+	partialResPayload      = `[{"Time":"1638310819","key1":"val1"}]`
 
 	partialPayload = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}, ` +
 		`{"PointId": 2}]}`
@@ -54,12 +54,8 @@ const (
 	missingKeyPayload = `{"Points": [{"Value": {"key1": "val1"}}, {"PointId": 2}, ` +
 		`{"Value": {"key1": "val2"}}]}`
 
-	tsListResPayload = `[{"Created":1638310819000000000,"custom_ts_key":"1638310819",` +
-		`"key1":"val1","key5":"val5"}]`
-
-	pointsResPayload = `[{"Created":1638310819000000000,"Value":"63.6"},` +
-		`{"Created":1638310820000000000,"Value":"63.8"},` +
-		`{"Created":1638310821000000000,"Value":"12.1"}]`
+	tsListResPayload = `[{"custom_ts_key":"1638310819","key1":"val1","key5":"val5"}]`
+	pointsResPayload = `[{"Value":"63.6"},{"Value":"63.8"},{"Value":"12.1"}]`
 )
 
 var (
@@ -261,24 +257,52 @@ func TestTransformJSONArray(t *testing.T) {
 		DataField: pointsDataField,
 	}
 
+	record := func(payload string, created int64) *protomfx.Record {
+		return &protomfx.Record{Payload: []byte(payload), Created: created}
+	}
+
 	tsListRes := tsListMsg
 	tsListRes.Payload = []byte(tsListResPayload)
+	tsListRes.Records = []*protomfx.Record{
+		record(`{"custom_ts_key":"1638310819","key1":"val1","key5":"val5"}`, tsCreated),
+	}
 
 	tsListFilterRes := tsListMsg
 	tsListFilterRes.Payload = []byte(tsListFilterResPayload)
+	tsListFilterRes.Records = []*protomfx.Record{record(`{"key1":"val1"}`, tsCreated)}
 
 	pointsRes := pointsMsg
 	pointsRes.Payload = []byte(pointsResPayload)
+	pointsRes.Records = []*protomfx.Record{
+		record(`{"Value":"63.6"}`, tsCreated),
+		record(`{"Value":"63.8"}`, tsCreated+1e9),
+		record(`{"Value":"12.1"}`, tsCreated+2e9),
+	}
 
 	missingKeyRes := missingKeyMsg
 	missingKeyRes.Payload = []byte(missingKeyResPayload)
+	missingKeyRes.Records = []*protomfx.Record{
+		record(`{"key1":"val1"}`, now),
+		record(`{"key1":"val2"}`, now),
+	}
+
+	recordsMsg := missingKeyMsg
+	recordsMsg.Records = []*protomfx.Record{{Created: tsCreated}, {Created: tsCreated + 1e9}}
+
+	recordsRes := missingKeyRes
+	recordsRes.Records = []*protomfx.Record{
+		record(`{"key1":"val1"}`, tsCreated),
+		record(`{"key1":"val2"}`, tsCreated+1e9),
+	}
 
 	singlePointRes := singlePointMsg
 	singlePointRes.Payload = []byte(singlePointResPayload)
 	singlePointRes.Created = tsCreated
+	singlePointRes.Records = []*protomfx.Record{record(singlePointResPayload, tsCreated)}
 
 	partialRes := partialMsg
 	partialRes.Payload = []byte(partialResPayload)
+	partialRes.Records = []*protomfx.Record{record(`{"Time":"1638310819","key1":"val1"}`, tsCreated)}
 
 	cases := []struct {
 		desc        string
@@ -313,6 +337,13 @@ func TestTransformJSONArray(t *testing.T) {
 			transformer: dataFieldTr,
 			msg:         missingKeyMsg,
 			res:         missingKeyRes,
+			err:         nil,
+		},
+		{
+			desc:        "transform JSON array with record timestamps assigned by publisher",
+			transformer: dataFieldTr,
+			msg:         recordsMsg,
+			res:         recordsRes,
 			err:         nil,
 		},
 		{

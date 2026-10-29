@@ -53,48 +53,45 @@ func PayloadHash(payload []byte) int32 {
 }
 
 func ToJSONMessage(message protomfx.Message) mfjson.Message {
-	created, payload := extractCreated(message.Payload, message.Created)
-
 	return mfjson.Message{
-		Created:  created,
+		Created:  message.Created,
 		Subtopic: message.Subtopic,
 		ThingID:  message.ThingId,
 		Protocol: message.Protocol,
-		Payload:  payload,
+		Payload:  message.Payload,
 	}
 }
 
-func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
-	created, payload := extractCreated(cmd.Payload, cmd.Created)
+// ToJSONMessages converts each record of message into a JSON message.
+// A message without records is converted as a single JSON message.
+func ToJSONMessages(message protomfx.Message) []mfjson.Message {
+	if len(message.Records) == 0 {
+		return []mfjson.Message{ToJSONMessage(message)}
+	}
 
+	var msgs []mfjson.Message
+	for _, record := range message.Records {
+		msgs = append(msgs, mfjson.Message{
+			Created:  record.Created,
+			Subtopic: message.Subtopic,
+			ThingID:  message.ThingId,
+			Protocol: message.Protocol,
+			Payload:  record.Payload,
+		})
+	}
+
+	return msgs
+}
+
+func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 	return mfjson.Command{
-		Created:     created,
+		Created:     cmd.Created,
 		Subtopic:    cmd.Subtopic,
 		ThingID:     cmd.ThingId,
 		RecipientID: cmd.RecipientId,
 		Protocol:    cmd.Protocol,
-		Payload:     payload,
+		Payload:     cmd.Payload,
 	}
-}
-
-// extractCreated unwraps a "Created" field embedded in the payload itself,
-// preferring it over the proto-level Created timestamp.
-func extractCreated(payload []byte, created int64) (int64, []byte) {
-	if len(payload) == 0 {
-		return created, payload
-	}
-
-	var p map[string]any
-	if err := json.Unmarshal(payload, &p); err == nil {
-		if payloadCreated, ok := p["Created"].(float64); ok {
-			created = int64(payloadCreated)
-			delete(p, "Created")
-
-			payload, _ = json.Marshal(p)
-		}
-	}
-
-	return created, payload
 }
 
 func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {

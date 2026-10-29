@@ -156,14 +156,16 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 	timeFieldIdx := slices.Index(csvLines[0], tr.TimeField)
 	for i := 1; i < len(csvLines); i++ {
 		record := map[string]any{}
+		var created int64
 		if tr.TimeField != "" && timeFieldIdx != -1 {
 			raw := csvLines[i][timeFieldIdx]
 			ns, err := jsontransformer.ParseTimestamp(tr, raw)
 			if err != nil {
 				return ErrInvalidTimeField
 			}
-			record["Created"] = float64(ns)
+			created = ns
 		}
+		msg.Records = append(msg.Records, &protomfx.Record{Created: created})
 		for j, columnName := range keys {
 			val := csvLines[i][j+1]
 			if val == "" {
@@ -195,6 +197,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 				return err
 			}
 			msgs = []map[string]any{}
+			msg.Records = nil
 			size = 0
 			time.Sleep(batchDelay)
 		}
@@ -287,6 +290,7 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 				return err
 			}
 			msgs = []map[string]any{}
+			msg.Records = nil
 			size = 0
 			time.Sleep(batchDelay)
 		}
@@ -385,17 +389,17 @@ func applyEnvelopeFields(msg *protomfx.Message, src map[string]any) {
 func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *protomfx.Message) (map[string]any, error) {
 	record := map[string]any{}
 
-	parseTS := func(v any) (float64, error) {
+	parseTS := func(v any) (int64, error) {
 		ns, err := jsontransformer.ParseTimestamp(tr, v)
 		if err != nil {
 			return 0, ErrInvalidTimeField
 		}
-		return float64(ns), nil
+		return ns, nil
 	}
 
 	if pld, ok := inputRecord["payload"].(map[string]any); ok {
 		// Format A — unwrap outer envelope, prefer timeField over "created".
-		var ts float64
+		var ts int64
 		if tr.TimeField != "" {
 			if v, exists := inputRecord[tr.TimeField]; exists {
 				t, err := parseTS(v)
@@ -414,9 +418,6 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 				ts = t
 			}
 		}
-		if ts != 0 {
-			record["Created"] = ts
-		}
 		applyEnvelopeFields(msg, inputRecord)
 		for k, v := range pld {
 			if tr.TimeField != "" && k == tr.TimeField {
@@ -424,14 +425,16 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 				if err != nil {
 					return nil, err
 				}
-				record["Created"] = t
+				ts = t
 			}
 			record[k] = v
 		}
+		msg.Records = append(msg.Records, &protomfx.Record{Created: ts})
 		return record, nil
 	}
 
 	// Flat record — lift envelope fields into msg, store the rest in record.
+	var ts int64
 	for k, v := range inputRecord {
 		if reservedFields[k] {
 			switch k {
@@ -449,7 +452,7 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 					return nil, err
 				}
 				if t != 0 {
-					record["Created"] = t
+					ts = t
 				}
 			}
 			continue
@@ -459,10 +462,11 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 			if err != nil {
 				return nil, err
 			}
-			record["Created"] = t
+			ts = t
 		}
 		record[k] = v
 	}
+	msg.Records = append(msg.Records, &protomfx.Record{Created: ts})
 	return record, nil
 }
 

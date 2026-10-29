@@ -102,6 +102,7 @@ func TestSaveJSON(t *testing.T) {
 		Protocol:    mqttProt,
 		Payload:     payloadBytes,
 		ContentType: messaging.JSONContentType,
+		Records:     []*protomfx.Record{{Payload: payloadBytes, Created: time.Now().Unix()}},
 	}
 
 	err = repo.ConsumeMessage(subject, pm)
