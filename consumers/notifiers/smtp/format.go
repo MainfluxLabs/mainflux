@@ -44,8 +44,11 @@ func payloadFields(payload []byte, contentType string) ([]field, bool) {
 		return senmlFields(payload)
 	}
 
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.UseNumber()
+
 	var decoded any
-	if err := json.Unmarshal(payload, &decoded); err != nil {
+	if err := decoder.Decode(&decoded); err != nil {
 		return nil, false
 	}
 

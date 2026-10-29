@@ -70,6 +70,18 @@ func TestPayloadFields(t *testing.T) {
 			ok: true,
 		},
 		{
+			desc:        "JSON integer above 2^53",
+			payload:     `{"counter":9007199254740993}`,
+			contentType: messaging.JSONContentType,
+			fields: []field{
+				{
+					Name:  "counter",
+					Value: "9007199254740993",
+				},
+			},
+			ok: true,
+		},
+		{
 			desc:        "JSON object with an array of objects",
 			payload:     `{"weather":[{"main":"Clouds"}]}`,
 			contentType: messaging.JSONContentType,
