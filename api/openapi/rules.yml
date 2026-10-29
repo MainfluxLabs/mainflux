@@ -449,7 +449,7 @@ components:
           type: integer
           minimum: 1
           maximum: 5
-          description: "Alarm severity level. Required for alarm actions: 1=info, 2=warning, 3=minor, 4=major, 5=critical."
+          description: "Alarm severity level. Required for alarm actions: 1=info, 2=low, 3=medium, 4=high, 5=critical."
           example: 3
       required:
         - type
