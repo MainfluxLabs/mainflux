@@ -87,10 +87,10 @@ var ScriptRunOrderFields = map[string]string{
 // Input is what a run is given. It is the message shape the Python side sees as
 // its "message" global, so the json tags are part of the contract with it.
 type Input struct {
-	Payload     map[string]any `json:"payload"`
-	Subtopic    string         `json:"subtopic,omitempty"`
-	Created     int64          `json:"created,omitempty"`
-	ThingID     string         `json:"thing_id,omitempty"`
+	Payload  map[string]any `json:"payload"`
+	Subtopic string         `json:"subtopic,omitempty"`
+	Created  int64          `json:"created,omitempty"`
+	ThingID  string         `json:"thing_id,omitempty"`
 }
 
 // Result is the outcome of one run. Error is either the script's own failure or
