@@ -321,7 +321,7 @@ func decodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingCommandReq)
 	return thingCommandReq{
-		publisherID: req.GetPublisherId(),
+		thingID:     req.GetThingId(),
 		recipientID: req.GetRecipientId(),
 	}, nil
 }
@@ -329,8 +329,8 @@ func decodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.ThingGroupCommandReq)
 	return thingGroupCommandReq{
-		publisherID: req.GetPublisherId(),
-		groupID:     req.GetGroupId(),
+		thingID: req.GetThingId(),
+		groupID: req.GetGroupId(),
 	}, nil
 }
 
@@ -392,7 +392,7 @@ func encodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 	res := grpcRes.(pubConfigByKeyRes)
 
 	return &protomfx.PubConfigByKeyRes{
-		PublisherId:   res.PubConfigInfo.PublisherID,
+		ThingId:       res.PubConfigInfo.ThingID,
 		ProfileConfig: protoutil.DomainConfigToProto(res.ProfileConfig),
 	}, nil
 }

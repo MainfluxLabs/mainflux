@@ -91,6 +91,17 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE groups_files DROP COLUMN checksum`,
 				},
 			},
+			{
+				Id: "filestore_4",
+				Up: []string{
+					`ALTER TABLE groups_files ADD COLUMN size BIGINT NOT NULL DEFAULT 0;`,
+					`ALTER TABLE things_files ADD COLUMN size BIGINT NOT NULL DEFAULT 0;`,
+				},
+				Down: []string{
+					`ALTER TABLE things_files DROP COLUMN size`,
+					`ALTER TABLE groups_files DROP COLUMN size`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

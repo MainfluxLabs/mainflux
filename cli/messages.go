@@ -101,9 +101,9 @@ var cmdReadSenML = &cobra.Command{
 
 var cmdDeleteMessages = []cobra.Command{
 	{
-		Use:   "json <publisher_id> <token>",
-		Short: "Delete JSON messages by publisher",
-		Long:  `Deletes JSON messages for the specified publisher. Use --from and --to flags for time range.`,
+		Use:   "json <thing_id> <token>",
+		Short: "Delete JSON messages by thing",
+		Long:  `Deletes JSON messages for the specified thing. Use --from and --to flags for time range.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -120,9 +120,9 @@ var cmdDeleteMessages = []cobra.Command{
 		},
 	},
 	{
-		Use:   "senml <publisher_id> <token>",
-		Short: "Delete SenML messages by publisher",
-		Long:  `Deletes SenML messages for the specified publisher. Use --from and --to flags for time range.`,
+		Use:   "senml <thing_id> <token>",
+		Short: "Delete SenML messages by thing",
+		Long:  `Deletes SenML messages for the specified thing. Use --from and --to flags for time range.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 2 {
 				logUsage(cmd.Use)
@@ -182,7 +182,7 @@ var cmdExportMessages = []cobra.Command{
 	{
 		Use:   "json <token>",
 		Short: "Export JSON messages",
-		Long:  `Exports JSON messages. Use --convert (json/csv), --time-format, and --publisher flags.`,
+		Long:  `Exports JSON messages. Use --convert (json/csv), --time-format, and --thing-id flags.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				logUsage(cmd.Use)
@@ -202,7 +202,7 @@ var cmdExportMessages = []cobra.Command{
 	{
 		Use:   "senml <token>",
 		Short: "Export SenML messages",
-		Long:  `Exports SenML messages. Use --convert (json/csv), --time-format, and --publisher flags.`,
+		Long:  `Exports SenML messages. Use --convert (json/csv), --time-format, and --thing-id flags.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 1 {
 				logUsage(cmd.Use)
@@ -288,7 +288,7 @@ func NewMessagesCmd() *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete [json | senml | all-json | all-senml]",
 		Short: "Delete messages",
-		Long:  `Delete messages by publisher or delete all messages (admin)`,
+		Long:  `Delete messages by thing or delete all messages (admin)`,
 	}
 
 	for i := range cmdDeleteMessages {

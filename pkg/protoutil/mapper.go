@@ -67,7 +67,7 @@ func JSONMapMessageToProto(msg map[string]any) *protomfx.Message {
 		return nil
 	}
 
-	publisher, ok := msg["publisher"].(string)
+	thingID, ok := msg["thing_id"].(string)
 	if !ok {
 		return nil
 	}
@@ -93,7 +93,7 @@ func JSONMapMessageToProto(msg map[string]any) *protomfx.Message {
 	}
 
 	return &protomfx.Message{
-		ThingId:  publisher,
+		ThingId:  thingID,
 		Subtopic: subtopic,
 		Payload:  payload,
 		Protocol: protocol,
@@ -109,10 +109,10 @@ func ProtoJSONMessageToMap(msg *protomfx.Message) (map[string]any, error) {
 	}
 
 	return map[string]any{
-		"publisher": msg.ThingId,
-		"subtopic":  msg.Subtopic,
-		"protocol":  msg.Protocol,
-		"created":   msg.Created,
-		"payload":   payload,
+		"thing_id": msg.ThingId,
+		"subtopic": msg.Subtopic,
+		"protocol": msg.Protocol,
+		"created":  msg.Created,
+		"payload":  payload,
 	}, nil
 }

@@ -25,7 +25,7 @@ func getPubConfigByKeyEndpoint(svc things.Service) endpoint.Endpoint {
 
 		res := pubConfigByKeyRes{
 			PubConfigInfo: domain.PubConfigInfo{
-				PublisherID:   pc.PublisherID,
+				ThingID:       pc.ThingID,
 				ProfileConfig: pc.ProfileConfig,
 			},
 		}
@@ -166,7 +166,7 @@ func canThingCommandEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		r := things.ThingCommandReq{
-			PublisherID: req.publisherID,
+			ThingID:     req.thingID,
 			RecipientID: req.recipientID,
 		}
 
@@ -186,8 +186,8 @@ func canThingGroupCommandEndpoint(svc things.Service) endpoint.Endpoint {
 		}
 
 		r := things.ThingGroupCommandReq{
-			PublisherID: req.publisherID,
-			GroupID:     req.groupID,
+			ThingID: req.thingID,
+			GroupID: req.groupID,
 		}
 
 		if err := svc.CanThingGroupCommand(ctx, r); err != nil {

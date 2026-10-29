@@ -2,13 +2,10 @@ package modbus
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
-	"math"
-	"slices"
-	"strings"
+	"strconv"
 	"sync"
 	"time"
 
@@ -60,14 +57,12 @@ type Service interface {
 	// ViewClient retrieves data about a client identified with the provided ID.
 	ViewClient(ctx context.Context, token, id string) (Client, error)
 
-	// ReadRegister performs an immediate Modbus read against the given connection and
-	// returns the decoded value. No client is created or looked up; the token is only
-	// checked for validity, not against any specific resource.
+	// ReadRegister performs an immediate Modbus read on behalf of the thing, publishes the
+	// decoded value as a message of the thing and returns it. No client is created or looked up.
 	ReadRegister(ctx context.Context, token string, req ReadRequest) (any, error)
 
-	// WriteRegister performs an immediate Modbus write against the given connection.
-	// No client is created or looked up; the token is only checked for validity, not
-	// against any specific resource.
+	// WriteRegister performs an immediate Modbus write on behalf of the thing, reads the value back
+	// and publishes it as a message of the thing. No client is created or looked up.
 	WriteRegister(ctx context.Context, token string, req WriteRequest) error
 
 	// UpdateClient updates client identified by the provided ID.
@@ -98,7 +93,6 @@ type Publisher interface {
 
 type clientsService struct {
 	things     domain.ThingsClient
-	auth       domain.AuthClient
 	clients    ClientRepository
 	idProvider uuid.IDProvider
 	publisher  Publisher
@@ -118,11 +112,10 @@ const (
 	Float32Type = "float32"
 	StringType  = "string"
 
-	// Lowered from the protocol max (125): some devices/gateways can't handle
-	// a full-size block read even though the spec allows it. 64 is a common
-	// conservative cap in the wild.
-	maxRegs = 64
-	maxBits = 2000 // 0x01 and 0x02
+	// maxRegs is below the protocol limits because some devices and gateways reject full-size register requests.
+	maxRegs      = 64   // 0x03, 0x04 and 0x10
+	maxBits      = 2000 // 0x01 and 0x02
+	maxWriteBits = 1968 // 0x0F
 )
 
 var _ Service = (*clientsService)(nil)
@@ -133,6 +126,12 @@ var (
 	// ErrValueOutOfRange indicates the write value is out of range for the register type.
 	ErrValueOutOfRange = errors.New("value out of range for type")
 
+	// ErrUnsupportedWriteType indicates the field type cannot be written to a register.
+	ErrUnsupportedWriteType = errors.New("unsupported write type")
+
+	// ErrAddressOutOfRange indicates a field extends past the last Modbus address.
+	ErrAddressOutOfRange = errors.New("field address out of range")
+
 	// ErrDeviceUnavailable indicates the device is unreachable, timed out
 	// or returned an invalid response.
 	ErrDeviceUnavailable = errors.New("modbus device unavailable")
@@ -140,15 +139,10 @@ var (
 	// ErrDeviceRejected indicates the device returned a Modbus exception response.
 	ErrDeviceRejected = errors.New("modbus device rejected request")
 
-	errReadRegisters  = "failed to read registers"
-	errRateLimiter    = "failed to wait for rate limiter"
-	errFormatPayload  = "failed to format payload"
-	errGetConnection  = "failed to get connection"
-	errEmptyResponse  = "empty response payload"
-	errNotEnoughBytes = "not enough bytes to read"
-
-	errInvalidWriteValue    = "invalid write value"
-	errUnsupportedWriteType = "unsupported write type"
+	errRateLimiter   = "failed to wait for rate limiter"
+	errFormatPayload = "failed to format payload"
+	errGetConnection = "failed to get connection"
+	errEmptyResponse = "empty response payload"
 )
 
 // deviceError wraps err with the sentinel error matching the failure.
@@ -161,14 +155,16 @@ func deviceError(err error) error {
 	return errors.Wrap(ErrDeviceUnavailable, err)
 }
 
-type Block struct {
-	Start  uint16
-	Length uint16
+// isRequestError reports whether err is caused by the requested value rather than by the device.
+func isRequestError(err error) bool {
+	return errors.Contains(err, ErrInvalidWriteValue) ||
+		errors.Contains(err, ErrValueOutOfRange) ||
+		errors.Contains(err, ErrUnsupportedWriteType) ||
+		errors.Contains(err, ErrAddressOutOfRange)
 }
 
-func New(auth domain.AuthClient, things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
+func New(things domain.ThingsClient, pub Publisher, clients ClientRepository, idp uuid.IDProvider, logger logger.Logger) Service {
 	return &clientsService{
-		auth:       auth,
 		things:     things,
 		publisher:  pub,
 		clients:    clients,
@@ -202,6 +198,9 @@ func (cs *clientsService) createClients(ctx context.Context, token, thingID stri
 		clients[i].ID = id
 
 		clients[i].DataFields = calcFieldLengths(clients[i].DataFields)
+		if err := validateFieldAddresses(clients[i].DataFields); err != nil {
+			return []Client{}, err
+		}
 	}
 
 	cls, err := cs.clients.Save(ctx, clients...)
@@ -269,17 +268,20 @@ func (cs *clientsService) ViewClient(ctx context.Context, token, id string) (Cli
 }
 
 func (cs *clientsService) ReadRegister(ctx context.Context, token string, req ReadRequest) (any, error) {
-	if _, err := cs.auth.Identify(ctx, token); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: req.ThingID, Action: domain.GroupEditor}); err != nil {
+		return nil, errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	config, err := cs.things.GetConfigByThing(ctx, req.ThingID)
+	if err != nil {
 		return nil, err
 	}
 
-	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
-	if err != nil {
-		return nil, deviceError(err)
+	field := DataField{
+		Name:    messageKey(req.Name, req.Address),
+		Unit:    req.Unit,
+		Address: req.Address,
 	}
-	defer mu.Unlock()
-
-	field := DataField{Address: req.Address}
 	switch req.FunctionCode {
 	case ReadCoilsFunc, ReadDiscreteInputsFunc:
 		// Coils and discrete inputs are single bits and take no decoding options.
@@ -291,12 +293,28 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	}
 
 	fields := calcFieldLengths([]DataField{field})
+	if err := validateFieldAddresses(fields); err != nil {
+		return nil, err
+	}
+
+	handler, mu, err := cs.connect(ctx, req.IPAddress, req.Port, req.SlaveID)
+	if err != nil {
+		return nil, deviceError(err)
+	}
+	defer mu.Unlock()
+
 	maxLen := getBlockMaxLen(req.FunctionCode)
 	blocks := createBlocks(fields, maxLen)
 
-	client := Client{IPAddress: req.IPAddress, Port: req.Port, SlaveID: req.SlaveID, FunctionCode: req.FunctionCode, DataFields: fields}
+	client := Client{
+		IPAddress:    req.IPAddress,
+		Port:         req.Port,
+		SlaveID:      req.SlaveID,
+		FunctionCode: req.FunctionCode,
+		DataFields:   fields,
+	}
 
-	data, err := cs.readData(handler, client, blocks)
+	data, err := readData(gbmodbus.NewClient(handler), client, blocks)
 	if err != nil {
 		return nil, deviceError(err)
 	}
@@ -311,6 +329,15 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 		return nil, deviceError(errors.New(errEmptyResponse))
 	}
 
+	payload, err := json.Marshal(values)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cs.publish(config, req.ThingID, payload); err != nil {
+		return nil, err
+	}
+
 	// Register values are wrapped in an entry; coil values are plain booleans.
 	if entry, ok := value.(map[string]any); ok {
 		value = entry["value"]
@@ -319,8 +346,41 @@ func (cs *clientsService) ReadRegister(ctx context.Context, token string, req Re
 	return value, nil
 }
 
+// messageKey returns the key of a value published for an immediate read or write; without a name the address is used.
+func messageKey(name string, address uint16) string {
+	if name != "" {
+		return name
+	}
+
+	return strconv.Itoa(int(address))
+}
+
 func (cs *clientsService) WriteRegister(ctx context.Context, token string, req WriteRequest) error {
-	if _, err := cs.auth.Identify(ctx, token); err != nil {
+	if err := cs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: req.ThingID, Action: domain.GroupEditor}); err != nil {
+		return errors.Wrap(errors.ErrAuthorization, err)
+	}
+
+	config, err := cs.things.GetConfigByThing(ctx, req.ThingID)
+	if err != nil {
+		return err
+	}
+
+	funcCode := WriteHoldingRegistersFunc
+	if req.Type == BoolType {
+		funcCode = WriteCoilsFunc
+	}
+
+	field := DataField{
+		Name:      messageKey(req.Name, req.Address),
+		Unit:      req.Unit,
+		Type:      req.Type,
+		ByteOrder: req.ByteOrder,
+		Scale:     req.Scale,
+		Address:   req.Address,
+		Value:     req.Value,
+	}
+	fields := calcFieldLengths([]DataField{field})
+	if err := validateFieldAddresses(fields); err != nil {
 		return err
 	}
 
@@ -330,15 +390,31 @@ func (cs *clientsService) WriteRegister(ctx context.Context, token string, req W
 	}
 	defer mu.Unlock()
 
-	mc := gbmodbus.NewClient(handler)
-	if err := writeField(mc, req); err != nil {
-		if errors.Contains(err, ErrInvalidWriteValue) || errors.Contains(err, ErrValueOutOfRange) {
+	client := Client{FunctionCode: funcCode, DataFields: fields}
+	blocks := createWriteBlocks(fields, getBlockMaxLen(funcCode))
+
+	if err := writeData(gbmodbus.NewClient(handler), client, blocks); err != nil {
+		if isRequestError(err) {
 			return err
 		}
 		return deviceError(err)
 	}
 
-	return nil
+	// The written value is read back and published, as scheduled write clients do.
+	readClient := client
+	readClient.FunctionCode = readFunc(funcCode)
+
+	data, err := readData(gbmodbus.NewClient(handler), readClient, blocks)
+	if err != nil {
+		return deviceError(err)
+	}
+
+	payload, err := formatPayload(data, readClient.DataFields, readClient.FunctionCode)
+	if err != nil {
+		return deviceError(err)
+	}
+
+	return cs.publish(config, req.ThingID, payload)
 }
 
 // connect returns a rate-limited, connected handler for ipAddress:port, ready for
@@ -356,12 +432,13 @@ func (cs *clientsService) connect(ctx context.Context, ipAddress, port string, s
 		return nil, nil, fmt.Errorf("%s: %w", errRateLimiter, err)
 	}
 
-	handler, mu, err := cs.connPool.Get(key)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", errGetConnection, err)
-	}
+	handler, mu := cs.connPool.Get(key)
 
 	mu.Lock()
+	if err := handler.Connect(); err != nil {
+		mu.Unlock()
+		return nil, nil, fmt.Errorf("%s: %w", errGetConnection, err)
+	}
 	handler.SlaveId = slaveID
 
 	return handler, mu, nil
@@ -377,13 +454,16 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 		return err
 	}
 
-	cs.unscheduleTask(c)
-
 	client.DataFields = calcFieldLengths(client.DataFields)
+	if err := validateFieldAddresses(client.DataFields); err != nil {
+		return err
+	}
 
 	if err = cs.clients.Update(ctx, client); err != nil {
 		return err
 	}
+
+	cs.unscheduleTask(c)
 	client.ThingID = c.ThingID
 
 	return cs.scheduleTasks(ctx, client)
@@ -406,11 +486,15 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 		return err
 	}
 
+	if err := cs.clients.Remove(ctx, ids...); err != nil {
+		return err
+	}
+
 	for _, client := range cls {
 		cs.unscheduleTask(client)
 	}
 
-	return cs.clients.Remove(ctx, ids...)
+	return nil
 }
 
 func (cs *clientsService) RemoveClientsByThing(ctx context.Context, thingID string) error {
@@ -505,19 +589,24 @@ func (cs *clientsService) scheduleTask(c Client, cfg *domain.ProfileConfig) erro
 }
 
 func (cs *clientsService) unscheduleTask(c Client) {
-	if c.Scheduler.Frequency != cron.OnceFreq {
-		cs.scheduler.RemoveCronEntry(c.ID, c.Scheduler.TimeZone)
-	}
-
-	if t, ok := cs.scheduler.TimerByID[c.ID]; ok {
-		t.Stop()
-		delete(cs.scheduler.TimerByID, c.ID)
-	}
+	cs.scheduler.RemoveCronEntry(c.ID)
+	cs.scheduler.RemoveTimer(c.ID)
 }
 
 func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig) func() {
 	maxLen := getBlockMaxLen(client.FunctionCode)
-	blocks := createBlocks(client.DataFields, maxLen)
+	write := isWriteFunc(client.FunctionCode)
+
+	var blocks []Block
+	if write {
+		blocks = createWriteBlocks(client.DataFields, maxLen)
+	} else {
+		blocks = createBlocks(client.DataFields, maxLen)
+	}
+
+	// Write clients read the written blocks back, so the published values reflect the device state.
+	readClient := client
+	readClient.FunctionCode = readFunc(client.FunctionCode)
 
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -532,7 +621,16 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 		}
 		defer mu.Unlock()
 
-		data, err := cs.readData(handler, client, blocks)
+		if write {
+			if err := writeData(gbmodbus.NewClient(handler), client, blocks); err != nil {
+				cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
+				return
+			}
+
+			cs.logger.Info(fmt.Sprintf("%s: wrote %d fields", logPrefix, len(client.DataFields)))
+		}
+
+		data, err := readData(gbmodbus.NewClient(handler), readClient, blocks)
 		if err != nil {
 			cs.logger.Error(fmt.Sprintf("%s: %s", logPrefix, err))
 			return
@@ -542,7 +640,7 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 			return
 		}
 
-		formattedPayload, err := formatPayload(data, client.DataFields, client.FunctionCode)
+		formattedPayload, err := formatPayload(data, readClient.DataFields, readClient.FunctionCode)
 		if err != nil {
 			cs.logger.Error(fmt.Sprintf("%s: %s: %s", logPrefix, errFormatPayload, err))
 			return
@@ -555,399 +653,6 @@ func (cs *clientsService) createTask(client Client, config *domain.ProfileConfig
 
 		cs.logger.Info(fmt.Sprintf("%s: published %d fields", logPrefix, len(data)))
 	}
-}
-
-func writeField(mc gbmodbus.Client, req WriteRequest) error {
-	switch req.Type {
-	case BoolType:
-		v, ok := req.Value.(bool)
-		if !ok {
-			return errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected bool value for type %s", req.Type))
-		}
-
-		coilValue := uint16(0x0000)
-		if v {
-			coilValue = 0xFF00
-		}
-
-		_, err := mc.WriteSingleCoil(req.Address, coilValue)
-		return err
-	case Int16Type, Uint16Type, Int32Type, Uint32Type, Float32Type:
-		value, ok := req.Value.(float64)
-		if !ok {
-			return errors.Wrap(ErrInvalidWriteValue, fmt.Errorf("expected numeric value for type %s", req.Type))
-		}
-
-		raw, err := encodeNumericField(value, req.Type, req.Scale)
-		if err != nil {
-			return err
-		}
-
-		raw = reorderBytes(raw, req.ByteOrder)
-
-		if len(raw) == 2 {
-			_, err = mc.WriteSingleRegister(req.Address, binary.BigEndian.Uint16(raw))
-			return err
-		}
-
-		_, err = mc.WriteMultipleRegisters(req.Address, 2, raw)
-		return err
-	default:
-		return fmt.Errorf("%s: %s", errUnsupportedWriteType, req.Type)
-	}
-}
-
-// encodeNumericField converts an engineering-unit value back into raw big-endian
-// device bytes, undoing the scale applied by readNumericField.
-func encodeNumericField(value float64, typ string, scale float64) ([]byte, error) {
-	if scale != 0 {
-		value /= scale
-	}
-
-	switch typ {
-	case Int16Type:
-		rounded := math.Round(value)
-		if rounded < math.MinInt16 || rounded > math.MaxInt16 {
-			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
-		}
-		b := make([]byte, 2)
-		binary.BigEndian.PutUint16(b, uint16(int16(rounded)))
-		return b, nil
-	case Uint16Type:
-		rounded := math.Round(value)
-		if rounded < 0 || rounded > math.MaxUint16 {
-			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
-		}
-		b := make([]byte, 2)
-		binary.BigEndian.PutUint16(b, uint16(rounded))
-		return b, nil
-	case Int32Type:
-		rounded := math.Round(value)
-		if rounded < math.MinInt32 || rounded > math.MaxInt32 {
-			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
-		}
-		b := make([]byte, 4)
-		binary.BigEndian.PutUint32(b, uint32(int32(rounded)))
-		return b, nil
-	case Uint32Type:
-		rounded := math.Round(value)
-		if rounded < 0 || rounded > math.MaxUint32 {
-			return nil, errors.Wrap(ErrValueOutOfRange, fmt.Errorf("%v out of range for %s", value, typ))
-		}
-		b := make([]byte, 4)
-		binary.BigEndian.PutUint32(b, uint32(rounded))
-		return b, nil
-	case Float32Type:
-		b := make([]byte, 4)
-		binary.BigEndian.PutUint32(b, math.Float32bits(float32(value)))
-		return b, nil
-	default:
-		return nil, fmt.Errorf("%s: %s", errUnsupportedWriteType, typ)
-	}
-}
-
-func readBlock(mc gbmodbus.Client, funcCode string, start, length uint16) ([]byte, error) {
-	switch funcCode {
-	case ReadCoilsFunc:
-		return mc.ReadCoils(start, length)
-	case ReadDiscreteInputsFunc:
-		return mc.ReadDiscreteInputs(start, length)
-	case ReadInputRegistersFunc:
-		return mc.ReadInputRegisters(start, length)
-	default:
-		return mc.ReadHoldingRegisters(start, length)
-	}
-}
-
-// blockFields returns the client's data fields that fall inside the given block.
-func blockFields(fields []DataField, block Block) []DataField {
-	res := make([]DataField, 0, len(fields))
-	for _, field := range fields {
-		if field.Address >= block.Start && field.Address < block.Start+block.Length {
-			res = append(res, field)
-		}
-	}
-	return res
-}
-
-func (cs *clientsService) readData(handler *gbmodbus.TCPClientHandler, client Client, blocks []Block) (map[string][]byte, error) {
-	mc := gbmodbus.NewClient(handler)
-	data := make(map[string][]byte)
-
-	for _, block := range blocks {
-		fields := blockFields(client.DataFields, block)
-
-		raw, err := readBlock(mc, client.FunctionCode, block.Start, block.Length)
-		if err != nil {
-			names := make([]string, 0, len(fields))
-			for _, field := range fields {
-				names = append(names, fmt.Sprintf("%s@%d", field.Name, field.Address))
-			}
-			return nil, fmt.Errorf("%s: read %s starting at %d, length %d, fields [%s]: %w", errReadRegisters, client.FunctionCode, block.Start, block.Length, strings.Join(names, ", "), err)
-		}
-
-		for _, field := range fields {
-			bytes, err := extractFieldBytes(raw, field, block, client.FunctionCode)
-			if err != nil {
-				return nil, fmt.Errorf("field %s@%d: %w", field.Name, field.Address, err)
-			}
-			data[field.Name] = bytes
-		}
-	}
-	return data, nil
-}
-
-func extractFieldBytes(raw []byte, field DataField, block Block, funcCode string) ([]byte, error) {
-	switch funcCode {
-	case ReadCoilsFunc, ReadDiscreteInputsFunc:
-		// coils/discrete inputs: single bits (1 bit = 1 value)
-		// calculate bit offset relative to block start
-		bitOffset := int(field.Address - block.Start)
-
-		// determine byte and bit inside byte that holds value
-		byteIndex := bitOffset / 8
-		bitIndex := uint(bitOffset % 8)
-
-		if byteIndex >= len(raw) {
-			return nil, fmt.Errorf("field %s at address %d: out of range for coil block starting at %d, length %d", field.Name, field.Address, block.Start, block.Length)
-		}
-
-		// extract bit: mask byte and check if bit is set
-		bit := (raw[byteIndex] & (1 << bitIndex)) != 0
-
-		// convert bit (bool) to single byte (0x01 = ON, 0x00 = OFF)
-		if bit {
-			return []byte{0x01}, nil
-		}
-		return []byte{0x00}, nil
-	default:
-		// registers: each is 2 bytes (16-bit)
-		// convert register offset to byte offset
-		startByte := int(field.Address-block.Start) * 2
-		lenByte := int(field.Length) * 2
-
-		if startByte+lenByte > len(raw) {
-			return nil, fmt.Errorf("field %s at address %d, length %d: out of range for register block starting at %d, length %d", field.Name, field.Address, field.Length, block.Start, block.Length)
-		}
-
-		return raw[startByte : startByte+lenByte], nil
-	}
-}
-
-func createBlocks(fields []DataField, maxLen int) []Block {
-	if len(fields) == 0 {
-		return nil
-	}
-
-	slices.SortFunc(fields, func(a, b DataField) int {
-		return int(a.Address) - int(b.Address)
-	})
-
-	var blocks []Block
-	blockStart := fields[0].Address
-	blockEnd := fields[0].Address + fields[0].Length
-
-	for _, field := range fields[1:] {
-		// distance from start of block to end of current field
-		distance := int(field.Address + field.Length - 1 - blockStart)
-
-		if distance < maxLen {
-			if field.Address+field.Length > blockEnd {
-				blockEnd = field.Address + field.Length
-			}
-			continue
-		}
-
-		// close current block
-		blocks = append(blocks, Block{
-			Start:  blockStart,
-			Length: blockEnd - blockStart,
-		})
-
-		// start new block
-		blockStart = field.Address
-		blockEnd = field.Address + field.Length
-	}
-
-	// add last block
-	blocks = append(blocks, Block{
-		Start:  blockStart,
-		Length: blockEnd - blockStart,
-	})
-
-	return blocks
-}
-
-func getBlockMaxLen(funcCode string) (maxLen int) {
-	switch funcCode {
-	case ReadCoilsFunc, ReadDiscreteInputsFunc:
-		maxLen = maxBits
-	default:
-		maxLen = maxRegs
-	}
-	return
-}
-
-func formatPayload(data map[string][]byte, fields []DataField, funcCode string) ([]byte, error) {
-	result, err := buildFieldValues(data, fields, funcCode)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(result)
-}
-
-func buildFieldValues(data map[string][]byte, fields []DataField, funcCode string) (map[string]any, error) {
-	switch funcCode {
-	case ReadCoilsFunc, ReadDiscreteInputsFunc:
-		return buildCoilValues(data, fields)
-	default:
-		return buildRegisterValues(data, fields)
-	}
-}
-
-func buildRegisterValues(data map[string][]byte, fields []DataField) (map[string]any, error) {
-	result := make(map[string]any)
-
-	for _, f := range fields {
-		raw, ok := data[f.Name]
-		if !ok {
-			continue
-		}
-
-		raw = reorderBytes(raw, f.ByteOrder)
-
-		var (
-			value any
-			err   error
-		)
-
-		switch f.Type {
-		case BoolType:
-			if len(raw) < 2 {
-				return nil, fmt.Errorf("%s: expected 2 bytes for bool, got %d", errNotEnoughBytes, len(raw))
-			}
-			bv := binary.BigEndian.Uint16(raw)
-			value = bv == 1
-		case Int16Type:
-			value, err = readNumericField[int16](raw, f.Scale)
-		case Uint16Type:
-			value, err = readNumericField[uint16](raw, f.Scale)
-		case Int32Type:
-			value, err = readNumericField[int32](raw, f.Scale)
-		case Uint32Type:
-			value, err = readNumericField[uint32](raw, f.Scale)
-		case Float32Type:
-			value, err = readNumericField[float32](raw, f.Scale)
-		case StringType:
-			// ASCII and UTF-8 values
-			str := string(raw)
-			value = strings.TrimRight(str, "\x00")
-		}
-		if err != nil {
-			return nil, err
-		}
-		result[f.Name] = createEntry(value, f.Unit)
-	}
-
-	return result, nil
-}
-
-func buildCoilValues(dataMap map[string][]byte, fields []DataField) (map[string]any, error) {
-	result := make(map[string]any)
-
-	for _, f := range fields {
-		raw := dataMap[f.Name]
-		if len(raw) == 0 {
-			continue
-		}
-		// Modbus packs coils LSB-first: the addressed coil is always in bit 0 of raw[0].
-		bit := (raw[0] & 0x01) != 0
-
-		result[f.Name] = bit
-	}
-
-	return result, nil
-}
-
-func calcFieldLengths(fields []DataField) []DataField {
-	for i := range fields {
-		switch fields[i].Type {
-		case Int32Type, Uint32Type, Float32Type:
-			fields[i].Length = 2
-		case StringType:
-			continue
-		default:
-			fields[i].Length = 1
-		}
-	}
-
-	return fields
-}
-
-func createEntry(value any, unit string) map[string]any {
-	entry := map[string]any{"value": value}
-	if unit != "" {
-		entry["unit"] = unit
-	}
-	return entry
-}
-
-func readNumericField[T int16 | uint16 | int32 | uint32 | float32](data []byte, scale float64) (any, error) {
-	var value T
-	switch any(value).(type) {
-	case int16:
-		if len(data) < 2 {
-			return nil, fmt.Errorf("%s: expected 2 bytes for int16, got %d", errNotEnoughBytes, len(data))
-		}
-		value = T(int16(binary.BigEndian.Uint16(data)))
-	case uint16:
-		if len(data) < 2 {
-			return nil, fmt.Errorf("%s: expected 2 bytes for uint16, got %d", errNotEnoughBytes, len(data))
-		}
-		value = T(binary.BigEndian.Uint16(data))
-	case int32:
-		if len(data) < 4 {
-			return nil, fmt.Errorf("%s: expected 4 bytes for int32, got %d", errNotEnoughBytes, len(data))
-		}
-		value = T(int32(binary.BigEndian.Uint32(data)))
-	case uint32:
-		if len(data) < 4 {
-			return nil, fmt.Errorf("%s: expected 4 bytes for uint32, got %d", errNotEnoughBytes, len(data))
-		}
-		value = T(binary.BigEndian.Uint32(data))
-	case float32:
-		if len(data) < 4 {
-			return nil, fmt.Errorf("%s: expected 4 bytes for float32, got %d", errNotEnoughBytes, len(data))
-		}
-		bits := binary.BigEndian.Uint32(data)
-		value = T(math.Float32frombits(bits))
-	}
-
-	if scale != 0 {
-		return float64(value) * scale, nil
-	}
-	return value, nil
-}
-
-func reorderBytes(data []byte, order string) []byte {
-	bytes := append([]byte(nil), data...)
-
-	switch order {
-	case ByteOrderABCD:
-		return bytes
-	case ByteOrderDCBA:
-		slices.Reverse(bytes)
-	case ByteOrderCDAB:
-		if len(bytes) == 4 {
-			bytes = []byte{bytes[2], bytes[3], bytes[0], bytes[1]}
-		}
-	case ByteOrderBADC:
-		if len(bytes) == 4 {
-			bytes = []byte{bytes[1], bytes[0], bytes[3], bytes[2]}
-		}
-	}
-	return bytes
 }
 
 func (cs *clientsService) LoadAndScheduleTasks(ctx context.Context) error {
@@ -992,7 +697,7 @@ func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, 
 		Payload:  payload,
 	}
 
-	pc := domain.PubConfigInfo{PublisherID: thingID, ProfileConfig: config}
+	pc := domain.PubConfigInfo{ThingID: thingID, ProfileConfig: config}
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
 		return err
 	}

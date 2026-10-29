@@ -116,8 +116,8 @@ func (sdk mfSDK) ListSenMLMessages(pm SenMLPageMetadata, token string, key thing
 	return decodeMessages(response)
 }
 
-func (sdk mfSDK) DeleteJSONMessages(publisherID, token string, pm JSONPageMetadata) error {
-	u := fmt.Sprintf("%s/json/%s?%s", sdk.readerURL, publisherID, pm.query())
+func (sdk mfSDK) DeleteJSONMessages(thingID, token string, pm JSONPageMetadata) error {
+	u := fmt.Sprintf("%s/json/%s?%s", sdk.readerURL, thingID, pm.query())
 
 	req, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -136,8 +136,8 @@ func (sdk mfSDK) DeleteJSONMessages(publisherID, token string, pm JSONPageMetada
 	return nil
 }
 
-func (sdk mfSDK) DeleteSenMLMessages(publisherID, token string, pm SenMLPageMetadata) error {
-	u := fmt.Sprintf("%s/senml/%s?%s", sdk.readerURL, publisherID, pm.query())
+func (sdk mfSDK) DeleteSenMLMessages(thingID, token string, pm SenMLPageMetadata) error {
+	u := fmt.Sprintf("%s/senml/%s?%s", sdk.readerURL, thingID, pm.query())
 
 	req, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
@@ -352,8 +352,8 @@ func (pm JSONPageMetadata) query() string {
 		q.Add("subtopic", pm.Subtopic)
 	}
 
-	if pm.Publisher != "" {
-		q.Add("publisher", pm.Publisher)
+	if pm.ThingID != "" {
+		q.Add("thing_id", pm.ThingID)
 	}
 
 	if pm.Protocol != "" {
@@ -411,8 +411,8 @@ func (pm SenMLPageMetadata) query() string {
 		q.Add("subtopic", pm.Subtopic)
 	}
 
-	if pm.Publisher != "" {
-		q.Add("publisher", pm.Publisher)
+	if pm.ThingID != "" {
+		q.Add("thing_id", pm.ThingID)
 	}
 
 	if pm.Protocol != "" {

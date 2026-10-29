@@ -21,6 +21,7 @@ const (
 	colScale     = "scale"
 	colAddress   = "address"
 	colLength    = "length"
+	colValue     = "value"
 )
 
 // parseCSVFields reads one register per row, matching columns to a header row case-insensitively.
@@ -89,6 +90,21 @@ func parseCSVFields(r io.Reader) ([]field, error) {
 				return nil, errors.New(fmt.Sprintf("line %d: invalid %s", line, colLength))
 			}
 			f.Length = uint16(v)
+		}
+
+		if s := get(row, colValue); s != "" {
+			switch strings.ToLower(s) {
+			case "true":
+				f.Value = true
+			case "false":
+				f.Value = false
+			default:
+				v, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					return nil, errors.New(fmt.Sprintf("line %d: invalid %s", line, colValue))
+				}
+				f.Value = v
+			}
 		}
 
 		fields = append(fields, f)

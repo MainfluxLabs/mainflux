@@ -110,22 +110,22 @@ type OrgAccessReq struct {
 	Token string
 }
 
-// PubConfigInfo represents publisher config from GetPubConfigByKey.
+// PubConfigInfo represents publish config from GetPubConfigByKey.
 type PubConfigInfo struct {
-	PublisherID   string
+	ThingID       string
 	ProfileConfig *ProfileConfig
 }
 
 // ThingCommandReq represents a request to authorize an inter-thing command.
 type ThingCommandReq struct {
-	PublisherID string
+	ThingID     string
 	RecipientID string
 }
 
 // ThingGroupCommandReq represents a request to authorize a thing group command.
 type ThingGroupCommandReq struct {
-	PublisherID string
-	GroupID     string
+	ThingID string
+	GroupID string
 }
 
 // ProfileConfig represents profile configuration.

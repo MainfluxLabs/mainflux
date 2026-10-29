@@ -58,9 +58,9 @@ func (lm *loggingMiddleware) Subscribe(ctx context.Context, key domain.ThingKey,
 	return lm.svc.Subscribe(ctx, key, subtopic, c)
 }
 
-func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, key domain.ThingKey, thingID string, cmd protomfx.Command) (err error) {
+func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method send_command_to_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf("Method send_command_to_thing for recipient id %s took %s to complete", recipientID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -68,7 +68,7 @@ func (lm *loggingMiddleware) SendCommandToThing(ctx context.Context, key domain.
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.SendCommandToThing(ctx, key, thingID, cmd)
+	return lm.svc.SendCommandToThing(ctx, key, recipientID, cmd)
 }
 
 func (lm *loggingMiddleware) SendCommandToGroup(ctx context.Context, key domain.ThingKey, groupID string, cmd protomfx.Command) (err error) {

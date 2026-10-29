@@ -25,11 +25,15 @@ import (
 )
 
 const (
-	token    = "tok"
-	groupID  = "group-1"
-	thingID  = "thing-1"
-	thingKey = "thingkey-1"
-	otherGID = "group-2"
+	token          = "tok"
+	groupID        = "group-1"
+	thingID        = "thing-1"
+	thingKey       = "thingkey-1"
+	otherGID       = "group-2"
+	binariesClass  = "binaries"
+	documentsClass = "documents"
+	binFormat      = "bin"
+	pdfFormat      = "pdf"
 )
 
 func newSvc(t *testing.T) (filestore.Service, *fsmocks.GroupsRepository, *fsmocks.ThingsRepository, string) {
@@ -62,7 +66,7 @@ func newSvc(t *testing.T) (filestore.Service, *fsmocks.GroupsRepository, *fsmock
 func TestSaveGroupFile(t *testing.T) {
 	svc, grRepo, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	err := svc.SaveGroupFile(context.Background(), strings.NewReader("hello"), token, groupID, fi)
 	assert.Nil(t, err, "save failed")
 
@@ -73,16 +77,20 @@ func TestSaveGroupFile(t *testing.T) {
 
 	assert.Equal(t, 1, grRepo.Len())
 
+	stored, err := grRepo.Retrieve(context.Background(), groupID, fi)
+	require.Nil(t, err)
+	assert.Equal(t, int64(5), stored.Size, "size not persisted")
+
 	// Unauthorised user blocked before store.Put.
 	err = svc.SaveGroupFile(context.Background(), strings.NewReader("x"), "nope", groupID, fi)
 	assert.Error(t, err, "auth not enforced")
 }
 
-func TestSaveGroupFile_OrphanCleanup(t *testing.T) {
+func TestSaveGroupFileCleanup(t *testing.T) {
 	svc, grRepo, _, base := newSvc(t)
 
 	grRepo.FailOn = "bad.pdf"
-	fi := filestore.FileInfo{Name: "bad.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "bad.pdf", Class: documentsClass, Format: pdfFormat}
 
 	err := svc.SaveGroupFile(context.Background(), strings.NewReader("hello"), token, groupID, fi)
 	assert.Error(t, err, "expected DB save failure")
@@ -92,10 +100,10 @@ func TestSaveGroupFile_OrphanCleanup(t *testing.T) {
 	assert.Equal(t, 0, grRepo.Len())
 }
 
-func TestSaveGroupFile_DuplicatePreservesExisting(t *testing.T) {
+func TestSaveGroupFileDuplicate(t *testing.T) {
 	svc, grRepo, _, _ := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("original"), token, groupID, fi))
 
 	err := svc.SaveGroupFile(context.Background(), strings.NewReader("different"), token, groupID, fi)
@@ -103,7 +111,7 @@ func TestSaveGroupFile_DuplicatePreservesExisting(t *testing.T) {
 
 	assert.Equal(t, 1, grRepo.Len())
 
-	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, nil)
 	require.Nil(t, err)
 	defer rc.Close()
 
@@ -115,7 +123,7 @@ func TestSaveGroupFile_DuplicatePreservesExisting(t *testing.T) {
 func TestRemoveGroupFile(t *testing.T) {
 	svc, grRepo, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("hello"), token, groupID, fi))
 
 	err := svc.RemoveGroupFile(context.Background(), token, groupID, fi)
@@ -133,10 +141,10 @@ func TestRemoveGroupFile(t *testing.T) {
 func TestViewGroupFile(t *testing.T) {
 	svc, _, _, _ := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
 
-	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, nil)
 	require.Nil(t, err)
 	defer rc.Close()
 
@@ -145,16 +153,16 @@ func TestViewGroupFile(t *testing.T) {
 	assert.Equal(t, []byte("payload"), data)
 }
 
-func TestViewGroupFile_ChecksumMismatch(t *testing.T) {
+func TestViewGroupFileChecksum(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
 
 	// Corrupt bytes on disk; DB still has checksum of original.
 	require.Nil(t, os.WriteFile(filepath.Join(base, "groups", groupID, fi.Name), []byte("tampered"), 0o644))
 
-	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, nil)
 	require.Nil(t, err)
 	defer rc.Close()
 
@@ -162,17 +170,161 @@ func TestViewGroupFile_ChecksumMismatch(t *testing.T) {
 	assert.True(t, errors.Contains(err, store.ErrChecksumMismatch), "expected checksum mismatch, got %v", err)
 }
 
-func TestViewGroupFile_MissingObject(t *testing.T) {
+func TestViewGroupFileMissing(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
 
 	require.Nil(t, os.Remove(filepath.Join(base, "groups", groupID, fi.Name)))
 
-	_, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	_, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, nil)
 	require.NotNil(t, err)
 	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), "expected not-found, got %v", err)
+}
+
+func TestViewGroupFileRange(t *testing.T) {
+	svc, _, _, _ := newSvc(t)
+
+	content := "hello mainflux"
+	fi := filestore.FileInfo{Name: "a.bin", Class: binariesClass, Format: binFormat}
+	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader(content), token, groupID, fi))
+
+	cases := []struct {
+		desc      string
+		byteRange *filestore.ByteRange
+		want      string
+		partial   bool
+		offset    int64
+		err       error
+	}{
+		{
+			desc:      "view whole file without range",
+			byteRange: nil,
+			want:      content,
+			partial:   false,
+			err:       nil,
+		},
+		{
+			desc:      "view bounded range",
+			byteRange: &filestore.ByteRange{Start: 6, End: 9},
+			want:      "main",
+			partial:   true,
+			offset:    6,
+			err:       nil,
+		},
+		{
+			desc:      "view open-ended range",
+			byteRange: &filestore.ByteRange{Start: 6, End: -1},
+			want:      "mainflux",
+			partial:   true,
+			offset:    6,
+			err:       nil,
+		},
+		{
+			desc:      "view range with end past file size",
+			byteRange: &filestore.ByteRange{Start: 10, End: 100},
+			want:      "flux",
+			partial:   true,
+			offset:    10,
+			err:       nil,
+		},
+		{
+			desc:      "view suffix range",
+			byteRange: &filestore.ByteRange{Start: -3, End: -1},
+			want:      "lux",
+			partial:   true,
+			offset:    11,
+			err:       nil,
+		},
+		{
+			desc:      "view suffix range longer than file",
+			byteRange: &filestore.ByteRange{Start: -100, End: -1},
+			want:      content,
+			partial:   true,
+			offset:    0,
+			err:       nil,
+		},
+		{
+			desc:      "view range starting past file size",
+			byteRange: &filestore.ByteRange{Start: 14, End: -1},
+			err:       filestore.ErrRangeNotSatisfiable,
+		},
+	}
+
+	for _, tc := range cases {
+		file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, tc.byteRange)
+		if tc.err != nil {
+			assert.True(t, errors.Contains(err, tc.err), "%s: expected %v, got %v", tc.desc, tc.err, err)
+			continue
+		}
+		require.Nil(t, err, "%s: unexpected error: %v", tc.desc, err)
+
+		data, err := io.ReadAll(file)
+		file.Close()
+		require.Nil(t, err, "%s: read failed: %v", tc.desc, err)
+		assert.Equal(t, tc.want, string(data), "%s: content mismatch", tc.desc)
+		assert.Equal(t, tc.partial, file.Partial, "%s: partial mismatch", tc.desc)
+		assert.Equal(t, int64(len(content)), file.Size, "%s: size mismatch", tc.desc)
+		if tc.partial {
+			assert.Equal(t, tc.offset, file.Offset, "%s: offset mismatch", tc.desc)
+			assert.Equal(t, int64(len(tc.want)), file.Length, "%s: length mismatch", tc.desc)
+		}
+	}
+}
+
+func TestViewRangeNoChecksum(t *testing.T) {
+	svc, _, _, base := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "a.bin", Class: binariesClass, Format: binFormat}
+	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
+
+	// Same size as the original, so only the checksum can tell them apart.
+	require.Nil(t, os.WriteFile(filepath.Join(base, "groups", groupID, fi.Name), []byte("PAYLOAD"), 0o644))
+
+	file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, &filestore.ByteRange{Start: 3, End: -1})
+	require.Nil(t, err)
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	require.Nil(t, err, "range read must not verify the whole-file checksum")
+	assert.Equal(t, "LOAD", string(data))
+}
+
+func TestViewRangeNoSize(t *testing.T) {
+	svc, grRepo, _, base := newSvc(t)
+
+	// A file stored before sizes were recorded has size 0.
+	fi := filestore.FileInfo{Name: "a.bin", Class: binariesClass, Format: binFormat}
+	require.Nil(t, grRepo.Save(context.Background(), groupID, fi))
+	dir := filepath.Join(base, "groups", groupID)
+	require.Nil(t, os.MkdirAll(dir, 0o755))
+	require.Nil(t, os.WriteFile(filepath.Join(dir, fi.Name), []byte("payload"), 0o644))
+
+	file, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, &filestore.ByteRange{Start: 3, End: -1})
+	require.Nil(t, err)
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	require.Nil(t, err)
+	assert.Equal(t, "payload", string(data))
+	assert.False(t, file.Partial, "range must be ignored when size is unknown")
+}
+
+func TestViewGroupFileByKeyRange(t *testing.T) {
+	svc, _, _, _ := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "a.bin", Class: binariesClass, Format: binFormat}
+	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
+
+	file, err := svc.ViewGroupFileByKey(context.Background(), thingKey, fi, &filestore.ByteRange{Start: 3, End: -1})
+	require.Nil(t, err)
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	require.Nil(t, err)
+	assert.Equal(t, "load", string(data))
+	assert.True(t, file.Partial)
 }
 
 func TestRemoveAllFilesByGroup(t *testing.T) {
@@ -180,10 +332,10 @@ func TestRemoveAllFilesByGroup(t *testing.T) {
 
 	// Seed a group file + two thing files in same group.
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("g"), token, groupID,
-		filestore.FileInfo{Name: "g.pdf", Class: "documents", Format: "pdf"}))
+		filestore.FileInfo{Name: "g.pdf", Class: documentsClass, Format: pdfFormat}))
 
 	for _, id := range []string{"t-a", "t-b"} {
-		require.Nil(t, thRepo.Save(context.Background(), id, groupID, filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}))
+		require.Nil(t, thRepo.Save(context.Background(), id, groupID, filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}))
 		require.Nil(t, os.MkdirAll(filepath.Join(base, "things", id), 0o755))
 		require.Nil(t, os.WriteFile(filepath.Join(base, "things", id, "x.bin"), []byte("payload"), 0o644))
 	}
@@ -200,13 +352,13 @@ func TestRemoveAllFilesByGroup(t *testing.T) {
 	assert.Equal(t, 0, grRepo.Len())
 }
 
-func TestViewGroupFileByKey_ACL(t *testing.T) {
+func TestViewGroupFileByKeyACL(t *testing.T) {
 	svc, _, _, _ := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), strings.NewReader("payload"), token, groupID, fi))
 
-	rc, err := svc.ViewGroupFileByKey(context.Background(), thingKey, fi)
+	rc, err := svc.ViewGroupFileByKey(context.Background(), thingKey, fi, nil)
 	require.Nil(t, err, "thing in group must access group file")
 	rc.Close()
 }
@@ -214,7 +366,7 @@ func TestViewGroupFileByKey_ACL(t *testing.T) {
 func TestSaveFile(t *testing.T) {
 	svc, _, thRepo, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
 	err := svc.SaveFile(context.Background(), strings.NewReader("hello"), thingKey, fi)
 	assert.Nil(t, err, "save failed")
 
@@ -227,12 +379,13 @@ func TestSaveFile(t *testing.T) {
 	stored, err := thRepo.Retrieve(context.Background(), thingID, fi)
 	require.Nil(t, err)
 	assert.NotEmpty(t, stored.Checksum, "checksum not persisted")
+	assert.Equal(t, int64(5), stored.Size, "size not persisted")
 }
 
-func TestSaveFile_DuplicatePreservesExisting(t *testing.T) {
+func TestSaveFileDuplicate(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("original"), thingKey, fi))
 
 	err := svc.SaveFile(context.Background(), strings.NewReader("different"), thingKey, fi)
@@ -246,10 +399,10 @@ func TestSaveFile_DuplicatePreservesExisting(t *testing.T) {
 func TestViewFile(t *testing.T) {
 	svc, _, _, _ := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("payload"), thingKey, fi))
 
-	rc, err := svc.ViewFile(context.Background(), thingKey, fi)
+	rc, err := svc.ViewFile(context.Background(), thingKey, fi, nil)
 	require.Nil(t, err)
 	defer rc.Close()
 
@@ -258,16 +411,32 @@ func TestViewFile(t *testing.T) {
 	assert.Equal(t, []byte("payload"), data)
 }
 
-func TestViewFile_ChecksumMismatch(t *testing.T) {
+func TestViewFileRange(t *testing.T) {
+	svc, _, _, _ := newSvc(t)
+
+	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
+	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("hello"), thingKey, fi))
+
+	file, err := svc.ViewFile(context.Background(), thingKey, fi, &filestore.ByteRange{Start: 1, End: 2})
+	require.Nil(t, err)
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	require.Nil(t, err)
+	assert.Equal(t, "el", string(data))
+	assert.True(t, file.Partial)
+}
+
+func TestViewFileChecksum(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("payload"), thingKey, fi))
 
 	// Corrupt bytes on disk; index still has checksum of original.
 	require.Nil(t, os.WriteFile(filepath.Join(base, "things", thingID, fi.Name), []byte("tampered"), 0o644))
 
-	rc, err := svc.ViewFile(context.Background(), thingKey, fi)
+	rc, err := svc.ViewFile(context.Background(), thingKey, fi, nil)
 	require.Nil(t, err)
 	defer rc.Close()
 
@@ -278,7 +447,7 @@ func TestViewFile_ChecksumMismatch(t *testing.T) {
 func TestRemoveFile(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "x.bin", Class: "binaries", Format: "bin"}
+	fi := filestore.FileInfo{Name: "x.bin", Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("hello"), thingKey, fi))
 
 	err := svc.RemoveFile(context.Background(), thingKey, fi)
@@ -293,7 +462,7 @@ func TestRemoveFiles(t *testing.T) {
 
 	for _, n := range []string{"a.bin", "b.bin"} {
 		require.Nil(t, svc.SaveFile(context.Background(), strings.NewReader("x"), thingKey,
-			filestore.FileInfo{Name: n, Class: "binaries", Format: "bin"}))
+			filestore.FileInfo{Name: n, Class: binariesClass, Format: binFormat}))
 	}
 
 	err := svc.RemoveFiles(context.Background(), thingID)
@@ -306,13 +475,13 @@ func TestRemoveFiles(t *testing.T) {
 func TestChecksumMismatchPropagates(t *testing.T) {
 	svc, _, _, base := newSvc(t)
 
-	fi := filestore.FileInfo{Name: "a.pdf", Class: "documents", Format: "pdf"}
+	fi := filestore.FileInfo{Name: "a.pdf", Class: documentsClass, Format: pdfFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), bytes.NewReader([]byte("payload")), token, groupID, fi))
 
 	path := filepath.Join(base, "groups", groupID, fi.Name)
 	require.Nil(t, os.WriteFile(path, []byte("tampered-different-length"), 0o644))
 
-	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi)
+	rc, err := svc.ViewGroupFile(context.Background(), token, groupID, fi, nil)
 	require.Nil(t, err)
 	defer rc.Close()
 

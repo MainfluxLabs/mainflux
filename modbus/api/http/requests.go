@@ -30,6 +30,8 @@ var (
 	ErrInvalidFieldLength  = errors.New("invalid field length")
 	ErrInvalidByteOrder    = errors.New("invalid byte order")
 	ErrMissingValue        = errors.New("missing value")
+	ErrInvalidValue        = errors.New("invalid value")
+	ErrValueOutOfRange     = errors.New("value out of range for type")
 )
 
 // validatePageMetadata validates the modbus page metadata.
@@ -54,6 +56,7 @@ type field struct {
 	ByteOrder string  `json:"byte_order"`
 	Address   *uint16 `json:"address"`
 	Length    uint16  `json:"length,omitempty"`
+	Value     any     `json:"value,omitempty"`
 }
 
 type client struct {
@@ -116,11 +119,77 @@ func (req client) validate() error {
 		return err
 	}
 
-	return validateDataFields(req.DataFields)
+	switch req.FunctionCode {
+	case modbus.WriteCoilsFunc, modbus.WriteHoldingRegistersFunc:
+		if err := validateDataFields(req.DataFields); err != nil {
+			return err
+		}
+
+		return validateWriteFields(req.FunctionCode, req.DataFields)
+	default:
+		return validateDataFields(req.DataFields)
+	}
 }
 
-// validateFunctionCode checks that code is one of the supported read function codes.
+// validateWriteFields checks the constraints specific to the data fields of a write client.
+func validateWriteFields(funcCode string, fields []field) error {
+	for _, f := range fields {
+		if funcCode == modbus.WriteCoilsFunc && f.Type != modbus.BoolType {
+			return ErrInvalidFieldType
+		}
+
+		if err := validateWriteType(f.Type); err != nil {
+			return err
+		}
+
+		if err := validateWriteValue(f); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateWriteValue checks that the value is a bool for the bool type, and a number within the type range for numeric types.
+func validateWriteValue(f field) error {
+	if f.Value == nil {
+		return ErrMissingValue
+	}
+
+	switch f.Type {
+	case modbus.BoolType:
+		if _, ok := f.Value.(bool); !ok {
+			return ErrInvalidValue
+		}
+
+		return nil
+	default:
+		v, ok := f.Value.(float64)
+		if !ok {
+			return ErrInvalidValue
+		}
+
+		if err := modbus.ValidateWriteValue(v, f.Type, f.Scale); err != nil {
+			return ErrValueOutOfRange
+		}
+
+		return nil
+	}
+}
+
+// validateFunctionCode checks that code is one of the supported client function codes.
 func validateFunctionCode(code string) error {
+	switch code {
+	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc, modbus.ReadInputRegistersFunc, modbus.ReadHoldingRegistersFunc,
+		modbus.WriteCoilsFunc, modbus.WriteHoldingRegistersFunc:
+		return nil
+	default:
+		return ErrInvalidFunctionCode
+	}
+}
+
+// validateReadFunctionCode checks that code is one of the supported read function codes.
+func validateReadFunctionCode(code string) error {
 	switch code {
 	case modbus.ReadCoilsFunc, modbus.ReadDiscreteInputsFunc, modbus.ReadInputRegistersFunc, modbus.ReadHoldingRegistersFunc:
 		return nil
@@ -250,6 +319,9 @@ func (req viewClientReq) validate() error {
 
 type readRegisterReq struct {
 	token        string
+	ThingID      string  `json:"thing_id"`
+	Name         string  `json:"name,omitempty"`
+	Unit         string  `json:"unit,omitempty"`
 	IPAddress    string  `json:"ip_address"`
 	Port         string  `json:"port"`
 	SlaveID      uint8   `json:"slave_id,omitempty"`
@@ -266,6 +338,10 @@ func (req readRegisterReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
+	if req.ThingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
 	if req.IPAddress == "" {
 		return ErrMissingIPAddress
 	}
@@ -274,7 +350,7 @@ func (req readRegisterReq) validate() error {
 		return ErrMissingPort
 	}
 
-	if err := validateFunctionCode(req.FunctionCode); err != nil {
+	if err := validateReadFunctionCode(req.FunctionCode); err != nil {
 		return err
 	}
 
@@ -297,6 +373,9 @@ func (req readRegisterReq) validate() error {
 
 type writeRegisterReq struct {
 	token     string
+	ThingID   string  `json:"thing_id"`
+	Name      string  `json:"name,omitempty"`
+	Unit      string  `json:"unit,omitempty"`
 	IPAddress string  `json:"ip_address"`
 	Port      string  `json:"port"`
 	SlaveID   uint8   `json:"slave_id,omitempty"`
@@ -310,6 +389,10 @@ type writeRegisterReq struct {
 func (req writeRegisterReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
+	}
+
+	if req.ThingID == "" {
+		return apiutil.ErrMissingThingID
 	}
 
 	if req.IPAddress == "" {

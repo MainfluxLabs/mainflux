@@ -177,7 +177,7 @@ func TestJsonAggExpr(t *testing.T) {
 			desc:      "identity columns come from the picked row",
 			aggType:   readers.AggregationFirst,
 			aggFields: []string{"temperature"},
-			res:       "first(publisher, created) AS agg_publisher",
+			res:       "first(thing_id, created) AS agg_thing_id",
 		},
 		{
 			desc:      "first without agg fields is still valid",
@@ -246,7 +246,7 @@ func TestJsonSelectFields(t *testing.T) {
 			desc:      "identity columns come from the picked row",
 			aggType:   readers.AggregationLast,
 			aggFields: []string{"temperature"},
-			resPart:   "agg.agg_publisher AS publisher",
+			resPart:   "agg.agg_thing_id AS thing_id",
 			timeCol:   "agg.agg_time AS created",
 		},
 		{
@@ -351,7 +351,7 @@ func TestBaseConditions(t *testing.T) {
 			timeColumn: "time",
 			res: []string{
 				"subtopic = :subtopic",
-				"publisher = :publisher",
+				"thing_id = :thing_id",
 				"protocol = :protocol",
 				"time >= :from",
 				"time < :to",
@@ -363,7 +363,7 @@ func TestBaseConditions(t *testing.T) {
 			from:       1000,
 			timeColumn: "created",
 			res: []string{
-				"publisher = :publisher",
+				"thing_id = :thing_id",
 				"created >= :from",
 			},
 		},
@@ -372,11 +372,11 @@ func TestBaseConditions(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			result := mfreaders.BaseConditions(readers.MessagesPageMetadata{
-				Subtopic:  tc.subtopic,
-				Publisher: tc.thingID,
-				Protocol:  tc.protocol,
-				From:      tc.from,
-				To:        tc.to,
+				Subtopic: tc.subtopic,
+				ThingID:  tc.thingID,
+				Protocol: tc.protocol,
+				From:     tc.from,
+				To:       tc.to,
 			}, tc.timeColumn)
 			assert.Equal(t, tc.res, result)
 		})
@@ -386,16 +386,16 @@ func TestBaseConditions(t *testing.T) {
 func TestJsonConditions(t *testing.T) {
 	pm := readers.JSONPageMetadata{
 		MessagesPageMetadata: readers.MessagesPageMetadata{
-			Subtopic:  "test",
-			Publisher: "thing1",
-			From:      1000,
+			Subtopic: "test",
+			ThingID:  "thing1",
+			From:     1000,
 		},
 	}
 
 	result := mfreaders.BaseConditions(pm.MessagesPageMetadata, mfreaders.JSONOrder)
 
 	assert.Contains(t, result, "subtopic = :subtopic")
-	assert.Contains(t, result, "publisher = :publisher")
+	assert.Contains(t, result, "thing_id = :thing_id")
 	assert.Contains(t, result, "created >= :from")
 }
 
@@ -506,7 +506,7 @@ func TestSenmlFirstLastSubquery(t *testing.T) {
 			aggType: readers.AggregationFirst,
 			resParts: []string{
 				"first(subtopic, time) AS subtopic",
-				"first(publisher, time) AS publisher",
+				"first(thing_id, time) AS thing_id",
 				"first(protocol, time) AS protocol",
 			},
 		},
@@ -521,9 +521,9 @@ func TestSenmlFirstLastSubquery(t *testing.T) {
 		{
 			desc:      "carries the where clause and groups by the bucket",
 			aggType:   readers.AggregationFirst,
-			condition: "WHERE publisher = :publisher",
+			condition: "WHERE thing_id = :thing_id",
 			resParts: []string{
-				"WHERE publisher = :publisher",
+				"WHERE thing_id = :thing_id",
 				"GROUP BY " + bucket,
 			},
 		},

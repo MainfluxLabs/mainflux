@@ -17,7 +17,7 @@ message Message {
 }
 
 message Command {
-    string publisher    = 1;
+    string thing_id     = 1;
     string subtopic     = 2;
     bytes payload       = 3;
     string recipient_id = 4;
@@ -100,7 +100,7 @@ message ThingKey {
 }
 
 message PubConfigByKeyRes {
-    string publisher_id   = 1;
+    string thing_id       = 1;
     Config profile_config = 2;
 }
 
@@ -200,12 +200,12 @@ message ThingAccessReq {
 }
 
 message ThingCommandReq {
-    string publisher_id = 1;
+    string thing_id     = 1;
     string recipient_id = 2;
 }
 
 message ThingGroupCommandReq {
-    string publisher_id = 1;
+    string thing_id     = 1;
     string group_id     = 2;
 }
 
@@ -323,7 +323,7 @@ message ListJSONMessagesReq {
     uint64          offset       = 2;
     uint64          limit        = 3;
     string          subtopic     = 4;
-    string          publisher    = 5;
+    string          thing_id     = 5;
     string          protocol     = 6;
     int64           from         = 7;
     int64           to           = 8;
@@ -347,7 +347,7 @@ message ListSenMLMessagesReq {
     uint64          offset       = 2;
     uint64          limit        = 3;
     string          subtopic     = 4;
-    string          publisher    = 5;
+    string          thing_id     = 5;
     string          protocol     = 6;
     string          name         = 7;
     double          value        = 8;

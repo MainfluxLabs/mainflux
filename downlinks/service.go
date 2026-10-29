@@ -211,11 +211,11 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 		return err
 	}
 
-	ds.unscheduleTask(dl)
-
 	if err = ds.downlinks.Update(ctx, downlink); err != nil {
 		return err
 	}
+
+	ds.unscheduleTask(dl)
 
 	downlink.ThingID = dl.ThingID
 	return ds.scheduleTasks(ctx, downlink)
@@ -238,11 +238,15 @@ func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, i
 		return err
 	}
 
+	if err := ds.downlinks.Remove(ctx, ids...); err != nil {
+		return err
+	}
+
 	for _, downlink := range dls {
 		ds.unscheduleTask(downlink)
 	}
 
-	return ds.downlinks.Remove(ctx, ids...)
+	return nil
 }
 
 func (ds *downlinksService) RemoveDownlinksByThing(ctx context.Context, thingID string) error {
@@ -338,14 +342,8 @@ func (ds *downlinksService) scheduleTask(d Downlink, cfg *domain.ProfileConfig) 
 }
 
 func (ds *downlinksService) unscheduleTask(d Downlink) {
-	if d.Scheduler.Frequency != cron.OnceFreq {
-		ds.scheduler.RemoveCronEntry(d.ID, d.Scheduler.TimeZone)
-	}
-
-	if t, ok := ds.scheduler.TimerByID[d.ID]; ok {
-		t.Stop()
-		delete(ds.scheduler.TimerByID, d.ID)
-	}
+	ds.scheduler.RemoveCronEntry(d.ID)
+	ds.scheduler.RemoveTimer(d.ID)
 }
 
 func (ds *downlinksService) createTask(d Downlink, config *domain.ProfileConfig) func() {
@@ -388,7 +386,7 @@ func (ds *downlinksService) createTask(d Downlink, config *domain.ProfileConfig)
 		}
 
 		if err := ds.publish(config, d.ThingID, formattedPayload); err != nil {
-			ds.logger.Error(fmt.Sprintf("%s with publisher %s: %s", errPublishMessage, d.ThingID, err))
+			ds.logger.Error(fmt.Sprintf("%s with thing %s: %s", errPublishMessage, d.ThingID, err))
 			return
 		}
 
@@ -441,7 +439,7 @@ func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string
 	}
 
 	conn := domain.PubConfigInfo{
-		PublisherID:   thingID,
+		ThingID:       thingID,
 		ProfileConfig: config,
 	}
 

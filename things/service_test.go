@@ -3889,7 +3889,7 @@ func TestCanThingCommand(t *testing.T) {
 		{
 			desc: "controller sends command to actuator in same group",
 			req: things.ThingCommandReq{
-				PublisherID: ctrl.ID,
+				ThingID:     ctrl.ID,
 				RecipientID: act.ID,
 			},
 			err: nil,
@@ -3897,7 +3897,7 @@ func TestCanThingCommand(t *testing.T) {
 		{
 			desc: "controller sends command to sensor in same group",
 			req: things.ThingCommandReq{
-				PublisherID: ctrl.ID,
+				ThingID:     ctrl.ID,
 				RecipientID: sen.ID,
 			},
 			err: nil,
@@ -3905,7 +3905,7 @@ func TestCanThingCommand(t *testing.T) {
 		{
 			desc: "actuator tries to send command to controller",
 			req: things.ThingCommandReq{
-				PublisherID: act.ID,
+				ThingID:     act.ID,
 				RecipientID: ctrl.ID,
 			},
 			err: errors.ErrAuthorization,
@@ -3913,15 +3913,15 @@ func TestCanThingCommand(t *testing.T) {
 		{
 			desc: "sensor tries to send command to actuator",
 			req: things.ThingCommandReq{
-				PublisherID: sen.ID,
+				ThingID:     sen.ID,
 				RecipientID: act.ID,
 			},
 			err: errors.ErrAuthorization,
 		},
 		{
-			desc: "publisher sends command to itself",
+			desc: "thing sends command to itself",
 			req: things.ThingCommandReq{
-				PublisherID: ctrl.ID,
+				ThingID:     ctrl.ID,
 				RecipientID: ctrl.ID,
 			},
 			err: errors.ErrAuthorization,
@@ -3972,22 +3972,22 @@ func TestCanThingGroupCommand(t *testing.T) {
 	}{
 		{
 			desc: "controller sends group command to own group",
-			req:  things.ThingGroupCommandReq{PublisherID: ctrl.ID, GroupID: grID},
+			req:  things.ThingGroupCommandReq{ThingID: ctrl.ID, GroupID: grID},
 			err:  nil,
 		},
 		{
 			desc: "sensor tries to send group command to own group",
-			req:  things.ThingGroupCommandReq{PublisherID: sen.ID, GroupID: grID},
+			req:  things.ThingGroupCommandReq{ThingID: sen.ID, GroupID: grID},
 			err:  errors.ErrAuthorization,
 		},
 		{
 			desc: "actuator tries to send group command to own group",
-			req:  things.ThingGroupCommandReq{PublisherID: act.ID, GroupID: grID},
+			req:  things.ThingGroupCommandReq{ThingID: act.ID, GroupID: grID},
 			err:  errors.ErrAuthorization,
 		},
 		{
 			desc: "controller sends group command to a different group",
-			req:  things.ThingGroupCommandReq{PublisherID: ctrl.ID, GroupID: otherGrID},
+			req:  things.ThingGroupCommandReq{ThingID: ctrl.ID, GroupID: otherGrID},
 			err:  errors.ErrAuthorization,
 		},
 	}

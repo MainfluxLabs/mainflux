@@ -90,7 +90,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 		"limit":        rpm.Limit,
 		"offset":       rpm.Offset,
 		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
+		"thing_id":     rpm.ThingID,
 		"name":         rpm.Name,
 		"protocol":     rpm.Protocol,
 		"value":        rpm.Value,
@@ -137,7 +137,7 @@ func (as *aggregationService) readAggregatedSenMLMessages(ctx context.Context, r
 func senmlAggSubquery(aggFunc, condition, bucket string) string {
 	return fmt.Sprintf(`SELECT
           MAX(time) AS time, MAX(CAST(subtopic AS text)) AS subtopic,
-          MAX(CAST(publisher AS text)) AS publisher, MAX(CAST(protocol AS text)) AS protocol,
+          MAX(CAST(thing_id AS text)) AS thing_id, MAX(CAST(protocol AS text)) AS protocol,
           '' AS name, '' AS unit,
           %s(value) AS value,
           CAST(NULL AS text) AS string_value, CAST(NULL AS bool) AS bool_value, CAST(NULL AS text) AS data_value,
@@ -152,7 +152,7 @@ func senmlFirstLastSubquery(aggType, condition, bucket string) string {
 	query := `SELECT
           first(time, time) AS time,
           first(subtopic, time) AS subtopic,
-          first(publisher, time) AS publisher,
+          first(thing_id, time) AS thing_id,
           first(protocol, time) AS protocol,
           first(name, time) AS name,
           COALESCE(first(unit, time), '') AS unit,
@@ -169,7 +169,7 @@ func senmlFirstLastSubquery(aggType, condition, bucket string) string {
 		query = `SELECT
           last(time, time) AS time,
           last(subtopic, time) AS subtopic,
-          last(publisher, time) AS publisher,
+          last(thing_id, time) AS thing_id,
           last(protocol, time) AS protocol,
           last(name, time) AS name,
           COALESCE(last(unit, time), '') AS unit,
@@ -305,7 +305,7 @@ func jsonBucketColumns(aggType string) string {
 	return fmt.Sprintf(`,
                   MAX(%s) AS max_time,
                   MAX(CAST(subtopic AS text)) AS subtopic,
-                  MAX(CAST(publisher AS text)) AS publisher,
+                  MAX(CAST(thing_id AS text)) AS thing_id,
                   MAX(CAST(protocol AS text)) AS protocol`, mfreaders.JSONOrder)
 }
 
@@ -314,7 +314,7 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 		jsonFirstAggExpr := `first(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload,
                   first(created, created) AS agg_time,
                   first(subtopic, created) AS agg_subtopic,
-                  first(publisher, created) AS agg_publisher,
+                  first(thing_id, created) AS agg_thing_id,
                   first(protocol, created) AS agg_protocol`
 		return jsonFirstAggExpr, nil
 	}
@@ -323,7 +323,7 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 		jsonLastAggExpr := `last(COALESCE(payload, CAST('{}' AS jsonb)), created) AS agg_payload,
                   last(created, created) AS agg_time,
                   last(subtopic, created) AS agg_subtopic,
-                  last(publisher, created) AS agg_publisher,
+                  last(thing_id, created) AS agg_thing_id,
                   last(protocol, created) AS agg_protocol`
 		return jsonLastAggExpr, nil
 	}
@@ -353,7 +353,7 @@ func jsonAggExpr(aggType string, aggFields []string) (string, error) {
 func jsonSelectFields(aggFields []string, aggType string) (string, error) {
 	if isFirstLast(aggType) {
 		const head = `agg.agg_time AS created, agg.agg_subtopic AS subtopic,
-          agg.agg_publisher AS publisher, agg.agg_protocol AS protocol,`
+          agg.agg_thing_id AS thing_id, agg.agg_protocol AS protocol,`
 		if len(aggFields) == 0 {
 			return head + " agg.agg_payload AS payload", nil
 		}
@@ -378,7 +378,7 @@ func jsonSelectFields(aggFields []string, aggType string) (string, error) {
 		pairs = append(pairs, fmt.Sprintf("'%s', agg.agg_value_%d", escaped, i))
 	}
 
-	return fmt.Sprintf(`agg.max_time AS created, agg.subtopic, agg.publisher, agg.protocol,
+	return fmt.Sprintf(`agg.max_time AS created, agg.subtopic, agg.thing_id, agg.protocol,
           jsonb_build_object(%s) AS payload`, strings.Join(pairs, ", ")), nil
 }
 

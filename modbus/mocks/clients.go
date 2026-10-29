@@ -120,6 +120,8 @@ func (crm *clientRepositoryMock) Update(_ context.Context, c modbus.Client) erro
 	if _, ok := crm.clients[c.ID]; !ok {
 		return dbutil.ErrNotFound
 	}
+	c.ThingID = crm.clients[c.ID].ThingID
+	c.GroupID = crm.clients[c.ID].GroupID
 
 	crm.clients[c.ID] = c
 	return nil

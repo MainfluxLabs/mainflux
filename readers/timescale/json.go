@@ -44,8 +44,8 @@ func (jr *jsonRepository) Backup(ctx context.Context, rpm readers.JSONPageMetada
 }
 
 func (jr *jsonRepository) RemoveByThing(ctx context.Context, thingID string) error {
-	q := `DELETE FROM json WHERE publisher = :publisher;`
-	params := map[string]any{"publisher": thingID}
+	q := `DELETE FROM json WHERE thing_id = :thing_id;`
+	params := map[string]any{"thing_id": thingID}
 
 	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
 		return handlePgError(err, errors.ErrDeleteMessages)
@@ -58,11 +58,11 @@ func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetada
 	condition := jr.fmtCondition(rpm)
 	q := fmt.Sprintf("DELETE FROM json %s", condition)
 	params := map[string]any{
-		"subtopic":  rpm.Subtopic,
-		"publisher": rpm.Publisher,
-		"protocol":  rpm.Protocol,
-		"from":      rpm.From,
-		"to":        rpm.To,
+		"subtopic": rpm.Subtopic,
+		"thing_id": rpm.ThingID,
+		"protocol": rpm.Protocol,
+		"from":     rpm.From,
+		"to":       rpm.To,
 	}
 
 	if _, err := jr.db.NamedExecContext(ctx, q, params); err != nil {
@@ -78,8 +78,8 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	q := `INSERT INTO json (subtopic, publisher, protocol, payload, created)
-          VALUES (:subtopic, :publisher, :protocol, :payload, :created);`
+	q := `INSERT INTO json (subtopic, thing_id, protocol, payload, created)
+          VALUES (:subtopic, :thing_id, :protocol, :payload, :created);`
 
 	for _, msg := range messages {
 		jsonMsg, ok := msg.(mfjson.Message)
@@ -158,7 +158,7 @@ func (jr *jsonRepository) readMessages(ctx context.Context, rpm readers.JSONPage
 	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := jr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT created, subtopic, publisher, protocol, payload FROM json %s ORDER BY created %s %s;`, condition, dq, olq)
+	q := fmt.Sprintf(`SELECT created, subtopic, thing_id, protocol, payload FROM json %s ORDER BY created %s %s;`, condition, dq, olq)
 	rows, err := jr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {

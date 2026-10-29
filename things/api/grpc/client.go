@@ -200,7 +200,7 @@ func (client grpcClient) GetPubConfigByKey(ctx context.Context, key domain.Thing
 	pc := res.(pubConfigByKeyRes)
 
 	return domain.PubConfigInfo{
-		PublisherID:   pc.PublisherID,
+		ThingID:       pc.ThingID,
 		ProfileConfig: pc.ProfileConfig,
 	}, nil
 }
@@ -254,13 +254,13 @@ func (client grpcClient) CanThingAccessGroup(ctx context.Context, ar domain.Thin
 }
 
 func (client grpcClient) CanThingCommand(ctx context.Context, req domain.ThingCommandReq) error {
-	r := thingCommandReq{publisherID: req.PublisherID, recipientID: req.RecipientID}
+	r := thingCommandReq{thingID: req.ThingID, recipientID: req.RecipientID}
 	_, err := client.canThingCommand(ctx, r)
 	return err
 }
 
 func (client grpcClient) CanThingGroupCommand(ctx context.Context, req domain.ThingGroupCommandReq) error {
-	r := thingGroupCommandReq{publisherID: req.PublisherID, groupID: req.GroupID}
+	r := thingGroupCommandReq{thingID: req.ThingID, groupID: req.GroupID}
 	_, err := client.canThingGroupCommand(ctx, r)
 	return err
 }
@@ -415,12 +415,12 @@ func encodeThingAccessGroupRequest(_ context.Context, grpcReq any) (any, error) 
 
 func encodeThingCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingCommandReq)
-	return &protomfx.ThingCommandReq{PublisherId: req.publisherID, RecipientId: req.recipientID}, nil
+	return &protomfx.ThingCommandReq{ThingId: req.thingID, RecipientId: req.recipientID}, nil
 }
 
 func encodeThingGroupCommandRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(thingGroupCommandReq)
-	return &protomfx.ThingGroupCommandReq{PublisherId: req.publisherID, GroupId: req.groupID}, nil
+	return &protomfx.ThingGroupCommandReq{ThingId: req.thingID, GroupId: req.groupID}, nil
 }
 
 func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -486,7 +486,7 @@ func decodeGetPubConfigByKeyResponse(_ context.Context, grpcRes any) (any, error
 
 	return pubConfigByKeyRes{
 		PubConfigInfo: domain.PubConfigInfo{
-			PublisherID:   res.GetPublisherId(),
+			ThingID:       res.GetThingId(),
 			ProfileConfig: protoutil.ProtoConfigToDomain(res.GetProfileConfig()),
 		},
 	}, nil

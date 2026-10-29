@@ -56,7 +56,7 @@ func (repo *senmlRepositoryMock) RemoveByThing(ctx context.Context, thingID stri
 	for profileID, messages := range repo.messages {
 		var remaining []readers.Message
 		for _, m := range messages {
-			if senmlMsg, ok := m.(senml.Message); ok && senmlMsg.Publisher == thingID {
+			if senmlMsg, ok := m.(senml.Message); ok && senmlMsg.ThingID == thingID {
 				continue
 			}
 			remaining = append(remaining, m)
@@ -143,7 +143,7 @@ func (repo *senmlRepositoryMock) checkSenMLMessageFilter(senmlMsg senml.Message,
 	if rpm.Subtopic != "" && rpm.Subtopic != senmlMsg.Subtopic {
 		return false
 	}
-	if rpm.Publisher != "" && rpm.Publisher != senmlMsg.Publisher {
+	if rpm.ThingID != "" && rpm.ThingID != senmlMsg.ThingID {
 		return false
 	}
 	if rpm.Protocol != "" && rpm.Protocol != senmlMsg.Protocol {

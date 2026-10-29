@@ -44,8 +44,8 @@ func (sr *senmlRepository) Backup(ctx context.Context, rpm readers.SenMLPageMeta
 }
 
 func (sr *senmlRepository) RemoveByThing(ctx context.Context, thingID string) error {
-	q := `DELETE FROM senml WHERE publisher = :publisher;`
-	params := map[string]any{"publisher": thingID}
+	q := `DELETE FROM senml WHERE thing_id = :thing_id;`
+	params := map[string]any{"thing_id": thingID}
 
 	if _, err := sr.db.NamedExecContext(ctx, q, params); err != nil {
 		return handlePgError(err, errors.ErrDeleteMessages)
@@ -59,7 +59,7 @@ func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMeta
 	q := fmt.Sprintf("DELETE FROM %s %s", mfreaders.SenMLTable, condition)
 	params := map[string]any{
 		"subtopic":     rpm.Subtopic,
-		"publisher":    rpm.Publisher,
+		"thing_id":     rpm.ThingID,
 		"name":         rpm.Name,
 		"protocol":     rpm.Protocol,
 		"value":        rpm.Value,
@@ -83,10 +83,10 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
-	q := `INSERT INTO senml (subtopic, publisher, protocol,
+	q := `INSERT INTO senml (subtopic, thing_id, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
-          VALUES (:subtopic, :publisher, :protocol, :name, :unit,
+          VALUES (:subtopic, :thing_id, :protocol, :name, :unit,
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
@@ -160,7 +160,7 @@ func (sr *senmlRepository) readMessages(ctx context.Context, rpm readers.SenMLPa
 	dq := dbutil.GetDirQuery(rpm.Dir)
 	condition := sr.fmtCondition(rpm)
 
-	q := fmt.Sprintf(`SELECT subtopic, publisher, protocol, name, unit, value, string_value, bool_value, data_value, sum, time, update_time FROM %s %s ORDER BY time %s %s;`, mfreaders.SenMLTable, condition, dq, olq)
+	q := fmt.Sprintf(`SELECT subtopic, thing_id, protocol, name, unit, value, string_value, bool_value, data_value, sum, time, update_time FROM %s %s ORDER BY time %s %s;`, mfreaders.SenMLTable, condition, dq, olq)
 	rows, err := sr.db.NamedQueryContext(ctx, q, params)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UndefinedTable {

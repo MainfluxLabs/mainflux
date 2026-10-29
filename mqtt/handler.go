@@ -104,15 +104,15 @@ func (h *handler) AuthPublish(c *session.Client, topic *string, _ *[]byte) error
 		return ErrMissingTopic
 	}
 
-	publisherID, err := h.identify(c)
+	thingID, err := h.identify(c)
 	if err != nil {
 		return err
 	}
 
-	return h.authorizePublish(publisherID, *topic)
+	return h.authorizePublish(thingID, *topic)
 }
 
-func (h *handler) authorizePublish(publisherID, topic string) error {
+func (h *handler) authorizePublish(thingID, topic string) error {
 	// Reject leading-slash variants of the custom topic patterns.
 	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
 		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s (leading slash not allowed)", topic))
@@ -133,20 +133,20 @@ func (h *handler) authorizePublish(publisherID, topic string) error {
 	var err error
 	switch {
 	case prefix == topicPrefixThings && suffix == topicSuffixCommands:
-		err = h.authorizeThingCommand(publisherID, id)
+		err = h.authorizeThingCommand(thingID, id)
 	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
-		err = h.authorizeGroupCommand(publisherID, id)
+		err = h.authorizeGroupCommand(thingID, id)
 	}
 
 	if err != nil {
-		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for publisher %s", topic, publisherID))
+		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for thing %s", topic, thingID))
 	}
 	return nil
 }
 
-func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
+func (h *handler) authorizeThingCommand(thingID, recipientID string) error {
 	if err := h.things.CanThingCommand(context.Background(), domain.ThingCommandReq{
-		PublisherID: publisherID,
+		ThingID:     thingID,
 		RecipientID: recipientID,
 	}); err != nil {
 		return errors.ErrAuthorization
@@ -154,10 +154,10 @@ func (h *handler) authorizeThingCommand(publisherID, recipientID string) error {
 	return nil
 }
 
-func (h *handler) authorizeGroupCommand(publisherID, groupID string) error {
+func (h *handler) authorizeGroupCommand(thingID, groupID string) error {
 	if err := h.things.CanThingGroupCommand(context.Background(), domain.ThingGroupCommandReq{
-		PublisherID: publisherID,
-		GroupID:     groupID,
+		ThingID: thingID,
+		GroupID: groupID,
 	}); err != nil {
 		return errors.ErrAuthorization
 	}
@@ -232,7 +232,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		return err
 	}
 
-	subject, subtopic, err := parseTopic(topic, pc.PublisherID)
+	subject, subtopic, err := parseTopic(topic, pc.ThingID)
 	if err != nil {
 		return errors.Wrap(errFailedParseSubtopic, err)
 	}
@@ -259,7 +259,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
 	cmd := protomfx.Command{
-		Publisher:   msg.ThingId,
+		ThingId:     msg.ThingId,
 		Subtopic:    msg.Subtopic,
 		Payload:     msg.Payload,
 		RecipientId: extractRecipient(subject),
@@ -280,15 +280,15 @@ func extractRecipient(subject string) string {
 	return parts[1]
 }
 
-func parseTopic(topic, publisherID string) (subject, subtopic string, err error) {
+func parseTopic(topic, thingID string) (subject, subtopic string, err error) {
 	parts := strings.SplitN(topic, "/", 4)
 	if len(parts) < 3 {
-		return defaultTopicRoute(topic, publisherID)
+		return defaultTopicRoute(topic, thingID)
 	}
 
 	prefix, id, suffix := parts[0], parts[1], parts[2]
 	if id == "" {
-		return defaultTopicRoute(topic, publisherID)
+		return defaultTopicRoute(topic, thingID)
 	}
 
 	if len(parts) > 3 {
@@ -306,17 +306,17 @@ func parseTopic(topic, publisherID string) (subject, subtopic string, err error)
 		return nats.GetMessagesSubject(id, subtopic), subtopic, nil
 	}
 
-	return defaultTopicRoute(topic, publisherID)
+	return defaultTopicRoute(topic, thingID)
 }
 
 // defaultTopicRoute normalizes the full topic as the subtopic and routes it
-// to the publisher's own messages subject.
-func defaultTopicRoute(topic, publisherID string) (string, string, error) {
+// to the thing's own messages subject.
+func defaultTopicRoute(topic, thingID string) (string, string, error) {
 	subtopic, err := messaging.NormalizeSubtopic(topic)
 	if err != nil {
 		return "", "", err
 	}
-	return nats.GetMessagesSubject(publisherID, subtopic), subtopic, nil
+	return nats.GetMessagesSubject(thingID, subtopic), subtopic, nil
 }
 
 // Subscribe - after client successfully subscribed

@@ -31,7 +31,7 @@ type MessagesPageMetadata struct {
 	Offset      uint64   `json:"offset"`
 	Limit       uint64   `json:"limit"`
 	Subtopic    string   `json:"subtopic,omitempty"`
-	Publisher   string   `json:"publisher,omitempty"`
+	ThingID     string   `json:"thing_id,omitempty"`
 	Protocol    string   `json:"protocol,omitempty"`
 	From        int64    `json:"from,omitempty"`
 	To          int64    `json:"to,omitempty"`
