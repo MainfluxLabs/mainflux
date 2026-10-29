@@ -42,6 +42,15 @@ func (req selfRegisterUserReq) validate() error {
 	return req.User.Validate(userPasswordRegex)
 }
 
+func validProvider(provider string) bool {
+	switch provider {
+	case users.GoogleProvider, users.GitHubProvider, users.OIDCProvider:
+		return true
+	default:
+		return false
+	}
+}
+
 type oauthLoginReq struct {
 	provider     string
 	inviteID     string
@@ -49,7 +58,7 @@ type oauthLoginReq struct {
 }
 
 func (req oauthLoginReq) validate() error {
-	if req.provider != users.GoogleProvider && req.provider != users.GitHubProvider {
+	if !validProvider(req.provider) {
 		return apiutil.ErrInvalidProvider
 	}
 	return nil
@@ -66,7 +75,7 @@ type oauthCallbackReq struct {
 }
 
 func (req oauthCallbackReq) validate() error {
-	if req.provider != users.GoogleProvider && req.provider != users.GitHubProvider {
+	if !validProvider(req.provider) {
 		return apiutil.ErrInvalidProvider
 	}
 
