@@ -84,11 +84,10 @@ var ScriptRunOrderFields = map[string]string{
 	"status":     "status",
 }
 
-// Source is a script as the runner needs it: the checksum keys the runner's own
-// cache, and the code is sent only when that cache may not hold it.
+// Source is a script as the runner needs it. The code is sent with every job:
+// workers hold no per-source cache, so there is nothing to key by checksum.
 type Source struct {
-	Checksum string
-	Code     string
+	Code string
 }
 
 // Input is what a run is given. It is the message shape the Python side sees as

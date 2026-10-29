@@ -168,7 +168,7 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	res, err := ps.runner.Run(ctx, Source{Checksum: script.Checksum, Code: script.Source}, in)
+	res, err := ps.runner.Run(ctx, Source{Code: script.Source}, in)
 	if err != nil {
 		return ScriptRun{}, err
 	}
