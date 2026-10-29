@@ -7,8 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -261,6 +264,51 @@ func TestPubsub(t *testing.T) {
 	}
 }
 
+func TestDispatchOTA(t *testing.T) {
+	received := make(chan protomfx.Message, 1)
+	err := pubsub.Subscribe(clientID, nats.SubjectOTA, chanHandler{received})
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	t.Cleanup(func() { pubsub.Unsubscribe(clientID, nats.SubjectOTA) })
+
+	dispatcher, ok := publisher.(messaging.MessageDispatcher)
+	require.True(t, ok, "publisher must implement MessageDispatcher")
+
+	cases := []struct {
+		desc     string
+		subtopic string
+		received bool
+	}{
+		{
+			desc:     "dispatch ota status with all profile flags disabled",
+			subtopic: "ota",
+			received: true,
+		},
+		{
+			desc:     "dispatch message with other subtopic",
+			subtopic: subtopic,
+			received: false,
+		},
+	}
+
+	for _, tc := range cases {
+		msg := protomfx.Message{
+			ThingId:  clientID,
+			Subtopic: tc.subtopic,
+			Payload:  data,
+		}
+		err := dispatcher.Dispatch(msg, &domain.ProfileConfig{})
+		require.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s", tc.desc, err))
+
+		select {
+		case got := <-received:
+			assert.True(t, tc.received, fmt.Sprintf("%s: got unexpected message %+v", tc.desc, got))
+			assert.Equal(t, msg, got, fmt.Sprintf("%s: expected %+v got %+v", tc.desc, msg, got))
+		case <-time.After(time.Second):
+			assert.False(t, tc.received, fmt.Sprintf("%s: expected message on %s", tc.desc, nats.SubjectOTA))
+		}
+	}
+}
+
 type handler struct {
 	fail bool
 }
@@ -274,5 +322,18 @@ func (h handler) Cancel() error {
 	if h.fail {
 		return errFailed
 	}
+	return nil
+}
+
+type chanHandler struct {
+	msgs chan protomfx.Message
+}
+
+func (h chanHandler) Handle(_ string, msg protomfx.Message) error {
+	h.msgs <- msg
+	return nil
+}
+
+func (h chanHandler) Cancel() error {
 	return nil
 }

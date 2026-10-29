@@ -27,6 +27,7 @@ volumes:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
   mainfluxlabs-shadows-db-volume:
+  mainfluxlabs-ota-db-volume:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
@@ -838,6 +839,51 @@ services:
       MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_SHADOWS_HTTP_PORT}:${MF_SHADOWS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  ota-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-ota-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${MF_OTA_DB_USER}
+      POSTGRES_PASSWORD: ${MF_OTA_DB_PASS}
+      POSTGRES_DB: ${MF_OTA_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-ota-db-volume:/var/lib/postgresql/data
+
+  ota:
+    image: ${MF_RELEASE_PREFIX}/ota:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-ota
+    depends_on:
+      - things
+      - ota-db
+      - broker
+    restart: unless-stopped
+    environment:
+      MF_OTA_LOG_LEVEL: ${MF_OTA_LOG_LEVEL}
+      MF_OTA_HTTP_PORT: ${MF_OTA_HTTP_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_OTA_DB_HOST: ota-db
+      MF_OTA_DB_PORT: ${MF_OTA_DB_PORT}
+      MF_OTA_DB_USER: ${MF_OTA_DB_USER}
+      MF_OTA_DB_PASS: ${MF_OTA_DB_PASS}
+      MF_OTA_DB: ${MF_OTA_DB}
+      MF_OTA_SERVER_CERT: ${MF_OTA_SERVER_CERT}
+      MF_OTA_SERVER_KEY: ${MF_OTA_SERVER_KEY}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_OTA_ES_URL: ${MF_OTA_ES_URL}
+      MF_OTA_FIRMWARE_URL: ${MF_OTA_FIRMWARE_URL}
+      MF_OTA_TIMEOUT_CHECK_INTERVAL: ${MF_OTA_TIMEOUT_CHECK_INTERVAL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+    ports:
+      - ${MF_OTA_HTTP_PORT}:${MF_OTA_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
 

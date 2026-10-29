@@ -25,6 +25,8 @@ const (
 	groupsPrefix   = "groups"
 	messagesSuffix = "messages"
 	commandsSuffix = "commands"
+
+	otaSubtopic = "ota"
 )
 
 type publisher struct {
@@ -127,10 +129,16 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// Dispatch publishes msg to every subject enabled by pc's dispatcher flags.
+// Dispatch publishes msg to every subject enabled by pc's dispatcher flags, and always forwards OTA status reports to the ota subject.
 func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
+	}
+
+	if msg.Subtopic == otaSubtopic {
+		if err := pub.Publish(SubjectOTA, msg); err != nil {
+			return err
+		}
 	}
 
 	if pc.WriteEnabled {
