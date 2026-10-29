@@ -54,7 +54,7 @@ The service is configured using the environment variables presented in the follo
 | `MF_OIDC_ISSUER_URL`             | OIDC issuer URL used for discovery; empty disables the `oidc` provider     |                  |
 | `MF_OIDC_CLIENT_ID`              | OIDC client ID                                                             |                  |
 | `MF_OIDC_CLIENT_SECRET`          | OIDC client secret                                                         |                  |
-| `MF_OIDC_REDIRECT_URL`           | OIDC callback path (appended to `MF_HOST`)                                 | /users/oauth/oidc/callback |
+| `MF_OIDC_REDIRECT_URL`           | OIDC callback path (appended to `MF_HOST`)                                 |                  |
 
 > **Note:** If `MF_EMAIL_TEMPLATES_DIR` does not point to a valid directory containing the required templates, the service will start normally but email-based features (email verification, platform invites) will not work.
 

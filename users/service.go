@@ -616,7 +616,7 @@ func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string
 
 	oauthToken, err := oauthCfg.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
-		return "", "", err
+		return "", "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 
 	rawIDToken, ok := oauthToken.Extra("id_token").(string)
@@ -634,7 +634,7 @@ func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string
 		EmailVerified *oidcBool `json:"email_verified"`
 	}
 	if err := idToken.Claims(&claims); err != nil {
-		return "", "", err
+		return "", "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 
 	// Some providers only expose the e-mail through the UserInfo endpoint.
@@ -653,7 +653,7 @@ func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string
 			return "", "", errors.ErrAuthentication
 		}
 		if err := userInfo.Claims(&claims); err != nil {
-			return "", "", err
+			return "", "", errors.Wrap(errors.ErrAuthentication, err)
 		}
 	}
 

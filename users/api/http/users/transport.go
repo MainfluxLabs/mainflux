@@ -45,7 +45,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 	callbackOpts := append([]kithttp.ServerOption{}, opts...)
-	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(oauthCallbackErrorEncoder(logger)))
+	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(encodeOAuthCallbackError(logger)))
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
@@ -540,7 +540,7 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 	return nil
 }
 
-func oauthCallbackErrorEncoder(logger logger.Logger) kithttp.ErrorEncoder {
+func encodeOAuthCallbackError(logger logger.Logger) kithttp.ErrorEncoder {
 	return func(ctx context.Context, err error, w http.ResponseWriter) {
 		logger.Warn(fmt.Sprintf("Failed OAuth callback: %s", err))
 		clearOAuthCookies(w)

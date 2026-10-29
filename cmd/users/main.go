@@ -93,7 +93,6 @@ const (
 	defUserInfo         = ""
 	defRedirectLoginURL = ""
 	defOIDCIssuerURL    = ""
-	defOIDCRedirectURL  = "/users/oauth/oidc/callback"
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -320,7 +319,7 @@ func loadConfig() config {
 		OAuth: oauth2.Config{
 			ClientID:     mainflux.Env(envOIDCClientID, defClientID),
 			ClientSecret: mainflux.Env(envOIDCClientSecret, defClientSecret),
-			RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envOIDCRedirectURL, defOIDCRedirectURL)),
+			RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envOIDCRedirectURL, defRedirectURL)),
 			Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
 		},
 	}
