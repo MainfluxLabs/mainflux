@@ -79,7 +79,7 @@ Each action specifies what to do when a rule fires.
 | ------- | ------------------------------------------------------------------------------------------- |
 | `type`  | Action type: `alarm`, `smtp`, or `smpp`                                                     |
 | `id`    | Required for `smtp` and `smpp` types — the ID of the configured notifier to trigger         |
-| `level` | Required for `alarm` type — severity level: 1=info, 2=warning, 3=minor, 4=major, 5=critical |
+| `level` | Required for `alarm` type — severity level: 1=info, 2=low, 3=medium, 4=high, 5=critical     |
 
 - **`alarm`** — publishes an alarm event with the specified severity level, consumed by the Alarms service
 - **`smtp`** — triggers an SMTP email notification via the registered notifier with the given `id`

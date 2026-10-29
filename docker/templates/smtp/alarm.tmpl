@@ -1,0 +1,37 @@
+{{ define "content" }}
+    <p class="mb-16">
+        An alarm was triggered for the thing with ID <strong>{{ .ThingID }}</strong>.
+    </p>
+
+    <table class="details">
+        <tr>
+            <th class="details__label">Severity</th>
+            <td class="details__value">
+                <span class="level-badge level-badge--{{ .LevelClass }}">{{ .LevelLabel }}</span>
+            </td>
+        </tr>
+        {{ if .Subtopic }}
+        <tr>
+            <th class="details__label">Subtopic</th>
+            <td class="details__value">{{ .Subtopic }}</td>
+        </tr>
+        {{ end }}
+        <tr>
+            <th class="details__label">Protocol</th>
+            <td class="details__value">{{ .Protocol }}</td>
+        </tr>
+        <tr>
+            <th class="details__label">Time</th>
+            <td class="details__value">{{ .Time }}</td>
+        </tr>
+        <tr>
+            <th class="details__label">Rule ID</th>
+            <td class="details__value">{{ .RuleID }}</td>
+        </tr>
+    </table>
+
+    {{ if .Conditions }}
+    <p class="section-title">Triggered by</p>
+    <pre class="code-block">{{ .Conditions }}</pre>
+    {{ end }}
+{{ end }}

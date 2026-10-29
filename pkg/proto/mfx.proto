@@ -41,11 +41,10 @@ message Alarm {
 }
 
 message Notification {
-    string thing_id  = 1;
-    string subtopic  = 2;
-    string protocol  = 3;
-    bytes  payload   = 4;
-    int64  created   = 5;
+    oneof source {
+        Alarm   alarm   = 6;
+        Message message = 7;
+    }
 }
 
 message Webhook {
