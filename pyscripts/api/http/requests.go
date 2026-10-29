@@ -191,7 +191,7 @@ func (req runScriptReq) validate() error {
 		}
 
 		if len(encoded) > maxPayloadSize {
-			return apiutil.ErrInvalidQueryParams
+			return apiutil.ErrLimitSize
 		}
 	}
 
