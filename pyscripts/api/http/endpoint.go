@@ -112,10 +112,10 @@ func runScriptEndpoint(svc pyscripts.Service) endpoint.Endpoint {
 		}
 
 		in := pyscripts.Input{
-			Payload:     req.Payload,
-			Subtopic:    req.Subtopic,
-			Created:     req.Created,
-			PublisherID: req.PublisherID,
+			Payload:  req.Payload,
+			Subtopic: req.Subtopic,
+			Created:  req.Created,
+			ThingID:  req.ThingID,
 		}
 
 		run, err := svc.RunScript(ctx, req.token, req.id, in)

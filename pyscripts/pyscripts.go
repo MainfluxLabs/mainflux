@@ -97,7 +97,7 @@ type Input struct {
 	Payload     map[string]any `json:"payload"`
 	Subtopic    string         `json:"subtopic,omitempty"`
 	Created     int64          `json:"created,omitempty"`
-	PublisherID string         `json:"publisher_id,omitempty"`
+	ThingID     string         `json:"thing_id,omitempty"`
 }
 
 // Result is the outcome of one run. Error is either the script's own failure or
