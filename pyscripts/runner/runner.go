@@ -105,11 +105,10 @@ type Config struct {
 	Limits       Limits
 }
 
-// Source, Input and Result are declared by the pyscripts package, which owns
-// the contract this package implements. They are aliased rather than re-declared
-// so the frame structs and the collector keep working on them directly.
+// Input and Result are declared by the pyscripts package, which owns the
+// contract this package implements. They are aliased rather than re-declared so
+// the frame structs and the collector keep working on them directly.
 type (
-	Source = pyscripts.Source
 	Input  = pyscripts.Input
 	Result = pyscripts.Result
 )
@@ -238,9 +237,9 @@ func (p *pool) backfill() {
 	}
 }
 
-func (p *pool) Run(ctx context.Context, src Source, in Input) (Result, error) {
+func (p *pool) Run(ctx context.Context, code string, in Input) (Result, error) {
 	res, err := p.onWorker(ctx, func(w *worker, runCtx context.Context) (outcome, error) {
-		return w.run(runCtx, src, in, p.cfg)
+		return w.run(runCtx, code, in, p.cfg)
 	})
 
 	return res.Result, err
@@ -638,8 +637,8 @@ func (w *worker) check(ctx context.Context, code string, cfg Config) (outcome, e
 	return w.exchange(ctx, jobFrame{Code: code, Check: true, Limits: cfg.Limits}, cfg)
 }
 
-func (w *worker) run(ctx context.Context, src Source, in Input, cfg Config) (outcome, error) {
-	return w.exchange(ctx, jobFrame{Input: in, Limits: cfg.Limits, Code: src.Code}, cfg)
+func (w *worker) run(ctx context.Context, code string, in Input, cfg Config) (outcome, error) {
+	return w.exchange(ctx, jobFrame{Input: in, Limits: cfg.Limits, Code: code}, cfg)
 }
 
 // exchange runs one job to completion: hand it over, wait for the worker to

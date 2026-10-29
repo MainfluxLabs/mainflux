@@ -84,12 +84,6 @@ var ScriptRunOrderFields = map[string]string{
 	"status":     "status",
 }
 
-// Source is a script as the runner needs it. The code is sent with every job:
-// workers hold no per-source cache, so there is nothing to key by checksum.
-type Source struct {
-	Code string
-}
-
 // Input is what a run is given. It is the message shape the Python side sees as
 // its "message" global, so the json tags are part of the contract with it.
 type Input struct {
@@ -111,7 +105,7 @@ type Result struct {
 }
 
 type Runner interface {
-	Run(ctx context.Context, src Source, in Input) (Result, error)
+	Run(ctx context.Context, code string, in Input) (Result, error)
 
 	// Validate compiles code without executing it. It returns the Python syntax
 	// error as a string when the source does not compile, and an empty string
