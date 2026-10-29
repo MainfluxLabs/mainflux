@@ -150,21 +150,35 @@ class Out:
 // forked child: limiting the parent would cripple the process holding the numpy
 // the pool exists to keep warm.
 //
-// The denied syscalls cover three things. Sockets, because scripts must not
-// reach peer services on the shared docker network. setsid/setpgid/unshare,
-// because isolate calls setsid before loading the filter so the child leads a
-// killable group - a grandchild that moved itself out of that group would
-// survive the kill and keep writing to the inherited data pipe.
+// The seccomp filter is an allow-list: its default action denies, and only the
+// syscalls named in ALLOWED_SYSCALLS - plus the argument-filtered ones below -
+// get through. A deny-list had to foresee every dangerous call (bpf,
+// userfaultfd, perf_event_open, keyctl, and the next one), and anything it
+// missed stayed reachable; default-deny refuses them all without naming them,
+// so the kernel surface a script can touch is the vetted set rather than
+// everything minus a blacklist. The default is EPERM, not KILL: a syscall the
+// list forgot surfaces as an OSError the author can see instead of a bare
+// SIGSYS, and for attack surface the two are identical, since seccomp refuses
+// the call before its handler runs either way.
 //
-// And process creation. A script that forks gets a second process holding the
-// same data pipe, so both copies write a result frame and whichever lands first
-// wins the run; forking in a loop also multiplies the memory cap, since each
-// child is charged its own RLIMIT_DATA, and only the container's limit then
-// bounds the total. clone is denied only when CLONE_THREAD is clear, so threads
-// still work and only new processes are refused - clone3 answers ENOSYS rather
-// than EPERM precisely so glibc falls back to clone instead of failing. execve
-// is denied with them: it resets PR_SET_DUMPABLE, which is what keeps the
-// control channel in hide_self out of reach.
+// Four shapes are too dangerous to allow outright but needed in one form, so
+// each is argument-filtered on top of the list. clone is allowed only with
+// CLONE_THREAD set, so threads work and a fork - a second process on the same
+// data pipe, racing to write the result frame and multiplying the memory cap -
+// is refused; clone3 answers ENOSYS so glibc retries with the clone we allow.
+// open/openat are allowed for reading only; write or create flags return EROFS,
+// so the filesystem reads as read-only rather than merely forbidden, and
+// openat2 is ENOSYS so glibc falls back to the openat we can inspect. Signals
+// are allowed only to the child's own pid. prlimit64 is allowed only to read a
+// limit, so a script cannot lift the caps confine() set. Everything else -
+// sockets, execve, setsid, the mutating filesystem calls - is simply absent
+// from the list and denied by the default.
+//
+// Nothing widens the filter to the secondary ABIs now. With a deny default, a
+// syscall arriving through another ABI - i386 by int 0x80, or x32 - hits an
+// architecture the filter does not hold and takes the default, which denies it;
+// under the old ALLOW default that same path bypassed every rule, so the arches
+// had to be added explicitly. Default-deny closes the gap for free.
 //
 // Two rlimit choices are deliberate. RLIMIT_CPU's soft limit sits below the hard
 // one: with them equal the kernel goes straight to SIGKILL, indistinguishable
@@ -181,13 +195,6 @@ class Out:
 // a stream without a descriptor is supposed to raise and what callers expect to
 // catch.
 //
-// The seccomp filter covers the secondary ABIs as well as the native one. Rules
-// apply only to architectures present in the filter, and anything reached
-// through another ABI - i386 by int 0x80 under CONFIG_IA32_EMULATION, or x32 -
-// would otherwise fall through to the ALLOW default and bypass every denial
-// here. The arches are added before any rule, because libseccomp resolves a
-// rule against the architectures the filter holds at the time it is added.
-//
 // isolate puts /dev/null on fds 0, 1 and 2: the child has no business reading job
 // frames, fd 1 is Go's control channel, which a script must not be able to forge
 // an exit frame on, and fd 2 is the worker's stderr pipe, which the service
@@ -195,21 +202,55 @@ class Out:
 // os.write(2, ...) goes straight past it - and those bytes are never seen by the
 // collector, so they count against neither the output cap nor the log limit.
 const pySandbox = `
-BLOCKED_SYSCALLS = (
-    "socket", "socketpair", "connect", "bind", "listen",
-    "accept", "accept4", "sendto", "sendmsg", "recvfrom", "recvmsg",
-    "setsid", "setpgid", "unshare",
-    "fork", "vfork", "execve", "execveat",
-    "io_uring_setup", "io_uring_enter", "io_uring_register",
+ALLOWED_SYSCALLS = (
+    "exit", "exit_group", "rt_sigreturn", "restart_syscall",
+    "set_tid_address", "set_robust_list", "get_robust_list", "rseq",
+    "futex", "futex_waitv", "sched_yield",
+    "sched_getaffinity", "sched_setaffinity",
+    "sched_getparam", "sched_setparam",
+    "sched_getscheduler", "sched_setscheduler",
+    "sched_get_priority_max", "sched_get_priority_min", "sched_rr_get_interval",
+    "getcpu", "membarrier", "nanosleep", "clock_nanosleep", "clock_nanosleep_time64",
+    "getpid", "gettid", "getppid", "getuid", "geteuid", "getgid", "getegid",
+    "getgroups", "getresuid", "getresgid", "getpgid", "getpgrp", "getsid",
+    "getpriority", "uname", "sysinfo", "getrandom", "capget",
+    "brk", "mmap", "mmap2", "munmap", "mremap", "mprotect", "madvise",
+    "mlock", "mlock2", "munlock", "mlockall", "munlockall", "msync", "mincore",
+    "clock_gettime", "clock_gettime64", "clock_getres", "clock_getres_time64",
+    "gettimeofday", "time", "times", "getrusage",
+    "rt_sigaction", "rt_sigprocmask", "rt_sigpending",
+    "rt_sigtimedwait", "rt_sigtimedwait_time64", "rt_sigsuspend",
+    "sigaltstack", "signalfd", "signalfd4", "pause",
+    "getrlimit", "ugetrlimit",
+    "read", "readv", "preadv", "preadv2", "pread64",
+    "write", "writev", "pwritev", "pwritev2", "pwrite64",
+    "close", "close_range", "lseek", "_llseek",
+    "dup", "dup2", "dup3", "fcntl", "fcntl64", "ioctl",
+    "flock", "fsync", "fdatasync", "sync_file_range", "readahead",
+    "fadvise64", "fadvise64_64",
+    "stat", "stat64", "lstat", "lstat64", "fstat", "fstat64",
+    "newfstatat", "fstatat64", "statx",
+    "statfs", "statfs64", "fstatfs", "fstatfs64",
+    "getdents", "getdents64", "readlink", "readlinkat", "getcwd",
+    "access", "faccessat", "faccessat2", "umask",
+    "poll", "ppoll", "ppoll_time64", "select", "_newselect",
+    "pselect6", "pselect6_time64",
+    "epoll_create", "epoll_create1", "epoll_ctl", "epoll_wait",
+    "epoll_pwait", "epoll_pwait2",
+    "eventfd", "eventfd2", "pipe", "pipe2",
+    "timerfd_create", "timerfd_settime", "timerfd_gettime",
+    "arch_prctl", "prctl", "set_thread_area", "get_thread_area",
 )
 
 SIGNAL_TO_SELF = ("kill", "tgkill", "rt_sigqueueinfo", "rt_tgsigqueueinfo")
-SIGNAL_DENIED = ("tkill", "pidfd_send_signal", "pidfd_open")
 
 CLONE_THREAD = 0x00010000
 
 O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT = 0o3, 0o1, 0o2, 0o100
 
+# Denied by the default anyway; named so the error is EROFS - "read-only
+# filesystem" - rather than the blanket EPERM, which is the truthful reason a
+# write failed and what a caller catching OSError expects.
 MUTATING_SYSCALLS = (
     "creat", "mkdir", "mkdirat", "rmdir",
     "link", "linkat", "symlink", "symlinkat",
@@ -224,10 +265,10 @@ MUTATING_SYSCALLS = (
     "removexattr", "lremovexattr", "fremovexattr",
 )
 
-def deny_new_processes(f):
+def allow_threads(f):
     try:
-        f.add_rule(pyseccomp.ERRNO(errno.EPERM), "clone",
-                   pyseccomp.Arg(0, pyseccomp.MASKED_EQ, CLONE_THREAD, 0))
+        f.add_rule(pyseccomp.ALLOW, "clone",
+                   pyseccomp.Arg(0, pyseccomp.MASKED_EQ, CLONE_THREAD, CLONE_THREAD))
     except (ValueError, RuntimeError, OSError, AttributeError):
         pass
     try:
@@ -235,38 +276,20 @@ def deny_new_processes(f):
     except (ValueError, RuntimeError, OSError):
         pass
 
-SECONDARY_ARCHES = ("X86", "X32", "ARM")
-
-def widen_arches(f):
-    for name in SECONDARY_ARCHES:
-        arch = getattr(pyseccomp.Arch, name, None)
-        if arch is None:
-            continue
-        try:
-            f.add_arch(arch)
-        except Exception:
-            pass
-
-def deny_signals(f, own):
+def allow_signals_to_self(f, own):
     for name in SIGNAL_TO_SELF:
         try:
-            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name,
-                       pyseccomp.Arg(0, pyseccomp.NE, own))
-            continue
+            f.add_rule(pyseccomp.ALLOW, name, pyseccomp.Arg(0, pyseccomp.EQ, own))
         except (ValueError, RuntimeError, OSError, AttributeError):
             pass
-        try:
-            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name)
-        except (ValueError, RuntimeError, OSError):
-            pass
-    for name in SIGNAL_DENIED:
-        try:
-            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name)
-        except (ValueError, RuntimeError, OSError):
-            pass
 
-def deny_writes(f):
+def allow_reads_deny_writes(f):
     for name, flags in (("open", 1), ("openat", 2)):
+        try:
+            f.add_rule(pyseccomp.ALLOW, name,
+                       pyseccomp.Arg(flags, pyseccomp.MASKED_EQ, O_ACCMODE, 0))
+        except (ValueError, RuntimeError, OSError, AttributeError):
+            pass
         for mask, val in ((O_ACCMODE, O_WRONLY), (O_ACCMODE, O_RDWR), (O_CREAT, O_CREAT)):
             try:
                 f.add_rule(pyseccomp.ERRNO(errno.EROFS), name,
@@ -283,19 +306,25 @@ def deny_writes(f):
         except (ValueError, RuntimeError, OSError):
             pass
 
-def deny_syscalls():
+def allow_read_rlimit(f):
+    try:
+        f.add_rule(pyseccomp.ALLOW, "prlimit64", pyseccomp.Arg(2, pyseccomp.EQ, 0))
+    except (ValueError, RuntimeError, OSError, AttributeError):
+        pass
+
+def install_filter():
     if pyseccomp is None:
         return
-    f = pyseccomp.SyscallFilter(pyseccomp.ALLOW)
-    widen_arches(f)
-    for name in BLOCKED_SYSCALLS:
+    f = pyseccomp.SyscallFilter(pyseccomp.ERRNO(errno.EPERM))
+    for name in ALLOWED_SYSCALLS:
         try:
-            f.add_rule(pyseccomp.ERRNO(errno.EPERM), name)
+            f.add_rule(pyseccomp.ALLOW, name)
         except (ValueError, RuntimeError, OSError):
             pass
-    deny_new_processes(f)
-    deny_signals(f, os.getpid())
-    deny_writes(f)
+    allow_threads(f)
+    allow_signals_to_self(f, os.getpid())
+    allow_reads_deny_writes(f)
+    allow_read_rlimit(f)
     f.load()
 
 def confine(lim):
@@ -321,7 +350,7 @@ def confine(lim):
         except (ValueError, OSError):
             pass
 
-    deny_syscalls()
+    install_filter()
 
 def isolate(job):
     try:
