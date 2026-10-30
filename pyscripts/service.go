@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	runRate  = rate.Limit(2)
-	runBurst = 10
+	poolRate  = rate.Limit(2)
+	poolBurst = 10
 )
 
 type groupRateLimiter struct {
@@ -26,8 +26,12 @@ type groupRateLimiter struct {
 }
 
 func (g *groupRateLimiter) allow(groupID string) bool {
-	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(runRate, runBurst))
+	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(poolRate, poolBurst))
 	return l.(*rate.Limiter).Allow()
+}
+
+func (g *groupRateLimiter) remove(groupID string) {
+	g.limiters.Delete(groupID)
 }
 
 // Service specifies an API that must be fullfiled by the domain service
@@ -73,7 +77,7 @@ type pyscriptsService struct {
 	things        domain.ThingsClient
 	idProvider    uuid.IDProvider
 	logger        logger.Logger
-	runLimiter    groupRateLimiter
+	poolLimiter   groupRateLimiter
 }
 
 var _ Service = (*pyscriptsService)(nil)
@@ -93,6 +97,10 @@ func New(scripts ScriptRepository, run Runner, things domain.ThingsClient, idp u
 func (ps *pyscriptsService) CreateScripts(ctx context.Context, token, groupID string, scripts ...Script) ([]Script, error) {
 	if err := ps.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 		return []Script{}, err
+	}
+
+	if !ps.poolLimiter.allow(groupID) {
+		return []Script{}, ErrRateLimited
 	}
 
 	for i := range scripts {
@@ -144,6 +152,10 @@ func (ps *pyscriptsService) UpdateScript(ctx context.Context, token string, scri
 		return err
 	}
 
+	if !ps.poolLimiter.allow(existing.GroupID) {
+		return ErrRateLimited
+	}
+
 	if err := ps.validateSource(ctx, script.Source); err != nil {
 		return err
 	}
@@ -170,7 +182,16 @@ func (ps *pyscriptsService) RemoveScripts(ctx context.Context, token string, ids
 }
 
 func (ps *pyscriptsService) RemoveScriptsByGroup(ctx context.Context, groupID string) error {
-	return ps.scripts.RemoveScriptsByGroup(ctx, groupID)
+	if err := ps.scripts.RemoveScriptsByGroup(ctx, groupID); err != nil {
+		return err
+	}
+
+	// The group is gone, so drop its rate-limiter entry rather than leaking it for
+	// the process lifetime. This runs on the GroupRemoved event, which is how a
+	// deleted group's scripts are cleaned up too.
+	ps.poolLimiter.remove(groupID)
+
+	return nil
 }
 
 func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in Input) (ScriptRun, error) {
@@ -185,7 +206,7 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	if !ps.runLimiter.allow(script.GroupID) {
+	if !ps.poolLimiter.allow(script.GroupID) {
 		return ScriptRun{}, ErrRateLimited
 	}
 
