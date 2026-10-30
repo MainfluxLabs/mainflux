@@ -167,12 +167,12 @@ func (req removeScriptsReq) validate() error {
 }
 
 type runScriptReq struct {
-	token       string
-	id          string
-	Payload     map[string]any `json:"payload"`
-	Subtopic    string         `json:"subtopic,omitempty"`
-	Created     int64          `json:"created,omitempty"`
-	ThingID     string         `json:"thing_id,omitempty"`
+	token    string
+	id       string
+	Payload  map[string]any `json:"payload"`
+	Subtopic string         `json:"subtopic,omitempty"`
+	Created  int64          `json:"created,omitempty"`
+	ThingID  string         `json:"thing_id,omitempty"`
 }
 
 func (req runScriptReq) validate() error {
