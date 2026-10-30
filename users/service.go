@@ -28,6 +28,7 @@ const (
 	rootAdminRole     = "root"
 	GoogleProvider    = "google"
 	GitHubProvider    = "github"
+	OIDCProvider      = "oidc"
 )
 
 var (
@@ -166,6 +167,7 @@ type usersService struct {
 	idProvider          uuid.IDProvider
 	googleOAuth         oauth2.Config
 	githubOAuth         oauth2.Config
+	oidc                *oidcClient
 	urls                ConfigURLs
 }
 
@@ -176,6 +178,7 @@ type Config struct {
 	SelfRegisterEnabled bool
 	GoogleOAuth         oauth2.Config
 	GitHubOAuth         oauth2.Config
+	OIDC                OIDCConfig
 	URLs                ConfigURLs
 }
 
@@ -195,6 +198,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		idProvider:          idp,
 		googleOAuth:         c.GoogleOAuth,
 		githubOAuth:         c.GitHubOAuth,
+		oidc:                newOIDCClient(c.OIDC),
 		urls:                c.URLs,
 	}
 }
@@ -451,6 +455,14 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 		oauthCfg = svc.googleOAuth
 	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
+	case OIDCProvider:
+		if !svc.oidc.enabled() {
+			return OAuthLoginData{}, apiutil.ErrInvalidProvider
+		}
+		oauthCfg, err = svc.oidc.oauthConfig()
+		if err != nil {
+			return OAuthLoginData{}, err
+		}
 	default:
 		return OAuthLoginData{}, apiutil.ErrInvalidProvider
 	}
@@ -473,6 +485,8 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		email, providerUserID, err = svc.fetchGoogleUser(ctx, data.Code, data.Verifier)
 	case GitHubProvider:
 		email, providerUserID, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
+	case OIDCProvider:
+		email, providerUserID, err = svc.fetchOIDCUser(ctx, data.Code, data.Verifier)
 	default:
 		return "", apiutil.ErrInvalidProvider
 	}
@@ -581,6 +595,77 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 	}
 
 	return email, providerUserID, nil
+}
+
+func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string) (string, string, error) {
+	if !svc.oidc.enabled() {
+		return "", "", apiutil.ErrInvalidProvider
+	}
+
+	oauthCfg, err := svc.oidc.oauthConfig()
+	if err != nil {
+		return "", "", err
+	}
+
+	idTokenVerifier, err := svc.oidc.verifier()
+	if err != nil {
+		return "", "", err
+	}
+
+	ctx = svc.oidc.httpContext(ctx)
+
+	oauthToken, err := oauthCfg.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return "", "", errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	rawIDToken, ok := oauthToken.Extra("id_token").(string)
+	if !ok || rawIDToken == "" {
+		return "", "", errors.ErrAuthentication
+	}
+
+	idToken, err := idTokenVerifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return "", "", errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	var claims struct {
+		Email         string    `json:"email"`
+		EmailVerified *oidcBool `json:"email_verified"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		return "", "", errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	// Some providers only expose the e-mail through the UserInfo endpoint.
+	if claims.Email == "" {
+		provider, err := svc.oidc.discover()
+		if err != nil {
+			return "", "", err
+		}
+
+		userInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(oauthToken))
+		if err != nil {
+			return "", "", errors.Wrap(errors.ErrAuthentication, err)
+		}
+		// UserInfo must describe the same user as the ID token.
+		if userInfo.Subject != idToken.Subject {
+			return "", "", errors.ErrAuthentication
+		}
+		if err := userInfo.Claims(&claims); err != nil {
+			return "", "", errors.Wrap(errors.ErrAuthentication, err)
+		}
+	}
+
+	// A missing email_verified claim is accepted, since not all providers send it.
+	if claims.EmailVerified != nil && !bool(*claims.EmailVerified) {
+		return "", "", errors.ErrAuthentication
+	}
+	if claims.Email == "" || idToken.Subject == "" {
+		return "", "", errors.ErrAuthentication
+	}
+
+	return claims.Email, idToken.Subject, nil
 }
 
 // handleIdentity resolves or creates a User for an OAuth login flow.
