@@ -185,7 +185,13 @@ class Out:
 // from the deadline kill, whereas a second of headroom lets SIGXCPU arrive first
 // so the cause can be named. And RLIMIT_DATA rather than RLIMIT_AS, because
 // numpy's BLAS backend reserves a large address space at import and an AS cap
-// makes "import numpy" itself raise MemoryError.
+// makes "import numpy" itself raise MemoryError. RLIMIT_DATA bounds the brk and
+// the private anonymous mappings a run allocates, which is where malloc and
+// numpy arrays land - but it does not charge an anonymous MAP_SHARED mapping,
+// which is why allow_mmap_except_shared_anon refuses that one case outright.
+// With it refused, memfd_create absent from the allow-list, and the read-only
+// filesystem denying tmpfs and /dev/shm, RLIMIT_DATA is the only bound a run's
+// memory can reach.
 //
 // Out has to pass for a text stream, not merely absorb writes. Libraries probe
 // what they are printing to - isatty, fileno, encoding, writelines - and with
@@ -214,7 +220,7 @@ ALLOWED_SYSCALLS = (
     "getpid", "gettid", "getppid", "getuid", "geteuid", "getgid", "getegid",
     "getgroups", "getresuid", "getresgid", "getpgid", "getpgrp", "getsid",
     "getpriority", "uname", "sysinfo", "getrandom", "capget",
-    "brk", "mmap", "mmap2", "munmap", "mremap", "mprotect", "madvise",
+    "brk", "munmap", "mremap", "mprotect", "madvise",
     "mlock", "mlock2", "munlock", "mlockall", "munlockall", "msync", "mincore",
     "clock_gettime", "clock_gettime64", "clock_getres", "clock_getres_time64",
     "gettimeofday", "time", "times", "getrusage",
@@ -247,6 +253,8 @@ SIGNAL_TO_SELF = ("kill", "tgkill", "rt_sigqueueinfo", "rt_tgsigqueueinfo")
 CLONE_THREAD = 0x00010000
 
 O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT = 0o3, 0o1, 0o2, 0o100
+
+MAP_SHARED, MAP_ANONYMOUS = 0x01, 0x20
 
 # Denied by the default anyway; named so the error is EROFS - "read-only
 # filesystem" - rather than the blanket EPERM, which is the truthful reason a
@@ -312,6 +320,31 @@ def allow_read_rlimit(f):
     except (ValueError, RuntimeError, OSError, AttributeError):
         pass
 
+def allow_mmap_except_shared_anon(f):
+    # mmap is governed by these rules instead of a blanket allow, because a
+    # blanket allow is unconditional and cannot be narrowed afterwards. The case
+    # to refuse is an anonymous MAP_SHARED mapping: RLIMIT_DATA does not charge it
+    # to the process, so a run could map gigabytes it is never billed for and
+    # drive the host out of memory. Two allows express "not (shared and anon)" -
+    # any file-backed or any private mapping, which is every mapping numpy and the
+    # dynamic loader actually make - and the ERRNO names the gap so the refusal
+    # reads as "cannot allocate memory" rather than a blanket EPERM.
+    for name in ("mmap", "mmap2"):
+        try:
+            f.add_rule(pyseccomp.ALLOW, name, pyseccomp.Arg(3, pyseccomp.MASKED_EQ, MAP_ANONYMOUS, 0))
+        except (ValueError, RuntimeError, OSError, AttributeError):
+            pass
+        try:
+            f.add_rule(pyseccomp.ALLOW, name, pyseccomp.Arg(3, pyseccomp.MASKED_EQ, MAP_SHARED, 0))
+        except (ValueError, RuntimeError, OSError, AttributeError):
+            pass
+        try:
+            f.add_rule(pyseccomp.ERRNO(errno.ENOMEM), name,
+                       pyseccomp.Arg(3, pyseccomp.MASKED_EQ,
+                                     MAP_SHARED | MAP_ANONYMOUS, MAP_SHARED | MAP_ANONYMOUS))
+        except (ValueError, RuntimeError, OSError, AttributeError):
+            pass
+
 def install_filter():
     if pyseccomp is None:
         return
@@ -325,6 +358,7 @@ def install_filter():
     allow_signals_to_self(f, os.getpid())
     allow_reads_deny_writes(f)
     allow_read_rlimit(f)
+    allow_mmap_except_shared_anon(f)
     f.load()
 
 def confine(lim):
