@@ -33,15 +33,15 @@ func New(db *sqlx.DB) consumers.MessageConsumer {
 }
 
 func (pr postgresRepo) ConsumeMessage(_ string, msg protomfx.Message) error {
-	msgs, err := messaging.SplitMessage(msg)
-	if err != nil {
-		return err
-	}
-
 	switch msg.ContentType {
 	case messaging.JSONContentType:
-		return pr.saveJSON(msgs)
+		return pr.saveJSON(messaging.ToJSONMessages(msg))
 	default:
+		msgs, err := messaging.SplitMessage(msg)
+		if err != nil {
+			return err
+		}
+
 		return pr.saveSenML(msgs)
 	}
 }
@@ -98,7 +98,7 @@ type jsonRow struct {
 	PayloadHash int32 `db:"payload_hash"`
 }
 
-func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
+func (pr postgresRepo) saveJSON(msgs []mfjson.Message) error {
 	q := `INSERT INTO json (created, subtopic, thing_id, protocol, payload, payload_hash)
           VALUES (:created, :subtopic, :thing_id, :protocol, :payload, :payload_hash)
           ON CONFLICT (created, thing_id, subtopic, payload_hash) DO NOTHING;`
@@ -120,9 +120,7 @@ func (pr postgresRepo) saveJSON(msgs []protomfx.Message) error {
 		}
 	}()
 
-	for _, msg := range msgs {
-		dbmsg := messaging.ToJSONMessage(msg)
-
+	for _, dbmsg := range msgs {
 		row := jsonRow{Message: dbmsg, PayloadHash: messaging.PayloadHash(dbmsg.Payload)}
 		if _, err := tx.NamedExec(q, row); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)

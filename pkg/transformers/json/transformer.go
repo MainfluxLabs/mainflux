@@ -47,11 +47,13 @@ func TransformPayload(transformer domain.Transformer, msg *protomfx.Message) err
 			return err
 		}
 		msg.Payload = data
+		msg.Records = []*protomfx.Record{{Payload: data, Created: msg.Created}}
 		return nil
 
 	case []any:
 		var payloads []map[string]any
-		for _, val := range p {
+		var records []*protomfx.Record
+		for i, val := range p {
 			v, ok := val.(map[string]any)
 			if !ok {
 				return errors.Wrap(ErrTransform, errInvalidNestedJSON)
@@ -63,11 +65,22 @@ func TransformPayload(transformer domain.Transformer, msg *protomfx.Message) err
 			}
 
 			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
+			data, err := json.Marshal(formattedPayload)
+			if err != nil {
+				return err
+			}
+
+			// Timestamps assigned per record by the publisher apply to items without a time field value.
+			created := msg.Created
+			if len(msg.Records) == len(p) && msg.Records[i].Created != 0 {
+				created = msg.Records[i].Created
+			}
 			if ts != 0 {
-				formattedPayload["Created"] = ts
+				created = ts
 			}
 
 			payloads = append(payloads, formattedPayload)
+			records = append(records, &protomfx.Record{Payload: data, Created: created})
 		}
 
 		data, err := json.Marshal(payloads)
@@ -75,6 +88,7 @@ func TransformPayload(transformer domain.Transformer, msg *protomfx.Message) err
 			return err
 		}
 		msg.Payload = data
+		msg.Records = records
 		return nil
 
 	default:
