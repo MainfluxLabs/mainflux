@@ -69,6 +69,7 @@ func TestSaveSenML(t *testing.T) {
 			Payload:     payload,
 			ContentType: senml.JSON,
 			Created:     now + int64(i),
+			Records:     []*protomfx.Record{{Payload: payload, Created: now + int64(i)}},
 		}
 
 		err = repo.ConsumeMessage(subject, pm)

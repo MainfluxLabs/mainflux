@@ -47,6 +47,7 @@ func TransformPayload(msg *protomfx.Message) error {
 	}
 
 	payloads := make([]Message, len(normalized.Records))
+	records := make([]*protomfx.Record, len(normalized.Records))
 	for i, v := range normalized.Records {
 		// Use reception timestamp if SenML message Time is missing
 		var t int64
@@ -72,6 +73,12 @@ func TransformPayload(msg *protomfx.Message) error {
 			StringValue: v.StringValue,
 			Sum:         v.Sum,
 		}
+
+		data, err := json.Marshal(payloads[i])
+		if err != nil {
+			return err
+		}
+		records[i] = &protomfx.Record{Payload: data, Created: t}
 	}
 
 	data, err := json.Marshal(payloads)
@@ -79,6 +86,7 @@ func TransformPayload(msg *protomfx.Message) error {
 		return err
 	}
 	msg.Payload = data
+	msg.Records = records
 
 	return nil
 }

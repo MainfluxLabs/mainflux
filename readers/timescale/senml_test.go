@@ -119,6 +119,7 @@ func TestListSenMLMessages(t *testing.T) {
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
 			Payload:     payload,
+			Records:     []*protomfx.Record{{Payload: payload}},
 		}
 
 		err = writer.ConsumeMessage(subject, pm)
