@@ -151,8 +151,7 @@ func (rr ruleRepository) RetrieveByThingAndInputType(ctx context.Context, thingI
 	q := `SELECT r.id, r.group_id, r.name, r.description,
 		r.input_type, r.input_config, r.conditions, r.operator, r.actions
 		FROM rules r JOIN rules_things rt ON rt.rule_id = r.id
-		WHERE rt.thing_id = $1 AND r.input_type = $2
-		ORDER BY r.id;`
+		WHERE rt.thing_id = $1 AND r.input_type = $2;`
 
 	var dbRules []dbRule
 	if err := rr.db.SelectContext(ctx, &dbRules, q, thingID, inputType); err != nil {
