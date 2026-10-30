@@ -9,7 +9,7 @@ import (
 )
 
 // InvalidURL is a webhook URL for which the mock forwarder always fails.
-const InvalidURL = "https://invalid.webhook.com"
+const InvalidURL = "https://webhook.invalid"
 
 var errForward = errors.New("failed to forward message")
 
