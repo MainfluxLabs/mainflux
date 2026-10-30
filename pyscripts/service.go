@@ -7,12 +7,28 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"sync"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"golang.org/x/time/rate"
 )
+
+var (
+	runRate  = rate.Limit(2)
+	runBurst = 10
+)
+
+type groupRateLimiter struct {
+	limiters sync.Map // groupID -> *rate.Limiter
+}
+
+func (g *groupRateLimiter) allow(groupID string) bool {
+	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(runRate, runBurst))
+	return l.(*rate.Limiter).Allow()
+}
 
 // Service specifies an API that must be fullfiled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
@@ -57,6 +73,7 @@ type pyscriptsService struct {
 	things        domain.ThingsClient
 	idProvider    uuid.IDProvider
 	logger        logger.Logger
+	runLimiter    groupRateLimiter
 }
 
 var _ Service = (*pyscriptsService)(nil)
@@ -166,6 +183,10 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 	// action rather than a read, even though it leaves the script unchanged.
 	if err := ps.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: script.GroupID, Action: domain.GroupEditor}); err != nil {
 		return ScriptRun{}, err
+	}
+
+	if !ps.runLimiter.allow(script.GroupID) {
+		return ScriptRun{}, ErrRateLimited
 	}
 
 	res, err := ps.runner.Run(ctx, script.Source, in)

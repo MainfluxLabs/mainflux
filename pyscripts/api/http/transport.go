@@ -312,6 +312,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusBadRequest)
 	case errors.Contains(err, pyscripts.ErrRunnerBusy):
 		w.WriteHeader(http.StatusServiceUnavailable)
+	case errors.Contains(err, pyscripts.ErrRateLimited):
+		w.WriteHeader(http.StatusTooManyRequests)
 	case errors.Contains(err, pyscripts.ErrRunnerFailed),
 		errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)

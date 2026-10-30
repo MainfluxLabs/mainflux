@@ -511,3 +511,46 @@ func TestRemoveRuns(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
+
+func TestRunScriptRateLimit(t *testing.T) {
+	const (
+		token1 = "tenant-one"
+		token2 = "tenant-two"
+		group1 = "11111111-1111-1111-1111-111111111111"
+		group2 = "22222222-2222-2222-2222-222222222222"
+	)
+
+	things := pkgmocks.NewThingsServiceClient(
+		nil,
+		map[string]domain.Thing{},
+		map[string]domain.Group{
+			token1: {ID: group1},
+			token2: {ID: group2},
+		},
+	)
+	svc := pyscripts.New(psmocks.NewScriptRepository(), psmocks.NewRunner(), things, uuid.NewMock(), logger.NewMock(), maxScriptSize)
+
+	s1, err := svc.CreateScripts(context.Background(), token1, group1, script("a", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+	s2, err := svc.CreateScripts(context.Background(), token2, group2, script("b", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+
+	var allowed, limited int
+	for i := 0; i < 50; i++ {
+		_, err := svc.RunScript(context.Background(), token1, s1[0].ID, pyscripts.Input{})
+		switch {
+		case err == nil:
+			allowed++
+		case errors.Contains(err, pyscripts.ErrRateLimited):
+			limited++
+		default:
+			t.Fatalf("unexpected error on run %d: %s", i, err)
+		}
+	}
+
+	assert.Greater(t, allowed, 0, "expected the initial burst to be allowed")
+	assert.Greater(t, limited, 0, "expected a looping group to be rate limited")
+
+	_, err = svc.RunScript(context.Background(), token2, s2[0].ID, pyscripts.Input{})
+	assert.Nil(t, err, fmt.Sprintf("expected a different group to be unaffected by another's limit: %s", err))
+}

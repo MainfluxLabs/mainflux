@@ -17,6 +17,7 @@ var (
 	ErrRunnerFailed = errors.New("python worker failed")
 	ErrOutputLimit  = errors.New("output limit exceeded")
 	ErrRunnerClosed = errors.New("runner is closed")
+	ErrRateLimited  = errors.New("too many runs for this group, retry later")
 )
 
 const (
