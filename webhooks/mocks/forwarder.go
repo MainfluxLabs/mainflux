@@ -11,11 +11,9 @@ import (
 // InvalidURL is a webhook URL for which the mock forwarder always fails.
 const InvalidURL = "https://invalid.webhook.com"
 
-var (
-	_ webhooks.Forwarder = (*forwarder)(nil)
+var errForward = errors.New("failed to forward message")
 
-	errForward = errors.New("failed to forward message")
-)
+var _ webhooks.Forwarder = (*forwarder)(nil)
 
 type forwarder struct{}
 
