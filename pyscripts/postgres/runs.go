@@ -15,7 +15,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pyscripts"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 )
+
+var maxRunsPerScript = 1000
 
 func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.ScriptRun) ([]pyscripts.ScriptRun, error) {
 	tx, err := sr.db.BeginTxx(ctx, nil)
@@ -31,6 +34,7 @@ func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.Scrip
 		        :started_at, :finished_at, :status, :error);
 	`
 
+	pruned := make(map[string]struct{}, len(runs))
 	for _, run := range runs {
 		dbr, err := toDBRun(run)
 		if err != nil {
@@ -40,6 +44,13 @@ func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.Scrip
 		if _, err := tx.NamedExecContext(ctx, query, dbr); err != nil {
 			return []pyscripts.ScriptRun{}, wrapWrite(err, dbutil.ErrCreateEntity)
 		}
+
+		if _, done := pruned[run.ScriptID]; !done {
+			if err := sr.pruneRuns(ctx, tx, run.ScriptID); err != nil {
+				return []pyscripts.ScriptRun{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+			}
+			pruned[run.ScriptID] = struct{}{}
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -47,6 +58,26 @@ func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.Scrip
 	}
 
 	return runs, nil
+}
+
+func (sr scriptRepository) pruneRuns(ctx context.Context, tx *sqlx.Tx, scriptID string) error {
+	query := `
+		DELETE FROM script_runs
+		WHERE script_id = :script_id
+		  AND id NOT IN (
+		      SELECT id FROM script_runs
+		      WHERE script_id = :script_id
+		      ORDER BY started_at DESC, id DESC
+		      LIMIT :limit
+		  );
+	`
+
+	params := map[string]any{"script_id": scriptID, "limit": maxRunsPerScript}
+	if _, err := tx.NamedExecContext(ctx, query, params); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (sr scriptRepository) RetrieveRunByID(ctx context.Context, id string) (pyscripts.ScriptRun, error) {

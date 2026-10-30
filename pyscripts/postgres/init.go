@@ -77,6 +77,7 @@ func migrateDB(db *sqlx.DB) error {
 					`CREATE INDEX IF NOT EXISTS idx_scripts_group_id ON scripts (group_id);`,
 					`CREATE INDEX IF NOT EXISTS idx_script_runs_script_id ON script_runs (script_id);`,
 					`CREATE INDEX IF NOT EXISTS idx_script_runs_started_at ON script_runs (started_at);`,
+					`CREATE INDEX IF NOT EXISTS idx_script_runs_script_started ON script_runs (script_id, started_at DESC, id DESC);`,
 				},
 				Down: []string{
 					`DROP TABLE IF EXISTS script_runs;`,

@@ -80,9 +80,41 @@ func TestSaveRuns(t *testing.T) {
 	}
 }
 
-// TestSaveRunWithNulByte guards the init.go switch from jsonb to json columns:
-// jsonb rejects \u0000, so a script that returns or logs a NUL byte would have
-// made the run unpersistable. The json column must store it verbatim.
+func TestSaveRunsRetention(t *testing.T) {
+	cleanUp(t)
+	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))
+	ctx := context.Background()
+
+	s := saveScriptFixture(t, repo)
+
+	// cap mirrors maxRunsPerScript in runs.go; this test is the guard on it. Save
+	// a few past the cap, each newer than the last, one at a time as the service
+	// does: the newest cap must survive and the oldest beyond it must be pruned.
+	const cap, extra = 1000, 5
+	base := time.Now().Add(-2 * time.Hour)
+	var ids []string
+	for i := 0; i < cap+extra; i++ {
+		run := newRun(t, s.ID, pyscripts.ScriptRunStatusSuccess, float64(i), nil)
+		run.StartedAt = base.Add(time.Duration(i) * time.Second)
+		run.FinishedAt = run.StartedAt
+		_, err := repo.SaveRuns(ctx, run)
+		require.Nil(t, err, fmt.Sprintf("unexpected save error on run %d: %s", i, err))
+		ids = append(ids, run.ID)
+	}
+
+	page, err := repo.RetrieveRunsByScript(ctx, s.ID, pyscripts.PageMetadata{Limit: 1})
+	require.Nil(t, err, fmt.Sprintf("unexpected retrieve error: %s", err))
+	assert.Equal(t, uint64(cap), page.Total, "expected the run history to be capped")
+
+	// The oldest beyond the cap are gone; the newest is retained.
+	for _, oldID := range ids[:extra] {
+		_, err := repo.RetrieveRunByID(ctx, oldID)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected pruned run %s to be gone, got %s", oldID, err))
+	}
+	_, err = repo.RetrieveRunByID(ctx, ids[len(ids)-1])
+	assert.Nil(t, err, "expected the newest run to be retained")
+}
+
 func TestSaveRunWithNulByte(t *testing.T) {
 	cleanUp(t)
 	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))

@@ -23,7 +23,6 @@ type scriptRepository struct {
 	db dbutil.Database
 }
 
-// NewScriptRepository instantiates a PostgreSQL implementation of the pyscripts repository.
 func NewScriptRepository(db dbutil.Database) pyscripts.ScriptRepository {
 	return &scriptRepository{db: db}
 }
