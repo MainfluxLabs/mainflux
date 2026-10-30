@@ -104,6 +104,25 @@ func (rrm *ruleRepositoryMock) RetrieveByThing(_ context.Context, thingID string
 	}, nil
 }
 
+func (rrm *ruleRepositoryMock) RetrieveByThingAndInputType(_ context.Context, thingID, inputType string) ([]rules.Rule, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	var items []rules.Rule
+	for _, ruleID := range rrm.ruleAssignments[thingID] {
+		r, ok := rrm.rules[ruleID]
+		if !ok {
+			continue
+		}
+		if r.Input.Type != inputType {
+			continue
+		}
+		items = append(items, r)
+	}
+
+	return items, nil
+}
+
 func (rrm *ruleRepositoryMock) RetrieveByGroup(_ context.Context, groupID string, pm rules.PageMetadata) (rules.RulesPage, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
