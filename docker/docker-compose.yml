@@ -758,6 +758,13 @@ services:
     memswap_limit: ${MF_PYSCRIPTS_MEM_LIMIT}
     cpus: ${MF_PYSCRIPTS_CPUS}
     pids_limit: ${MF_PYSCRIPTS_PIDS_LIMIT}
+    read_only: true
+    tmpfs:
+      - /tmp:size=${MF_PYSCRIPTS_TMPFS_SIZE}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   smtp-notifier-db:
     image: postgres:13.3-alpine
