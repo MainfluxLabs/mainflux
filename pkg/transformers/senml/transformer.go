@@ -29,40 +29,40 @@ var formats = map[string]senml.Format{
 	CBOR: senml.CBOR,
 }
 
-func TransformPayload(msg *protomfx.Message) error {
-	contentFormat := msg.ContentType
-	format, ok := formats[contentFormat]
+// TransformPayload converts a SenML pack into one record per normalized SenML record.
+// Records without a time value are assigned the created timestamp.
+func TransformPayload(contentType string, payload []byte, created int64) ([]*protomfx.Record, error) {
+	format, ok := formats[contentType]
 	if !ok {
 		format = formats[JSON]
 	}
 
-	raw, err := senml.Decode(msg.Payload, format)
+	raw, err := senml.Decode(payload, format)
 	if err != nil {
-		return errors.Wrap(errDecode, err)
+		return nil, errors.Wrap(errDecode, err)
 	}
 
 	normalized, err := senml.Normalize(raw)
 	if err != nil {
-		return errors.Wrap(errNormalize, err)
+		return nil, errors.Wrap(errNormalize, err)
 	}
 
-	payloads := make([]Message, len(normalized.Records))
 	records := make([]*protomfx.Record, len(normalized.Records))
 	for i, v := range normalized.Records {
 		// Use reception timestamp if SenML message Time is missing
 		var t int64
 		switch v.Time {
 		case 0:
-			t = msg.Created
+			t = created
 		default:
 			ts, err := transformers.SecondsToNanos(v.Time)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			t = ts
 		}
 
-		payloads[i] = Message{
+		data, err := json.Marshal(Message{
 			Name:        v.Name,
 			Unit:        v.Unit,
 			Time:        t,
@@ -72,21 +72,15 @@ func TransformPayload(msg *protomfx.Message) error {
 			DataValue:   v.DataValue,
 			StringValue: v.StringValue,
 			Sum:         v.Sum,
-		}
-
-		data, err := json.Marshal(payloads[i])
+		})
 		if err != nil {
-			return err
+			return nil, err
 		}
-		records[i] = &protomfx.Record{Payload: data, Created: t}
+		records[i] = &protomfx.Record{
+			Payload: data,
+			Time:    t,
+		}
 	}
 
-	data, err := json.Marshal(payloads)
-	if err != nil {
-		return err
-	}
-	msg.Payload = data
-	msg.Records = records
-
-	return nil
+	return records, nil
 }

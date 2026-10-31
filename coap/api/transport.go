@@ -209,8 +209,8 @@ func buildMessage(subtopic string, payload []byte) protomfx.Message {
 	return protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
-		Payload:  payload,
 		Created:  time.Now().UnixNano(),
+		Records:  []*protomfx.Record{{Payload: payload}},
 	}
 }
 

@@ -435,7 +435,7 @@ func (ds *downlinksService) LoadAndScheduleTasks(ctx context.Context) error {
 func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string, payload []byte) error {
 	msg := protomfx.Message{
 		Protocol: downlinkProtocol,
-		Payload:  payload,
+		Records:  []*protomfx.Record{{Payload: payload}},
 	}
 
 	conn := domain.PubConfigInfo{

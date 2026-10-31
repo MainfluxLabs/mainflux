@@ -144,9 +144,14 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 		}
 	}
 	if pc.WebhookEnabled {
+		payload, err := messaging.ToPayload(msg)
+		if err != nil {
+			return err
+		}
+
 		webhook := protomfx.Webhook{
 			ThingId: msg.ThingId,
-			Payload: msg.Payload,
+			Payload: payload,
 			Created: msg.Created,
 		}
 		if err := pub.PublishWebhook(SubjectWebhooks, webhook); err != nil {

@@ -85,6 +85,11 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 		return nil
 	}
 
+	payload, err := messaging.ToPayload(*msg)
+	if err != nil {
+		return err
+	}
+
 	for _, action := range rule.Actions {
 		switch action.Type {
 		case ActionTypeAlarm:
@@ -108,7 +113,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
-				Payload:  msg.Payload,
+				Payload:  payload,
 				Created:  msg.Created,
 			}
 			if err := rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification); err != nil {
@@ -117,7 +122,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 		case ActionTypeWebhook:
 			webhook := protomfx.Webhook{
 				ThingId: msg.ThingId,
-				Payload: msg.Payload,
+				Payload: payload,
 				Created: msg.Created,
 			}
 			if err := rs.pub.PublishWebhook(subjectWebhooks, webhook); err != nil {

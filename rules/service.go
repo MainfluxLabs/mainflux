@@ -436,8 +436,13 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	ctx := context.Background()
 
+	body, err := messaging.ToPayload(msg)
+	if err != nil {
+		return err
+	}
+
 	var payload any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return err
 	}
 
@@ -485,7 +490,6 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Created:  alarm.Created,
-		Payload:  payload,
 	}
 
 	for _, rule := range rls {
@@ -511,14 +515,14 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 					ThingId:  msg.ThingId,
 					Subtopic: msg.Subtopic,
 					Protocol: msg.Protocol,
-					Payload:  msg.Payload,
+					Payload:  payload,
 					Created:  msg.Created,
 				}
 				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:
 				webhook := protomfx.Webhook{
 					ThingId: msg.ThingId,
-					Payload: msg.Payload,
+					Payload: payload,
 					Created: msg.Created,
 				}
 				err = rs.pub.PublishWebhook(subjectWebhooks, webhook)

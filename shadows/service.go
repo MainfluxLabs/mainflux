@@ -167,8 +167,13 @@ func decodeState(msg protomfx.Message) (State, bool) {
 		return decodeSenML(msg)
 	}
 
+	payload, err := messaging.ToPayload(msg)
+	if err != nil {
+		return nil, false
+	}
+
 	var s State
-	if err := json.Unmarshal(msg.Payload, &s); err != nil {
+	if err := json.Unmarshal(payload, &s); err != nil {
 		return nil, false
 	}
 	return s, true
