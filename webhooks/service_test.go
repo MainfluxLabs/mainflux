@@ -473,9 +473,9 @@ func TestRemoveWebhooks(t *testing.T) {
 }
 
 func TestConsume(t *testing.T) {
-	svc := newService()
-	whs, err := svc.CreateWebhooks(context.Background(), token, thingID, webhook)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	invalidWebhook := webhook
+	invalidWebhook.Name = prefixName + "invalid"
+	invalidWebhook.Url = whmock.InvalidURL
 
 	pyd := map[string]any{
 		"key1": "val1",
@@ -485,24 +485,36 @@ func TestConsume(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	wh := protomfx.Webhook{
-		ThingId: whs[0].ThingID,
+		ThingId: thingID,
 		Payload: payload,
 	}
 
 	cases := []struct {
-		desc string
-		wh   protomfx.Webhook
-		err  error
+		desc     string
+		webhooks []webhooks.Webhook
+		wh       protomfx.Webhook
+		err      error
 	}{
 		{
-			desc: "forward message",
-			wh:   wh,
-			err:  nil,
+			desc:     "forward message",
+			webhooks: []webhooks.Webhook{webhook},
+			wh:       wh,
+			err:      nil,
+		},
+		{
+			desc:     "forward message with one failing webhook",
+			webhooks: []webhooks.Webhook{webhook, invalidWebhook},
+			wh:       wh,
+			err:      webhooks.ErrForwardWebhooks,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.ConsumeWebhook(subject, tc.wh)
+		svc := newService()
+		_, err := svc.CreateWebhooks(context.Background(), token, thingID, tc.webhooks...)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		err = svc.ConsumeWebhook(subject, tc.wh)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
