@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
@@ -37,16 +38,16 @@ func (pr postgresRepo) ConsumeMessage(_ string, msg protomfx.Message) error {
 	case messaging.JSONContentType:
 		return pr.saveJSON(messaging.ToJSONMessages(msg))
 	default:
-		msgs, err := messaging.SplitMessage(msg)
+		msgs, err := messaging.ToSenMLMessages(msg)
 		if err != nil {
-			return err
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
 
 		return pr.saveSenML(msgs)
 	}
 }
 
-func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {
+func (pr postgresRepo) saveSenML(msgs []senml.Message) (err error) {
 	q := `INSERT INTO senml (subtopic, thing_id, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -71,12 +72,7 @@ func (pr postgresRepo) saveSenML(msgs []protomfx.Message) (err error) {
 		}
 	}()
 
-	for _, msg := range msgs {
-		dbmsg, err := messaging.ToSenMLMessage(msg)
-		if err != nil {
-			return errors.Wrap(errors.ErrSaveMessages, err)
-		}
-
+	for _, dbmsg := range msgs {
 		if _, err := tx.NamedExec(q, dbmsg); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {

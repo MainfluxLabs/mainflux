@@ -94,38 +94,20 @@ func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
 	}
 }
 
-func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
-	var msg senml.Message
-	if err := json.Unmarshal(message.Payload, &msg); err != nil {
-		return senml.Message{}, err
-	}
-
-	msg.ThingID = message.ThingId
-	msg.Subtopic = message.Subtopic
-	msg.Protocol = message.Protocol
-
-	return msg, nil
-}
-
-func SplitMessage(message protomfx.Message) ([]protomfx.Message, error) {
-	var payload any
-	if err := json.Unmarshal(message.Payload, &payload); err != nil {
-		return nil, err
-	}
-
-	if pyds, ok := payload.([]any); ok {
-		var messages []protomfx.Message
-		for _, pyd := range pyds {
-			data, err := json.Marshal(pyd)
-			if err != nil {
-				return nil, err
-			}
-			newMsg := message
-			newMsg.Payload = data
-			messages = append(messages, newMsg)
+// ToSenMLMessages converts each record of message into a SenML message.
+func ToSenMLMessages(message protomfx.Message) ([]senml.Message, error) {
+	var msgs []senml.Message
+	for _, record := range message.Records {
+		var msg senml.Message
+		if err := json.Unmarshal(record.Payload, &msg); err != nil {
+			return nil, err
 		}
-		return messages, nil
+
+		msg.ThingID = message.ThingId
+		msg.Subtopic = message.Subtopic
+		msg.Protocol = message.Protocol
+		msgs = append(msgs, msg)
 	}
 
-	return []protomfx.Message{message}, nil
+	return msgs, nil
 }
