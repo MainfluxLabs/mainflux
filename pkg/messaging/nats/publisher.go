@@ -26,7 +26,8 @@ const (
 	messagesSuffix = "messages"
 	commandsSuffix = "commands"
 
-	otaSubtopic = "ota"
+	// OTASubtopic is the subtopic that things receive OTA commands on and send OTA status reports to.
+	OTASubtopic = "ota"
 )
 
 type publisher struct {
@@ -135,7 +136,7 @@ func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) e
 		return nil
 	}
 
-	if msg.Subtopic == otaSubtopic {
+	if msg.Subtopic == OTASubtopic {
 		if err := pub.Publish(SubjectOTA, msg); err != nil {
 			return err
 		}
