@@ -104,7 +104,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
-		limitUpload(maxUploadBytes, decodeSaveFile),
+		decodeSaveFile(maxUploadBytes),
 		encodeResponse,
 		opts...,
 	))
@@ -137,7 +137,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 			kitot.TraceServer(tracer, "save_group_file"),
 			withIdentity,
 		)(saveGroupFileEndpoint(svc)),
-		limitUpload(maxUploadBytes, decodeSaveGroupFile),
+		decodeSaveGroupFile(maxUploadBytes),
 		encodeResponse,
 		opts...,
 	))
@@ -190,34 +190,30 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 	return r
 }
 
-func limitUpload(maxUploadBytes int64, decode kithttp.DecodeRequestFunc) kithttp.DecodeRequestFunc {
-	return func(ctx context.Context, r *http.Request) (any, error) {
+func decodeSaveFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
+
 		if r.ContentLength > maxUploadBytes {
 			return nil, apiutil.ErrLimitSize
 		}
 		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
 
-		return decode(ctx, r)
-	}
-}
+		fip, err := getFileInfoParams(r)
+		if err != nil {
+			return nil, err
+		}
 
-func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+		req := saveFileReq{
+			key:      apiutil.ExtractThingKey(r),
+			fileInfo: fip.fileInfo,
+			file:     fip.file,
+		}
 
-	fip, err := getFileInfoParams(r)
-	if err != nil {
-		return nil, err
+		return req, nil
 	}
-
-	req := saveFileReq{
-		key:      apiutil.ExtractThingKey(r),
-		fileInfo: fip.fileInfo,
-		file:     fip.file,
-	}
-
-	return req, nil
 }
 
 func decodeUpdateFile(_ context.Context, r *http.Request) (any, error) {
@@ -293,24 +289,31 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeSaveGroupFile(maxUploadBytes int64) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	fip, err := getFileInfoParams(r)
-	if err != nil {
-		return nil, err
-	}
+		if r.ContentLength > maxUploadBytes {
+			return nil, apiutil.ErrLimitSize
+		}
+		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
 
-	req := saveGroupFileReq{
-		token:    apiutil.ExtractBearerToken(r),
-		groupID:  bone.GetValue(r, idKey),
-		fileInfo: fip.fileInfo,
-		file:     fip.file,
-	}
+		fip, err := getFileInfoParams(r)
+		if err != nil {
+			return nil, err
+		}
 
-	return req, nil
+		req := saveGroupFileReq{
+			token:    apiutil.ExtractBearerToken(r),
+			groupID:  bone.GetValue(r, idKey),
+			fileInfo: fip.fileInfo,
+			file:     fip.file,
+		}
+
+		return req, nil
+	}
 }
 
 func decodeUpdateGroupFile(_ context.Context, r *http.Request) (any, error) {
