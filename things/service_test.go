@@ -31,9 +31,11 @@ const (
 	unauthUserEmail   = "unauth@example.com"
 	viewerEmail       = "viewer@gmail.com"
 	editorEmail       = "editor@gmail.com"
+	orgAdminEmail     = "org.admin@example.com"
 	adminToken        = adminEmail
 	viewerToken       = viewerEmail
 	editorToken       = editorEmail
+	orgAdminToken     = orgAdminEmail
 	token             = userEmail
 	otherToken        = otherUserEmail
 	unauthToken       = unauthUserEmail
@@ -59,11 +61,12 @@ var (
 	admin         = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
 	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerEmail, Password: password, Role: auth.Viewer}
 	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorEmail, Password: password, Role: auth.Editor}
-	usersList     = []users.User{admin, user, otherUser, viewer, editor, unauthUser}
+	orgAdmin      = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f96", Email: orgAdminEmail, Password: password, Role: auth.Admin}
+	usersList     = []users.User{admin, user, otherUser, viewer, editor, unauthUser, orgAdmin}
 	usersByEmails = map[string]users.User{userEmail: {ID: user.ID, Email: userEmail}, otherUserEmail: {ID: otherUser.ID, Email: otherToken}, viewerEmail: {ID: viewer.ID, Email: viewer.Email},
-		editorEmail: {ID: editor.ID, Email: editor.Email}, unauthUserEmail: unauthUser}
+		editorEmail: {ID: editor.ID, Email: editor.Email}, unauthUserEmail: unauthUser, orgAdminEmail: {ID: orgAdmin.ID, Email: orgAdmin.Email}}
 	usersByIDs = map[string]users.User{user.ID: {ID: user.ID, Email: userEmail}, otherUser.ID: {ID: otherUser.ID, Email: otherUserEmail}, viewer.ID: {ID: viewer.ID, Email: viewerEmail},
-		editor.ID: {ID: editor.ID, Email: editorEmail}, unauthUser.ID: unauthUser}
+		editor.ID: {ID: editor.ID, Email: editorEmail}, unauthUser.ID: unauthUser, orgAdmin.ID: {ID: orgAdmin.ID, Email: orgAdmin.Email}}
 	memberships = []things.GroupMembership{
 		{MemberID: otherUser.ID, Email: otherUser.Email, Role: things.Admin},
 		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer},
@@ -1819,6 +1822,26 @@ func TestListGroupsByOrg(t *testing.T) {
 			size: n,
 			err:  nil,
 		},
+		"list groups by org as org admin without group memberships": {
+			token: orgAdminToken,
+			orgID: orgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			err:  nil,
+		},
+		"list groups by org as org editor without group memberships": {
+			token: otherToken,
+			orgID: orgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
+			err:  nil,
+		},
 		"list groups by org with no limit": {
 			token: adminToken,
 			orgID: orgID,
@@ -1918,12 +1941,38 @@ func TestRemoveGroup(t *testing.T) {
 	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	ownerGrs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	ownerGrID := ownerGrs[0].ID
+
+	orgAdminGrs, err := svc.CreateGroups(context.Background(), orgAdminToken, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	orgAdminGrID := orgAdminGrs[0].ID
+
 	cases := []struct {
 		desc  string
 		token string
 		id    string
 		err   error
 	}{
+		{
+			desc:  "remove group as org viewer without group membership",
+			token: unauthToken,
+			id:    ownerGrID,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "remove group as org admin without group membership",
+			token: orgAdminToken,
+			id:    ownerGrID,
+			err:   nil,
+		},
+		{
+			desc:  "remove group created by org admin",
+			token: orgAdminToken,
+			id:    orgAdminGrID,
+			err:   nil,
+		},
 		{
 			desc:  "remove group with wrong credentials",
 			token: wrongValue,
@@ -2036,6 +2085,18 @@ func TestUpdateGroup(t *testing.T) {
 			err:   nil,
 		},
 		{
+			desc:  "update group as org viewer without group membership",
+			token: unauthToken,
+			group: ug,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "update group as org admin without group membership",
+			token: orgAdminToken,
+			group: ug,
+			err:   nil,
+		},
+		{
 			desc:  "update group with wrong credentials",
 			token: wrongValue,
 			group: ug,
@@ -2121,6 +2182,20 @@ func TestViewGroup(t *testing.T) {
 		{
 			desc:  "view group as system admin",
 			token: adminToken,
+			grID:  gr.ID,
+			res:   grRes,
+			err:   nil,
+		},
+		{
+			desc:  "view group as org viewer without group membership",
+			token: unauthToken,
+			grID:  gr.ID,
+			res:   things.Group{},
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "view group as org admin without group membership",
+			token: orgAdminToken,
 			grID:  gr.ID,
 			res:   grRes,
 			err:   nil,
@@ -2601,6 +2676,12 @@ func TestUpdateMemberships(t *testing.T) {
 			err:        errors.ErrAuthorization,
 		},
 		{
+			desc:       "update group owner role as org admin",
+			token:      orgAdminToken,
+			membership: gm,
+			err:        errors.ErrAuthorization,
+		},
+		{
 			desc:       "update group membership with wrong credentials",
 			token:      wrongValue,
 			membership: memberships[1],
@@ -2670,6 +2751,13 @@ func TestRemoveGroupMemberships(t *testing.T) {
 		{
 			desc:     "remove owner from group as admin",
 			token:    otherToken,
+			groupID:  gr.ID,
+			memberID: user.ID,
+			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "remove owner from group as org admin",
+			token:    orgAdminToken,
 			groupID:  gr.ID,
 			memberID: user.ID,
 			err:      errors.ErrAuthorization,

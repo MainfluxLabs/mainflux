@@ -1089,6 +1089,10 @@ func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, tok
 		return []string{}, err
 	}
 
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Admin); err == nil {
+		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
+	}
+
 	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
 		return nil, err

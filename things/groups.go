@@ -338,6 +338,25 @@ func (ts *thingsService) canAccessGroup(ctx context.Context, token, groupID, act
 }
 
 func (ts *thingsService) canMemberAccessGroup(ctx context.Context, token, memberID, groupID, action string) error {
+	err := ts.canMemberAccessGroupByRole(ctx, memberID, groupID, action)
+	if err == nil {
+		return nil
+	}
+
+	// org owner, org admin and root admin check: full access to every group in the org without a group membership
+	orgID, orgErr := ts.getOrgIDByGroup(ctx, groupID)
+	if orgErr != nil {
+		return err
+	}
+
+	if orgErr := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Admin); orgErr == nil {
+		return nil
+	}
+
+	return err
+}
+
+func (ts *thingsService) canMemberAccessGroupByRole(ctx context.Context, memberID, groupID, action string) error {
 	gm := GroupMembership{
 		MemberID: memberID,
 		GroupID:  groupID,
@@ -347,10 +366,6 @@ func (ts *thingsService) canMemberAccessGroup(ctx context.Context, token, member
 	if err != nil {
 		r, err := ts.groupMemberships.RetrieveRole(ctx, gm)
 		if err != nil {
-			// root admin check: if it isn't a group member but has all rights
-			if isAdminErr := ts.isAdmin(ctx, token); isAdminErr == nil {
-				return nil
-			}
 			return err
 		}
 		role = r

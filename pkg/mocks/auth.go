@@ -109,7 +109,8 @@ func contains(ids []string, id string) bool {
 func (svc authServiceMock) canAccessOrg(userID, action string) error {
 	isRoot := contains(svc.roles[auth.RootSub], userID)
 	isOwner := isRoot || contains(svc.roles[auth.Owner], userID)
-	isEditor := isOwner || contains(svc.roles[auth.Editor], userID)
+	isAdmin := isOwner || contains(svc.roles[auth.Admin], userID)
+	isEditor := isAdmin || contains(svc.roles[auth.Editor], userID)
 	isViewer := isEditor || contains(svc.roles[auth.Viewer], userID)
 
 	switch action {
@@ -120,6 +121,11 @@ func (svc authServiceMock) canAccessOrg(userID, action string) error {
 		return nil
 	case auth.Owner:
 		if !isOwner {
+			return errors.ErrAuthorization
+		}
+		return nil
+	case auth.Admin:
+		if !isAdmin {
 			return errors.ErrAuthorization
 		}
 		return nil
