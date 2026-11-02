@@ -87,13 +87,16 @@ func TestPublisher(t *testing.T) {
 	for _, tc := range cases {
 		msg := protomfx.Message{
 			ThingId: thingID,
-			Payload: tc.payload,
+			Records: []*protomfx.Record{{Payload: tc.payload}},
 		}
 
 		err := pubsub.Publish(tc.subject, msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
 
-		expectedMsg, err := json.Marshal(messaging.ToJSONMessage(msg))
+		jsonMsg, err := messaging.ToJSONMessage(msg)
+		assert.Nil(t, err, fmt.Sprintf("failed to convert message: %s", err))
+
+		expectedMsg, err := json.Marshal(jsonMsg)
 		assert.Nil(t, err, fmt.Sprintf("failed to marshal message: %s", err))
 
 		receivedMsg := <-msgChan
@@ -178,9 +181,10 @@ func TestSubscribe(t *testing.T) {
 			msg := protomfx.Message{
 				ThingId:  thingID,
 				Subtopic: subtopic,
-				Payload:  data,
+				Records:  []*protomfx.Record{{Payload: data}},
 			}
-			expectedJSON := messaging.ToJSONMessage(msg)
+			expectedJSON, err := messaging.ToJSONMessage(msg)
+			assert.Nil(t, err, fmt.Sprintf("failed to convert message: %s", err))
 			payload, err := json.Marshal(expectedJSON)
 			if err != nil {
 				t.Errorf("failed to marshal message: %v", err)
@@ -253,12 +257,13 @@ func TestPubSub(t *testing.T) {
 			msg := protomfx.Message{
 				ThingId:  thingID,
 				Subtopic: subtopic,
-				Payload:  data,
+				Records:  []*protomfx.Record{{Payload: data}},
 			}
 
 			err := pubsub.Publish(topic, msg)
 			assert.Nil(t, err, fmt.Sprintf("%s: got unexpected error: %s\n", tc.desc, err))
-			expectedJSON := messaging.ToJSONMessage(msg)
+			expectedJSON, err := messaging.ToJSONMessage(msg)
+			assert.Nil(t, err, fmt.Sprintf("failed to convert message: %s", err))
 
 			receivedMsg := <-msgChan
 			expectedMsg := expectedJSON.ToProtoMessage()

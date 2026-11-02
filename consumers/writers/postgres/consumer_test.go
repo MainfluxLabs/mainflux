@@ -67,10 +67,14 @@ func TestSaveSenML(t *testing.T) {
 			ThingId:     thingID.String(),
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
-			Payload:     payload,
 			ContentType: senml.JSON,
 			Created:     now + int64(i),
-			Records:     []*protomfx.Record{{Payload: payload, Created: now + int64(i)}},
+			Records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    now + int64(i),
+				},
+			},
 		}
 
 		err = repo.ConsumeMessage(subject, pm)
@@ -102,9 +106,13 @@ func TestSaveJSON(t *testing.T) {
 		Created:     time.Now().Unix(),
 		Subtopic:    subtopic,
 		Protocol:    mqttProt,
-		Payload:     payloadBytes,
 		ContentType: messaging.JSONContentType,
-		Records:     []*protomfx.Record{{Payload: payloadBytes, Created: time.Now().Unix()}},
+		Records: []*protomfx.Record{
+			{
+				Payload: payloadBytes,
+				Time:    time.Now().Unix(),
+			},
+		},
 	}
 
 	err = repo.ConsumeMessage(subject, pm)

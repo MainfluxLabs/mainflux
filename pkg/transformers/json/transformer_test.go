@@ -32,16 +32,13 @@ const (
 )
 
 const (
-	pointsDataField        = "Points.Value"
-	pointsTimeField        = "Time"
-	tsCreated              = int64(1638310819000000000)
-	tsListPayload          = `[{"custom_ts_key": "1638310819", "key1": "val1", "key5": "val5"}]`
-	singlePointPayload     = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}]}`
-	invalidPointsPayload   = `{"Points": [{"Value": {"key1": "val1"}}, "val2"]}`
-	tsListFilterResPayload = `[{"key1":"val1"}]`
-	missingKeyResPayload   = `[{"key1":"val1"},{"key1":"val2"}]`
-	singlePointResPayload  = `{"Time":"1638310819","key1":"val1"}`
-	partialResPayload      = `[{"Time":"1638310819","key1":"val1"}]`
+	pointsDataField       = "Points.Value"
+	pointsTimeField       = "Time"
+	tsCreated             = int64(1638310819000000000)
+	tsListPayload         = `[{"custom_ts_key": "1638310819", "key1": "val1", "key5": "val5"}]`
+	singlePointPayload    = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}]}`
+	invalidPointsPayload  = `{"Points": [{"Value": {"key1": "val1"}}, "val2"]}`
+	singlePointResPayload = `{"Time":"1638310819","key1":"val1"}`
 
 	partialPayload = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}, ` +
 		`{"PointId": 2}]}`
@@ -53,9 +50,6 @@ const (
 
 	missingKeyPayload = `{"Points": [{"Value": {"key1": "val1"}}, {"PointId": 2}, ` +
 		`{"Value": {"key1": "val2"}}]}`
-
-	tsListResPayload = `[{"custom_ts_key":"1638310819","key1":"val1","key5":"val5"}]`
-	pointsResPayload = `[{"Value":"63.6"},{"Value":"63.8"},{"Value":"12.1"}]`
 )
 
 var (
@@ -67,29 +61,8 @@ var transformer = domain.Transformer{DataFilters: dataFilters, TimeField: "nanos
 func TestTransformJSON(t *testing.T) {
 	now := time.Now().UnixNano()
 
-	msg := protomfx.Message{
-		Subtopic: subtopic,
-		ThingId:  "thing-1",
-		Protocol: "protocol",
-		Payload:  []byte(validPayload),
-		Created:  now,
-	}
-	invalid := msg
-	invalid.Payload = []byte(invalidPayload)
-
-	listMsg := msg
-	listMsg.Payload = []byte(listPayload)
-
-	tsMsg := msg
-	tsMsg.Payload = []byte(tsPayload)
 	tsMsgTr := domain.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldFormat, TimeLocation: timeFieldLocation}
-
-	microsMsg := msg
-	microsMsg.Payload = []byte(microsPayload)
 	microsMsgTr := domain.Transformer{DataFilters: dataFilters, TimeField: "custom_ts_micro_key", TimeFormat: "unix_us", TimeLocation: timeFieldLocation}
-
-	invalidTimeField := msg
-	invalidTimeField.Payload = []byte(invalidTsPayload)
 	invalidTimeFieldTr := domain.Transformer{DataFilters: dataFilters, TimeField: timeFieldName, TimeFormat: timeFieldName, TimeLocation: timeFieldLocation}
 
 	pyd := map[string]any{
@@ -103,136 +76,90 @@ func TestTransformJSON(t *testing.T) {
 	payload, err := json.Marshal(pyd)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	msgs := []protomfx.Message{
-		{
-			Subtopic: subtopic,
-			ThingId:  msg.ThingId,
-			Protocol: msg.Protocol,
-			Created:  msg.Created,
-			Payload:  payload,
-		},
-	}
-
-	tsMsgs := []protomfx.Message{
-		{
-			Subtopic: subtopic,
-			ThingId:  msg.ThingId,
-			Protocol: msg.Protocol,
-			Created:  int64(1638310819000000000),
-			Payload:  payload,
-		},
-	}
-
-	microsMsgs := []protomfx.Message{
-		{
-			Subtopic: subtopic,
-			ThingId:  msg.ThingId,
-			Protocol: msg.Protocol,
-			Created:  int64(1638310819000000000),
-			Payload:  payload,
-		},
-	}
-
-	listMsgs := []protomfx.Message{
-		{
-			Subtopic: subtopic,
-			ThingId:  msg.ThingId,
-			Protocol: msg.Protocol,
-			Created:  msg.Created,
-			Payload:  payload,
-		},
-		{
-			Subtopic: subtopic,
-			ThingId:  msg.ThingId,
-			Protocol: msg.Protocol,
-			Created:  msg.Created,
-			Payload:  payload,
-		},
-	}
-
 	cases := []struct {
 		desc        string
 		transformer domain.Transformer
-		msg         protomfx.Message
-		msgs        []protomfx.Message
+		payload     string
+		records     []*protomfx.Record
 		err         error
 	}{
 		{
 			desc:        "test transform JSON",
-			msg:         msg,
+			payload:     validPayload,
 			transformer: transformer,
-			msgs:        msgs,
-			err:         nil,
+			records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    now,
+				},
+			},
+			err: nil,
 		},
 		{
 			desc:        "test transform JSON array",
-			msg:         listMsg,
+			payload:     listPayload,
 			transformer: transformer,
-			msgs:        listMsgs,
-			err:         nil,
+			records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    now,
+				},
+				{
+					Payload: payload,
+					Time:    now,
+				},
+			},
+			err: nil,
 		},
 		{
-			desc: "test transform JSON with invalid payload",
-			msg:  invalid,
-			msgs: nil,
-			err:  mfjson.ErrTransform,
+			desc:    "test transform JSON with invalid payload",
+			payload: invalidPayload,
+			records: nil,
+			err:     mfjson.ErrTransform,
 		},
 		{
 			desc:        "test transform JSON with timestamp transformation",
-			msg:         tsMsg,
+			payload:     tsPayload,
 			transformer: tsMsgTr,
-			msgs:        tsMsgs,
-			err:         nil,
+			records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    tsCreated,
+				},
+			},
+			err: nil,
 		},
 		{
 			desc:        "test transform JSON with timestamp transformation in micros",
 			transformer: microsMsgTr,
-			msg:         microsMsg,
-			msgs:        microsMsgs,
-			err:         nil,
+			payload:     microsPayload,
+			records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    tsCreated,
+				},
+			},
+			err: nil,
 		},
 		{
 			desc:        "test transform JSON with invalid timestamp transformation in micros",
 			transformer: invalidTimeFieldTr,
-			msg:         invalidTimeField,
-			msgs:        nil,
+			payload:     invalidTsPayload,
+			records:     nil,
 			err:         mfjson.ErrInvalidTimeField,
 		},
 	}
 
 	for _, tc := range cases {
-		err := mfjson.TransformPayload(tc.transformer, &tc.msg)
+		records, err := mfjson.TransformPayload(tc.transformer, []byte(tc.payload), now)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
+		resMsg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.records, records)
+		assert.Equal(t, tc.records, records, resMsg)
 	}
 }
 
 func TestTransformJSONArray(t *testing.T) {
 	now := time.Now().UnixNano()
-
-	msg := protomfx.Message{
-		Subtopic: subtopic,
-		ThingId:  "thing-1",
-		Protocol: "protocol",
-		Created:  now,
-	}
-
-	tsListMsg := msg
-	tsListMsg.Payload = []byte(tsListPayload)
-
-	pointsMsg := msg
-	pointsMsg.Payload = []byte(pointsPayload)
-
-	missingKeyMsg := msg
-	missingKeyMsg.Payload = []byte(missingKeyPayload)
-
-	singlePointMsg := msg
-	singlePointMsg.Payload = []byte(singlePointPayload)
-
-	partialMsg := msg
-	partialMsg.Payload = []byte(partialPayload)
-
-	invalidPointsMsg := msg
-	invalidPointsMsg.Payload = []byte(invalidPointsPayload)
 
 	tsTr := domain.Transformer{
 		TimeField:    timeFieldName,
@@ -258,122 +185,86 @@ func TestTransformJSONArray(t *testing.T) {
 	}
 
 	record := func(payload string, created int64) *protomfx.Record {
-		return &protomfx.Record{Payload: []byte(payload), Created: created}
+		return &protomfx.Record{
+			Payload: []byte(payload),
+			Time:    created,
+		}
 	}
-
-	tsListRes := tsListMsg
-	tsListRes.Payload = []byte(tsListResPayload)
-	tsListRes.Records = []*protomfx.Record{
-		record(`{"custom_ts_key":"1638310819","key1":"val1","key5":"val5"}`, tsCreated),
-	}
-
-	tsListFilterRes := tsListMsg
-	tsListFilterRes.Payload = []byte(tsListFilterResPayload)
-	tsListFilterRes.Records = []*protomfx.Record{record(`{"key1":"val1"}`, tsCreated)}
-
-	pointsRes := pointsMsg
-	pointsRes.Payload = []byte(pointsResPayload)
-	pointsRes.Records = []*protomfx.Record{
-		record(`{"Value":"63.6"}`, tsCreated),
-		record(`{"Value":"63.8"}`, tsCreated+1e9),
-		record(`{"Value":"12.1"}`, tsCreated+2e9),
-	}
-
-	missingKeyRes := missingKeyMsg
-	missingKeyRes.Payload = []byte(missingKeyResPayload)
-	missingKeyRes.Records = []*protomfx.Record{
-		record(`{"key1":"val1"}`, now),
-		record(`{"key1":"val2"}`, now),
-	}
-
-	recordsMsg := missingKeyMsg
-	recordsMsg.Records = []*protomfx.Record{{Created: tsCreated}, {Created: tsCreated + 1e9}}
-
-	recordsRes := missingKeyRes
-	recordsRes.Records = []*protomfx.Record{
-		record(`{"key1":"val1"}`, tsCreated),
-		record(`{"key1":"val2"}`, tsCreated+1e9),
-	}
-
-	singlePointRes := singlePointMsg
-	singlePointRes.Payload = []byte(singlePointResPayload)
-	singlePointRes.Created = tsCreated
-	singlePointRes.Records = []*protomfx.Record{record(singlePointResPayload, tsCreated)}
-
-	partialRes := partialMsg
-	partialRes.Payload = []byte(partialResPayload)
-	partialRes.Records = []*protomfx.Record{record(`{"Time":"1638310819","key1":"val1"}`, tsCreated)}
 
 	cases := []struct {
 		desc        string
 		transformer domain.Transformer
-		msg         protomfx.Message
-		res         protomfx.Message
+		payload     string
+		records     []*protomfx.Record
 		err         error
 	}{
 		{
 			desc:        "transform JSON array with time field",
 			transformer: tsTr,
-			msg:         tsListMsg,
-			res:         tsListRes,
-			err:         nil,
+			payload:     tsListPayload,
+			records: []*protomfx.Record{
+				record(`{"custom_ts_key":"1638310819","key1":"val1","key5":"val5"}`, tsCreated),
+			},
+			err: nil,
 		},
 		{
 			desc:        "transform JSON array with time field and data filters",
 			transformer: tsFilterTr,
-			msg:         tsListMsg,
-			res:         tsListFilterRes,
+			payload:     tsListPayload,
+			records:     []*protomfx.Record{record(`{"key1":"val1"}`, tsCreated)},
 			err:         nil,
 		},
 		{
 			desc:        "transform JSON with data field in all array items",
 			transformer: pointsFilterTr,
-			msg:         pointsMsg,
-			res:         pointsRes,
-			err:         nil,
+			payload:     pointsPayload,
+			records: []*protomfx.Record{
+				record(`{"Value":"63.6"}`, tsCreated),
+				record(`{"Value":"63.8"}`, tsCreated+1e9),
+				record(`{"Value":"12.1"}`, tsCreated+2e9),
+			},
+			err: nil,
 		},
 		{
 			desc:        "transform JSON with data field missing in some array items",
 			transformer: dataFieldTr,
-			msg:         missingKeyMsg,
-			res:         missingKeyRes,
-			err:         nil,
-		},
-		{
-			desc:        "transform JSON array with record timestamps assigned by publisher",
-			transformer: dataFieldTr,
-			msg:         recordsMsg,
-			res:         recordsRes,
-			err:         nil,
+			payload:     missingKeyPayload,
+			records: []*protomfx.Record{
+				record(`{"key1":"val1"}`, now),
+				record(`{"key1":"val2"}`, now),
+			},
+			err: nil,
 		},
 		{
 			desc:        "transform JSON with data field in single array item",
 			transformer: pointsTr,
-			msg:         singlePointMsg,
-			res:         singlePointRes,
+			payload:     singlePointPayload,
+			records:     []*protomfx.Record{record(singlePointResPayload, tsCreated)},
 			err:         nil,
 		},
 		{
 			desc:        "transform JSON with data field in one of several array items",
 			transformer: pointsTr,
-			msg:         partialMsg,
-			res:         partialRes,
-			err:         nil,
+			payload:     partialPayload,
+			records: []*protomfx.Record{
+				record(`{"Time":"1638310819","key1":"val1"}`, tsCreated),
+			},
+			err: nil,
 		},
 		{
 			desc:        "transform JSON with data field in non-object array items",
 			transformer: dataFieldTr,
-			msg:         invalidPointsMsg,
-			res:         invalidPointsMsg,
+			payload:     invalidPointsPayload,
+			records:     nil,
 			err:         mfjson.ErrTransform,
 		},
 	}
 
 	for _, tc := range cases {
-		err := mfjson.TransformPayload(tc.transformer, &tc.msg)
+		records, err := mfjson.TransformPayload(tc.transformer, []byte(tc.payload), now)
 		errMsg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), errMsg)
-		resMsg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.res, tc.msg)
-		assert.Equal(t, tc.res, tc.msg, resMsg)
+		resMsg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.records, records)
+		assert.Equal(t, tc.records, records, resMsg)
 	}
 }

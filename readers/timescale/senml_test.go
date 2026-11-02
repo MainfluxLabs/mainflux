@@ -118,7 +118,6 @@ func TestListSenMLMessages(t *testing.T) {
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
-			Payload:     payload,
 			Records:     []*protomfx.Record{{Payload: payload}},
 		}
 

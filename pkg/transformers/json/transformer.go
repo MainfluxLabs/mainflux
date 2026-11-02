@@ -22,78 +22,62 @@ var (
 	errInvalidNestedJSON = errors.New("invalid nested JSON object")
 )
 
-func TransformPayload(transformer domain.Transformer, msg *protomfx.Message) error {
-	var payload any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return errors.Wrap(ErrTransform, err)
+// TransformPayload converts a JSON object into one record and a JSON array
+// into one record per item.
+// Records without a time field value are assigned the created timestamp.
+func TransformPayload(transformer domain.Transformer, payload []byte, created int64) ([]*protomfx.Record, error) {
+	var pld any
+	if err := json.Unmarshal(payload, &pld); err != nil {
+		return nil, errors.Wrap(ErrTransform, err)
 	}
 
-	extractedPayload := extractPayload(payload, transformer.DataField)
-
-	switch p := extractedPayload.(type) {
+	switch p := extractPayload(pld, transformer.DataField).(type) {
 	case map[string]any:
-		ts, err := transformTimeField(p, transformer)
+		record, err := transformRecord(p, transformer, created)
 		if err != nil {
-			return errors.Wrap(ErrInvalidTimeField, err)
+			return nil, err
 		}
-
-		if ts != 0 {
-			msg.Created = ts
-		}
-
-		formattedPayload := filterPayloadFields(p, transformer.DataFilters)
-		data, err := json.Marshal(formattedPayload)
-		if err != nil {
-			return err
-		}
-		msg.Payload = data
-		msg.Records = []*protomfx.Record{{Payload: data, Created: msg.Created}}
-		return nil
+		return []*protomfx.Record{record}, nil
 
 	case []any:
-		var payloads []map[string]any
 		var records []*protomfx.Record
-		for i, val := range p {
+		for _, val := range p {
 			v, ok := val.(map[string]any)
 			if !ok {
-				return errors.Wrap(ErrTransform, errInvalidNestedJSON)
+				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
-			ts, err := transformTimeField(v, transformer)
+			record, err := transformRecord(v, transformer, created)
 			if err != nil {
-				return errors.Wrap(ErrInvalidTimeField, err)
+				return nil, err
 			}
-
-			formattedPayload := filterPayloadFields(v, transformer.DataFilters)
-			data, err := json.Marshal(formattedPayload)
-			if err != nil {
-				return err
-			}
-
-			// Timestamps assigned per record by the publisher apply to items without a time field value.
-			created := msg.Created
-			if len(msg.Records) == len(p) && msg.Records[i].Created != 0 {
-				created = msg.Records[i].Created
-			}
-			if ts != 0 {
-				created = ts
-			}
-
-			payloads = append(payloads, formattedPayload)
-			records = append(records, &protomfx.Record{Payload: data, Created: created})
+			records = append(records, record)
 		}
-
-		data, err := json.Marshal(payloads)
-		if err != nil {
-			return err
-		}
-		msg.Payload = data
-		msg.Records = records
-		return nil
+		return records, nil
 
 	default:
-		return errors.Wrap(ErrTransform, errInvalidFormat)
+		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
 	}
+}
+
+func transformRecord(payload map[string]any, transformer domain.Transformer, created int64) (*protomfx.Record, error) {
+	ts, err := transformTimeField(payload, transformer)
+	if err != nil {
+		return nil, errors.Wrap(ErrInvalidTimeField, err)
+	}
+	if ts != 0 {
+		created = ts
+	}
+
+	data, err := json.Marshal(filterPayloadFields(payload, transformer.DataFilters))
+	if err != nil {
+		return nil, err
+	}
+
+	return &protomfx.Record{
+		Payload: data,
+		Time:    created,
+	}, nil
 }
 
 func transformTimeField(payload any, transformer domain.Transformer) (int64, error) {

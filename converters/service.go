@@ -151,7 +151,6 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		Created:  time.Now().UnixNano(),
 	}
 	keys := csvLines[0][1:]
-	msgs := []map[string]any{}
 	size := 0
 	timeFieldIdx := slices.Index(csvLines[0], tr.TimeField)
 	for i := 1; i < len(csvLines); i++ {
@@ -165,7 +164,6 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 			}
 			created = ns
 		}
-		msg.Records = append(msg.Records, &protomfx.Record{Created: created})
 		for j, columnName := range keys {
 			val := csvLines[i][j+1]
 			if val == "" {
@@ -190,20 +188,22 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 		if err != nil {
 			return err
 		}
-		msgs = append(msgs, record)
+		msg.Records = append(msg.Records, &protomfx.Record{
+			Payload: recData,
+			Time:    created,
+		})
 		size += len(recData)
 		if size >= maxBatchBytes {
-			if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
+			if err := as.publish(ctx, key, msg); err != nil {
 				return err
 			}
-			msgs = []map[string]any{}
 			msg.Records = nil
 			size = 0
 			time.Sleep(batchDelay)
 		}
 	}
-	if len(msgs) > 0 {
-		if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
+	if len(msg.Records) > 0 {
+		if err := as.publish(ctx, key, msg); err != nil {
 			return err
 		}
 	}
@@ -272,10 +272,9 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
 	}
-	msgs := []map[string]any{}
 	size := 0
 	for _, inputRecord := range records {
-		record, err := parseJSONRecord(inputRecord, tr, &msg)
+		record, created, err := parseJSONRecord(inputRecord, tr, &msg)
 		if err != nil {
 			return err
 		}
@@ -283,20 +282,22 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 		if err != nil {
 			return err
 		}
-		msgs = append(msgs, record)
+		msg.Records = append(msg.Records, &protomfx.Record{
+			Payload: recData,
+			Time:    created,
+		})
 		size += len(recData)
 		if size >= maxBatchBytes {
-			if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
+			if err := as.publish(ctx, key, msg); err != nil {
 				return err
 			}
-			msgs = []map[string]any{}
 			msg.Records = nil
 			size = 0
 			time.Sleep(batchDelay)
 		}
 	}
-	if len(msgs) > 0 {
-		if err := as.publishMsgs(ctx, key, msgs, msg); err != nil {
+	if len(msg.Records) > 0 {
+		if err := as.publish(ctx, key, msg); err != nil {
 			return err
 		}
 	}
@@ -383,10 +384,10 @@ func applyEnvelopeFields(msg *protomfx.Message, src map[string]any) {
 	}
 }
 
-// parseJSONRecord converts one input record into a payload record and updates
-// msg.Protocol / msg.Subtopic from envelope fields. Handles both Format A
+// parseJSONRecord returns the payload and the timestamp of an input record
+// and assigns its envelope fields to msg. Handles both Format A
 // (reader-exported {"payload":{...},"created":...}) and flat records.
-func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *protomfx.Message) (map[string]any, error) {
+func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *protomfx.Message) (map[string]any, int64, error) {
 	record := map[string]any{}
 
 	parseTS := func(v any) (int64, error) {
@@ -404,7 +405,7 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 			if v, exists := inputRecord[tr.TimeField]; exists {
 				t, err := parseTS(v)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				ts = t
 			}
@@ -413,7 +414,7 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 			if v, exists := inputRecord["created"]; exists {
 				t, err := parseTS(v)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				ts = t
 			}
@@ -423,14 +424,13 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 			if tr.TimeField != "" && k == tr.TimeField {
 				t, err := parseTS(v)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				ts = t
 			}
 			record[k] = v
 		}
-		msg.Records = append(msg.Records, &protomfx.Record{Created: ts})
-		return record, nil
+		return record, ts, nil
 	}
 
 	// Flat record — lift envelope fields into msg, store the rest in record.
@@ -449,7 +449,7 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 			case "created":
 				t, err := parseTS(v)
 				if err != nil {
-					return nil, err
+					return nil, 0, err
 				}
 				if t != 0 {
 					ts = t
@@ -460,23 +460,22 @@ func parseJSONRecord(inputRecord map[string]any, tr domain.Transformer, msg *pro
 		if tr.TimeField != "" && k == tr.TimeField {
 			t, err := parseTS(v)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			ts = t
 		}
 		record[k] = v
 	}
-	msg.Records = append(msg.Records, &protomfx.Record{Created: ts})
-	return record, nil
+	return record, ts, nil
 }
 
-// publishMsgs marshals a batch of records, sets msg.Payload, and publishes.
+// publishMsgs marshals a batch of records into a single message record and publishes it.
 func (as *adapterService) publishMsgs(ctx context.Context, key string, msgs []map[string]any, msg protomfx.Message) error {
 	data, err := json.Marshal(msgs)
 	if err != nil {
 		return err
 	}
-	msg.Payload = data
+	msg.Records = []*protomfx.Record{{Payload: data}}
 	return as.publish(ctx, key, msg)
 }
 

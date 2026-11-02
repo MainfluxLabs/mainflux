@@ -152,11 +152,13 @@ func decodeListSenMLMessagesResponse(_ context.Context, grpcRes any) (any, error
 
 	msgs := make([]domain.Message, 0, len(res.GetMessages()))
 	for _, pm := range res.GetMessages() {
-		var sm senmlmsg.Message
-		if err := json.Unmarshal(pm.GetPayload(), &sm); err != nil {
-			continue
+		for _, record := range pm.GetRecords() {
+			var sm senmlmsg.Message
+			if err := json.Unmarshal(record.GetPayload(), &sm); err != nil {
+				continue
+			}
+			msgs = append(msgs, sm)
 		}
-		msgs = append(msgs, sm)
 	}
 
 	return listSenMLMessagesRes{

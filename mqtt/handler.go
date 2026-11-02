@@ -240,7 +240,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Subtopic: subtopic,
-		Payload:  payload,
+		Records:  []*protomfx.Record{{Payload: payload}},
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
@@ -258,10 +258,15 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
+	payload, err := messaging.ToPayload(msg)
+	if err != nil {
+		return err
+	}
+
 	cmd := protomfx.Command{
 		ThingId:     msg.ThingId,
 		Subtopic:    msg.Subtopic,
-		Payload:     msg.Payload,
+		Payload:     payload,
 		RecipientId: extractRecipient(subject),
 		Protocol:    msg.Protocol,
 		Created:     msg.Created,

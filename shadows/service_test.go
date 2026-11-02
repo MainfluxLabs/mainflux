@@ -96,7 +96,10 @@ func TestViewShadow(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error setting desired state: %s", err))
 
 	// The thing reports one of the two desired values, the other stays pending in the delta
-	err = svc.ConsumeMessage("", protomfx.Message{ThingId: thingID, Payload: toPayload(shadows.State{"led": "on"})})
+	err = svc.ConsumeMessage("", protomfx.Message{
+		ThingId: thingID,
+		Records: []*protomfx.Record{{Payload: toPayload(shadows.State{"led": "on"})}},
+	})
 	require.Nil(t, err, fmt.Sprintf("unexpected error reporting state: %s", err))
 
 	cases := []struct {
@@ -255,7 +258,7 @@ func TestConsumeMessage(t *testing.T) {
 	for _, tc := range cases {
 		msg := protomfx.Message{
 			ThingId: thingID,
-			Payload: tc.payload,
+			Records: []*protomfx.Record{{Payload: tc.payload}},
 		}
 
 		err := svc.ConsumeMessage("", msg)

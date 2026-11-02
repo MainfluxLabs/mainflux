@@ -76,7 +76,7 @@ const (
 	ConditionTypeScript = "script"
 )
 
-func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, parsedPayload any, rule Rule) error {
+func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payload []byte, parsedPayload any, rule Rule) error {
 	triggered, err := rs.evaluateMessagePayload(ctx, msg, parsedPayload, rule)
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
-				Payload:  msg.Payload,
+				Payload:  payload,
 				Created:  msg.Created,
 			}
 			if err := rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification); err != nil {
@@ -117,7 +117,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, pars
 		case ActionTypeWebhook:
 			webhook := protomfx.Webhook{
 				ThingId: msg.ThingId,
-				Payload: msg.Payload,
+				Payload: payload,
 				Created: msg.Created,
 			}
 			if err := rs.pub.PublishWebhook(subjectWebhooks, webhook); err != nil {
