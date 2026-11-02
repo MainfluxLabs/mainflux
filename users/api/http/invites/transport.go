@@ -27,8 +27,6 @@ const stateKey = "state"
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
-	userPasswordRegex = passwordRegex
-
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -38,7 +36,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	mux.Post("/register/invite/:id", kithttp.NewServer(
 		kitot.TraceServer(tracer, "register_by_invite")(inviteRegistrationEndpoint(svc)),
-		decodePlatformInviteRegister,
+		decodePlatformInviteRegister(passwordRegex),
 		encodeResponse,
 		opts...,
 	))
@@ -83,16 +81,19 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 	return mux
 }
 
-func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, error) {
-	req := registerByInviteReq{
-		inviteID: bone.GetValue(r, apiutil.IDKey),
-	}
+func decodePlatformInviteRegister(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		req := registerByInviteReq{
+			inviteID:      bone.GetValue(r, apiutil.IDKey),
+			passwordRegex: passwordRegex,
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 
-	return req, nil
+		return req, nil
+	}
 }
 
 func decodeInviteRequest(_ context.Context, r *http.Request) (any, error) {
