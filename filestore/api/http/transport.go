@@ -86,10 +86,10 @@ const (
 	applicationZIP       = "application/zip"
 	rangeHeader          = "Range"
 	contentTypeHeader    = "Content-Type"
-	MaxUploadSizeMB      = 1024
+	MaxUploadMB          = 1024
 )
 
-func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, maxUploadSizeMB int, logger logger.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, maxUploadMB int, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -101,7 +101,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
-		decodeSaveFile(maxUploadSizeMB),
+		decodeSaveFile(maxUploadMB),
 		encodeResponse,
 		opts...,
 	))
@@ -134,7 +134,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 			kitot.TraceServer(tracer, "save_group_file"),
 			withIdentity,
 		)(saveGroupFileEndpoint(svc)),
-		decodeSaveGroupFile(maxUploadSizeMB),
+		decodeSaveGroupFile(maxUploadMB),
 		encodeResponse,
 		opts...,
 	))
@@ -187,8 +187,8 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 	return r
 }
 
-func decodeSaveFile(maxUploadSizeMB int) kithttp.DecodeRequestFunc {
-	maxUploadBytes := int64(maxUploadSizeMB) << 20
+func decodeSaveFile(maxUploadMB int) kithttp.DecodeRequestFunc {
+	maxUploadBytes := int64(maxUploadMB) << 20
 
 	return func(_ context.Context, r *http.Request) (any, error) {
 		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
@@ -288,8 +288,8 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSaveGroupFile(maxUploadSizeMB int) kithttp.DecodeRequestFunc {
-	maxUploadBytes := int64(maxUploadSizeMB) << 20
+func decodeSaveGroupFile(maxUploadMB int) kithttp.DecodeRequestFunc {
+	maxUploadBytes := int64(maxUploadMB) << 20
 
 	return func(_ context.Context, r *http.Request) (any, error) {
 		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {

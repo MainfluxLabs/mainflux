@@ -61,7 +61,7 @@ func newServer(t *testing.T) *httptest.Server {
 	large := filestore.FileInfo{Name: largeFileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), bytes.NewReader(make([]byte, largeFileSize)), token, groupID, large))
 
-	h := httpapi.MakeHandler(mocktracer.New(), svc, mocks.NewAuthService("", nil, nil), httpapi.MaxUploadSizeMB, logger.NewMock())
+	h := httpapi.MakeHandler(mocktracer.New(), svc, mocks.NewAuthService("", nil, nil), httpapi.MaxUploadMB, logger.NewMock())
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 

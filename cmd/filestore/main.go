@@ -67,7 +67,7 @@ const (
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
-	defMaxUploadSizeMB   = "1024"
+	defMaxUploadMB       = "1024"
 	defBackend           = "local"
 	defSeaweedURL        = "http://localhost:8888"
 	defSeaweedPrefix     = "filestore"
@@ -102,7 +102,7 @@ const (
 	envBackend           = "MF_FILESTORE_BACKEND"
 	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
 	envFilesPath         = "MF_FILESTORE_FILES_PATH"
-	envMaxUploadSizeMB   = "MF_FILESTORE_MAX_UPLOAD_SIZE"
+	envMaxUploadMB       = "MF_FILESTORE_MAX_UPLOAD_SIZE"
 )
 
 type config struct {
@@ -116,7 +116,7 @@ type config struct {
 	authConfig        clients.Config
 	esURL             string
 	store             storeConfig
-	maxUploadSizeMB   int
+	maxUploadMB       int
 }
 
 type storeConfig struct {
@@ -176,7 +176,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, cfg.maxUploadSizeMB, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, cfg.maxUploadMB, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -242,9 +242,9 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
-	maxUploadSizeMB, err := strconv.Atoi(mainflux.Env(envMaxUploadSizeMB, defMaxUploadSizeMB))
-	if err != nil || maxUploadSizeMB <= 0 || maxUploadSizeMB > httpapi.MaxUploadSizeMB {
-		log.Fatalf("Invalid %s: must be between 1 and %d", envMaxUploadSizeMB, httpapi.MaxUploadSizeMB)
+	maxUploadMB, err := strconv.Atoi(mainflux.Env(envMaxUploadMB, defMaxUploadMB))
+	if err != nil || maxUploadMB <= 0 || maxUploadMB > httpapi.MaxUploadMB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envMaxUploadMB, httpapi.MaxUploadMB)
 	}
 
 	seaweedTimeout, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
@@ -253,7 +253,7 @@ func loadConfig() config {
 	}
 
 	seaweedChunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
-	maxChunkMB := min(maxSeaweedChunkMB, maxUploadSizeMB)
+	maxChunkMB := min(maxSeaweedChunkMB, maxUploadMB)
 	if err != nil || seaweedChunkMB <= 0 || seaweedChunkMB > maxChunkMB {
 		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxChunkMB)
 	}
@@ -278,7 +278,7 @@ func loadConfig() config {
 		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		store:             storeConfig,
-		maxUploadSizeMB:   maxUploadSizeMB,
+		maxUploadMB:       maxUploadMB,
 	}
 }
 
