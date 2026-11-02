@@ -30,6 +30,8 @@ paths:
           description: Missing or invalid access token provided.
         '403':
           description: Failed to perform authorization over the entity.
+        '409':
+          description: Another update for one of the things was created at the same time.
         '415':
           description: Missing or invalid content type.
         '500':
@@ -124,7 +126,8 @@ paths:
       summary: Retries failed things
       description: |
         Moves the update's failed things back to pending and sends them the `ota`
-        command again.
+        command again. Things that got a newer update since are skipped, so a retry
+        never rolls a thing back to older firmware.
       tags:
         - updates
       parameters:

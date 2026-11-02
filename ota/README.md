@@ -45,7 +45,8 @@ pending ─► downloading ─► installing ─► succeeded
    marked `failed` with `superseded by update <id>`.
 2. **Notify.** The service publishes the `ota` command on each thing's command subject
    (`things.<id>.commands.ota`). Online things receive it over MQTT or CoAP. Things that were offline
-   fetch it on reconnect with `GET /ota/pending`. Both carry the same payload:
+   fetch it on reconnect with `GET /ota/pending`, which answers `204` with no body when nothing is
+   pending. The command is:
 
    ```json
    {
@@ -55,6 +56,19 @@ pending ─► downloading ─► installing ─► succeeded
      "url": "https://<host>/fs/groupfiles/fw-sensor-1.4.0.bin",
      "size": 421888,
      "checksum": "9f2c…"
+   }
+   ```
+
+   CoAP and `GET /ota/pending` deliver it as is. MQTT delivers it inside the standard command message,
+   under `payload`:
+
+   ```json
+   {
+     "created": 1793096198368527190,
+     "subtopic": "ota",
+     "recipientID": "<thing id>",
+     "protocol": "ota",
+     "payload": { "update_id": "…", "version": "1.4.0", … }
    }
    ```
 
@@ -69,7 +83,8 @@ pending ─► downloading ─► installing ─► succeeded
 5. **Timeout.** Things without progress for the update's `timeout` are marked `failed` with
    `timed out`. The service checks this every `MF_OTA_TIMEOUT_CHECK_INTERVAL`.
 6. **Retry.** A user can move the failed things of an update back to `pending`
-   (`POST /updates/{id}/retry`); they are notified again. The service never retries on its own.
+   (`POST /updates/{id}/retry`); they are notified again. Things that got a newer update since are
+   skipped, so a retry never rolls a thing back to older firmware. The service never retries on its own.
 
 Authorization is delegated to the Things service: viewing updates requires `viewer` access on the
 group, while creating, retrying or removing updates requires `editor` access. Things authenticate
