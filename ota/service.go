@@ -24,9 +24,7 @@ import (
 const (
 	defaultTimeout = 24 * time.Hour
 	maxErrorLen    = 255
-	commandSource  = "ota"
-	
-	otaSubtopic = "ota"
+	otaProtocol    = "ota"
 )
 
 var (
@@ -329,13 +327,13 @@ func (ots *otaService) notify(u Update, thingIDs ...string) {
 	for _, thingID := range thingIDs {
 		cmd := protomfx.Command{
 			RecipientId: thingID,
-			Subtopic:    otaSubtopic,
+			Subtopic:    nats.OTASubtopic,
 			Payload:     payload,
-			Protocol:    commandSource,
+			Protocol:    otaProtocol,
 			Created:     time.Now().UnixNano(),
 		}
 
-		if err := ots.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, otaSubtopic), cmd); err != nil {
+		if err := ots.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, nats.OTASubtopic), cmd); err != nil {
 			ots.logger.Warn(fmt.Sprintf("failed to send ota command for update %s to thing %s: %s", u.ID, thingID, err))
 		}
 	}
