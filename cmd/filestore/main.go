@@ -116,6 +116,7 @@ type config struct {
 	authConfig        clients.Config
 	esURL             string
 	store             storeConfig
+	maxUploadSizeMB   int
 }
 
 type storeConfig struct {
@@ -175,7 +176,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, cfg.maxUploadSizeMB, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -277,6 +278,7 @@ func loadConfig() config {
 		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		store:             storeConfig,
+		maxUploadSizeMB:   maxUploadSizeMB,
 	}
 }
 

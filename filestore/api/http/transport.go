@@ -88,10 +88,11 @@ const (
 	rangeHeader          = "Range"
 	contentTypeHeader    = "Content-Type"
 	MaxUploadSizeMB      = 1024
-	maxUploadBytes       = MaxUploadSizeMB << 20
 )
 
-func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, logger logger.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, maxUploadSizeMB int, logger logger.Logger) http.Handler {
+	maxUploadBytes := int64(maxUploadSizeMB) << 20
+
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -103,7 +104,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
-		decodeSaveFile,
+		limitUpload(maxUploadBytes, decodeSaveFile),
 		encodeResponse,
 		opts...,
 	))
@@ -136,7 +137,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 			kitot.TraceServer(tracer, "save_group_file"),
 			withIdentity,
 		)(saveGroupFileEndpoint(svc)),
-		decodeSaveGroupFile,
+		limitUpload(maxUploadBytes, decodeSaveGroupFile),
 		encodeResponse,
 		opts...,
 	))
@@ -189,15 +190,21 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 	return r
 }
 
+func limitUpload(maxUploadBytes int64, decode kithttp.DecodeRequestFunc) kithttp.DecodeRequestFunc {
+	return func(ctx context.Context, r *http.Request) (any, error) {
+		if r.ContentLength > maxUploadBytes {
+			return nil, apiutil.ErrLimitSize
+		}
+		r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
+
+		return decode(ctx, r)
+	}
+}
+
 func decodeSaveFile(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
-
-	if r.ContentLength > maxUploadBytes {
-		return nil, apiutil.ErrLimitSize
-	}
-	r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
 
 	fip, err := getFileInfoParams(r)
 	if err != nil {
@@ -290,11 +297,6 @@ func decodeSaveGroupFile(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
-
-	if r.ContentLength > maxUploadBytes {
-		return nil, apiutil.ErrLimitSize
-	}
-	r.Body = http.MaxBytesReader(nil, r.Body, maxUploadBytes)
 
 	fip, err := getFileInfoParams(r)
 	if err != nil {
