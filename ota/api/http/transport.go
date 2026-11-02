@@ -25,7 +25,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const statusKey = "status"
+const (
+	statusKey = "status"
+	defOrder  = "thing_id"
+)
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc ota.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
@@ -162,6 +165,12 @@ func decodeListThingUpdates(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	// thing_updates has no id column, so the shared "id" default doesn't apply.
+	order, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, defOrder)
+	if err != nil {
+		return nil, err
+	}
+
 	s, err := apiutil.ReadStringQuery(r, statusKey, "")
 	if err != nil {
 		return nil, err
@@ -173,7 +182,7 @@ func decodeListThingUpdates(_ context.Context, r *http.Request) (any, error) {
 		pageMetadata: ota.PageMetadata{
 			Offset: pm.Offset,
 			Limit:  pm.Limit,
-			Order:  pm.Order,
+			Order:  order,
 			Dir:    pm.Dir,
 			Status: s,
 		},

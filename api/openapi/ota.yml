@@ -427,12 +427,12 @@ components:
       required: false
     ThingUpdateOrder:
       name: order
-      description: Order the things by the given field; `id` orders by thing ID.
+      description: Order the things by the given field.
       in: query
       schema:
         type: string
-        default: id
-        enum: [id, updated_at, status]
+        default: thing_id
+        enum: [thing_id, updated_at, status]
       required: false
     Direction:
       name: dir
