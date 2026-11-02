@@ -182,19 +182,19 @@ func TestRetrieveThingUpdates(t *testing.T) {
 	}{
 		{
 			desc:  "retrieve all thing updates",
-			pm:    ota.PageMetadata{Order: "id"},
+			pm:    ota.PageMetadata{Order: "thing_id"},
 			size:  3,
 			total: 3,
 		},
 		{
 			desc:  "retrieve failed thing updates",
-			pm:    ota.PageMetadata{Order: "id", Status: ota.StatusFailed},
+			pm:    ota.PageMetadata{Order: "thing_id", Status: ota.StatusFailed},
 			size:  1,
 			total: 1,
 		},
 		{
 			desc:  "retrieve page of thing updates",
-			pm:    ota.PageMetadata{Order: "id", Limit: 2},
+			pm:    ota.PageMetadata{Order: "thing_id", Limit: 2},
 			size:  2,
 			total: 3,
 		},

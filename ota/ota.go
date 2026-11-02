@@ -88,7 +88,7 @@ var UpdateOrderFields = map[string]string{
 
 // ThingUpdateOrderFields maps API-facing order keys to SQL column expressions for the thing updates table.
 var ThingUpdateOrderFields = map[string]string{
-	"id":         "thing_id",
+	"thing_id":   "thing_id",
 	"updated_at": "updated_at",
 	"status":     "status",
 }
