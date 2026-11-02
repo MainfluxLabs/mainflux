@@ -185,7 +185,12 @@ func (ots *otaService) ViewUpdate(ctx context.Context, token, id string) (Update
 }
 
 func (ots *otaService) ListThingUpdates(ctx context.Context, token, updateID string, pm PageMetadata) (ThingUpdatesPage, error) {
-	if _, err := ots.ViewUpdate(ctx, token, updateID); err != nil {
+	u, err := ots.updates.RetrieveByID(ctx, updateID)
+	if err != nil {
+		return ThingUpdatesPage{}, err
+	}
+
+	if err := ots.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: u.GroupID, Action: domain.GroupViewer}); err != nil {
 		return ThingUpdatesPage{}, err
 	}
 
