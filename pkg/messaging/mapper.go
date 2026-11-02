@@ -23,7 +23,7 @@ const (
 // ErrInvalidContentType indicates an invalid Content-Type
 var ErrInvalidContentType = errors.New("invalid content type")
 
-// FormatMessage assigns the thing identifier and the reception time to msg
+// FormatMessage assigns the thing identifier and the timestamp to msg
 // and transforms its records according to the profile configuration.
 func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 	msg.ThingId = pc.ThingID
@@ -48,6 +48,11 @@ func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 		records = append(records, transformed...)
 	}
 	msg.Records = records
+
+	// A single JSON record carries the device time of the message.
+	if msg.ContentType == JSONContentType && len(msg.Records) == 1 {
+		msg.Created = msg.Records[0].Time
+	}
 
 	return nil
 }

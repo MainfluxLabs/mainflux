@@ -76,18 +76,13 @@ const (
 	ConditionTypeScript = "script"
 )
 
-func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, parsedPayload any, rule Rule) error {
+func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payload []byte, parsedPayload any, rule Rule) error {
 	triggered, err := rs.evaluateMessagePayload(ctx, msg, parsedPayload, rule)
 	if err != nil {
 		return err
 	}
 	if !triggered {
 		return nil
-	}
-
-	payload, err := messaging.ToPayload(*msg)
-	if err != nil {
-		return err
 	}
 
 	for _, action := range rule.Actions {

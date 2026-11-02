@@ -7,12 +7,52 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestFormatMessage(t *testing.T) {
+	const deviceTime = int64(1638310819000000000)
+
+	pc := domain.PubConfigInfo{
+		ThingID: "thing-1",
+		ProfileConfig: &domain.ProfileConfig{
+			ContentType: messaging.JSONContentType,
+			Transformer: domain.Transformer{
+				TimeField:    "ts",
+				TimeFormat:   "unix",
+				TimeLocation: "UTC",
+			},
+		},
+	}
+
+	objectMsg := protomfx.Message{
+		Records: []*protomfx.Record{{Payload: []byte(`{"ts":1638310819,"temp":20}`)}},
+	}
+
+	cases := []struct {
+		desc    string
+		msg     protomfx.Message
+		created int64
+	}{
+		{
+			desc:    "format JSON object with time field",
+			msg:     objectMsg,
+			created: deviceTime,
+		},
+	}
+
+	for _, tc := range cases {
+		err := messaging.FormatMessage(pc, &tc.msg)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		createdMsg := fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.created, tc.msg.Created)
+		assert.Equal(t, tc.created, tc.msg.Created, createdMsg)
+	}
+}
 
 func TestToPayload(t *testing.T) {
 	first := []byte(`{"key":"val1"}`)

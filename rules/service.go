@@ -455,7 +455,7 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != msg.Subtopic {
 			continue
 		}
-		if err := rs.runRule(ctx, &msg, payload, rule); err != nil {
+		if err := rs.runRule(ctx, &msg, body, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
 	}
