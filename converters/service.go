@@ -149,6 +149,7 @@ func (as *adapterService) PublishJSONMessagesFromCSV(ctx context.Context, key st
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
+		Array:    true,
 	}
 	keys := csvLines[0][1:]
 	size := 0
@@ -271,6 +272,7 @@ func (as *adapterService) PublishJSONMessagesFromJSON(ctx context.Context, key s
 	msg := protomfx.Message{
 		Protocol: protocol,
 		Created:  time.Now().UnixNano(),
+		Array:    true,
 	}
 	size := 0
 	for _, inputRecord := range records {

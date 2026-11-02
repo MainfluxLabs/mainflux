@@ -19,6 +19,7 @@ message Message {
     string protocol         = 4;
     int64 created           = 5; // Unix timestamp in nanoseconds
     repeated Record records = 6;
+    bool array              = 7; // Records are encoded as a JSON array
 }
 
 message Command {

@@ -41,38 +41,41 @@ func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 	msg.ContentType = pc.ProfileConfig.ContentType
 	var records []*protomfx.Record
 	for _, record := range msg.Records {
-		transformed, err := transformRecord(pc.ProfileConfig, record)
+		transformed, array, err := transformRecord(pc.ProfileConfig, record)
 		if err != nil {
 			return err
 		}
+		msg.Array = msg.Array || array
 		records = append(records, transformed...)
 	}
 	msg.Records = records
 
-	// A single JSON record carries the device time of the message.
-	if msg.ContentType == JSONContentType && len(msg.Records) == 1 {
+	// A single JSON object carries the device time of the message.
+	if msg.ContentType == JSONContentType && !msg.Array && len(msg.Records) == 1 {
 		msg.Created = msg.Records[0].Time
 	}
 
 	return nil
 }
 
-// transformRecord converts a record into the records of the profile content type.
-func transformRecord(config *domain.ProfileConfig, record *protomfx.Record) ([]*protomfx.Record, error) {
+// transformRecord converts a record into the records of the profile content type
+// and reports whether they are encoded as a JSON array.
+func transformRecord(config *domain.ProfileConfig, record *protomfx.Record) ([]*protomfx.Record, bool, error) {
 	switch config.ContentType {
 	case JSONContentType:
 		return mfjson.TransformPayload(config.Transformer, record.Payload, record.Time)
 	case SenMLContentType:
-		return senml.TransformPayload(senml.JSON, record.Payload, record.Time)
+		records, err := senml.TransformPayload(senml.JSON, record.Payload, record.Time)
+		return records, true, err
 	default:
-		return nil, ErrInvalidContentType
+		return nil, false, ErrInvalidContentType
 	}
 }
 
-// ToPayload returns the payload of a single non-SenML record unchanged
-// and encodes the payloads of all other records as a JSON array.
+// ToPayload returns the payload of a single record that is not encoded as a JSON array
+// unchanged and encodes the payloads of all other records as a JSON array.
 func ToPayload(message protomfx.Message) ([]byte, error) {
-	if message.ContentType != SenMLContentType && len(message.Records) == 1 {
+	if message.ContentType != SenMLContentType && !message.Array && len(message.Records) == 1 {
 		return message.Records[0].Payload, nil
 	}
 

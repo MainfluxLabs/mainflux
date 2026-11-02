@@ -23,40 +23,40 @@ var (
 )
 
 // TransformPayload converts a JSON object into one record and a JSON array
-// into one record per item.
+// into one record per item, and reports whether the payload is a JSON array.
 // Records without a time field value are assigned the created timestamp.
-func TransformPayload(transformer domain.Transformer, payload []byte, created int64) ([]*protomfx.Record, error) {
+func TransformPayload(transformer domain.Transformer, payload []byte, created int64) ([]*protomfx.Record, bool, error) {
 	var pld any
 	if err := json.Unmarshal(payload, &pld); err != nil {
-		return nil, errors.Wrap(ErrTransform, err)
+		return nil, false, errors.Wrap(ErrTransform, err)
 	}
 
 	switch p := extractPayload(pld, transformer.DataField).(type) {
 	case map[string]any:
 		record, err := transformRecord(p, transformer, created)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return []*protomfx.Record{record}, nil
+		return []*protomfx.Record{record}, false, nil
 
 	case []any:
 		var records []*protomfx.Record
 		for _, val := range p {
 			v, ok := val.(map[string]any)
 			if !ok {
-				return nil, errors.Wrap(ErrTransform, errInvalidNestedJSON)
+				return nil, false, errors.Wrap(ErrTransform, errInvalidNestedJSON)
 			}
 
 			record, err := transformRecord(v, transformer, created)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			records = append(records, record)
 		}
-		return records, nil
+		return records, true, nil
 
 	default:
-		return nil, errors.Wrap(ErrTransform, errInvalidFormat)
+		return nil, false, errors.Wrap(ErrTransform, errInvalidFormat)
 	}
 }
 

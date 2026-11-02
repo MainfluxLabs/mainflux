@@ -151,7 +151,7 @@ func TestTransformJSON(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		records, err := mfjson.TransformPayload(tc.transformer, []byte(tc.payload), now)
+		records, _, err := mfjson.TransformPayload(tc.transformer, []byte(tc.payload), now)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 		resMsg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.records, records)
 		assert.Equal(t, tc.records, records, resMsg)
@@ -261,7 +261,7 @@ func TestTransformJSONArray(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		records, err := mfjson.TransformPayload(tc.transformer, []byte(tc.payload), now)
+		records, _, err := mfjson.TransformPayload(tc.transformer, []byte(tc.payload), now)
 		errMsg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), errMsg)
 		resMsg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.records, records)

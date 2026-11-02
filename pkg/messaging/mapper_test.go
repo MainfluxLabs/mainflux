@@ -6,8 +6,10 @@ package messaging_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
@@ -15,42 +17,167 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFormatMessage(t *testing.T) {
-	const deviceTime = int64(1638310819000000000)
+const (
+	deviceTime         = int64(1638310819000000000)
+	timeFieldName      = "custom_ts_key"
+	timeFieldFormat    = "unix"
+	timeFieldLocation  = "UTC"
+	pointsDataField    = "Points.Value"
+	pointsTimeField    = "Time"
+	objectPayload      = `{"custom_ts_key": "1638310819", "key1": "val1"}`
+	tsListPayload      = `[{"custom_ts_key": "1638310819", "key1": "val1", "key5": "val5"}]`
+	singlePointPayload = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}]}`
+	invalidPayload     = `{"Points": [{"Value": {"key1": "val1"}}, "val2"]}`
 
-	pc := domain.PubConfigInfo{
-		ThingID: "thing-1",
-		ProfileConfig: &domain.ProfileConfig{
-			ContentType: messaging.JSONContentType,
-			Transformer: domain.Transformer{
-				TimeField:    "ts",
-				TimeFormat:   "unix",
-				TimeLocation: "UTC",
-			},
-		},
+	partialPayload = `{"Points": [{"Value": {"key1": "val1", "Time": "1638310819"}}, ` +
+		`{"PointId": 2}]}`
+
+	pointsPayload = `{"Points": [` +
+		`{"PointId": 1, "Value": [{"Value": "63.6", "Time": "1638310819"}, ` +
+		`{"Value": "63.8", "Time": "1638310820"}]}, ` +
+		`{"PointId": 2, "Value": [{"Value": "12.1", "Time": "1638310821"}]}]}`
+
+	missingKeyPayload = `{"Points": [{"Value": {"key1": "val1"}}, {"PointId": 2}, ` +
+		`{"Value": {"key1": "val2"}}]}`
+
+	objectResPayload       = `{"custom_ts_key":"1638310819","key1":"val1"}`
+	tsListResPayload       = `[{"custom_ts_key":"1638310819","key1":"val1","key5":"val5"}]`
+	tsListFilterResPayload = `[{"key1":"val1"}]`
+	pointsResPayload       = `[{"Value":"63.6"},{"Value":"63.8"},{"Value":"12.1"}]`
+	missingKeyResPayload   = `[{"key1":"val1"},{"key1":"val2"}]`
+	singlePointResPayload  = `{"Time":"1638310819","key1":"val1"}`
+	partialResPayload      = `[{"Time":"1638310819","key1":"val1"}]`
+)
+
+func TestFormatMessage(t *testing.T) {
+	tsTr := domain.Transformer{
+		TimeField:    timeFieldName,
+		TimeFormat:   timeFieldFormat,
+		TimeLocation: timeFieldLocation,
 	}
 
-	objectMsg := protomfx.Message{
-		Records: []*protomfx.Record{{Payload: []byte(`{"ts":1638310819,"temp":20}`)}},
+	tsFilterTr := tsTr
+	tsFilterTr.DataFilters = []string{"key1"}
+
+	pointsTr := domain.Transformer{
+		DataField:    pointsDataField,
+		TimeField:    pointsTimeField,
+		TimeFormat:   timeFieldFormat,
+		TimeLocation: timeFieldLocation,
+	}
+
+	pointsFilterTr := pointsTr
+	pointsFilterTr.DataFilters = []string{"Value"}
+
+	dataFieldTr := domain.Transformer{
+		DataField: pointsDataField,
 	}
 
 	cases := []struct {
-		desc    string
-		msg     protomfx.Message
-		created int64
+		desc        string
+		transformer domain.Transformer
+		payload     string
+		res         string
+		deviceTime  bool
+		err         error
 	}{
 		{
-			desc:    "format JSON object with time field",
-			msg:     objectMsg,
-			created: deviceTime,
+			desc:        "format JSON object with time field",
+			transformer: tsTr,
+			payload:     objectPayload,
+			res:         objectResPayload,
+			deviceTime:  true,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON array with time field",
+			transformer: tsTr,
+			payload:     tsListPayload,
+			res:         tsListResPayload,
+			deviceTime:  false,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON array with time field and data filters",
+			transformer: tsFilterTr,
+			payload:     tsListPayload,
+			res:         tsListFilterResPayload,
+			deviceTime:  false,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON with data field in all array items",
+			transformer: pointsFilterTr,
+			payload:     pointsPayload,
+			res:         pointsResPayload,
+			deviceTime:  false,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON with data field missing in some array items",
+			transformer: dataFieldTr,
+			payload:     missingKeyPayload,
+			res:         missingKeyResPayload,
+			deviceTime:  false,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON with data field in single array item",
+			transformer: pointsTr,
+			payload:     singlePointPayload,
+			res:         singlePointResPayload,
+			deviceTime:  true,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON with data field in one of several array items",
+			transformer: pointsTr,
+			payload:     partialPayload,
+			res:         partialResPayload,
+			deviceTime:  false,
+			err:         nil,
+		},
+		{
+			desc:        "format JSON with data field in non-object array items",
+			transformer: dataFieldTr,
+			payload:     invalidPayload,
+			res:         "",
+			deviceTime:  false,
+			err:         mfjson.ErrTransform,
 		},
 	}
 
 	for _, tc := range cases {
-		err := messaging.FormatMessage(pc, &tc.msg)
+		pc := domain.PubConfigInfo{
+			ThingID: "thing-1",
+			ProfileConfig: &domain.ProfileConfig{
+				ContentType: messaging.JSONContentType,
+				Transformer: tc.transformer,
+			},
+		}
+		msg := protomfx.Message{
+			Records: []*protomfx.Record{{Payload: []byte(tc.payload)}},
+		}
+
+		start := time.Now().UnixNano()
+		err := messaging.FormatMessage(pc, &msg)
+		errMsg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), errMsg)
+		if tc.err != nil {
+			continue
+		}
+
+		payload, err := messaging.ToPayload(msg)
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
-		createdMsg := fmt.Sprintf("%s: expected %d got %d\n", tc.desc, tc.created, tc.msg.Created)
-		assert.Equal(t, tc.created, tc.msg.Created, createdMsg)
+		resMsg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.res, payload)
+		assert.Equal(t, tc.res, string(payload), resMsg)
+
+		createdMsg := fmt.Sprintf("%s: unexpected created %d\n", tc.desc, msg.Created)
+		if tc.deviceTime {
+			assert.Equal(t, deviceTime, msg.Created, createdMsg)
+			continue
+		}
+		assert.GreaterOrEqual(t, msg.Created, start, createdMsg)
 	}
 }
 
@@ -70,6 +197,15 @@ func TestToPayload(t *testing.T) {
 				Records:     []*protomfx.Record{{Payload: first}},
 			},
 			res: first,
+		},
+		{
+			desc: "get payload of message with single record encoded as array",
+			msg: protomfx.Message{
+				ContentType: messaging.JSONContentType,
+				Records:     []*protomfx.Record{{Payload: first}},
+				Array:       true,
+			},
+			res: []byte(`[{"key":"val1"}]`),
 		},
 		{
 			desc: "get payload of message with multiple records",
