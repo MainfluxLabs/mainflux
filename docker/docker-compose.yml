@@ -15,7 +15,7 @@ volumes:
   mainfluxlabs-auth-redis-volume:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
-  mainfluxlabs-mqtt-db-volume:
+  mainfluxlabs-mqtt-adapter-db-volume:
   mainfluxlabs-timescale-db-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
@@ -349,9 +349,9 @@ services:
       - mainfluxlabs-mqtt-broker-volume:/mosquitto/data
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
 
-  mqtt-db:
+  mqtt-adapter-db:
     image: postgres:13.3-alpine
-    container_name: mainfluxlabs-mqtt-db
+    container_name: mainfluxlabs-mqtt-adapter-db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${MF_MQTT_ADAPTER_DB_USER}
@@ -360,7 +360,7 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-mqtt-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-mqtt-adapter-db-volume:/var/lib/postgresql/data
 
   mqtt-adapter:
     image: ${MF_RELEASE_PREFIX}/mqtt:${MF_RELEASE_TAG}
@@ -369,7 +369,7 @@ services:
       - mosquitto
       - things
       - broker
-      - mqtt-db
+      - mqtt-adapter-db
     restart: unless-stopped
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
