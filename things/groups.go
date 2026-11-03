@@ -349,7 +349,7 @@ func (ts *thingsService) canMemberAccessGroup(ctx context.Context, token, member
 		return err
 	}
 
-	if orgErr := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, domain.OrgAdmin); orgErr == nil {
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, domain.OrgAdmin); err == nil {
 		return nil
 	}
 
