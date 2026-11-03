@@ -343,13 +343,13 @@ func (ts *thingsService) canMemberAccessGroup(ctx context.Context, token, member
 		return nil
 	}
 
-	// org owner, org admin and root admin check: full access to every group in the org without a group membership
+	// Org owners and org admins have full access to every group in their org.
 	orgID, orgErr := ts.getOrgIDByGroup(ctx, groupID)
 	if orgErr != nil {
 		return err
 	}
 
-	if orgErr := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Admin); orgErr == nil {
+	if orgErr := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, domain.OrgAdmin); orgErr == nil {
 		return nil
 	}
 
