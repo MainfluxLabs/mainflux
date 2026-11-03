@@ -19,19 +19,19 @@ const (
 	maxEmailSize = 254
 )
 
-var userPasswordRegex *regexp.Regexp
-
 type userReq struct {
-	user users.User
+	user          users.User
+	passwordRegex *regexp.Regexp
 }
 
 func (req userReq) validate() error {
-	return req.user.Validate(userPasswordRegex)
+	return req.user.Validate(req.passwordRegex)
 }
 
 type selfRegisterUserReq struct {
-	User         users.User `json:"user"`
-	RedirectPath string     `json:"redirect_path"`
+	User          users.User `json:"user"`
+	RedirectPath  string     `json:"redirect_path"`
+	passwordRegex *regexp.Regexp
 }
 
 func (req selfRegisterUserReq) validate() error {
@@ -39,7 +39,7 @@ func (req selfRegisterUserReq) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	return req.User.Validate(userPasswordRegex)
+	return req.User.Validate(req.passwordRegex)
 }
 
 type oauthLoginReq struct {
@@ -94,15 +94,16 @@ func (req verifyEmailReq) validate() error {
 }
 
 type registerUserReq struct {
-	user  users.User
-	token string
+	user          users.User
+	token         string
+	passwordRegex *regexp.Regexp
 }
 
 func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
-	return req.user.Validate(userPasswordRegex)
+	return req.user.Validate(req.passwordRegex)
 }
 
 type refreshReq struct {
@@ -175,9 +176,10 @@ func (req passwResetReq) validate() error {
 }
 
 type resetTokenReq struct {
-	Token    string `json:"token"`
-	Password string `json:"password"`
-	ConfPass string `json:"confirm_password"`
+	Token         string `json:"token"`
+	Password      string `json:"password"`
+	ConfPass      string `json:"confirm_password"`
+	passwordRegex *regexp.Regexp
 }
 
 func (req resetTokenReq) validate() error {
@@ -185,7 +187,7 @@ func (req resetTokenReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
-	if !userPasswordRegex.MatchString(req.Password) {
+	if !req.passwordRegex.MatchString(req.Password) {
 		return errors.ErrPasswordFormat
 	}
 
@@ -205,10 +207,11 @@ func (req resetTokenReq) validate() error {
 }
 
 type passwChangeReq struct {
-	token       string
-	Password    string `json:"password"`
-	OldPassword string `json:"old_password,omitempty"`
-	Email       string `json:"email,omitempty"`
+	token         string
+	Password      string `json:"password"`
+	OldPassword   string `json:"old_password,omitempty"`
+	Email         string `json:"email,omitempty"`
+	passwordRegex *regexp.Regexp
 }
 
 func (req passwChangeReq) validate() error {
@@ -219,7 +222,7 @@ func (req passwChangeReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
-	if !userPasswordRegex.MatchString(req.Password) {
+	if !req.passwordRegex.MatchString(req.Password) {
 		return errors.ErrPasswordFormat
 	}
 

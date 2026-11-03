@@ -37,8 +37,6 @@ const (
 
 // MakeHandler returns a HTTP handler for API endpoints.
 func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
-	userPasswordRegex = passwordRegex
-
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -53,14 +51,14 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			kitot.TraceServer(tracer, "register"),
 			withIdentity,
 		)(registrationEndpoint(svc)),
-		decodeRegisterUser,
+		decodeRegisterUser(passwordRegex),
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
-		decodeSelfRegisterUser,
+		decodeSelfRegisterUser(passwordRegex),
 		encodeResponse,
 		opts...,
 	))
@@ -131,7 +129,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	mux.Put("/password/reset", kithttp.NewServer(
 		kitot.TraceServer(tracer, "reset")(passwordResetEndpoint(svc)),
-		decodePasswordReset,
+		decodePasswordReset(passwordRegex),
 		encodeResponse,
 		opts...,
 	))
@@ -141,14 +139,14 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			kitot.TraceServer(tracer, "reset"),
 			withIdentity,
 		)(passwordChangeEndpoint(svc)),
-		decodePasswordChange,
+		decodePasswordChange(passwordRegex),
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/tokens", kithttp.NewServer(
 		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
-		decodeCredentials,
+		decodeCredentials(passwordRegex),
 		encodeResponse,
 		opts...,
 	))
@@ -313,54 +311,66 @@ func decodeUpdateUser(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeCredentials(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		var user users.User
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+		user.Email = strings.TrimSpace(user.Email)
+		req := userReq{
+			user:          user,
+			passwordRegex: passwordRegex,
+		}
+
+		return req, nil
 	}
-	user.Email = strings.TrimSpace(user.Email)
-	return userReq{user}, nil
 }
 
 func decodeRefresh(_ context.Context, r *http.Request) (any, error) {
 	return refreshReq{token: apiutil.ExtractBearerToken(r)}, nil
 }
 
-func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodeRegisterUser(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
+		var user users.User
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 
-	user.Email = strings.TrimSpace(user.Email)
-	req := registerUserReq{
-		user:  user,
-		token: apiutil.ExtractBearerToken(r),
-	}
+		user.Email = strings.TrimSpace(user.Email)
+		req := registerUserReq{
+			user:          user,
+			token:         apiutil.ExtractBearerToken(r),
+			passwordRegex: passwordRegex,
+		}
 
-	return req, nil
+		return req, nil
+	}
 }
 
-func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
+func decodeSelfRegisterUser(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
+
+		req := selfRegisterUserReq{passwordRegex: passwordRegex}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
+
+		return req, nil
 	}
-
-	req := selfRegisterUserReq{}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
 }
 
 func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
@@ -432,30 +442,37 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (any, error)
 	return req, nil
 }
 
-func decodePasswordReset(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodePasswordReset(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	var req resetTokenReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
+		req := resetTokenReq{passwordRegex: passwordRegex}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 
-	return req, nil
+		return req, nil
+	}
 }
 
-func decodePasswordChange(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
+func decodePasswordChange(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
+	return func(_ context.Context, r *http.Request) (any, error) {
+		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+			return nil, apiutil.ErrUnsupportedContentType
+		}
 
-	req := passwChangeReq{token: apiutil.ExtractBearerToken(r)}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
+		req := passwChangeReq{
+			token:         apiutil.ExtractBearerToken(r),
+			passwordRegex: passwordRegex,
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+		}
 
-	return req, nil
+		return req, nil
+	}
 }
 
 func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {

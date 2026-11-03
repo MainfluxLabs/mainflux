@@ -17,12 +17,11 @@ const (
 	maxEmailSize = 254
 )
 
-var userPasswordRegex *regexp.Regexp
-
 type registerByInviteReq struct {
-	User         users.User `json:"user"`
-	RedirectPath string     `json:"redirect_path"`
-	inviteID     string
+	User          users.User `json:"user"`
+	RedirectPath  string     `json:"redirect_path"`
+	inviteID      string
+	passwordRegex *regexp.Regexp
 }
 
 func (req registerByInviteReq) validate() error {
@@ -30,7 +29,7 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	if err := req.User.Validate(userPasswordRegex); err != nil {
+	if err := req.User.Validate(req.passwordRegex); err != nil {
 		return err
 	}
 
