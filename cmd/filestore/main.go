@@ -45,79 +45,79 @@ const (
 	svcName      = "filestore"
 	stopWaitTime = 5 * time.Second
 
-	defLogLevel          = "error"
-	defHTTPPort          = "9024"
-	defJaegerURL         = ""
-	defServerCert        = ""
-	defServerKey         = ""
-	defCACerts           = ""
-	defThingsAuthURL     = "localhost:8183"
-	defThingsAuthTimeout = "1s"
-	defAuthGRPCURL       = "localhost:8181"
-	defAuthGRPCTimeout   = "1s"
-	defClientTLS         = "false"
-	defDBHost            = "localhost"
-	defDBPort            = "5432"
-	defDBUser            = "mainflux"
-	defDBPass            = "mainflux"
-	defDB                = svcName
-	defDBSSLMode         = "disable"
-	defDBSSLCert         = ""
-	defDBSSLKey          = ""
-	defDBSSLRootCert     = ""
-	defESURL             = "redis://localhost:6379/0"
-	defFilesPath         = "files"
-	defUploadLimitMiB    = "1024"
-	maxUploadLimitMiB    = "1024"
-	defBackend           = "local"
-	defSeaweedURL        = "http://localhost:8888"
-	defSeaweedPrefix     = "filestore"
-	defSeaweedTimeout    = "30s"
-	defSeaweedChunkMiB   = "4"
-	maxSeaweedChunkMiB   = "256"
+	defLogLevel              = "error"
+	defHTTPPort              = "9024"
+	defJaegerURL             = ""
+	defServerCert            = ""
+	defServerKey             = ""
+	defCACerts               = ""
+	defThingsAuthGRPCURL     = "localhost:8183"
+	defThingsAuthGRPCTimeout = "1s"
+	defAuthGRPCURL           = "localhost:8181"
+	defAuthGRPCTimeout       = "1s"
+	defClientTLS             = "false"
+	defDBHost                = "localhost"
+	defDBPort                = "5432"
+	defDBUser                = "mainflux"
+	defDBPass                = "mainflux"
+	defDB                    = svcName
+	defDBSSLMode             = "disable"
+	defDBSSLCert             = ""
+	defDBSSLKey              = ""
+	defDBSSLRootCert         = ""
+	defESURL                 = "redis://localhost:6379/0"
+	defFilesPath             = "files"
+	defUploadLimitMiB        = "1024"
+	maxUploadLimitMiB        = "1024"
+	defBackend               = "local"
+	defSeaweedURL            = "http://localhost:8888"
+	defSeaweedPrefix         = "filestore"
+	defSeaweedTimeout        = "30s"
+	defSeaweedChunkMiB       = "4"
+	maxSeaweedChunkMiB       = "256"
 
-	envDBHost            = "MF_FILESTORE_DB_HOST"
-	envDBPort            = "MF_FILESTORE_DB_PORT"
-	envDBUser            = "MF_FILESTORE_DB_USER"
-	envDBPass            = "MF_FILESTORE_DB_PASS"
-	envDB                = "MF_FILESTORE_DB"
-	envDBSSLMode         = "MF_FILESTORE_DB_SSL_MODE"
-	envDBSSLCert         = "MF_FILESTORE_DB_SSL_CERT"
-	envDBSSLKey          = "MF_FILESTORE_DB_SSL_KEY"
-	envDBSSLRootCert     = "MF_FILESTORE_DB_SSL_ROOT_CERT"
-	envLogLevel          = "MF_FILESTORE_LOG_LEVEL"
-	envHTTPPort          = "MF_FILESTORE_HTTP_PORT"
-	envServerCert        = "MF_FILESTORE_SERVER_CERT"
-	envServerKey         = "MF_FILESTORE_SERVER_KEY"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envCACerts           = "MF_FILESTORE_CA_CERTS"
-	envClientTLS         = "MF_FILESTORE_TLS"
-	envThingsAuthURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsAuthTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
-	envESURL             = "MF_FILESTORE_ES_URL"
-	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
-	envSeaweedChunkMiB   = "MF_FILESTORE_SEAWEED_CHUNK_SIZE"
-	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
-	envBackend           = "MF_FILESTORE_BACKEND"
-	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
-	envFilesPath         = "MF_FILESTORE_FILES_PATH"
-	envUploadLimitMiB    = "MF_FILESTORE_MAX_UPLOAD_SIZE"
+	envDBHost                = "MF_FILESTORE_DB_HOST"
+	envDBPort                = "MF_FILESTORE_DB_PORT"
+	envDBUser                = "MF_FILESTORE_DB_USER"
+	envDBPass                = "MF_FILESTORE_DB_PASS"
+	envDB                    = "MF_FILESTORE_DB"
+	envDBSSLMode             = "MF_FILESTORE_DB_SSL_MODE"
+	envDBSSLCert             = "MF_FILESTORE_DB_SSL_CERT"
+	envDBSSLKey              = "MF_FILESTORE_DB_SSL_KEY"
+	envDBSSLRootCert         = "MF_FILESTORE_DB_SSL_ROOT_CERT"
+	envLogLevel              = "MF_FILESTORE_LOG_LEVEL"
+	envHTTPPort              = "MF_FILESTORE_HTTP_PORT"
+	envServerCert            = "MF_FILESTORE_SERVER_CERT"
+	envServerKey             = "MF_FILESTORE_SERVER_KEY"
+	envJaegerURL             = "MF_JAEGER_URL"
+	envCACerts               = "MF_FILESTORE_CA_CERTS"
+	envClientTLS             = "MF_FILESTORE_CLIENT_TLS"
+	envThingsAuthGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsAuthGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL           = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout       = "MF_AUTH_GRPC_TIMEOUT"
+	envESURL                 = "MF_FILESTORE_ES_URL"
+	envSeaweedTimeout        = "MF_FILESTORE_SEAWEED_TIMEOUT"
+	envSeaweedChunkMiB       = "MF_FILESTORE_SEAWEED_CHUNK_MIB"
+	envSeaweedPrefix         = "MF_FILESTORE_SEAWEED_PREFIX"
+	envBackend               = "MF_FILESTORE_BACKEND"
+	envSeaweedURL            = "MF_FILESTORE_SEAWEED_URL"
+	envFilesPath             = "MF_FILESTORE_FILES_PATH"
+	envUploadLimitMiB        = "MF_FILESTORE_UPLOAD_LIMIT_MIB"
 )
 
 type config struct {
-	logLevel          string
-	jaegerURL         string
-	thingsAuthTimeout time.Duration
-	authGRPCTimeout   time.Duration
-	dbConfig          postgres.Config
-	httpConfig        servers.Config
-	thingsConfig      clients.Config
-	authConfig        clients.Config
-	esURL             string
-	store             storeConfig
-	uploadLimitMiB    int
+	logLevel              string
+	jaegerURL             string
+	thingsAuthGRPCTimeout time.Duration
+	authGRPCTimeout       time.Duration
+	dbConfig              postgres.Config
+	httpConfig            servers.Config
+	thingsConfig          clients.Config
+	authConfig            clients.Config
+	esURL                 string
+	store                 storeConfig
+	uploadLimitMiB        int
 }
 
 type storeConfig struct {
@@ -157,7 +157,7 @@ func main() {
 	thingsAuthConn := clientsgrpc.Connect(cfg.thingsConfig, logger)
 	defer thingsAuthConn.Close()
 
-	thingsAuth := thingsapi.NewClient(thingsAuthConn, thingsTracer, cfg.thingsAuthTimeout)
+	thingsAuth := thingsapi.NewClient(thingsAuthConn, thingsTracer, cfg.thingsAuthGRPCTimeout)
 
 	authTracer, authCloser := jaeger.Init("filestore_auth", cfg.jaegerURL, logger)
 	defer authCloser.Close()
@@ -199,9 +199,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsAuthTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthTimeout, defThingsAuthTimeout))
+	thingsAuthGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsAuthGRPCTimeout, defThingsAuthGRPCTimeout))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envThingsAuthTimeout, err.Error())
+		log.Fatalf("Invalid %s value: %s", envThingsAuthGRPCTimeout, err.Error())
 	}
 
 	dbConfig := postgres.Config{
@@ -232,7 +232,7 @@ func loadConfig() config {
 	thingsConfig := clients.Config{
 		ClientTLS:  tls,
 		CaCerts:    mainflux.Env(envCACerts, defCACerts),
-		URL:        mainflux.Env(envThingsAuthURL, defThingsAuthURL),
+		URL:        mainflux.Env(envThingsAuthGRPCURL, defThingsAuthGRPCURL),
 		ClientName: clients.Things,
 	}
 
@@ -271,17 +271,17 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsAuthTimeout: thingsAuthTimeout,
-		authGRPCTimeout:   authGRPCTimeout,
-		dbConfig:          dbConfig,
-		httpConfig:        httpConfig,
-		thingsConfig:      thingsConfig,
-		authConfig:        authConfig,
-		esURL:             mainflux.Env(envESURL, defESURL),
-		store:             storeConfig,
-		uploadLimitMiB:    uploadLimitMiB,
+		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
+		jaegerURL:             mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsAuthGRPCTimeout: thingsAuthGRPCTimeout,
+		authGRPCTimeout:       authGRPCTimeout,
+		dbConfig:              dbConfig,
+		httpConfig:            httpConfig,
+		thingsConfig:          thingsConfig,
+		authConfig:            authConfig,
+		esURL:                 mainflux.Env(envESURL, defESURL),
+		store:                 storeConfig,
+		uploadLimitMiB:        uploadLimitMiB,
 	}
 }
 

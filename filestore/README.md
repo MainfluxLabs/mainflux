@@ -45,7 +45,7 @@ default values.
 | `MF_FILESTORE_DB_SSL_CERT`        | Path to the PEM encoded certificate file                                                  |                          |
 | `MF_FILESTORE_DB_SSL_KEY`         | Path to the PEM encoded key file                                                          |                          |
 | `MF_FILESTORE_DB_SSL_ROOT_CERT`   | Path to the PEM encoded root certificate file                                             |                          |
-| `MF_FILESTORE_TLS`                | Flag that indicates if TLS should be turned on                                            | false                    |
+| `MF_FILESTORE_CLIENT_TLS`         | Flag that indicates if TLS should be turned on                                            | false                    |
 | `MF_FILESTORE_CA_CERTS`           | Path to trusted CAs in PEM format                                                         |                          |
 | `MF_FILESTORE_SERVER_CERT`        | Path to server certificate in PEM format                                                  |                          |
 | `MF_FILESTORE_SERVER_KEY`         | Path to server key in PEM format                                                          |                          |
@@ -55,11 +55,11 @@ default values.
 | `MF_FILESTORE_EVENT_CONSUMER`     | Event store consumer name                                                                 | filestore                |
 | `MF_FILESTORE_BACKEND`            | Object-store backend: `local` or `seaweedfs`                                              | local                    |
 | `MF_FILESTORE_FILES_PATH`         | Root directory used by the `local` backend                                                | files                    |
-| `MF_FILESTORE_MAX_UPLOAD_SIZE`    | Max upload size in MiB (1..1024); enforced by filestore and nginx `client_max_body_size`  | 1024                     |
+| `MF_FILESTORE_UPLOAD_LIMIT_MIB`   | Max upload size in MiB (1..1024); enforced by filestore and nginx `client_max_body_size`  | 1024                     |
 | `MF_FILESTORE_SEAWEED_URL`        | SeaweedFS filer base URL (http/https)                                                     | http://localhost:8888    |
 | `MF_FILESTORE_SEAWEED_PREFIX`     | Key prefix prepended to all objects on the filer                                          | filestore                |
 | `MF_FILESTORE_SEAWEED_TIMEOUT`    | Per-phase HTTP timeout (dial / TLS / response-header); body not capped                    | 30s                      |
-| `MF_FILESTORE_SEAWEED_CHUNK_SIZE` | Chunk size in MiB (1..256, at most max upload size); sets filer `-maxMB`                  | 4                        |
+| `MF_FILESTORE_SEAWEED_CHUNK_MIB`  | Chunk size in MiB (1..256, at most max upload size); sets filer `-maxMB`                  | 4                        |
 
 ## Deployment
 
