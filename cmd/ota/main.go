@@ -159,7 +159,7 @@ func main() {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
 	})
 
-	if err := consumers.Messages(svcName, pubSub, svc, nats.SubjectOTA); err != nil {
+	if err := consumers.Messages(svcName, pubSub, svc, nats.SubjectOTAStatuses); err != nil {
 		logger.Error(fmt.Sprintf("Failed to subscribe to message broker: %s", err))
 		os.Exit(1)
 	}
