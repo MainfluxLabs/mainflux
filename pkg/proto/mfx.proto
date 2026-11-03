@@ -47,8 +47,8 @@ message Alarm {
 
 message Notification {
     oneof source {
-        Alarm   alarm   = 6;
-        Message message = 7;
+        Alarm   alarm   = 1;
+        Message message = 2;
     }
 }
 
