@@ -67,14 +67,14 @@ const (
 	defDBSSLRootCert     = ""
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
-	defUploadLimitMB     = "1024"
-	maxUploadLimitMB     = 1024
+	defUploadLimitMiB    = "1024"
+	maxUploadLimitMiB    = 1024
 	defBackend           = "local"
 	defSeaweedURL        = "http://localhost:8888"
 	defSeaweedPrefix     = "filestore"
 	defSeaweedTimeout    = "30s"
-	defSeaweedChunkMB    = "4"
-	maxSeaweedChunkMB    = 256
+	defSeaweedChunkMiB   = "4"
+	maxSeaweedChunkMiB   = 256
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -98,12 +98,12 @@ const (
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_FILESTORE_ES_URL"
 	envSeaweedTimeout    = "MF_FILESTORE_SEAWEED_TIMEOUT"
-	envSeaweedChunkMB    = "MF_FILESTORE_SEAWEED_CHUNK_SIZE"
+	envSeaweedChunkMiB   = "MF_FILESTORE_SEAWEED_CHUNK_SIZE"
 	envSeaweedPrefix     = "MF_FILESTORE_SEAWEED_PREFIX"
 	envBackend           = "MF_FILESTORE_BACKEND"
 	envSeaweedURL        = "MF_FILESTORE_SEAWEED_URL"
 	envFilesPath         = "MF_FILESTORE_FILES_PATH"
-	envUploadLimitMB     = "MF_FILESTORE_MAX_UPLOAD_SIZE"
+	envUploadLimitMiB    = "MF_FILESTORE_MAX_UPLOAD_SIZE"
 )
 
 type config struct {
@@ -117,16 +117,16 @@ type config struct {
 	authConfig        clients.Config
 	esURL             string
 	store             storeConfig
-	uploadLimitMB     int
+	uploadLimitMiB    int
 }
 
 type storeConfig struct {
-	backend        string
-	filesPath      string
-	seaweedURL     string
-	seaweedPrefix  string
-	seaweedTimeout time.Duration
-	seaweedChunkMB int
+	backend         string
+	filesPath       string
+	seaweedURL      string
+	seaweedPrefix   string
+	seaweedTimeout  time.Duration
+	seaweedChunkMiB int
 }
 
 func main() {
@@ -177,7 +177,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, cfg.uploadLimitMB, logger), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(fileStoreTracer, svc, auth, cfg.uploadLimitMiB, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -243,9 +243,9 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
-	uploadLimitMB, err := strconv.Atoi(mainflux.Env(envUploadLimitMB, defUploadLimitMB))
-	if err != nil || uploadLimitMB <= 0 || uploadLimitMB > maxUploadLimitMB {
-		log.Fatalf("Invalid %s: must be between 1 and %d", envUploadLimitMB, maxUploadLimitMB)
+	uploadLimitMiB, err := strconv.Atoi(mainflux.Env(envUploadLimitMiB, defUploadLimitMiB))
+	if err != nil || uploadLimitMiB <= 0 || uploadLimitMiB > maxUploadLimitMiB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envUploadLimitMiB, maxUploadLimitMiB)
 	}
 
 	seaweedTimeout, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
@@ -253,19 +253,19 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s: %s", envSeaweedTimeout, err)
 	}
 
-	seaweedChunkMB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMB, defSeaweedChunkMB))
-	maxChunkMB := min(maxSeaweedChunkMB, uploadLimitMB)
-	if err != nil || seaweedChunkMB <= 0 || seaweedChunkMB > maxChunkMB {
-		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMB, maxChunkMB)
+	seaweedChunkMiB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMiB, defSeaweedChunkMiB))
+	maxChunkMiB := min(maxSeaweedChunkMiB, uploadLimitMiB)
+	if err != nil || seaweedChunkMiB <= 0 || seaweedChunkMiB > maxChunkMiB {
+		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMiB, maxChunkMiB)
 	}
 
 	storeConfig := storeConfig{
-		backend:        mainflux.Env(envBackend, defBackend),
-		filesPath:      mainflux.Env(envFilesPath, defFilesPath),
-		seaweedURL:     mainflux.Env(envSeaweedURL, defSeaweedURL),
-		seaweedPrefix:  mainflux.Env(envSeaweedPrefix, defSeaweedPrefix),
-		seaweedTimeout: seaweedTimeout,
-		seaweedChunkMB: seaweedChunkMB,
+		backend:         mainflux.Env(envBackend, defBackend),
+		filesPath:       mainflux.Env(envFilesPath, defFilesPath),
+		seaweedURL:      mainflux.Env(envSeaweedURL, defSeaweedURL),
+		seaweedPrefix:   mainflux.Env(envSeaweedPrefix, defSeaweedPrefix),
+		seaweedTimeout:  seaweedTimeout,
+		seaweedChunkMiB: seaweedChunkMiB,
 	}
 
 	return config{
@@ -279,14 +279,14 @@ func loadConfig() config {
 		authConfig:        authConfig,
 		esURL:             mainflux.Env(envESURL, defESURL),
 		store:             storeConfig,
-		uploadLimitMB:     uploadLimitMB,
+		uploadLimitMiB:    uploadLimitMiB,
 	}
 }
 
 func buildStore(cfg storeConfig, logger logger.Logger) store.FileStore {
 	switch cfg.backend {
 	case "seaweedfs":
-		fs, err := store.NewSeaweedFS(cfg.seaweedURL, cfg.seaweedPrefix, cfg.seaweedTimeout, cfg.seaweedChunkMB)
+		fs, err := store.NewSeaweedFS(cfg.seaweedURL, cfg.seaweedPrefix, cfg.seaweedTimeout, cfg.seaweedChunkMiB)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Failed to init SeaweedFS backend: %s", err))
 			os.Exit(1)

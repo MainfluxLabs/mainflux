@@ -88,7 +88,7 @@ const (
 	contentTypeHeader    = "Content-Type"
 )
 
-func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, uploadLimitMB int, logger logger.Logger) http.Handler {
+func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.AuthClient, uploadLimitMiB int, logger logger.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -100,7 +100,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 
 	r.Post("/files", kithttp.NewServer(
 		kitot.TraceServer(tracer, "save_file")(saveFileEndpoint(svc)),
-		decodeSaveFile(uploadLimitMB),
+		decodeSaveFile(uploadLimitMiB),
 		encodeResponse,
 		opts...,
 	))
@@ -133,7 +133,7 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 			kitot.TraceServer(tracer, "save_group_file"),
 			withIdentity,
 		)(saveGroupFileEndpoint(svc)),
-		decodeSaveGroupFile(uploadLimitMB),
+		decodeSaveGroupFile(uploadLimitMiB),
 		encodeResponse,
 		opts...,
 	))
@@ -186,8 +186,8 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 	return r
 }
 
-func decodeSaveFile(uploadLimitMB int) kithttp.DecodeRequestFunc {
-	uploadLimitBytes := int64(uploadLimitMB) << 20
+func decodeSaveFile(uploadLimitMiB int) kithttp.DecodeRequestFunc {
+	uploadLimitBytes := int64(uploadLimitMiB) << 20
 
 	return func(_ context.Context, r *http.Request) (any, error) {
 		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
@@ -287,8 +287,8 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeSaveGroupFile(uploadLimitMB int) kithttp.DecodeRequestFunc {
-	uploadLimitBytes := int64(uploadLimitMB) << 20
+func decodeSaveGroupFile(uploadLimitMiB int) kithttp.DecodeRequestFunc {
+	uploadLimitBytes := int64(uploadLimitMiB) << 20
 
 	return func(_ context.Context, r *http.Request) (any, error) {
 		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
