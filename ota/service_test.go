@@ -33,7 +33,6 @@ const (
 	thingKey     = "8384fb1c-d0ae-4cbe-be52-c54223150fe2"
 	fwVersion    = "1.4.0"
 	firmwareURL  = "https://localhost/fs/groupfiles"
-	otaSubtopic  = "ota"
 )
 
 var firmware = ota.Update{
@@ -114,7 +113,7 @@ func TestCreateUpdate(t *testing.T) {
 		assert.Equal(t, groupID, u.GroupID, fmt.Sprintf("%s: group mismatch", tc.desc))
 		assert.Equal(t, ota.UpdateStats{Targets: 1, Pending: 1}, u.Stats, fmt.Sprintf("%s: stats mismatch", tc.desc))
 
-		cmds := pub.Commands(nats.GetThingCommandsSubject(thingID, otaSubtopic))
+		cmds := pub.Commands(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic))
 		require.Len(t, cmds, 1, fmt.Sprintf("%s: expected one ota command", tc.desc))
 
 		var payload map[string]any
@@ -345,7 +344,7 @@ func TestRetryFailed(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("listing thing updates failed: %s", err))
 	assert.Equal(t, ota.StatusPending, page.ThingUpdates[0].Status, "retried thing must be pending")
 	assert.Empty(t, page.ThingUpdates[0].Error, "retry must clear the error")
-	assert.Len(t, pub.Commands(nats.GetThingCommandsSubject(thingID, otaSubtopic)), 2, "retry must send the command again")
+	assert.Len(t, pub.Commands(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic)), 2, "retry must send the command again")
 }
 
 func TestFailTimedOut(t *testing.T) {
@@ -388,7 +387,7 @@ func TestConsumeMessage(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.ConsumeMessage(nats.SubjectOTA, protomfx.Message{ThingId: thingID, Subtopic: otaSubtopic, Payload: tc.payload})
+		err := svc.ConsumeMessage(nats.GetOTASubject(thingID, nats.OTAStatusSubtopic), protomfx.Message{ThingId: thingID, Subtopic: nats.OTAStatusSubtopic, Records: []*protomfx.Record{{Payload: tc.payload}}})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 
 		page, err := svc.ListThingUpdates(context.Background(), token, u.ID, ota.PageMetadata{})

@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	address   string
 	publisher messaging.Publisher
 	pubsub    messaging.PubSub
 )
@@ -39,7 +38,7 @@ func TestMain(m *testing.M) {
 	}
 	handleInterrupt(pool, container)
 
-	address = fmt.Sprintf("%s:%s", "localhost", container.GetPort("4222/tcp"))
+	address := fmt.Sprintf("%s:%s", "localhost", container.GetPort("4222/tcp"))
 	if err := pool.Retry(func() error {
 		publisher, err = nats.NewPublisher(address)
 		return err

@@ -30,23 +30,24 @@ pending ─► downloading ─► installing ─► succeeded
    └────────────┴──────────────┴──────► failed
 ```
 
-| Status        | Meaning                                                                          |
-| ------------- | -------------------------------------------------------------------------------- |
-| `pending`     | The thing has not started the update yet                                         |
-| `downloading` | The thing is downloading the firmware                                            |
-| `installing`  | The thing is installing the firmware                                             |
-| `succeeded`   | The thing reported the update's version                                          |
-| `failed`      | The thing reported an error or another version, timed out, or was superseded     |
+| Status        | Meaning                                                                      |
+| ------------- | ---------------------------------------------------------------------------- |
+| `pending`     | The thing has not started the update yet                                     |
+| `downloading` | The thing is downloading the firmware                                        |
+| `installing`  | The thing is installing the firmware                                         |
+| `succeeded`   | The thing reported the update's version                                      |
+| `failed`      | The thing reported an error or another version, timed out, or was superseded |
 
 ## How it works
 
 1. **Create.** A user creates an update for things of a group (`POST /groups/{id}/updates`). Every
    thing starts as `pending`. A thing runs at most one update at a time: its older running update is
    marked `failed` with `superseded by update <id>`.
-2. **Notify.** The service publishes the `ota` command on each thing's command subject
-   (`things.<id>.commands.ota`). Online things receive it over MQTT or CoAP. Things that were offline
-   fetch it on reconnect with `GET /ota/pending`, which answers `204` with no body when nothing is
-   pending. The command is:
+2. **Notify.** The service publishes the update on each thing's `things/<id>/ota/update` topic.
+   Online things receive it over MQTT by subscribing to `things/<id>/ota/update`. Only the OTA
+   service can publish there, so other things and users can't send a forged update. Things that
+   were offline fetch it on reconnect with `GET /ota/pending`, which answers `204` with no body
+   when nothing is pending. The update is:
 
    ```json
    {
@@ -59,13 +60,13 @@ pending ─► downloading ─► installing ─► succeeded
    }
    ```
 
-   CoAP and `GET /ota/pending` deliver it as is. MQTT delivers it inside the standard command message,
+   `GET /ota/pending` delivers it as is. MQTT delivers it inside the standard command message,
    under `payload`:
 
    ```json
    {
      "created": 1793096198368527190,
-     "subtopic": "ota",
+     "subtopic": "update",
      "recipientID": "<thing id>",
      "protocol": "ota",
      "payload": { "update_id": "…", "version": "1.4.0", … }
@@ -74,12 +75,12 @@ pending ─► downloading ─► installing ─► succeeded
 
 3. **Download.** The thing downloads the firmware from `url` with its thing key, resuming with HTTP
    Range requests if needed, and verifies the SHA-256 checksum.
-4. **Report.** The thing reports `{"update_id", "status", "version", "error"}` either with
-   `POST /ota/status` or by publishing on the `ota` subtopic of its messages over any protocol
-   (e.g. MQTT topic `things/<id>/messages/ota`). Reports on the `ota` subtopic always reach the
-   service, regardless of the profile's flags. A `succeeded` report must include `version`; without
-   it the report is rejected and the status is unchanged. If `version` differs from the update's
-   version, the thing is marked `failed`.
+4. **Report.** The thing reports `{"update_id", "status", "version", "error"}` with
+   `POST /ota/status`, or by publishing on its `things/<id>/ota/status` topic over MQTT.
+   A thing can report only its own status. Reports are not messages: they reach only the OTA
+   service, are not stored as telemetry and don't trigger rules or webhooks. A `succeeded` report
+   must include `version`; without it the report is rejected and the status is unchanged. If
+   `version` differs from the update's version, the thing is marked `failed`.
 5. **Timeout.** Things without progress for the update's `timeout` are marked `failed` with
    `timed out`. The service checks this every `MF_OTA_TIMEOUT_CHECK_INTERVAL`.
 6. **Retry.** A user can move the failed things of an update back to `pending`

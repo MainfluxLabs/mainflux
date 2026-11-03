@@ -47,8 +47,10 @@ const (
 	SubjectWebhooks = "webhooks"
 	// SubjectRules represents subject used to route messages to the rules service.
 	SubjectRules = "rules"
-	// SubjectOTA represents subject used to route OTA status reports to the ota service.
-	SubjectOTA = "ota"
+	// SubjectOTAUpdates represents subject used to forward OTA updates to things.
+	SubjectOTAUpdates = "things.*.ota.update"
+	// SubjectOTAStatuses represents subject used to route OTA status reports to the ota service.
+	SubjectOTAStatuses = "things.*.ota.status"
 )
 
 type subscription struct {

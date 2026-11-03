@@ -48,10 +48,8 @@ type PubSub interface {
 }
 
 // MessageDispatcher routes a message to every subject enabled by a profile's dispatcher flags.
-// OTA status reports are always routed to the ota service as well.
 type MessageDispatcher interface {
-	// Dispatch publishes msg to every subject enabled by the dispatcher flags in pc,
-	// and always forwards OTA status reports to the ota subject.
+	// Dispatch publishes msg to every subject enabled by the dispatcher flags in pc.
 	Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error
 }
 

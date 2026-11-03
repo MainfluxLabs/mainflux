@@ -25,9 +25,12 @@ const (
 	groupsPrefix   = "groups"
 	messagesSuffix = "messages"
 	commandsSuffix = "commands"
+	otaSuffix      = "ota"
 
-	// OTASubtopic is the subtopic that things receive OTA commands on and send OTA status reports to.
-	OTASubtopic = "ota"
+	// OTAUpdateSubtopic is the subtopic of the ota subjects that things receive OTA updates on.
+	OTAUpdateSubtopic = "update"
+	// OTAStatusSubtopic is the subtopic of the ota subjects that things report OTA progress on.
+	OTAStatusSubtopic = "status"
 )
 
 type publisher struct {
@@ -112,6 +115,11 @@ func GetGroupCommandsSubject(groupID, subtopic string) string {
 	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
 }
 
+// GetOTASubject returns the subject of the thing's OTA updates or status reports.
+func GetOTASubject(thingID, subtopic string) string {
+	return createSubject(thingsPrefix, thingID, otaSuffix, subtopic)
+}
+
 // IsCommandsSubject reports whether subject is a thing or group commands subject.
 func IsCommandsSubject(subject string) bool {
 	elems := strings.SplitN(subject, ".", 4)
@@ -122,6 +130,12 @@ func IsCommandsSubject(subject string) bool {
 	return (elems[0] == thingsPrefix || elems[0] == groupsPrefix) && elems[2] == commandsSuffix
 }
 
+// IsOTASubject reports whether subject is a thing's OTA subject with the given subtopic.
+func IsOTASubject(subject, subtopic string) bool {
+	elems := strings.Split(subject, ".")
+	return len(elems) == 4 && elems[0] == thingsPrefix && elems[2] == otaSuffix && elems[3] == subtopic
+}
+
 func createSubject(entity, id, suffix, subtopic string) string {
 	subject := fmt.Sprintf("%s.%s.%s", entity, id, suffix)
 	if subtopic != "" {
@@ -130,16 +144,10 @@ func createSubject(entity, id, suffix, subtopic string) string {
 	return subject
 }
 
-// Dispatch publishes msg to every subject enabled by pc's dispatcher flags, and always forwards OTA status reports to the ota subject.
+// Dispatch publishes msg to every subject enabled by pc's dispatcher flags.
 func (pub *publisher) Dispatch(msg protomfx.Message, pc *domain.ProfileConfig) error {
 	if pc == nil {
 		return nil
-	}
-
-	if msg.Subtopic == OTASubtopic {
-		if err := pub.Publish(SubjectOTA, msg); err != nil {
-			return err
-		}
 	}
 
 	if pc.WriteEnabled {

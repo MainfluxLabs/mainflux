@@ -167,7 +167,7 @@ paths:
       summary: Reports the progress of an update
       description: |
         Records the progress reported by the thing. The same report can be published
-        on the `ota` subtopic of the thing's messages over any protocol.
+        on the thing's `things/<id>/ota/status` topic over MQTT.
       tags:
         - things
       security:

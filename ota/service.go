@@ -271,8 +271,13 @@ func (ots *otaService) RemoveUpdatesByGroup(ctx context.Context, groupID string)
 }
 
 func (ots *otaService) ConsumeMessage(_ string, msg protomfx.Message) error {
+	payload, err := messaging.ToPayload(msg)
+	if err != nil {
+		return errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
 	var report StatusReport
-	if err := json.Unmarshal(msg.Payload, &report); err != nil {
+	if err := json.Unmarshal(payload, &report); err != nil {
 		return errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 
@@ -332,13 +337,13 @@ func (ots *otaService) notify(u Update, thingIDs ...string) {
 	for _, thingID := range thingIDs {
 		cmd := protomfx.Command{
 			RecipientId: thingID,
-			Subtopic:    nats.OTASubtopic,
+			Subtopic:    nats.OTAUpdateSubtopic,
 			Payload:     payload,
 			Protocol:    otaProtocol,
 			Created:     time.Now().UnixNano(),
 		}
 
-		if err := ots.publisher.PublishCommand(nats.GetThingCommandsSubject(thingID, nats.OTASubtopic), cmd); err != nil {
+		if err := ots.publisher.PublishCommand(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic), cmd); err != nil {
 			ots.logger.Warn(fmt.Sprintf("failed to send ota command for update %s to thing %s: %s", u.ID, thingID, err))
 		}
 	}
