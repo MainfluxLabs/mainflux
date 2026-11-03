@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
@@ -63,13 +64,13 @@ func buildEmail(notification protomfx.Notification) (notificationEmail, error) {
 	}
 
 	if message := notification.GetMessage(); message != nil {
-		return messageEmail(message), nil
+		return messageEmail(message)
 	}
 
 	return notificationEmail{}, notifiers.ErrMissingSource
 }
 
-func messageEmail(message *protomfx.Message) notificationEmail {
+func messageEmail(message *protomfx.Message) (notificationEmail, error) {
 	subject := fmt.Sprintf("New IoT message from Thing %s", message.ThingId)
 	if message.Subtopic != "" {
 		subject = fmt.Sprintf(
@@ -86,17 +87,22 @@ func messageEmail(message *protomfx.Message) notificationEmail {
 		"Time":     formatTime(message.Created),
 	}
 
-	if fields, ok := payloadFields(message.Payload, message.ContentType); ok {
+	if fields, ok := payloadFields(message); ok {
 		templateData["Fields"] = fields
 	} else {
-		templateData["MessageContent"] = formatPayload(message.Payload)
+		payload, err := messaging.ToPayload(*message)
+		if err != nil {
+			return notificationEmail{}, err
+		}
+
+		templateData["MessageContent"] = formatPayload(payload)
 	}
 
 	return notificationEmail{
 		subject:      subject,
 		templateName: messageTemplate,
 		templateData: templateData,
-	}
+	}, nil
 }
 
 func alarmEmail(alarm *protomfx.Alarm) notificationEmail {

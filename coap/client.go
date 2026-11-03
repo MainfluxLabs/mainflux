@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/plgd-dev/go-coap/v2/message"
 	"github.com/plgd-dev/go-coap/v2/message/codes"
@@ -69,7 +70,12 @@ func (c *client) Token() string {
 }
 
 func (c *client) Handle(_ string, msg protomfx.Message) error {
-	return c.notify(msg.Payload)
+	payload, err := messaging.ToPayload(msg)
+	if err != nil {
+		return err
+	}
+
+	return c.notify(payload)
 }
 
 func (c *client) HandleCommand(_ string, cmd protomfx.Command) error {

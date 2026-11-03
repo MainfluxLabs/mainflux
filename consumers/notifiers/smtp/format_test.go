@@ -19,6 +19,8 @@ const (
 	ruleID      = "rule-id"
 	createdNs   = 1793103299300713748
 	createdTime = "2026-10-27 12:14:59 UTC"
+	laterNs     = 1793103000000000000
+	laterTime   = "2026-10-27 12:10:00 UTC"
 	ruleInfo    = `{
 		"conditions": [{"type": "threshold", "field": "temp", "comparator": ">", "threshold": 30}]
 	}`
@@ -27,18 +29,18 @@ const (
 func TestPayloadFields(t *testing.T) {
 	cases := []struct {
 		desc        string
-		payload     string
 		contentType string
+		records     []*protomfx.Record
 		fields      []field
 		ok          bool
 	}{
 		{
-			desc: "SenML records with unit and time",
-			payload: `[
-				{"name": "main.humidity", "value": 66, "unit": "%", "time": 1793103299300713748},
-				{"name": "main.door", "bool_value": true, "time": 1793103000000000000}
-			]`,
+			desc:        "SenML records with unit and time",
 			contentType: messaging.SenMLContentType,
+			records: []*protomfx.Record{
+				newRecord(`{"name": "main.humidity", "value": 66, "unit": "%"}`, createdNs),
+				newRecord(`{"name": "main.door", "bool_value": true}`, laterNs),
+			},
 			fields: []field{
 				{
 					Name:  "main.humidity",
@@ -48,15 +50,17 @@ func TestPayloadFields(t *testing.T) {
 				{
 					Name:  "main.door",
 					Value: "true",
-					Time:  "2026-10-27 12:10:00 UTC",
+					Time:  laterTime,
 				},
 			},
 			ok: true,
 		},
 		{
 			desc:        "nested JSON object sorted by key",
-			payload:     `{"temp":31.2,"main":{"humidity":83}}`,
 			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`{"temp":31.2,"main":{"humidity":83}}`, createdNs),
+			},
 			fields: []field{
 				{
 					Name:  "main.humidity",
@@ -71,8 +75,10 @@ func TestPayloadFields(t *testing.T) {
 		},
 		{
 			desc:        "JSON integer above 2^53",
-			payload:     `{"counter":9007199254740993}`,
 			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`{"counter":9007199254740993}`, createdNs),
+			},
 			fields: []field{
 				{
 					Name:  "counter",
@@ -83,8 +89,10 @@ func TestPayloadFields(t *testing.T) {
 		},
 		{
 			desc:        "JSON object with an array of objects",
-			payload:     `{"weather":[{"main":"Clouds"}]}`,
 			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`{"weather":[{"main":"Clouds"}]}`, createdNs),
+			},
 			fields: []field{
 				{
 					Name:  "weather.0.main",
@@ -94,9 +102,32 @@ func TestPayloadFields(t *testing.T) {
 			ok: true,
 		},
 		{
-			desc:        "top-level JSON array",
-			payload:     `[{"temp":31},{"temp":32}]`,
+			desc:        "JSON array records with their own time",
 			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`{"temp":31}`, createdNs),
+				newRecord(`{"temp":32}`, laterNs),
+			},
+			fields: []field{
+				{
+					Name:  "0.temp",
+					Value: "31",
+					Time:  createdTime,
+				},
+				{
+					Name:  "1.temp",
+					Value: "32",
+					Time:  laterTime,
+				},
+			},
+			ok: true,
+		},
+		{
+			desc:        "JSON array in a single record",
+			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`[{"temp":31},{"temp":32}]`, createdNs),
+			},
 			fields: []field{
 				{
 					Name:  "0.temp",
@@ -110,60 +141,75 @@ func TestPayloadFields(t *testing.T) {
 			ok: true,
 		},
 		{
-			desc:        "JSON array shaped like SenML",
-			payload:     `[{"name":"x","value":1}]`,
+			desc:        "JSON object shaped like SenML",
 			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`{"name":"x","value":1}`, createdNs),
+			},
 			fields: []field{
 				{
-					Name:  "0.name",
+					Name:  "name",
 					Value: "x",
 				},
 				{
-					Name:  "0.value",
+					Name:  "value",
 					Value: "1",
 				},
 			},
 			ok: true,
 		},
 		{
-			desc:        "SenML that isn't a list of records",
-			payload:     `{"name":"x","value":1}`,
+			desc:        "SenML record without a name",
 			contentType: messaging.SenMLContentType,
-			fields:      nil,
-			ok:          false,
+			records: []*protomfx.Record{
+				newRecord(`{"value":1}`, createdNs),
+			},
+			fields: nil,
+			ok:     false,
 		},
 		{
 			desc:        "empty JSON object",
-			payload:     `{}`,
 			contentType: messaging.JSONContentType,
-			fields:      nil,
-			ok:          false,
-		},
-		{
-			desc:        "empty JSON array",
-			payload:     `[]`,
-			contentType: messaging.JSONContentType,
-			fields:      nil,
-			ok:          false,
+			records: []*protomfx.Record{
+				newRecord(`{}`, createdNs),
+			},
+			fields: nil,
+			ok:     false,
 		},
 		{
 			desc:        "JSON string",
-			payload:     `"text"`,
 			contentType: messaging.JSONContentType,
-			fields:      nil,
-			ok:          false,
+			records: []*protomfx.Record{
+				newRecord(`"text"`, createdNs),
+			},
+			fields: nil,
+			ok:     false,
 		},
 		{
 			desc:        "invalid JSON",
-			payload:     `not json`,
 			contentType: messaging.JSONContentType,
+			records: []*protomfx.Record{
+				newRecord(`not json`, createdNs),
+			},
+			fields: nil,
+			ok:     false,
+		},
+		{
+			desc:        "message without records",
+			contentType: messaging.JSONContentType,
+			records:     nil,
 			fields:      nil,
 			ok:          false,
 		},
 	}
 
 	for _, tc := range cases {
-		fields, ok := payloadFields([]byte(tc.payload), tc.contentType)
+		message := &protomfx.Message{
+			ContentType: tc.contentType,
+			Records:     tc.records,
+		}
+
+		fields, ok := payloadFields(message)
 		assert.Equal(t, tc.ok, ok, fmt.Sprintf("%s: expected ok %v got %v\n", tc.desc, tc.ok, ok))
 		if tc.ok {
 			fieldsMessage := fmt.Sprintf(
@@ -252,7 +298,9 @@ func TestBuildEmail(t *testing.T) {
 						Protocol:    "mqtt",
 						Created:     createdNs,
 						ContentType: messaging.JSONContentType,
-						Payload:     []byte(`{"temp":31.2}`),
+						Records: []*protomfx.Record{
+							newRecord(`{"temp":31.2}`, createdNs),
+						},
 					},
 				},
 			},
@@ -284,7 +332,9 @@ func TestBuildEmail(t *testing.T) {
 						Protocol:    "mqtt",
 						Created:     createdNs,
 						ContentType: messaging.JSONContentType,
-						Payload:     []byte(`"text"`),
+						Records: []*protomfx.Record{
+							newRecord(`"text"`, createdNs),
+						},
 					},
 				},
 			},
@@ -315,5 +365,12 @@ func TestBuildEmail(t *testing.T) {
 		emailMessage := fmt.Sprintf("%s: expected email %v got %v\n", tc.desc, tc.email, email)
 		assert.True(t, errors.Contains(err, tc.err), errorMessage)
 		assert.Equal(t, tc.email, email, emailMessage)
+	}
+}
+
+func newRecord(payload string, time int64) *protomfx.Record {
+	return &protomfx.Record{
+		Payload: []byte(payload),
+		Time:    time,
 	}
 }

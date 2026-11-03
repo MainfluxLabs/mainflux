@@ -12,11 +12,10 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 )
 
-// field is a single named value extracted from a message payload.
-// Time is set only for SenML records, which carry their own timestamp.
 type field struct {
 	Name  string
 	Value string
@@ -24,8 +23,8 @@ type field struct {
 }
 
 // formatTime formats a Unix timestamp in nanoseconds as a UTC date and time.
-func formatTime(createdNs int64) string {
-	return time.Unix(0, createdNs).UTC().Format(time.DateTime) + " UTC"
+func formatTime(timestampNs int64) string {
+	return time.Unix(0, timestampNs).UTC().Format(time.DateTime) + " UTC"
 }
 
 // formatPayload returns the payload as indented JSON, or unchanged when it isn't valid JSON.
@@ -38,12 +37,45 @@ func formatPayload(payload []byte) string {
 	return indented.String()
 }
 
-// payloadFields extracts named values from a SenML payload, or from a JSON object or array payload.
-func payloadFields(payload []byte, contentType string) ([]field, bool) {
-	if contentType == messaging.SenMLContentType {
-		return senmlFields(payload)
+// payloadFields extracts named values from the records of a SenML or JSON message.
+func payloadFields(message *protomfx.Message) ([]field, bool) {
+	if message.ContentType == messaging.SenMLContentType {
+		return senmlFields(message.Records)
 	}
 
+	return jsonFields(message.Records)
+}
+
+// jsonFields flattens the records of a JSON message. The records of a JSON array
+// are prefixed with their index and carry their own time.
+func jsonFields(records []*protomfx.Record) ([]field, bool) {
+	isArray := len(records) > 1
+
+	fields := []field{}
+	for i, record := range records {
+		decoded, ok := decodeJSON(record.Payload)
+		if !ok {
+			return nil, false
+		}
+
+		prefix := ""
+		recordTime := ""
+		if isArray {
+			prefix = strconv.Itoa(i)
+			recordTime = formatTime(record.Time)
+		}
+
+		for _, recordField := range flattenValue(prefix, decoded) {
+			recordField.Time = recordTime
+			fields = append(fields, recordField)
+		}
+	}
+
+	return fields, len(fields) > 0
+}
+
+// decodeJSON decodes a JSON object or array, returning false for any other payload.
+func decodeJSON(payload []byte) (any, bool) {
 	decoder := json.NewDecoder(bytes.NewReader(payload))
 	decoder.UseNumber()
 
@@ -54,23 +86,22 @@ func payloadFields(payload []byte, contentType string) ([]field, bool) {
 
 	switch decoded.(type) {
 	case map[string]any, []any:
-		fields := flattenValue("", decoded)
-		return fields, len(fields) > 0
+		return decoded, true
 	default:
 		return nil, false
 	}
 }
 
-// senmlFields converts normalized SenML messages to fields, returning false
-// if any of the items isn't a SenML message.
-func senmlFields(payload []byte) ([]field, bool) {
-	var messages []senml.Message
-	if err := json.Unmarshal(payload, &messages); err != nil {
-		return nil, false
-	}
+// senmlFields converts normalized SenML records to fields, returning false
+// if any of the records isn't a SenML message.
+func senmlFields(records []*protomfx.Record) ([]field, bool) {
+	fields := make([]field, 0, len(records))
+	for _, record := range records {
+		var message senml.Message
+		if err := json.Unmarshal(record.Payload, &message); err != nil {
+			return nil, false
+		}
 
-	fields := make([]field, 0, len(messages))
-	for _, message := range messages {
 		value, ok := senmlValue(message)
 		if message.Name == "" || !ok {
 			return nil, false
@@ -83,7 +114,7 @@ func senmlFields(payload []byte) ([]field, bool) {
 		fields = append(fields, field{
 			Name:  message.Name,
 			Value: value,
-			Time:  formatTime(message.Time),
+			Time:  formatTime(record.Time),
 		})
 	}
 

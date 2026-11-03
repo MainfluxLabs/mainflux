@@ -58,8 +58,8 @@ func TestPublisher(t *testing.T) {
 	for _, tc := range cases {
 		expectedMsg := protomfx.Message{
 			Subtopic:    tc.subtopic,
-			Payload:     tc.payload,
 			ContentType: senmlContentType,
+			Records:     []*protomfx.Record{{Payload: tc.payload}},
 		}
 
 		err = pubsub.Publish(fmt.Sprintf("%s.%s", format, subtopic), expectedMsg)

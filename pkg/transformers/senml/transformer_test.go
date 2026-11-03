@@ -5,12 +5,10 @@ package senml_test
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	mfsenml "github.com/MainfluxLabs/senml"
 	"github.com/stretchr/testify/assert"
@@ -24,57 +22,20 @@ func TestTransformJSON(t *testing.T) {
 	jsonBytes, err := hex.DecodeString("5b7b22626e223a22626173652d6e616d65222c226274223a3130302c226275223a22626173652d756e6974222c2262766572223a31302c226276223a31302c226273223a3130302c226e223a226e616d65222c2275223a22756e6974222c2274223a3330302c227574223a3135302c2276223a34322c2273223a31307d5d")
 	require.Nil(t, err, "Decoding JSON expected to succeed")
 
-	msg := protomfx.Message{
-		Subtopic:    "subtopic",
-		ThingId:     "thing",
-		Protocol:    "protocol",
-		Payload:     jsonBytes,
-		ContentType: senml.JSON,
-	}
-
-	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
-
-	val := 52.0
-	sum := 110.0
-
-	m := senml.Message{
-		Name:       "base-namename",
-		Unit:       "unit",
-		Time:       400,
-		UpdateTime: 150,
-		Value:      &val,
-		Sum:        &sum,
-	}
-	payload, err := json.Marshal(m)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	msgs := []protomfx.Message{
-		{
-			Subtopic:    "subtopic",
-			ThingId:     "thing",
-			Protocol:    "protocol",
-			Payload:     payload,
-			ContentType: senml.JSON,
-			Created:     400,
-		},
-	}
-
 	cases := []struct {
-		desc string
-		msg  protomfx.Message
-		msgs []protomfx.Message
-		err  error
+		desc    string
+		payload []byte
+		err     error
 	}{
 		{
-			desc: "test normalize JSON",
-			msg:  msg,
-			msgs: msgs,
-			err:  nil,
+			desc:    "test normalize JSON",
+			payload: jsonBytes,
+			err:     nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := senml.TransformPayload(&tc.msg)
+		_, err := senml.TransformPayload(senml.JSON, tc.payload, 0)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }
@@ -89,68 +50,25 @@ func TestTransformCBOR(t *testing.T) {
 	tooManyBytes, err := hex.DecodeString("82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900")
 	require.Nil(t, err, "Decoding CBOR expected to succeed")
 
-	msg := protomfx.Message{
-		Subtopic:    "subtopic",
-		ThingId:     "thing",
-		Protocol:    "protocol",
-		Payload:     cborBytes,
-		ContentType: senml.CBOR,
-	}
-
-	// 82AD2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D650164756E697406F95CB0036331323307F958B002F9514005F94900AA2169626173652D6E616D6522F956402369626173652D756E6974200A24F9490025F9564000646E616D6506F95CB007F958B005F94900
-
-	cborPld := msg
-	cborPld.Payload = cborBytes
-
-	tooManyMsg := msg
-	tooManyMsg.Payload = tooManyBytes
-
-	val := 52.0
-	sum := 110.0
-	m := senml.Message{
-		Name:       "base-namename",
-		Unit:       "unit",
-		Time:       400,
-		UpdateTime: 150,
-		Value:      &val,
-		Sum:        &sum,
-	}
-	payload, err := json.Marshal(m)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-	msgs := []protomfx.Message{
-		{
-			Subtopic:    "subtopic",
-			ThingId:     "thing",
-			Protocol:    "protocol",
-			Payload:     payload,
-			ContentType: senml.CBOR,
-			Created:     400,
-		},
-	}
-
 	cases := []struct {
-		desc string
-		msg  protomfx.Message
-		msgs []protomfx.Message
-		err  error
+		desc    string
+		payload []byte
+		err     error
 	}{
 		{
-			desc: "test normalize CBOR",
-			msg:  cborPld,
-			msgs: msgs,
-			err:  nil,
+			desc:    "test normalize CBOR",
+			payload: cborBytes,
+			err:     nil,
 		},
 		{
-			desc: "test invalid payload",
-			msg:  tooManyMsg,
-			msgs: nil,
-			err:  mfsenml.ErrTooManyValues,
+			desc:    "test invalid payload",
+			payload: tooManyBytes,
+			err:     mfsenml.ErrTooManyValues,
 		},
 	}
 
 	for _, tc := range cases {
-		err := senml.TransformPayload(&tc.msg)
+		_, err := senml.TransformPayload(senml.CBOR, tc.payload, 0)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s, got %s", tc.desc, tc.err, err))
 	}
 }

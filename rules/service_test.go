@@ -79,13 +79,17 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 	return saved
 }
 
-func mustMarshal(t *testing.T, v any) []byte {
+func toRecords(t *testing.T, payloads ...any) []*protomfx.Record {
 	t.Helper()
 
-	b, err := json.Marshal(v)
-	require.Nil(t, err)
+	var records []*protomfx.Record
+	for _, payload := range payloads {
+		b, err := json.Marshal(payload)
+		require.Nil(t, err)
+		records = append(records, &protomfx.Record{Payload: b})
+	}
 
-	return b
+	return records
 }
 
 func TestConsumeMessage(t *testing.T) {
@@ -106,7 +110,7 @@ func TestConsumeMessage(t *testing.T) {
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(30)}),
+				Records:     toRecords(t, map[string]any{"temperature": float64(30)}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -117,7 +121,7 @@ func TestConsumeMessage(t *testing.T) {
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(20)}),
+				Records:     toRecords(t, map[string]any{"temperature": float64(20)}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -128,10 +132,10 @@ func TestConsumeMessage(t *testing.T) {
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId: thingID,
-				Payload: mustMarshal(t, []any{
+				Records: toRecords(t,
 					map[string]any{"temperature": float64(30)},
 					map[string]any{"temperature": float64(10)},
-				}),
+				),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -142,9 +146,9 @@ func TestConsumeMessage(t *testing.T) {
 			operator:   rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId: thingID,
-				Payload: mustMarshal(t, []any{
+				Records: toRecords(t,
 					map[string]any{"name": "temperature", "value": float64(30)},
-				}),
+				),
 				ContentType: "application/senml+json",
 			},
 			err: nil,
@@ -158,8 +162,11 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(10)}),
+				ThingId: thingID,
+				Records: toRecords(t, map[string]any{
+					"temperature": float64(25),
+					"humidity":    float64(10),
+				}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -172,8 +179,11 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
-				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(10)}),
+				ThingId: thingID,
+				Records: toRecords(t, map[string]any{
+					"temperature": float64(25),
+					"humidity":    float64(10),
+				}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -186,8 +196,11 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorOR,
 			msg: protomfx.Message{
-				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(10)}),
+				ThingId: thingID,
+				Records: toRecords(t, map[string]any{
+					"temperature": float64(25),
+					"humidity":    float64(10),
+				}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -200,8 +213,11 @@ func TestConsumeMessage(t *testing.T) {
 			},
 			operator: rules.OperatorOR,
 			msg: protomfx.Message{
-				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25), "humidity": float64(25)}),
+				ThingId: thingID,
+				Records: toRecords(t, map[string]any{
+					"temperature": float64(25),
+					"humidity":    float64(25),
+				}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -215,7 +231,7 @@ func TestConsumeMessage(t *testing.T) {
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25)}),
+				Records:     toRecords(t, map[string]any{"temperature": float64(25)}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -228,7 +244,7 @@ func TestConsumeMessage(t *testing.T) {
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25)}),
+				Records:     toRecords(t, map[string]any{"temperature": float64(25)}),
 				ContentType: "application/json",
 			},
 			err: nil,
@@ -241,7 +257,7 @@ func TestConsumeMessage(t *testing.T) {
 			operator: rules.OperatorAND,
 			msg: protomfx.Message{
 				ThingId:     thingID,
-				Payload:     mustMarshal(t, map[string]any{"temperature": float64(25)}),
+				Records:     toRecords(t, map[string]any{"temperature": float64(25)}),
 				ContentType: "application/json",
 			},
 			err: nil,

@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/fiorix/go-smpp/smpp"
 	"github.com/fiorix/go-smpp/smpp/pdu/pdufield"
@@ -90,7 +91,7 @@ func smsText(notification protomfx.Notification) ([]byte, error) {
 	}
 
 	if message := notification.GetMessage(); message != nil {
-		return message.Payload, nil
+		return messaging.ToPayload(*message)
 	}
 
 	return nil, notifiers.ErrMissingSource
