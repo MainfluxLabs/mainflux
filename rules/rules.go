@@ -85,13 +85,14 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payl
 		return nil
 	}
 
+	ruleInfo, err := json.Marshal(domain.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
+	if err != nil {
+		return err
+	}
+
 	for _, action := range rule.Actions {
 		switch action.Type {
 		case ActionTypeAlarm:
-			ruleInfo, err := json.Marshal(domain.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
-			if err != nil {
-				return err
-			}
 			if err := rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
 				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
@@ -108,6 +109,8 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payl
 				Source: &protomfx.Notification_Message{
 					Message: msg,
 				},
+				RuleId:   rule.ID,
+				RuleInfo: ruleInfo,
 			}
 			if err := rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification); err != nil {
 				return err

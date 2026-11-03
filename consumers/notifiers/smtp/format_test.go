@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -17,6 +18,8 @@ import (
 const (
 	thingID     = "thing-id"
 	ruleID      = "rule-id"
+	thingURL    = "http://localhost/orgs/org-id/groups/group-id/things/thing-id"
+	ruleURL     = "http://localhost/orgs/org-id/groups/group-id/rules/rule-id"
 	createdNs   = 1793103299300713748
 	createdTime = "2026-10-27 12:14:59 UTC"
 	laterNs     = 1793103000000000000
@@ -224,9 +227,22 @@ func TestPayloadFields(t *testing.T) {
 }
 
 func TestBuildEmail(t *testing.T) {
+	groupLinks := links{
+		config: LinksConfig{
+			Host:      "http://localhost",
+			ThingPath: "/orgs/{org_id}/groups/{group_id}/things/{thing_id}",
+			RulePath:  "/orgs/{org_id}/groups/{group_id}/rules/{rule_id}",
+		},
+		group: domain.Group{
+			ID:    "group-id",
+			OrgID: "org-id",
+		},
+	}
+
 	cases := []struct {
 		desc         string
 		notification protomfx.Notification
+		links        links
 		email        notificationEmail
 		err          error
 	}{
@@ -245,24 +261,27 @@ func TestBuildEmail(t *testing.T) {
 					},
 				},
 			},
+			links: groupLinks,
 			email: notificationEmail{
 				subject:      "[HIGH] Alarm on room from Thing thing-id",
 				templateName: alarmTemplate,
 				templateData: map[string]any{
 					"ThingID":    thingID,
+					"ThingURL":   thingURL,
 					"Subtopic":   "room",
 					"Protocol":   "http",
 					"Time":       createdTime,
 					"LevelLabel": "High",
 					"LevelClass": "high",
 					"RuleID":     ruleID,
+					"RuleURL":    ruleURL,
 					"Conditions": "temp > 30",
 				},
 			},
 			err: nil,
 		},
 		{
-			desc: "alarm without level",
+			desc: "alarm without level and group link",
 			notification: protomfx.Notification{
 				Source: &protomfx.Notification_Alarm{
 					Alarm: &protomfx.Alarm{
@@ -278,19 +297,55 @@ func TestBuildEmail(t *testing.T) {
 				templateName: alarmTemplate,
 				templateData: map[string]any{
 					"ThingID":    thingID,
+					"ThingURL":   "",
 					"Subtopic":   "",
 					"Protocol":   "http",
 					"Time":       createdTime,
 					"LevelLabel": "Unknown",
 					"LevelClass": "unknown",
 					"RuleID":     ruleID,
+					"RuleURL":    "",
 					"Conditions": "",
 				},
 			},
 			err: nil,
 		},
 		{
-			desc: "message with fields",
+			desc: "alarm without link paths",
+			notification: protomfx.Notification{
+				Source: &protomfx.Notification_Alarm{
+					Alarm: &protomfx.Alarm{
+						ThingId:  thingID,
+						Protocol: "http",
+						Created:  createdNs,
+						Level:    4,
+						RuleId:   ruleID,
+					},
+				},
+			},
+			links: links{
+				group: groupLinks.group,
+			},
+			email: notificationEmail{
+				subject:      "[HIGH] Alarm from Thing thing-id",
+				templateName: alarmTemplate,
+				templateData: map[string]any{
+					"ThingID":    thingID,
+					"ThingURL":   "",
+					"Subtopic":   "",
+					"Protocol":   "http",
+					"Time":       createdTime,
+					"LevelLabel": "High",
+					"LevelClass": "high",
+					"RuleID":     ruleID,
+					"RuleURL":    "",
+					"Conditions": "",
+				},
+			},
+			err: nil,
+		},
+		{
+			desc: "message with fields and rule",
 			notification: protomfx.Notification{
 				Source: &protomfx.Notification_Message{
 					Message: &protomfx.Message{
@@ -303,15 +358,22 @@ func TestBuildEmail(t *testing.T) {
 						},
 					},
 				},
+				RuleId:   ruleID,
+				RuleInfo: []byte(ruleInfo),
 			},
+			links: groupLinks,
 			email: notificationEmail{
 				subject:      "New IoT message from Thing thing-id",
 				templateName: messageTemplate,
 				templateData: map[string]any{
-					"ThingID":  thingID,
-					"Subtopic": "",
-					"Protocol": "mqtt",
-					"Time":     createdTime,
+					"ThingID":    thingID,
+					"ThingURL":   thingURL,
+					"Subtopic":   "",
+					"Protocol":   "mqtt",
+					"Time":       createdTime,
+					"RuleID":     ruleID,
+					"RuleURL":    ruleURL,
+					"Conditions": "temp > 30",
 					"Fields": []field{
 						{
 							Name:  "temp",
@@ -323,7 +385,7 @@ func TestBuildEmail(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc: "message without fields",
+			desc: "message without fields and rule",
 			notification: protomfx.Notification{
 				Source: &protomfx.Notification_Message{
 					Message: &protomfx.Message{
@@ -338,14 +400,19 @@ func TestBuildEmail(t *testing.T) {
 					},
 				},
 			},
+			links: groupLinks,
 			email: notificationEmail{
 				subject:      "New IoT message on room from Thing thing-id",
 				templateName: messageTemplate,
 				templateData: map[string]any{
 					"ThingID":        thingID,
+					"ThingURL":       thingURL,
 					"Subtopic":       "room",
 					"Protocol":       "mqtt",
 					"Time":           createdTime,
+					"RuleID":         "",
+					"RuleURL":        "",
+					"Conditions":     "",
 					"MessageContent": `"text"`,
 				},
 			},
@@ -360,7 +427,7 @@ func TestBuildEmail(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		email, err := buildEmail(tc.notification)
+		email, err := buildEmail(tc.notification, tc.links)
 		errorMessage := fmt.Sprintf("%s: expected error %v got %v\n", tc.desc, tc.err, err)
 		emailMessage := fmt.Sprintf("%s: expected email %v got %v\n", tc.desc, tc.email, email)
 		assert.True(t, errors.Contains(err, tc.err), errorMessage)

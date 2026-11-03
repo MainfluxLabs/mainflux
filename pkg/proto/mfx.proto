@@ -50,6 +50,8 @@ message Notification {
         Alarm   alarm   = 1;
         Message message = 2;
     }
+    string rule_id   = 3;
+    bytes  rule_info = 4;
 }
 
 message Webhook {

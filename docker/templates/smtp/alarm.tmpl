@@ -1,6 +1,12 @@
 {{ define "content" }}
     <p class="mb-16">
-        An alarm was triggered for the thing with ID <strong>{{ .ThingID }}</strong>.
+        An alarm was triggered for the thing with ID <strong>
+            {{- if .ThingURL -}}
+            <a href="{{ .ThingURL }}">{{ .ThingID }}</a>
+            {{- else -}}
+            {{ .ThingID }}
+            {{- end -}}
+        </strong>.
     </p>
 
     <table class="details">
@@ -26,7 +32,13 @@
         </tr>
         <tr>
             <th class="details__label">Rule ID</th>
-            <td class="details__value">{{ .RuleID }}</td>
+            <td class="details__value">
+                {{ if .RuleURL }}
+                <a href="{{ .RuleURL }}">{{ .RuleID }}</a>
+                {{ else }}
+                {{ .RuleID }}
+                {{ end }}
+            </td>
         </tr>
     </table>
 

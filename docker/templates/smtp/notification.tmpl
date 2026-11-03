@@ -2,7 +2,13 @@
     {{ $showTime := and .Fields (index .Fields 0).Time }}
 
     <p class="mb-16">
-        A message from the thing with ID <strong>{{ .ThingID }}</strong> matched a rule.
+        A message from the thing with ID <strong>
+            {{- if .ThingURL -}}
+            <a href="{{ .ThingURL }}">{{ .ThingID }}</a>
+            {{- else -}}
+            {{ .ThingID }}
+            {{- end -}}
+        </strong> matched a rule.
     </p>
 
     <table class="details">
@@ -22,7 +28,24 @@
             <td class="details__value">{{ .Time }}</td>
         </tr>
         {{ end }}
+        {{ if .RuleID }}
+        <tr>
+            <th class="details__label">Rule ID</th>
+            <td class="details__value">
+                {{ if .RuleURL }}
+                <a href="{{ .RuleURL }}">{{ .RuleID }}</a>
+                {{ else }}
+                {{ .RuleID }}
+                {{ end }}
+            </td>
+        </tr>
+        {{ end }}
     </table>
+
+    {{ if .Conditions }}
+    <p class="section-title">Triggered by</p>
+    <pre class="code-block">{{ .Conditions }}</pre>
+    {{ end }}
 
     <p class="section-title">Values</p>
 

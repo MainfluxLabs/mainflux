@@ -11,6 +11,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/fiorix/go-smpp/smpp"
@@ -53,7 +54,7 @@ func New(cfg Config, from string) notifiers.Sender {
 	return ret
 }
 
-func (n *sender) Send(to []string, notification protomfx.Notification) error {
+func (n *sender) Send(to []string, notification protomfx.Notification, _ domain.Group) error {
 	text, err := smsText(notification)
 	if err != nil {
 		return err
