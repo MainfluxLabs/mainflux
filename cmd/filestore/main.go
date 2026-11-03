@@ -68,13 +68,13 @@ const (
 	defESURL             = "redis://localhost:6379/0"
 	defFilesPath         = "files"
 	defUploadLimitMiB    = "1024"
-	maxUploadLimitMiB    = 1024
+	maxUploadLimitMiB    = "1024"
 	defBackend           = "local"
 	defSeaweedURL        = "http://localhost:8888"
 	defSeaweedPrefix     = "filestore"
 	defSeaweedTimeout    = "30s"
 	defSeaweedChunkMiB   = "4"
-	maxSeaweedChunkMiB   = 256
+	maxSeaweedChunkMiB   = "256"
 
 	envDBHost            = "MF_FILESTORE_DB_HOST"
 	envDBPort            = "MF_FILESTORE_DB_PORT"
@@ -243,9 +243,10 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	maxUploadLimit, _ := strconv.Atoi(maxUploadLimitMiB)
 	uploadLimitMiB, err := strconv.Atoi(mainflux.Env(envUploadLimitMiB, defUploadLimitMiB))
-	if err != nil || uploadLimitMiB <= 0 || uploadLimitMiB > maxUploadLimitMiB {
-		log.Fatalf("Invalid %s: must be between 1 and %d", envUploadLimitMiB, maxUploadLimitMiB)
+	if err != nil || uploadLimitMiB <= 0 || uploadLimitMiB > maxUploadLimit {
+		log.Fatalf("Invalid %s: must be between 1 and %s", envUploadLimitMiB, maxUploadLimitMiB)
 	}
 
 	seaweedTimeout, err := time.ParseDuration(mainflux.Env(envSeaweedTimeout, defSeaweedTimeout))
@@ -254,7 +255,8 @@ func loadConfig() config {
 	}
 
 	seaweedChunkMiB, err := strconv.Atoi(mainflux.Env(envSeaweedChunkMiB, defSeaweedChunkMiB))
-	maxChunkMiB := min(maxSeaweedChunkMiB, uploadLimitMiB)
+	maxSeaweedChunk, _ := strconv.Atoi(maxSeaweedChunkMiB)
+	maxChunkMiB := min(maxSeaweedChunk, uploadLimitMiB)
 	if err != nil || seaweedChunkMiB <= 0 || seaweedChunkMiB > maxChunkMiB {
 		log.Fatalf("Invalid %s: must be between 1 and %d", envSeaweedChunkMiB, maxChunkMiB)
 	}
