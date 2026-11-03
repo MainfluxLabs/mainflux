@@ -187,13 +187,12 @@ func MakeHandler(tracer opentracing.Tracer, svc filestore.Service, ac domain.Aut
 }
 
 func decodeSaveFile(uploadLimitMiB int) kithttp.DecodeRequestFunc {
-	uploadLimitBytes := int64(uploadLimitMiB) << 20
-
 	return func(_ context.Context, r *http.Request) (any, error) {
 		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
 			return nil, apiutil.ErrUnsupportedContentType
 		}
 
+		uploadLimitBytes := int64(uploadLimitMiB) << 20
 		if err := validateUploadSize(r, uploadLimitBytes); err != nil {
 			return nil, err
 		}
@@ -288,13 +287,12 @@ func decodeFile(_ context.Context, r *http.Request) (any, error) {
 }
 
 func decodeSaveGroupFile(uploadLimitMiB int) kithttp.DecodeRequestFunc {
-	uploadLimitBytes := int64(uploadLimitMiB) << 20
-
 	return func(_ context.Context, r *http.Request) (any, error) {
 		if !strings.Contains(r.Header.Get(contentTypeHeader), apiutil.ContentTypeMultipart) {
 			return nil, apiutil.ErrUnsupportedContentType
 		}
 
+		uploadLimitBytes := int64(uploadLimitMiB) << 20
 		if err := validateUploadSize(r, uploadLimitBytes); err != nil {
 			return nil, err
 		}
