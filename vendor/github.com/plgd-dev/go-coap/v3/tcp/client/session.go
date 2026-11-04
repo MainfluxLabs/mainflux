@@ -1,0 +1,356 @@
+package client
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"sync"
+	"time"
+
+	"github.com/plgd-dev/go-coap/v3/message"
+	"github.com/plgd-dev/go-coap/v3/message/codes"
+	"github.com/plgd-dev/go-coap/v3/message/pool"
+	coapNet "github.com/plgd-dev/go-coap/v3/net"
+	netClient "github.com/plgd-dev/go-coap/v3/net/client"
+	"github.com/plgd-dev/go-coap/v3/net/monitor/inactivity"
+	"github.com/plgd-dev/go-coap/v3/pkg/math"
+	"github.com/plgd-dev/go-coap/v3/tcp/coder"
+	"go.uber.org/atomic"
+)
+
+type Session struct {
+	// This field needs to be the first in the struct to ensure proper word alignment on 32-bit platforms.
+	// See: https://golang.org/pkg/sync/atomic/#pkg-note-BUG
+	sequence          atomic.Uint64
+	inactivityMonitor InactivityMonitor
+	requestMonitor    RequestMonitorFunc
+	errSendCSM        error
+	cancel            context.CancelFunc
+	done              chan struct{}
+	errors            ErrorFunc
+	connection        *coapNet.Conn
+	messagePool       *pool.Pool
+	ctx               atomic.Pointer[context.Context]
+	maxMessageSize    uint32
+	private           struct {
+		mutex   sync.Mutex
+		onClose []EventFunc
+	}
+	connectionCacheSize        uint16
+	disableTCPSignalMessageCSM bool
+	closeSocket                bool
+}
+
+func NewSession(
+	ctx context.Context,
+	connection *coapNet.Conn,
+	maxMessageSize uint32,
+	errors ErrorFunc,
+	disableTCPSignalMessageCSM bool,
+	closeSocket bool,
+	inactivityMonitor InactivityMonitor,
+	requestMonitor RequestMonitorFunc,
+	connectionCacheSize uint16,
+	messagePool *pool.Pool,
+) *Session {
+	ctx, cancel := context.WithCancel(ctx)
+	if errors == nil {
+		errors = func(error) {
+			// default no-op
+		}
+	}
+	if inactivityMonitor == nil {
+		inactivityMonitor = inactivity.NewNilMonitor[*Conn]()
+	}
+	if requestMonitor == nil {
+		requestMonitor = func(*Conn, *pool.Message) (bool, error) {
+			return false, nil
+		}
+	}
+
+	s := &Session{
+		cancel:                     cancel,
+		connection:                 connection,
+		maxMessageSize:             maxMessageSize,
+		errors:                     errors,
+		disableTCPSignalMessageCSM: disableTCPSignalMessageCSM,
+		closeSocket:                closeSocket,
+		inactivityMonitor:          inactivityMonitor,
+		requestMonitor:             requestMonitor,
+		done:                       make(chan struct{}),
+		connectionCacheSize:        connectionCacheSize,
+		messagePool:                messagePool,
+	}
+	s.ctx.Store(&ctx)
+
+	if !disableTCPSignalMessageCSM {
+		err := s.sendCSM()
+		if err != nil {
+			s.errSendCSM = fmt.Errorf("cannot send CSM: %w", err)
+		}
+	}
+
+	return s
+}
+
+// SetContextValue stores the value associated with key to context of connection.
+func (s *Session) SetContextValue(key interface{}, val interface{}) {
+	ctx := context.WithValue(s.Context(), key, val)
+	s.ctx.Store(&ctx)
+}
+
+// Done signalizes that connection is not more processed.
+func (s *Session) Done() <-chan struct{} {
+	return s.done
+}
+
+func (s *Session) AddOnClose(f EventFunc) {
+	s.private.mutex.Lock()
+	defer s.private.mutex.Unlock()
+	s.private.onClose = append(s.private.onClose, f)
+}
+
+func (s *Session) popOnClose() []EventFunc {
+	s.private.mutex.Lock()
+	defer s.private.mutex.Unlock()
+	tmp := s.private.onClose
+	s.private.onClose = nil
+	return tmp
+}
+
+func (s *Session) shutdown() {
+	defer close(s.done)
+	for _, f := range s.popOnClose() {
+		f()
+	}
+}
+
+func (s *Session) Close() error {
+	s.cancel()
+	if s.closeSocket {
+		return s.connection.Close()
+	}
+	return nil
+}
+
+func (s *Session) Sequence() uint64 {
+	return s.sequence.Inc()
+}
+
+func (s *Session) Context() context.Context {
+	return *s.ctx.Load()
+}
+
+func seekBufferToNextMessage(buffer *bytes.Buffer, msgSize int) *bytes.Buffer {
+	if msgSize == buffer.Len() {
+		// buffer is empty so reset it
+		buffer.Reset()
+		return buffer
+	}
+	// rewind to next message
+	trimmed := 0
+	for trimmed != msgSize {
+		b := make([]byte, 4096)
+		toRead := 4096
+		if msgSize-trimmed < toRead {
+			toRead = msgSize - trimmed
+		}
+		v, _ := buffer.Read(b[:toRead])
+		trimmed += v
+	}
+	return buffer
+}
+
+func (s *Session) decodeMessageFromBuffer(buffer *bytes.Buffer) (*pool.Message, bool, error) {
+	var header coder.MessageHeader
+	_, err := coder.DefaultCoder.DecodeHeader(buffer.Bytes(), &header)
+	if errors.Is(err, message.ErrShortRead) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("cannot decode header: %w", err)
+	}
+	if header.MessageLength > s.maxMessageSize {
+		return nil, false, fmt.Errorf("max message size(%v) was exceeded %v", s.maxMessageSize, header.MessageLength)
+	}
+	if math.CastTo[uint32](buffer.Len()) < header.MessageLength {
+		return nil, false, nil
+	}
+
+	req := s.messagePool.AcquireMessage(s.Context())
+	read, err := req.UnmarshalWithDecoder(coder.DefaultCoder, buffer.Bytes()[:header.MessageLength])
+	if err != nil {
+		s.messagePool.ReleaseMessage(req)
+		return nil, false, fmt.Errorf("cannot unmarshal with header: %w", err)
+	}
+
+	seekBufferToNextMessage(buffer, read)
+	req.SetSequence(s.Sequence())
+	return req, true, nil
+}
+
+func (s *Session) shouldDropRequest(req *pool.Message) (bool, error) {
+	if req.Code() < codes.GET || req.Code() > codes.DELETE {
+		return false, nil
+	}
+	unknownCriticalOpts := netClient.GetUnknownCriticalOptions(req.Options())
+	if len(unknownCriticalOpts) == 0 {
+		return false, nil
+	}
+	if err := s.respondUnknownCriticalOptions(req, unknownCriticalOpts); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *Session) handleReceivedRequest(cc *Conn, req *pool.Message) (bool, error) {
+	drop, err := s.shouldDropRequest(req)
+	if err != nil {
+		return false, err
+	}
+	if drop {
+		return true, nil
+	}
+
+	drop, err = s.requestMonitor(cc, req)
+	if err != nil {
+		return false, fmt.Errorf("request monitor: %w", err)
+	}
+	if drop {
+		return true, nil
+	}
+
+	s.inactivityMonitor.Notify()
+	cc.pushToReceivedMessageQueue(req)
+	return false, nil
+}
+
+func (s *Session) processBuffer(buffer *bytes.Buffer, cc *Conn) error {
+	for buffer.Len() > 0 {
+		req, ready, err := s.decodeMessageFromBuffer(buffer)
+		if err != nil {
+			return err
+		}
+		if !ready {
+			return nil
+		}
+
+		drop, err := s.handleReceivedRequest(cc, req)
+		if err != nil {
+			s.messagePool.ReleaseMessage(req)
+			return err
+		}
+		if drop {
+			s.messagePool.ReleaseMessage(req)
+		}
+	}
+	return nil
+}
+
+func (s *Session) respondUnknownCriticalOptions(req *pool.Message, unknownCriticalOpts []message.OptionID) error {
+	resp := s.messagePool.AcquireMessage(req.Context())
+	defer s.messagePool.ReleaseMessage(resp)
+
+	resp.SetCode(codes.BadOption)
+	resp.SetToken(req.Token())
+	resp.SetContentFormat(message.TextPlain)
+	resp.SetBody(bytes.NewReader([]byte(netClient.FormatUnknownCriticalOptionsDiagnostic(unknownCriticalOpts))))
+
+	if err := s.WriteMessage(resp); err != nil {
+		return fmt.Errorf("cannot write bad option response: %w", err)
+	}
+	return nil
+}
+
+func (s *Session) WriteMessage(req *pool.Message) error {
+	data, err := req.MarshalWithEncoder(coder.DefaultCoder)
+	if err != nil {
+		return &netClient.RequestNotSentError{Err: fmt.Errorf("cannot marshal: %w", err)}
+	}
+	err = s.connection.WriteWithContext(req.Context(), data)
+	if err != nil {
+		return fmt.Errorf("cannot write to connection: %w", err)
+	}
+	return err
+}
+
+func (s *Session) sendCSM() error {
+	token, err := message.GetToken()
+	if err != nil {
+		return fmt.Errorf("cannot get token: %w", err)
+	}
+	req := s.messagePool.AcquireMessage(s.Context())
+	defer s.messagePool.ReleaseMessage(req)
+	req.SetCode(codes.CSM)
+	req.SetToken(token)
+	return s.WriteMessage(req)
+}
+
+func shrinkBufferIfNecessary(buffer *bytes.Buffer, maxCap uint16) *bytes.Buffer {
+	if buffer.Len() == 0 && buffer.Cap() > int(maxCap) {
+		buffer = bytes.NewBuffer(make([]byte, 0, maxCap))
+	}
+	return buffer
+}
+
+// Run reads and process requests from a connection, until the connection is not closed.
+func (s *Session) Run(cc *Conn) (err error) {
+	defer func() {
+		err1 := s.Close()
+		if err == nil {
+			err = err1
+		}
+		s.shutdown()
+	}()
+	if s.errSendCSM != nil {
+		return s.errSendCSM
+	}
+	buffer := bytes.NewBuffer(make([]byte, 0, s.connectionCacheSize))
+	readBuf := make([]byte, s.connectionCacheSize)
+	for {
+		err = s.processBuffer(buffer, cc)
+		if err != nil {
+			return err
+		}
+		buffer = shrinkBufferIfNecessary(buffer, s.connectionCacheSize)
+		readLen, err := s.connection.ReadWithContext(s.Context(), readBuf)
+		if err != nil {
+			if coapNet.IsConnectionBrokenError(err) { // other side closed the connection, ignore the error and return
+				return nil
+			}
+			return fmt.Errorf("cannot read from connection: %w", err)
+		}
+		if readLen > 0 {
+			buffer.Write(readBuf[:readLen])
+		}
+	}
+}
+
+// CheckExpirations checks and remove expired items from caches.
+func (s *Session) CheckExpirations(now time.Time, cc *Conn) {
+	s.inactivityMonitor.CheckInactivity(now, cc)
+}
+
+func (s *Session) AcquireMessage(ctx context.Context) *pool.Message {
+	return s.messagePool.AcquireMessage(ctx)
+}
+
+func (s *Session) ReleaseMessage(m *pool.Message) {
+	s.messagePool.ReleaseMessage(m)
+}
+
+// RemoteAddr gets remote address.
+func (s *Session) RemoteAddr() net.Addr {
+	return s.connection.RemoteAddr()
+}
+
+func (s *Session) LocalAddr() net.Addr {
+	return s.connection.LocalAddr()
+}
+
+// NetConn returns the underlying connection that is wrapped by s. The Conn returned is shared by all invocations of NetConn, so do not modify it.
+func (s *Session) NetConn() net.Conn {
+	return s.connection.NetConn()
+}
