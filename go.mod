@@ -30,20 +30,20 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/pelletier/go-toml v1.9.5
-	github.com/plgd-dev/go-coap/v2 v2.6.0
+	github.com/plgd-dev/go-coap/v3 v3.6.0
 	github.com/prometheus/client_golang v1.11.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rubenv/sql-migrate v1.1.2
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	github.com/subosito/gotenv v1.4.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
-	golang.org/x/crypto v0.56.0
-	golang.org/x/net v0.57.0
+	golang.org/x/crypto v0.58.0
+	golang.org/x/net v0.62.0
 	golang.org/x/oauth2 v0.35.0
-	golang.org/x/sync v0.22.0
-	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
+	golang.org/x/sync v0.24.0
+	golang.org/x/time v0.14.0
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
@@ -59,7 +59,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/cli v28.3.3+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -91,13 +90,10 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
-	github.com/pion/dtls/v2 v2.1.5 // indirect
-	github.com/pion/logging v0.2.2 // indirect
-	github.com/pion/transport v0.13.0 // indirect
-	github.com/pion/udp v0.1.1 // indirect
+	github.com/pion/dtls/v3 v3.1.15 // indirect
+	github.com/pion/logging v0.2.4 // indirect
+	github.com/pion/transport/v5 v5.1.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/plgd-dev/kit/v2 v2.0.0-20211006190727-057b33161b90 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.30.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -111,9 +107,11 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	go.uber.org/atomic v1.12.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
