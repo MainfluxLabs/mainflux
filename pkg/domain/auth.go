@@ -166,6 +166,9 @@ type AuthClient interface {
 	// Identify validates the token and returns the identity.
 	Identify(ctx context.Context, token string) (Identity, error)
 
+	// IdentifyRecovery validates a password recovery token and returns the identity.
+	IdentifyRecovery(ctx context.Context, token string) (Identity, error)
+
 	// Authorize checks if the subject is authorized to perform the action on the object.
 	Authorize(ctx context.Context, ar AuthzReq) error
 

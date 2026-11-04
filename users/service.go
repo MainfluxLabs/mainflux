@@ -825,11 +825,11 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 }
 
 func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {
-	ir, err := svc.identify(ctx, resetToken)
+	identity, err := svc.auth.IdentifyRecovery(ctx, resetToken)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-	u, err := svc.users.RetrieveByID(ctx, ir.id)
+	u, err := svc.users.RetrieveByID(ctx, identity.ID)
 	if err != nil {
 		return err
 	}
@@ -841,11 +841,11 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	if err != nil {
 		return err
 	}
-	if err := svc.users.UpdatePassword(ctx, ir.email, password); err != nil {
+	if err := svc.users.UpdatePassword(ctx, identity.Email, password); err != nil {
 		return err
 	}
 
-	return svc.auth.RevokeSessions(ctx, ir.id)
+	return svc.auth.RevokeSessions(ctx, identity.ID)
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {

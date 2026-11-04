@@ -43,6 +43,9 @@ const (
 	stopWaitTime = 5 * time.Second
 	svcName      = "auth"
 
+	minSecretBytes         = 32
+	minSecretDistinctChars = 5
+
 	defLogLevel           = "error"
 	defDBHost             = "localhost"
 	defDBPort             = "5432"
@@ -55,7 +58,6 @@ const (
 	defDBSSLRootCert      = ""
 	defHTTPPort           = "8180"
 	defGRPCPort           = "8181"
-	defSecret             = "auth"
 	defServerCert         = ""
 	defServerKey          = ""
 	defJaegerURL          = ""
@@ -287,6 +289,11 @@ func loadConfig() config {
 		TemplatesDir: mainflux.Env(envEmailTemplatesDir, defEmailTemplatesDir),
 	}
 
+	secret := mainflux.Env(envSecret, "")
+	if err := validateSecret(secret); err != nil {
+		log.Fatalf("Invalid %s value: %s", envSecret, err.Error())
+	}
+
 	loginDuration, err := time.ParseDuration(mainflux.Env(envLoginDuration, defLoginDuration))
 	if err != nil {
 		log.Fatal(err)
@@ -325,7 +332,7 @@ func loadConfig() config {
 		thingsConfig:       thingsConfig,
 		usersConfig:        usersConfig,
 		emailConfig:        emailConfig,
-		secret:             mainflux.Env(envSecret, defSecret),
+		secret:             secret,
 		jaegerURL:          mainflux.Env(envJaegerURL, defJaegerURL),
 		loginDuration:      loginDuration,
 		maxSessionDuration: maxSessionDuration,
@@ -338,6 +345,23 @@ func loadConfig() config {
 		esBufferSize:       esBufferSize,
 	}
 
+}
+
+func validateSecret(secret string) error {
+	if len(secret) < minSecretBytes {
+		return fmt.Errorf("secret must be at least %d bytes long", minSecretBytes)
+	}
+
+	distinctChars := make(map[rune]struct{})
+	for _, char := range secret {
+		distinctChars[char] = struct{}{}
+	}
+
+	if len(distinctChars) < minSecretDistinctChars {
+		return fmt.Errorf("secret must contain at least %d distinct characters", minSecretDistinctChars)
+	}
+
+	return nil
 }
 
 func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {

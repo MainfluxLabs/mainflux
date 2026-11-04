@@ -52,6 +52,10 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 	return domain.Identity{}, errors.ErrAuthentication
 }
 
+func (svc authServiceMock) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
+	return svc.Identify(ctx, token)
+}
+
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
 	if u, ok := svc.usersByEmail[email]; ok {
 		switch keyType {
