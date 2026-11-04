@@ -49,6 +49,11 @@ func (c *client) Done() <-chan struct{} {
 }
 
 func (c *client) Cancel() error {
+	// A closed connection can't take the final notification.
+	if c.client.Context().Err() != nil {
+		return nil
+	}
+
 	m := c.client.AcquireMessage(context.Background())
 	defer c.client.ReleaseMessage(m)
 	m.SetCode(codes.Content)
