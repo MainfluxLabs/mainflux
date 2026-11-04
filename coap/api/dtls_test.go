@@ -96,17 +96,19 @@ func TestDTLS(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		// The handshake can run on the session context, so the deadline goes on the session.
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		conn, err := dtls.Dial(addr, dtls.NewDTLSClientOptions(
 			piondtls.WithPSK(func([]byte) ([]byte, error) { return []byte(tc.key), nil }),
 			piondtls.WithPSKIdentityHint([]byte(tc.identity)),
 			piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
-		))
+		), options.WithContext(ctx))
 		if err != nil {
+			cancel()
 			assert.False(t, tc.success, "%s: unexpected dial error: %s", tc.desc, err)
 			continue
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		resp, err := conn.Post(ctx, "/things/"+thingID+"/messages", message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
 		cancel()
 		_ = conn.Close()
