@@ -24,7 +24,11 @@ import (
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	gocoap "github.com/plgd-dev/go-coap/v2"
+	gocoap "github.com/plgd-dev/go-coap/v3"
+	"github.com/plgd-dev/go-coap/v3/net/monitor/inactivity"
+	"github.com/plgd-dev/go-coap/v3/options"
+	udpclient "github.com/plgd-dev/go-coap/v3/udp/client"
+	udpserver "github.com/plgd-dev/go-coap/v3/udp/server"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
 )
@@ -164,7 +168,7 @@ func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, l logger
 	errCh := make(chan error)
 	l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.coapConfig.Port))
 	go func() {
-		errCh <- gocoap.ListenAndServe("udp", p, api.MakeCoAPHandler(svc, l))
+		errCh <- gocoap.ListenAndServeWithOptions("udp", p, options.WithMux(api.MakeCoAPHandler(svc, l)), noInactivityMonitor{})
 	}()
 	select {
 	case <-ctx.Done():
@@ -172,5 +176,14 @@ func startCOAPServer(ctx context.Context, cfg config, svc coap.Service, l logger
 		return nil
 	case err := <-errCh:
 		return err
+	}
+}
+
+// noInactivityMonitor keeps idle connections open, since observers receive commands without sending anything.
+type noInactivityMonitor struct{}
+
+func (noInactivityMonitor) UDPServerApply(cfg *udpserver.Config) {
+	cfg.CreateInactivityMonitor = func() udpclient.InactivityMonitor {
+		return inactivity.NewNilMonitor[*udpclient.Conn]()
 	}
 }
