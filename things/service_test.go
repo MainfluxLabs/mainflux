@@ -23,29 +23,32 @@ import (
 )
 
 const (
-	emptyValue        = ""
-	wrongValue        = "wrong-value"
-	adminEmail        = "admin@example.com"
-	userEmail         = "user@example.com"
-	otherUserEmail    = "other.user@example.com"
-	unauthUserEmail   = "unauth@example.com"
-	viewerEmail       = "viewer@gmail.com"
-	editorEmail       = "editor@gmail.com"
-	orgAdminEmail     = "org.admin@example.com"
-	adminToken        = adminEmail
-	viewerToken       = viewerEmail
-	editorToken       = editorEmail
-	orgAdminToken     = orgAdminEmail
-	token             = userEmail
-	otherToken        = otherUserEmail
-	unauthToken       = unauthUserEmail
-	password          = "password"
-	n                 = uint64(102)
-	n2                = uint64(204)
-	orgID             = "374106f7-030e-4881-8ab0-151195c29f92"
-	prefixID          = "fe6b4e92-cc98-425e-b0aa-"
-	prefixName        = "test-"
-	redirectPathGroup = "/view-group"
+	emptyValue         = ""
+	wrongValue         = "wrong-value"
+	adminEmail         = "admin@example.com"
+	userEmail          = "user@example.com"
+	otherUserEmail     = "other.user@example.com"
+	unauthUserEmail    = "unauth@example.com"
+	viewerEmail        = "viewer@gmail.com"
+	editorEmail        = "editor@gmail.com"
+	orgAdminEmail      = "org.admin@example.com"
+	otherOrgOwnerEmail = "other.org.owner@example.com"
+	adminToken         = adminEmail
+	viewerToken        = viewerEmail
+	editorToken        = editorEmail
+	orgAdminToken      = orgAdminEmail
+	otherOrgOwnerToken = otherOrgOwnerEmail
+	token              = userEmail
+	otherToken         = otherUserEmail
+	unauthToken        = unauthUserEmail
+	password           = "password"
+	n                  = uint64(102)
+	n2                 = uint64(204)
+	orgID              = "374106f7-030e-4881-8ab0-151195c29f92"
+	otherOrgID         = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefixID           = "fe6b4e92-cc98-425e-b0aa-"
+	prefixName         = "test-"
+	redirectPathGroup  = "/view-group"
 )
 
 var (
@@ -55,30 +58,52 @@ var (
 	profile       = things.Profile{Name: "test"}
 	thsExtID      = []things.Thing{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
 	prsExtID      = []things.Profile{{ID: prefixID + "000000000001", Name: "a"}, {ID: prefixID + "000000000002", Name: "b"}}
-	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Owner}
-	otherUser     = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password, Role: auth.Editor}
-	unauthUser    = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f93", Email: unauthUserEmail, Password: password, Role: auth.Viewer}
+	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
+	otherUser     = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password}
+	unauthUser    = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f93", Email: unauthUserEmail, Password: password}
 	admin         = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
-	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerEmail, Password: password, Role: auth.Viewer}
-	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorEmail, Password: password, Role: auth.Editor}
-	orgAdmin      = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f96", Email: orgAdminEmail, Password: password, Role: auth.Admin}
-	usersList     = []users.User{admin, user, otherUser, viewer, editor, unauthUser, orgAdmin}
-	usersByEmails = map[string]users.User{userEmail: {ID: user.ID, Email: userEmail}, otherUserEmail: {ID: otherUser.ID, Email: otherToken}, viewerEmail: {ID: viewer.ID, Email: viewer.Email},
-		editorEmail: {ID: editor.ID, Email: editor.Email}, unauthUserEmail: unauthUser, orgAdminEmail: {ID: orgAdmin.ID, Email: orgAdmin.Email}}
-	usersByIDs = map[string]users.User{user.ID: {ID: user.ID, Email: userEmail}, otherUser.ID: {ID: otherUser.ID, Email: otherUserEmail}, viewer.ID: {ID: viewer.ID, Email: viewerEmail},
-		editor.ID: {ID: editor.ID, Email: editorEmail}, unauthUser.ID: unauthUser, orgAdmin.ID: {ID: orgAdmin.ID, Email: orgAdmin.Email}}
+	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerEmail, Password: password}
+	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorEmail, Password: password}
+	orgAdmin      = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f96", Email: orgAdminEmail, Password: password}
+	otherOrgOwner = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f98", Email: otherOrgOwnerEmail, Password: password}
+	usersList     = []users.User{admin, user, otherUser, viewer, editor, unauthUser, orgAdmin, otherOrgOwner}
+	usersByEmails = map[string]users.User{
+		userEmail:          {ID: user.ID, Email: userEmail},
+		otherUserEmail:     {ID: otherUser.ID, Email: otherToken},
+		viewerEmail:        {ID: viewer.ID, Email: viewer.Email},
+		editorEmail:        {ID: editor.ID, Email: editor.Email},
+		unauthUserEmail:    unauthUser,
+		orgAdminEmail:      {ID: orgAdmin.ID, Email: orgAdmin.Email},
+		otherOrgOwnerEmail: {ID: otherOrgOwner.ID, Email: otherOrgOwner.Email},
+	}
+	usersByIDs = map[string]users.User{
+		user.ID:          {ID: user.ID, Email: userEmail},
+		otherUser.ID:     {ID: otherUser.ID, Email: otherUserEmail},
+		viewer.ID:        {ID: viewer.ID, Email: viewerEmail},
+		editor.ID:        {ID: editor.ID, Email: editorEmail},
+		unauthUser.ID:    unauthUser,
+		orgAdmin.ID:      {ID: orgAdmin.ID, Email: orgAdmin.Email},
+		otherOrgOwner.ID: {ID: otherOrgOwner.ID, Email: otherOrgOwner.Email},
+	}
 	memberships = []things.GroupMembership{
 		{MemberID: otherUser.ID, Email: otherUser.Email, Role: things.Admin},
 		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer},
 		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor},
 	}
-	createdGroup = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
-	orgsList     = []auth.Org{{ID: orgID, OwnerID: user.ID}}
-	metadata     = map[string]any{"test": "data"}
+	createdGroup   = things.Group{OrgID: orgID, Name: "test-group", Description: "test-group-desc"}
+	orgsList       = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: otherOrgID, OwnerID: otherOrgOwner.ID}}
+	orgMemberships = []auth.OrgMembership{
+		{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Editor},
+		{OrgID: orgID, MemberID: editor.ID, Role: auth.Editor},
+		{OrgID: orgID, MemberID: viewer.ID, Role: auth.Viewer},
+		{OrgID: orgID, MemberID: unauthUser.ID, Role: auth.Viewer},
+		{OrgID: orgID, MemberID: orgAdmin.ID, Role: auth.Admin},
+	}
+	metadata = map[string]any{"test": "data"}
 )
 
 func newService() things.Service {
-	auth := authmock.NewAuthService(admin.ID, usersList, orgsList)
+	auth := authmock.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
@@ -1694,6 +1719,13 @@ func TestCreateGroups(t *testing.T) {
 			group: things.Group{Name: "test-group", Description: "test"},
 			err:   dbutil.ErrNotFound,
 		},
+		{
+			desc:  "create groups as org admin of another org",
+			token: orgAdminToken,
+			orgID: otherOrgID,
+			group: createdGroup,
+			err:   errors.ErrAuthorization,
+		},
 	}
 
 	for _, tc := range cases {
@@ -1841,6 +1873,16 @@ func TestListGroupsByOrg(t *testing.T) {
 			},
 			size: 0,
 			err:  nil,
+		},
+		"list groups by org as org admin of another org": {
+			token: orgAdminToken,
+			orgID: otherOrgID,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
+			err:  errors.ErrAuthorization,
 		},
 		"list groups by org with no limit": {
 			token: adminToken,
@@ -2130,6 +2172,9 @@ func TestViewGroup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	gr := grs[0]
 
+	otherOrgGrs, err := svc.CreateGroups(context.Background(), otherOrgOwnerToken, otherOrgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	for i := range memberships {
 		memberships[i].GroupID = gr.ID
 	}
@@ -2199,6 +2244,13 @@ func TestViewGroup(t *testing.T) {
 			grID:  gr.ID,
 			res:   grRes,
 			err:   nil,
+		},
+		{
+			desc:  "view group as org admin of another org",
+			token: orgAdminToken,
+			grID:  otherOrgGrs[0].ID,
+			res:   things.Group{},
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "view group with wrong credentials",
@@ -3930,7 +3982,7 @@ func TestGetGroupIDsByOrg(t *testing.T) {
 			orgID: wrongValue,
 			token: token,
 			size:  0,
-			err:   nil,
+			err:   errors.ErrAuthorization,
 		},
 	}
 
