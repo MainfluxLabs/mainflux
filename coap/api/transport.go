@@ -84,7 +84,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 		Options: make(message.Options, 0, 16),
 	}
 
-	key, err := parseKey(m)
+	key, err := readKey(m)
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error parsing auth: %s", err))
 		resp.Code = codes.Unauthorized
@@ -195,10 +195,14 @@ func handleGet(m *mux.Message, c mux.Conn, key domain.ThingKey) (bool, error) {
 	}
 
 	if obs == startObserve {
-		c := coap.NewClient(c, m.Token(), logger)
-		if err := service.Subscribe(context.Background(), key, subtopic, c); err != nil {
+		observer := coap.NewClient(c, m.Token(), logger)
+		if err := service.Subscribe(context.Background(), key, subtopic, observer); err != nil {
 			return false, err
 		}
+		// A closed connection can't receive notifications, so its observation ends with it.
+		c.AddOnClose(func() {
+			_ = service.Unsubscribe(context.Background(), key, subtopic, observer.Token())
+		})
 		return true, nil
 	}
 	return false, service.Unsubscribe(context.Background(), key, subtopic, m.Token().String())
@@ -227,6 +231,15 @@ func readPayload(msg *mux.Message) ([]byte, error) {
 		return []byte{}, nil
 	}
 	return io.ReadAll(msg.Body())
+}
+
+// readKey returns the key of the DTLS session, or the one from the auth query on plain CoAP.
+func readKey(msg *mux.Message) (domain.ThingKey, error) {
+	if key, ok := sessionKey(msg.Context()); ok {
+		return key, nil
+	}
+
+	return parseKey(msg)
 }
 
 func parseKey(msg *mux.Message) (domain.ThingKey, error) {
