@@ -508,13 +508,22 @@ func TestResetPassword(t *testing.T) {
 
 	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.RecoveryKey)
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
+
+	loginToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.LoginKey)
+	assert.Nil(t, err, fmt.Sprintf("Generating login token expected to succeed: %s", err))
+
+	apiToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.APIKey)
+	assert.Nil(t, err, fmt.Sprintf("Generating API token expected to succeed: %s", err))
+
 	cases := map[string]struct {
 		token    string
 		password string
 		err      error
 	}{
-		"valid user reset password ":   {resetToken, registerUser.Email, nil},
-		"invalid user reset password ": {"", "newpassword", errors.ErrAuthentication},
+		"valid user reset password ":      {resetToken, registerUser.Email, nil},
+		"invalid user reset password ":    {"", "newpassword", errors.ErrAuthentication},
+		"reset password with login token": {loginToken, "newpassword", errors.ErrAuthentication},
+		"reset password with API token":   {apiToken, "newpassword", errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {

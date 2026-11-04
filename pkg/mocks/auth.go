@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -14,6 +15,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+const recoveryTokenPrefix = "recovery-"
 
 var _ domain.AuthClient = (*authServiceMock)(nil)
 
@@ -53,12 +56,19 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 }
 
 func (svc authServiceMock) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
-	return svc.Identify(ctx, token)
+	email, ok := strings.CutPrefix(token, recoveryTokenPrefix)
+	if !ok {
+		return domain.Identity{}, errors.ErrAuthentication
+	}
+
+	return svc.Identify(ctx, email)
 }
 
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
 	if u, ok := svc.usersByEmail[email]; ok {
 		switch keyType {
+		case domain.RecoveryKey:
+			return recoveryTokenPrefix + u.Email, nil
 		default:
 			return u.Email, nil
 		}

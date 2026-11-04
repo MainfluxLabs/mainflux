@@ -19,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -934,7 +935,7 @@ func TestPasswordReset(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, domain.RecoveryKey)
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
 
 	reqData.Password = user.Password

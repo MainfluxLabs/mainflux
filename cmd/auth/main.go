@@ -58,6 +58,7 @@ const (
 	defDBSSLRootCert      = ""
 	defHTTPPort           = "8180"
 	defGRPCPort           = "8181"
+	defSecret             = ""
 	defServerCert         = ""
 	defServerKey          = ""
 	defJaegerURL          = ""
@@ -289,7 +290,7 @@ func loadConfig() config {
 		TemplatesDir: mainflux.Env(envEmailTemplatesDir, defEmailTemplatesDir),
 	}
 
-	secret := mainflux.Env(envSecret, "")
+	secret := mainflux.Env(envSecret, defSecret)
 	if err := validateSecret(secret); err != nil {
 		log.Fatalf("Invalid %s value: %s", envSecret, err.Error())
 	}
