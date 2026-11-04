@@ -6,6 +6,8 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -47,10 +49,7 @@ func startDTLSServer(t *testing.T, svc coap.Service) string {
 	thing := domain.Thing{ID: thingID, Key: thingKey}
 	things := mocks.NewThingsServiceClient(nil, map[string]domain.Thing{thingID: thing}, nil)
 
-	listener, err := coapnet.NewDTLSListener("udp", "127.0.0.1:0", coapnet.NewDTLSServerOptions(
-		piondtls.WithPSK(api.PSK(things, logger)),
-		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
-	))
+	listener, err := coapnet.NewDTLSListener("udp", "127.0.0.1:0", coapnet.NewDTLSServerOptions(api.DTLSOptions(things, logger)...))
 	require.NoError(t, err)
 
 	server := dtlsserver.New(
@@ -120,4 +119,94 @@ func TestDTLS(t *testing.T) {
 		assert.Equal(t, codes.Changed, resp.Code(), tc.desc)
 		assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, tc.desc)
 	}
+}
+
+// natRelay forwards datagrams between a client and the server, and can switch to a
+// new source port mid-session, the way a NAT rebinding does.
+type natRelay struct {
+	front    *net.UDPConn
+	server   *net.UDPAddr
+	upstream atomic.Pointer[net.UDPConn]
+	client   atomic.Pointer[net.UDPAddr]
+}
+
+func startNATRelay(t *testing.T, serverAddr string) *natRelay {
+	server, err := net.ResolveUDPAddr("udp", serverAddr)
+	require.NoError(t, err)
+	front, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	require.NoError(t, err)
+
+	relay := &natRelay{front: front, server: server}
+	relay.rebind(t)
+	t.Cleanup(func() {
+		_ = front.Close()
+		_ = relay.upstream.Load().Close()
+	})
+
+	go func() {
+		buf := make([]byte, 1500)
+		for {
+			n, addr, err := front.ReadFromUDP(buf)
+			if err != nil {
+				return
+			}
+			relay.client.Store(addr)
+			_, _ = relay.upstream.Load().Write(buf[:n])
+		}
+	}()
+
+	return relay
+}
+
+// rebind sends further datagrams to the server from a new source port.
+func (relay *natRelay) rebind(t *testing.T) {
+	upstream, err := net.DialUDP("udp", nil, relay.server)
+	require.NoError(t, err)
+	if previous := relay.upstream.Swap(upstream); previous != nil {
+		_ = previous.Close()
+	}
+
+	go func() {
+		buf := make([]byte, 1500)
+		for {
+			n, err := upstream.Read(buf)
+			if err != nil {
+				return
+			}
+			if client := relay.client.Load(); client != nil {
+				_, _ = relay.front.WriteToUDP(buf[:n], client)
+			}
+		}
+	}()
+}
+
+func (relay *natRelay) addr() string {
+	return relay.front.LocalAddr().String()
+}
+
+func TestDTLSConnectionID(t *testing.T) {
+	svc := &serviceMock{keys: make(chan domain.ThingKey, 1)}
+	relay := startNATRelay(t, startDTLSServer(t, svc))
+
+	conn, err := dtls.Dial(relay.addr(), dtls.NewDTLSClientOptions(
+		piondtls.WithPSK(func([]byte) ([]byte, error) { return []byte(thingKey), nil }),
+		piondtls.WithPSKIdentityHint([]byte(thingID)),
+		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
+		piondtls.WithConnectionIDGenerator(piondtls.OnlySendCIDGenerator()),
+	))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	publish := func(desc string) {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		resp, err := conn.Post(ctx, "/things/"+thingID+"/messages", message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
+		require.NoError(t, err, desc)
+		assert.Equal(t, codes.Changed, resp.Code(), desc)
+		assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, desc)
+	}
+
+	publish("publish before address change")
+	relay.rebind(t)
+	publish("publish on the same session after address change")
 }
