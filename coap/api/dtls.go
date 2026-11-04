@@ -13,7 +13,21 @@ import (
 	udpclient "github.com/plgd-dev/go-coap/v3/udp/client"
 )
 
+// cidSize is the length of the connection ID the server asks clients to send.
+const cidSize = 8
+
 type thingKeyContextKey struct{}
+
+// DTLSOptions returns the DTLS server options: PSK authentication, the cipher suites
+// constrained devices support, and connection IDs, which keep a session alive when
+// NAT changes the client's address (RFC 9146).
+func DTLSOptions(things domain.ThingsClient, logger log.Logger) []piondtls.ServerOption {
+	return []piondtls.ServerOption{
+		piondtls.WithPSK(PSK(things, logger)),
+		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8, piondtls.TLS_PSK_WITH_AES_128_GCM_SHA256),
+		piondtls.WithConnectionIDGenerator(piondtls.RandomCIDGenerator(cidSize)),
+	}
+}
 
 // PSK returns the DTLS PSK callback, which takes the thing ID as the PSK identity
 // and the thing key as the pre-shared key.

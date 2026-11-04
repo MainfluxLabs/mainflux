@@ -25,7 +25,6 @@ import (
 	servershttp "github.com/MainfluxLabs/mainflux/pkg/servers/http"
 	thingsapi "github.com/MainfluxLabs/mainflux/things/api/grpc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-	piondtls "github.com/pion/dtls/v3"
 	gocoap "github.com/plgd-dev/go-coap/v3"
 	coapnet "github.com/plgd-dev/go-coap/v3/net"
 	"github.com/plgd-dev/go-coap/v3/net/monitor/inactivity"
@@ -200,10 +199,7 @@ func startCOAPServers(ctx context.Context, cfg config, svc coap.Service, things 
 		}()
 	}
 
-	dtlsConfig := coapnet.NewDTLSServerOptions(
-		piondtls.WithPSK(api.PSK(things, l)),
-		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8, piondtls.TLS_PSK_WITH_AES_128_GCM_SHA256),
-	)
+	dtlsConfig := coapnet.NewDTLSServerOptions(api.DTLSOptions(things, l)...)
 	l.Info(fmt.Sprintf("CoAP adapter DTLS service started, exposed port %s", cfg.dtlsPort))
 	go func() {
 		errCh <- gocoap.ListenAndServeDTLSWithOptions("udp", ":"+cfg.dtlsPort, dtlsConfig,

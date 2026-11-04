@@ -72,6 +72,9 @@ A wrong key or an unknown thing ID fails the handshake. Requests over the sessio
 `type` query parameters, and the key is never sent over the network. The adapter supports the
 `TLS_PSK_WITH_AES_128_CCM_8` and `TLS_PSK_WITH_AES_128_GCM_SHA256` cipher suites.
 
+The adapter supports DTLS Connection IDs (RFC 9146). A client that negotiates one keeps its session when
+NAT changes its address or port, instead of repeating the handshake.
+
 A session with no traffic from the thing for `MF_COAP_ADAPTER_DTLS_IDLE_TIMEOUT` is closed, together with
 its observations. A thing that only observes commands should send something more often, for example a
 message or a CoAP ping, which also keeps carrier NAT mappings alive.
