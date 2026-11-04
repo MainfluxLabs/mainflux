@@ -733,6 +733,9 @@ services:
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
       MF_EMAIL_TEMPLATES_DIR: ${MF_EMAIL_TEMPLATES_DIR}
       MF_SMTP_NOTIFIER_FROM_ADDR: ${MF_SMTP_NOTIFIER_FROM_ADDR}
+      MF_HOST: ${MF_HOST}
+      MF_SMTP_NOTIFIER_THING_PATH: ${MF_SMTP_NOTIFIER_THING_PATH}
+      MF_SMTP_NOTIFIER_RULE_PATH: ${MF_SMTP_NOTIFIER_RULE_PATH}
       MF_SMTP_NOTIFIER_DB_HOST: smtp-notifier-db
       MF_SMTP_NOTIFIER_DB_PORT: ${MF_SMTP_NOTIFIER_DB_PORT}
       MF_SMTP_NOTIFIER_DB_USER: ${MF_SMTP_NOTIFIER_DB_USER}
@@ -754,6 +757,7 @@ services:
     volumes:
       - ./templates/base.tmpl:/base.tmpl
       - ./templates/smtp/notification.tmpl:/notification.tmpl
+      - ./templates/smtp/alarm.tmpl:/alarm.tmpl
 
   downlinks-db:
     image: postgres:13.3-alpine

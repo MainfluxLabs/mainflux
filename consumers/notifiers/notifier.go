@@ -7,11 +7,17 @@ import (
 	"context"
 	"errors"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
 
-// ErrNotify wraps sending notification errors,
-var ErrNotify = errors.New("failed to send notification")
+var (
+	// ErrNotify wraps sending notification errors,
+	ErrNotify = errors.New("failed to send notification")
+
+	// ErrMissingSource indicates a notification that carries neither a message nor an alarm.
+	ErrMissingSource = errors.New("notification has no source")
+)
 
 type Notifier struct {
 	ID       string
@@ -35,7 +41,7 @@ type NotifiersPage struct {
 // Sender represents an API for sending notification.
 type Sender interface {
 	// Send method is used to send a notification to the provided list of receivers.
-	Send(to []string, notification protomfx.Notification) error
+	Send(to []string, notification protomfx.Notification, group domain.Group) error
 
 	// ValidateContacts method is used to validate contacts
 	// to which notifications will be sent.
