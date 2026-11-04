@@ -21,9 +21,9 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/go-zoo/bone"
-	"github.com/plgd-dev/go-coap/v2/message"
-	"github.com/plgd-dev/go-coap/v2/message/codes"
-	"github.com/plgd-dev/go-coap/v2/mux"
+	"github.com/plgd-dev/go-coap/v3/message"
+	"github.com/plgd-dev/go-coap/v3/message/codes"
+	"github.com/plgd-dev/go-coap/v3/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -74,14 +74,13 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	// Empty messages (RST, and empty ACK/CON pings) are not requests. Answering
 	// them with an error makes a client that resets unknown messages reset the
 	// answer too, and the two sides exchange messages in an endless loop.
-	if m.Code == codes.Empty {
+	if m.Code() == codes.Empty {
 		return
 	}
 
 	resp := message.Message{
 		Code:    codes.Content,
-		Token:   m.Token,
-		Context: m.Context,
+		Token:   m.Token(),
 		Options: make(message.Options, 0, 16),
 	}
 
@@ -95,9 +94,9 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 
 	var registered bool
 
-	switch m.Code {
+	switch m.Code() {
 	case codes.GET:
-		registered, err = handleGet(m, w.Client(), key)
+		registered, err = handleGet(m, w.Conn(), key)
 	case codes.POST:
 		payload, decErr := readPayload(m)
 		if decErr != nil {
@@ -129,7 +128,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 	// Always answer a successful request. Without a response, the library only
 	// sends an empty ACK, which promises a separate response that never comes:
 	// standard clients then time out and, for Observe, cancel the observation.
-	switch m.Code {
+	switch m.Code() {
 	case codes.POST:
 		resp.Code = codes.Changed
 	case codes.GET:
@@ -143,7 +142,7 @@ func handler(w mux.ResponseWriter, m *mux.Message) {
 }
 
 func handlePost(m *mux.Message, payload []byte, key domain.ThingKey) error {
-	path, err := m.Options.Path()
+	path, err := m.Options().Path()
 	if err != nil {
 		return errBadOptions
 	}
@@ -178,15 +177,15 @@ func handlePost(m *mux.Message, payload []byte, key domain.ThingKey) error {
 
 // handleGet registers or cancels an observation. It reports whether an
 // observation was registered.
-func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) (bool, error) {
+func handleGet(m *mux.Message, c mux.Conn, key domain.ThingKey) (bool, error) {
 	var obs uint32
-	obs, err := m.Options.Observe()
+	obs, err := m.Options().Observe()
 	if err != nil {
 		logger.Warn(fmt.Sprintf("Error reading observe option: %s", err))
 		return false, errBadOptions
 	}
 
-	path, err := m.Options.Path()
+	path, err := m.Options().Path()
 	if err != nil {
 		return false, errBadOptions
 	}
@@ -196,13 +195,13 @@ func handleGet(m *mux.Message, c mux.Client, key domain.ThingKey) (bool, error) 
 	}
 
 	if obs == startObserve {
-		c := coap.NewClient(c, m.Token, logger)
+		c := coap.NewClient(c, m.Token(), logger)
 		if err := service.Subscribe(context.Background(), key, subtopic, c); err != nil {
 			return false, err
 		}
 		return true, nil
 	}
-	return false, service.Unsubscribe(context.Background(), key, subtopic, m.Token.String())
+	return false, service.Unsubscribe(context.Background(), key, subtopic, m.Token().String())
 }
 
 func buildMessage(subtopic string, payload []byte) protomfx.Message {
@@ -224,14 +223,14 @@ func buildCommand(subtopic string, payload []byte) protomfx.Command {
 }
 
 func readPayload(msg *mux.Message) ([]byte, error) {
-	if msg.Body == nil {
+	if msg.Body() == nil {
 		return []byte{}, nil
 	}
-	return io.ReadAll(msg.Body)
+	return io.ReadAll(msg.Body())
 }
 
 func parseKey(msg *mux.Message) (domain.ThingKey, error) {
-	queries, err := msg.Options.Queries()
+	queries, err := msg.Options().Queries()
 	if err != nil {
 		return domain.ThingKey{}, err
 	}
