@@ -18,28 +18,42 @@ import (
 var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
-	roles        map[string][]string
+	rootIDs      []string
+	orgRoles     map[string]map[string]string
 	usersByEmail map[string]users.User
 	orgs         map[string]auth.Org
 }
 
 // NewAuthService creates mock of auth service client.
-func NewAuthService(adminID string, userList []users.User, orgList []auth.Org) domain.AuthClient {
+// Org owners come from orgList, other org roles come from orgMemberships.
+func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, orgMemberships ...auth.OrgMembership) domain.AuthClient {
 	usersByEmail := make(map[string]users.User)
-	roles := map[string][]string{auth.RootSub: {adminID}}
+	rootIDs := []string{adminID}
+	orgRoles := make(map[string]map[string]string)
 	orgs := make(map[string]auth.Org)
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
-		roles[user.Role] = append(roles[user.Role], user.ID)
+		if user.Role == auth.RootSub {
+			rootIDs = append(rootIDs, user.ID)
+		}
 	}
 
 	for _, o := range orgList {
 		orgs[o.ID] = o
+		orgMemberships = append(orgMemberships, auth.OrgMembership{OrgID: o.ID, MemberID: o.OwnerID, Role: auth.Owner})
+	}
+
+	for _, om := range orgMemberships {
+		if _, ok := orgRoles[om.OrgID]; !ok {
+			orgRoles[om.OrgID] = make(map[string]string)
+		}
+		orgRoles[om.OrgID][om.MemberID] = om.Role
 	}
 
 	return &authServiceMock{
-		roles:        roles,
+		rootIDs:      rootIDs,
+		orgRoles:     orgRoles,
 		usersByEmail: usersByEmail,
 		orgs:         orgs,
 	}
@@ -83,11 +97,11 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 
 	switch ar.Subject {
 	case auth.RootSub:
-		if !contains(svc.roles[auth.RootSub], u.ID) {
+		if !contains(svc.rootIDs, u.ID) {
 			return errors.ErrAuthorization
 		}
 	case auth.OrgSub:
-		if err := svc.canAccessOrg(u.ID, ar.Action); err != nil {
+		if err := svc.canAccessOrg(u.ID, ar.Object, ar.Action); err != nil {
 			return err
 		}
 	default:
@@ -106,42 +120,29 @@ func contains(ids []string, id string) bool {
 	return false
 }
 
-func (svc authServiceMock) canAccessOrg(userID, action string) error {
-	isRoot := contains(svc.roles[auth.RootSub], userID)
-	isOwner := isRoot || contains(svc.roles[auth.Owner], userID)
-	isAdmin := isOwner || contains(svc.roles[auth.Admin], userID)
-	isEditor := isAdmin || contains(svc.roles[auth.Editor], userID)
-	isViewer := isEditor || contains(svc.roles[auth.Viewer], userID)
-
-	switch action {
-	case auth.RootSub:
-		if !isRoot {
-			return errors.ErrAuthorization
-		}
+func (svc authServiceMock) canAccessOrg(userID, orgID, action string) error {
+	if contains(svc.rootIDs, userID) {
 		return nil
+	}
+
+	switch svc.orgRoles[orgID][userID] {
 	case auth.Owner:
-		if !isOwner {
-			return errors.ErrAuthorization
-		}
 		return nil
 	case auth.Admin:
-		if !isAdmin {
-			return errors.ErrAuthorization
+		if action != auth.Owner {
+			return nil
 		}
-		return nil
 	case auth.Editor:
-		if !isEditor {
-			return errors.ErrAuthorization
+		if action == auth.Viewer || action == auth.Editor {
+			return nil
 		}
-		return nil
 	case auth.Viewer:
-		if !isViewer {
-			return errors.ErrAuthorization
+		if action == auth.Viewer {
+			return nil
 		}
-		return nil
-	default:
-		return errors.ErrAuthorization
 	}
+
+	return errors.ErrAuthorization
 }
 
 func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, orgID string) (string, error) {
