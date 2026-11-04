@@ -1,0 +1,795 @@
+// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
+// SPDX-License-Identifier: MIT
+
+package mdns
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"net/netip"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/pion/logging"
+	"golang.org/x/net/dns/dnsmessage"
+)
+
+// Conn represents a mDNS Server.
+type Conn struct {
+	mu   sync.RWMutex
+	name string
+	log  logging.LeveledLogger
+
+	multicastPktConnV4 ipPacketConn
+	multicastPktConnV6 ipPacketConn
+	dstAddr4           *net.UDPAddr
+	dstAddr6           *net.UDPAddr
+
+	unicastPktConnV4 ipPacketConn
+	unicastPktConnV6 ipPacketConn
+
+	queryInterval time.Duration
+	localNames    []string
+	ifaces        map[int]netInterface
+
+	// client handles query operations
+	client *client
+	// server handles response operations
+	server *server
+
+	// cache stores received DNS records with TTL management.
+	cache *cache
+
+	// stopBackground signals background goroutines (sweep, refresh) to stop.
+	stopBackground chan struct{}
+
+	// cacheRefresh enables proactive cache refresh per RFC 6762 §5.2.
+	cacheRefresh bool
+
+	// refreshCheckInterval overrides the default refresh polling interval.
+	refreshCheckInterval time.Duration
+
+	// sweepInterval overrides the default cache sweep interval.
+	sweepInterval time.Duration
+
+	// onServiceDiscovered is the handler for Browse results.
+	onServiceDiscovered atomic.Value // func(ServiceEvent)
+
+	// onServiceTypeDiscovered is the handler for EnumerateServiceTypes results.
+	onServiceTypeDiscovered atomic.Value // func(string)
+
+	closed chan any
+}
+
+type query struct {
+	nameWithSuffix  string
+	queryResultChan chan queryResult
+}
+
+type queryResult struct {
+	answer dnsmessage.ResourceHeader
+	addr   netip.Addr
+}
+
+const (
+	defaultQueryInterval        = time.Second
+	defaultSweepInterval        = 10 * time.Second
+	defaultRefreshCheckInterval = 2 * time.Second
+	destinationAddress4         = "224.0.0.251:5353"
+	destinationAddress6         = "[FF02::FB]:5353"
+	responseTTL                 = 120
+	// maxPacketSize is the maximum size of a mdns packet.
+	// From RFC 6762:
+	// Even when fragmentation is used, a Multicast DNS packet, including IP
+	// and UDP headers, MUST NOT exceed 9000 bytes.
+	// https://datatracker.ietf.org/doc/html/rfc6762#section-17
+	maxPacketSize = 9000
+)
+
+var (
+	errNoPositiveMTUFound = errors.New("no positive MTU found")
+	errNoPacketConn       = errors.New("must supply at least a multicast IPv4 or IPv6 PacketConn")
+	errNoUsableInterfaces = errors.New("no usable interfaces found for mDNS")
+	errFailedToClose      = errors.New("failed to close mDNS Conn")
+)
+
+type netInterface struct {
+	net.Interface
+	ipAddrs    []netip.Addr
+	supportsV4 bool
+	supportsV6 bool
+}
+
+// Close closes the mDNS Conn.
+func (c *Conn) Close() error { //nolint:cyclop
+	select {
+	case <-c.closed:
+		return nil
+	default:
+	}
+
+	// Once on go1.20, can use errors.Join
+	var errs []error
+	if c.multicastPktConnV4 != nil {
+		if err := c.multicastPktConnV4.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if c.multicastPktConnV6 != nil {
+		if err := c.multicastPktConnV6.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if c.unicastPktConnV4 != nil {
+		if err := c.unicastPktConnV4.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if c.unicastPktConnV6 != nil {
+		if err := c.unicastPktConnV6.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) == 0 {
+		<-c.closed
+
+		return nil
+	}
+
+	rtrn := errFailedToClose
+	for _, err := range errs {
+		rtrn = fmt.Errorf("%w\n%w", err, rtrn)
+	}
+
+	return rtrn
+}
+
+// Register adds a DNS-SD service instance to the server.
+// The service will be advertised in response to PTR, SRV, and TXT queries.
+// Returns an error if the connection is closed or has no server.
+func (c *Conn) Register(svc ServiceInstance) error {
+	select {
+	case <-c.closed:
+		return errConnectionClosed
+	default:
+	}
+
+	if c.server == nil {
+		return errConnectionClosed
+	}
+
+	if err := validateInstanceName(svc.Instance); err != nil {
+		return err
+	}
+
+	if err := validateServiceName(svc.Service); err != nil {
+		return err
+	}
+
+	if svc.Domain == "" {
+		svc.Domain = "local"
+	}
+
+	if svc.Host == "" && len(c.localNames) > 0 {
+		svc.Host = c.localNames[0]
+	}
+
+	c.server.registerService(svc)
+
+	return nil
+}
+
+// UpdateTXT replaces the TXT data of a registered DNS-SD service and
+// immediately announces the new record. The instance is identified by its
+// Instance name and Service type.
+//
+// https://www.rfc-editor.org/rfc/rfc6762.html#section-8.4
+// https://www.rfc-editor.org/rfc/rfc6762.html#section-10.2
+func (c *Conn) UpdateTXT(instance, service string, text []TXTEntry) error {
+	select {
+	case <-c.closed:
+		return errConnectionClosed
+	default:
+	}
+
+	if c.server == nil {
+		return errConnectionClosed
+	}
+
+	if err := validateInstanceName(instance); err != nil {
+		return err
+	}
+	if err := validateServiceName(service); err != nil {
+		return err
+	}
+	if err := validateTXTEntries(text); err != nil {
+		return err
+	}
+
+	generation, err := c.server.updateTXT(instance, service, text)
+	if err != nil || generation == 0 {
+		return err
+	}
+
+	go c.repeatTXTAnnouncement(instance, service, generation)
+
+	return nil
+}
+
+func (c *Conn) repeatTXTAnnouncement(instance, service string, generation uint64) {
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+		if err := c.server.repeatTXTAnnouncement(instance, service, generation); err != nil {
+			c.log.Warnf("[%s] failed to repeat TXT announcement: %v", c.name, err)
+		}
+	case <-c.closed:
+	}
+}
+
+// Unregister removes a DNS-SD service instance from the server.
+// The instance is identified by its Instance name and Service type.
+func (c *Conn) Unregister(instance, service string) {
+	if c.server == nil {
+		return
+	}
+
+	c.server.unregisterService(instance, service)
+}
+
+// OnServiceDiscovered sets a handler that is fired when a DNS-SD service
+// instance is discovered during browsing. The handler is stored atomically
+// and may be changed at any time. Set to nil to clear.
+func (c *Conn) OnServiceDiscovered(handler func(ServiceEvent)) {
+	c.onServiceDiscovered.Store(handler)
+}
+
+// serviceDiscoveredHandler dispatches a ServiceEvent to the registered handler.
+func (c *Conn) serviceDiscoveredHandler(evt ServiceEvent) {
+	if handler, ok := c.onServiceDiscovered.Load().(func(ServiceEvent)); ok && handler != nil {
+		handler(evt)
+	}
+}
+
+// OnServiceTypeDiscovered sets a handler that is fired when a service type
+// is discovered during enumeration. The handler is stored atomically
+// and may be changed at any time. Set to nil to clear.
+func (c *Conn) OnServiceTypeDiscovered(handler func(string)) {
+	c.onServiceTypeDiscovered.Store(handler)
+}
+
+// serviceTypeDiscoveredHandler dispatches a service type to the registered handler.
+func (c *Conn) serviceTypeDiscoveredHandler(serviceType string) {
+	if handler, ok := c.onServiceTypeDiscovered.Load().(func(string)); ok && handler != nil {
+		handler(serviceType)
+	}
+}
+
+// Browse starts discovering DNS-SD service instances of the given type on
+// the local network. It sends periodic PTR queries for
+// "<serviceType>.local." and fires the OnServiceDiscovered handler for each
+// unique instance found.
+//
+// The context controls the lifetime of the browse operation.
+// Discovered instances are deduplicated.
+//
+// Example:
+//
+//	conn.OnServiceDiscovered(func(evt mdns.ServiceEvent) {
+//	    fmt.Printf("Found: %s at %s:%d\n",
+//	        evt.Instance.Instance, evt.Addr, evt.Instance.Port)
+//	})
+//	err := conn.Browse(ctx, "_http._tcp")
+func (c *Conn) Browse(ctx context.Context, serviceType string) error {
+	select {
+	case <-c.closed:
+		return errConnectionClosed
+	default:
+	}
+
+	if c.client == nil {
+		return errConnectionClosed
+	}
+
+	if err := validateServiceName(serviceType); err != nil {
+		return err
+	}
+
+	session := newBrowseSession(ctx, serviceType, c.serviceDiscoveredHandler)
+
+	c.client.handler.registerBrowseSession(session)
+
+	go c.browseLoop(session)
+
+	return nil
+}
+
+// browseLoop sends periodic PTR queries until the context is done.
+func (c *Conn) browseLoop(session *browseSession) {
+	defer func() {
+		c.client.handler.unregisterBrowseSession(session)
+		session.cancel()
+	}()
+
+	svcName := session.serviceName()
+	c.client.sendBrowseQuestion(svcName)
+
+	interval := c.queryInterval
+	if interval == 0 {
+		interval = defaultQueryInterval
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			c.client.sendBrowseQuestion(svcName)
+		case <-session.done:
+			return
+		case <-c.closed:
+			return
+		}
+	}
+}
+
+// EnumerateServiceTypes starts discovering all service types advertised on the
+// local network using the DNS-SD service type enumeration meta-query
+// (RFC 6763 §9).
+//
+// Fires the OnServiceTypeDiscovered handler for each unique service type found.
+// The context controls the lifetime of the enumeration.
+func (c *Conn) EnumerateServiceTypes(ctx context.Context) error {
+	select {
+	case <-c.closed:
+		return errConnectionClosed
+	default:
+	}
+
+	if c.client == nil {
+		return errConnectionClosed
+	}
+
+	session := newEnumerateSession(ctx, c.serviceTypeDiscoveredHandler)
+
+	c.client.handler.registerEnumerateSession(session)
+
+	go c.enumerateLoop(session)
+
+	return nil
+}
+
+// enumerateLoop sends periodic meta-queries until the context is done.
+func (c *Conn) enumerateLoop(session *enumerateSession) {
+	defer func() {
+		c.client.handler.unregisterEnumerateSession(session)
+		session.cancel()
+	}()
+
+	c.client.sendEnumerateQuestion(session.domain)
+
+	interval := c.queryInterval
+	if interval == 0 {
+		interval = defaultQueryInterval
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			c.client.sendEnumerateQuestion(session.domain)
+		case <-session.done:
+			return
+		case <-c.closed:
+			return
+		}
+	}
+}
+
+// Query sends mDNS Queries for the following name until
+// either the Context is canceled/expires or we get a result
+//
+// Deprecated: Use QueryAddr instead as it supports the easier to use netip.Addr.
+func (c *Conn) Query(ctx context.Context, name string) (dnsmessage.ResourceHeader, net.Addr, error) {
+	header, addr, err := c.QueryAddr(ctx, name)
+	if err != nil {
+		return header, nil, err
+	}
+
+	return header, &net.IPAddr{
+		IP:   addr.AsSlice(),
+		Zone: addr.Zone(),
+	}, nil
+}
+
+// QueryAddr sends mDNS Queries for the following name until
+// either the Context is canceled/expires or we get a result.
+func (c *Conn) QueryAddr(ctx context.Context, name string) (dnsmessage.ResourceHeader, netip.Addr, error) {
+	select {
+	case <-c.closed:
+		return dnsmessage.ResourceHeader{}, netip.Addr{}, errConnectionClosed
+	default:
+	}
+
+	if c.client == nil {
+		return dnsmessage.ResourceHeader{}, netip.Addr{}, errConnectionClosed
+	}
+
+	nameWithSuffix := name + "."
+	queryChan := make(chan queryResult, 1)
+	q := c.client.handler.registerQuery(nameWithSuffix, queryChan)
+	defer c.client.handler.unregisterQuery(q)
+
+	interval := c.queryInterval
+	if interval == 0 {
+		interval = defaultQueryInterval
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	c.client.sendQuestion(nameWithSuffix)
+	for {
+		select {
+		case <-ticker.C:
+			c.client.sendQuestion(nameWithSuffix)
+		case <-c.closed:
+			return dnsmessage.ResourceHeader{}, netip.Addr{}, errConnectionClosed
+		case res := <-queryChan:
+			// Given https://datatracker.ietf.org/doc/html/draft-ietf-mmusic-mdns-ice-candidates#section-3.2.2-2
+			// An ICE agent SHOULD ignore candidates where the hostname resolution returns more than one IP address.
+			//
+			// We will take the first we receive which could result in a race between two suitable addresses where
+			// one is better than the other (e.g. localhost vs LAN).
+			return res.answer, res.addr, nil
+		case <-ctx.Done():
+			return dnsmessage.ResourceHeader{}, netip.Addr{}, errContextElapsed
+		}
+	}
+}
+
+// writeQuestion sends a DNS question to all interfaces.
+// It prefers unicast connections if available, falling back to multicast.
+//
+//nolint:gocognit,cyclop,nestif
+func (c *Conn) writeQuestion(b []byte) {
+	for ifcIdx := range c.ifaces {
+		ifc := c.ifaces[ifcIdx]
+
+		// We'll write via unicast if we can in case the responder chooses to respond to the address
+		// the request came from (i.e. not respecting unicast-response bit). If we were to use the
+		// multicast packet conn here, we'd be writing from a specific multicast address which won't
+		// be able to receive unicast traffic (it only works when listening on 0.0.0.0/[::]).
+		if c.unicastPktConnV4 == nil && c.unicastPktConnV6 == nil {
+			c.log.Debugf("[%s] writing question to multicast IPv4/6 %s", c.name, c.dstAddr4)
+			if ifc.supportsV4 && c.multicastPktConnV4 != nil {
+				if _, err := c.multicastPktConnV4.WriteTo(b, &ifc.Interface, nil, c.dstAddr4); err != nil {
+					c.log.Warnf("[%s] failed to send mDNS packet (multicast) on IPv4 interface %d: %v", c.name, ifc.Index, err)
+				}
+			}
+			if ifc.supportsV6 && c.multicastPktConnV6 != nil {
+				if _, err := c.multicastPktConnV6.WriteTo(b, &ifc.Interface, nil, c.dstAddr6); err != nil {
+					c.log.Warnf("[%s] failed to send mDNS packet (multicast) on IPv6 interface %d: %v", c.name, ifc.Index, err)
+				}
+			}
+		}
+		if ifc.supportsV4 && c.unicastPktConnV4 != nil {
+			c.log.Debugf("[%s] writing question to unicast IPv4 %s", c.name, c.dstAddr4)
+			if _, err := c.unicastPktConnV4.WriteTo(b, &ifc.Interface, nil, c.dstAddr4); err != nil {
+				c.log.Warnf("[%s] failed to send mDNS packet (unicast) on interface %d: %v", c.name, ifc.Index, err)
+			}
+		}
+		if ifc.supportsV6 && c.unicastPktConnV6 != nil {
+			c.log.Debugf("[%s] writing question to unicast IPv6 %s", c.name, c.dstAddr6)
+			if _, err := c.unicastPktConnV6.WriteTo(b, &ifc.Interface, nil, c.dstAddr6); err != nil {
+				c.log.Warnf("[%s] failed to send mDNS packet (unicast) on interface %d: %v", c.name, ifc.Index, err)
+			}
+		}
+	}
+}
+
+// writeAnswer sends a DNS answer, optionally to a specific interface or unicast destination.
+//
+//nolint:gocognit,gocyclo,cyclop
+func (c *Conn) writeAnswer(
+	ifIndex int,
+	b []byte,
+	hasLoopbackData bool,
+	hasIPv6Zone bool,
+	unicastDst *net.UDPAddr,
+) {
+	var dst4, dst6 net.Addr
+	if unicastDst == nil {
+		dst4 = c.dstAddr4
+		dst6 = c.dstAddr6
+	} else {
+		if unicastDst.IP.To4() == nil {
+			dst6 = unicastDst
+		} else {
+			dst4 = unicastDst
+		}
+	}
+
+	if ifIndex != -1 { //nolint:nestif
+		ifc, ok := c.ifaces[ifIndex]
+		if !ok {
+			c.log.Warnf("[%s] no interface for %d", c.name, ifIndex)
+
+			return
+		}
+		if hasLoopbackData && ifc.Flags&net.FlagLoopback == 0 {
+			// avoid accidentally tricking the destination that itself is the same as us
+			c.log.Debugf("[%s] interface is not loopback %d", c.name, ifIndex)
+
+			return
+		}
+
+		c.log.Debugf("[%s] writing answer to IPv4: %v, IPv6: %v", c.name, dst4, dst6)
+
+		if ifc.supportsV4 && c.multicastPktConnV4 != nil && dst4 != nil {
+			if !hasIPv6Zone {
+				if _, err := c.multicastPktConnV4.WriteTo(b, &ifc.Interface, nil, dst4); err != nil {
+					c.log.Warnf("[%s] failed to send mDNS packet on IPv4 interface %d: %v", c.name, ifIndex, err)
+				}
+			} else {
+				c.log.Debugf("[%s] refusing to send mDNS packet with IPv6 zone over IPv4", c.name)
+			}
+		}
+		if ifc.supportsV6 && c.multicastPktConnV6 != nil && dst6 != nil {
+			if _, err := c.multicastPktConnV6.WriteTo(b, &ifc.Interface, nil, dst6); err != nil {
+				c.log.Warnf("[%s] failed to send mDNS packet on IPv6 interface %d: %v", c.name, ifIndex, err)
+			}
+		}
+
+		return
+	}
+
+	for ifcIdx := range c.ifaces {
+		ifc := c.ifaces[ifcIdx]
+		if hasLoopbackData {
+			c.log.Debugf("[%s] Refusing to send loopback data with non-specific interface", c.name)
+
+			continue
+		}
+
+		c.log.Debugf("[%s] writing answer to IPv4: %v, IPv6: %v", c.name, dst4, dst6)
+
+		if ifc.supportsV4 && c.multicastPktConnV4 != nil && dst4 != nil {
+			if !hasIPv6Zone {
+				if _, err := c.multicastPktConnV4.WriteTo(b, &ifc.Interface, nil, dst4); err != nil {
+					c.log.Warnf("[%s] failed to send mDNS packet (multicast) on IPv4 interface %d: %v", c.name, ifIndex, err)
+				}
+			} else {
+				c.log.Debugf("[%s] refusing to send mDNS packet with IPv6 zone over IPv4", c.name)
+			}
+		}
+		if ifc.supportsV6 && c.multicastPktConnV6 != nil && dst6 != nil {
+			if _, err := c.multicastPktConnV6.WriteTo(b, &ifc.Interface, nil, dst6); err != nil {
+				c.log.Warnf("[%s] failed to send mDNS packet (multicast) on IPv6 interface %d: %v", c.name, ifIndex, err)
+			}
+		}
+	}
+}
+
+func (c *Conn) readLoop(name string, pktConn ipPacketConn, inboundBufferSize int, _ *serverConfig) {
+	b := make([]byte, inboundBufferSize)
+
+	for {
+		n, cm, src, err := pktConn.ReadFrom(b)
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			c.log.Warnf("[%s] failed to ReadFrom %q %v", c.name, src, err)
+
+			continue
+		}
+		c.log.Debugf("[%s] got read on %s from %s", c.name, name, src)
+
+		var ifIndex int
+		var pktDst net.IP
+		if cm != nil {
+			ifIndex = cm.IfIndex
+			pktDst = cm.Dst
+		} else {
+			ifIndex = -1
+		}
+		srcAddr, ok := src.(*net.UDPAddr)
+		if !ok {
+			c.log.Warnf("[%s] expected source address %s to be UDP but got %", c.name, src, src)
+
+			continue
+		}
+
+		func() {
+			var msg dnsmessage.Message
+			err := msg.Unpack(b[:n])
+			if err != nil {
+				c.log.Warnf("[%s] failed to parse mDNS packet %v", c.name, err)
+
+				return
+			}
+
+			ctx := &messageContext{
+				source:    srcAddr,
+				ifIndex:   ifIndex,
+				pktDst:    pktDst,
+				timestamp: time.Now(),
+			}
+
+			// Questions are often echoed with answers, therefore
+			// If we have more questions than answers it is a question we might need to respond to
+			if len(msg.Questions) > len(msg.Answers) {
+				if c.server != nil {
+					c.server.handler.handle(ctx, &msg)
+				}
+			} else {
+				if c.client != nil {
+					c.client.handler.handle(ctx, &msg)
+				}
+			}
+		}()
+	}
+}
+
+func (c *Conn) start(started chan<- struct{}, inboundBufferSize int, config *serverConfig) {
+	defer func() {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		close(c.closed)
+	}()
+
+	backgroundWG := c.startBackgroundLoops()
+
+	var numReaders int
+	readerStarted := make(chan struct{})
+	readerEnded := make(chan struct{})
+
+	if c.multicastPktConnV4 != nil {
+		numReaders++
+		go func() {
+			defer func() {
+				readerEnded <- struct{}{}
+			}()
+			readerStarted <- struct{}{}
+			c.readLoop("multi4", c.multicastPktConnV4, inboundBufferSize, config)
+		}()
+	}
+	if c.multicastPktConnV6 != nil {
+		numReaders++
+		go func() {
+			defer func() {
+				readerEnded <- struct{}{}
+			}()
+			readerStarted <- struct{}{}
+			c.readLoop("multi6", c.multicastPktConnV6, inboundBufferSize, config)
+		}()
+	}
+	if c.unicastPktConnV4 != nil {
+		numReaders++
+		go func() {
+			defer func() {
+				readerEnded <- struct{}{}
+			}()
+			readerStarted <- struct{}{}
+			c.readLoop("uni4", c.unicastPktConnV4, inboundBufferSize, config)
+		}()
+	}
+	if c.unicastPktConnV6 != nil {
+		numReaders++
+		go func() {
+			defer func() {
+				readerEnded <- struct{}{}
+			}()
+			readerStarted <- struct{}{}
+			c.readLoop("uni6", c.unicastPktConnV6, inboundBufferSize, config)
+		}()
+	}
+	for i := 0; i < numReaders; i++ {
+		<-readerStarted
+	}
+	close(started)
+	for i := 0; i < numReaders; i++ {
+		<-readerEnded
+	}
+
+	// All readers done — stop background goroutines.
+	if c.stopBackground != nil {
+		close(c.stopBackground)
+	}
+
+	backgroundWG.Wait()
+}
+
+// startBackgroundLoops launches the sweep and optional refresh goroutines.
+// Returns a WaitGroup that completes when all background goroutines exit.
+func (c *Conn) startBackgroundLoops() *sync.WaitGroup {
+	var backgroundWG sync.WaitGroup
+
+	if c.cache == nil || c.stopBackground == nil {
+		return &backgroundWG
+	}
+
+	backgroundWG.Add(1)
+
+	go func() {
+		defer backgroundWG.Done()
+		c.sweepLoop()
+	}()
+
+	if c.cacheRefresh {
+		backgroundWG.Add(1)
+
+		go func() {
+			defer backgroundWG.Done()
+			c.refreshLoop()
+		}()
+	}
+
+	return &backgroundWG
+}
+
+// sweepLoop periodically removes expired cache entries.
+func (c *Conn) sweepLoop() {
+	interval := c.sweepInterval
+	if interval == 0 {
+		interval = defaultSweepInterval
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			c.cache.sweep()
+		case <-c.stopBackground:
+			return
+		}
+	}
+}
+
+// refreshLoop periodically checks monitored cache entries for refresh.
+// Per RFC 6762 §5.2, actively-monitored records are refreshed at
+// 80/85/90/95% of their TTL.
+func (c *Conn) refreshLoop() {
+	interval := c.refreshCheckInterval
+	if interval == 0 {
+		interval = defaultRefreshCheckInterval
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			keys := c.client.handler.monitoredCacheKeys()
+			if candidates := c.cache.takeRefreshCandidates(keys); len(candidates) > 0 {
+				c.client.sendRefreshQuestions(candidates)
+			}
+		case <-c.stopBackground:
+			return
+		}
+	}
+}
+
+func addrWithOptionalZone(addr netip.Addr, zone string) netip.Addr {
+	if zone == "" {
+		return addr
+	}
+	if addr.Is6() && (addr.IsLinkLocalUnicast() || addr.IsLinkLocalMulticast()) {
+		return addr.WithZone(zone)
+	}
+
+	return addr
+}

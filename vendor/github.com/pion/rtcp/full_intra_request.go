@@ -1,0 +1,137 @@
+// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
+// SPDX-License-Identifier: MIT
+
+package rtcp
+
+import (
+	"encoding/binary"
+	"fmt"
+	"strings"
+)
+
+// A FIREntry is a (SSRC, seqno) pair, as carried by FullIntraRequest.
+type FIREntry struct {
+	SSRC           uint32
+	SequenceNumber uint8
+}
+
+// The FullIntraRequest packet is used to reliably request an Intra frame
+// in a video stream.  See RFC 5104 Section 3.5.1.  This is not for loss
+// recovery, which should use PictureLossIndication (PLI) instead.
+type FullIntraRequest struct {
+	SenderSSRC uint32
+	MediaSSRC  uint32
+
+	FIR []FIREntry
+}
+
+const (
+	firOffset = 8
+)
+
+var _ Packet = (*FullIntraRequest)(nil)
+
+// Marshal encodes the FullIntraRequest.
+func (p FullIntraRequest) Marshal() ([]byte, error) {
+	rawPacket := make([]byte, firOffset+(len(p.FIR)*8))
+	binary.BigEndian.PutUint32(rawPacket, p.SenderSSRC)
+	binary.BigEndian.PutUint32(rawPacket[4:], p.MediaSSRC)
+	for i, fir := range p.FIR {
+		binary.BigEndian.PutUint32(rawPacket[firOffset+8*i:], fir.SSRC)
+		rawPacket[firOffset+8*i+4] = fir.SequenceNumber
+	}
+	h := p.Header()
+	hData, err := h.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	return append(hData, rawPacket...), nil
+}
+
+// Unmarshal decodes the TransportLayerNack.
+func (p *FullIntraRequest) Unmarshal(rawPacket []byte) error {
+	if len(rawPacket) < (headerLength + ssrcLength) {
+		return errPacketTooShort
+	}
+
+	var header Header
+	if err := header.Unmarshal(rawPacket); err != nil {
+		return err
+	}
+
+	if len(rawPacket) < (headerLength + 4*int(header.Length)) {
+		return errPacketTooShort
+	}
+
+	if header.Type != TypePayloadSpecificFeedback || header.Count != FormatFIR {
+		return errWrongType
+	}
+
+	// The FCI field MUST contain one or more FIR entries
+	if 4*int(header.Length)-firOffset <= 0 || (4*int(header.Length))%8 != 0 {
+		return errBadLength
+	}
+
+	p.SenderSSRC = binary.BigEndian.Uint32(rawPacket[headerLength:])
+	p.MediaSSRC = binary.BigEndian.Uint32(rawPacket[headerLength+ssrcLength:])
+	for i := headerLength + firOffset; i < (headerLength + 4*int(header.Length)); i += 8 {
+		entry := rawPacket[i : i+8]
+		p.FIR = append(p.FIR, FIREntry{
+			binary.BigEndian.Uint32(entry),
+			entry[4],
+		})
+	}
+
+	return nil
+}
+
+func appendFIRSSRCs(dst []uint32, header Header, pkt []byte) ([]uint32, error) {
+	if header.Type != TypePayloadSpecificFeedback || header.Count != FormatFIR {
+		return dst, errWrongType
+	}
+	if 4*int(header.Length)-firOffset <= 0 || (4*int(header.Length))%8 != 0 {
+		return dst, errBadLength
+	}
+	for i := headerLength + firOffset; i < (headerLength + 4*int(header.Length)); i += 8 {
+		entry := pkt[i : i+8]
+		dst = append(dst, binary.BigEndian.Uint32(entry))
+	}
+
+	return dst, nil
+}
+
+// Header returns the Header associated with this packet.
+func (p *FullIntraRequest) Header() Header {
+	return Header{
+		Count:  FormatFIR,
+		Type:   TypePayloadSpecificFeedback,
+		Length: uint16((p.MarshalSize() / 4) - 1), //nolint:gosec // G115
+	}
+}
+
+// MarshalSize returns the size of the packet once marshaled.
+func (p *FullIntraRequest) MarshalSize() int {
+	return headerLength + firOffset + len(p.FIR)*8
+}
+
+func (p *FullIntraRequest) String() string {
+	var out strings.Builder
+	fmt.Fprintf(&out, "FullIntraRequest %x %x",
+		p.SenderSSRC, p.MediaSSRC)
+	for _, e := range p.FIR {
+		fmt.Fprintf(&out, " (%x %v)", e.SSRC, e.SequenceNumber)
+	}
+
+	return out.String()
+}
+
+// DestinationSSRC returns an array of SSRC values that this packet refers to.
+func (p *FullIntraRequest) DestinationSSRC() []uint32 {
+	ssrcs := make([]uint32, 0, len(p.FIR))
+	for _, entry := range p.FIR {
+		ssrcs = append(ssrcs, entry.SSRC)
+	}
+
+	return ssrcs
+}

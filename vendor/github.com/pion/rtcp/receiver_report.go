@@ -1,0 +1,220 @@
+// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
+// SPDX-License-Identifier: MIT
+
+package rtcp
+
+import (
+	"encoding/binary"
+	"fmt"
+	"strings"
+)
+
+// A ReceiverReport (RR) packet provides reception quality feedback for an RTP stream.
+type ReceiverReport struct {
+	// The synchronization source identifier for the originator of this RR packet.
+	SSRC uint32
+	// Zero or more reception report blocks depending on the number of other
+	// sources heard by this sender since the last report. Each reception report
+	// block conveys statistics on the reception of RTP packets from a
+	// single synchronization source.
+	Reports []ReceptionReport
+	// Extension contains additional, payload-specific information that needs to
+	// be reported regularly about the receiver.
+	ProfileExtensions []byte
+}
+
+const (
+	ssrcLength     = 4
+	rrSSRCOffset   = headerLength
+	rrReportOffset = rrSSRCOffset + ssrcLength
+)
+
+// Marshal encodes the ReceiverReport in binary.
+func (r ReceiverReport) Marshal() ([]byte, error) {
+	/*
+	 *         0                   1                   2                   3
+	 *         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 * header |V=2|P|    RC   |   PT=RR=201   |             length            |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                     SSRC of packet sender                     |
+	 *        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+	 * report |                 SSRC_1 (SSRC of first source)                 |
+	 * block  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *   1    | fraction lost |       cumulative number of packets lost       |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |           extended highest sequence number received           |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                      interarrival jitter                      |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                         last SR (LSR)                         |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                   delay since last SR (DLSR)                  |
+	 *        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+	 * report |                 SSRC_2 (SSRC of second source)                |
+	 * block  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *   2    :                               ...                             :
+	 *        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+	 *        |                  profile-specific extensions                  |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 */
+
+	rawPacket := make([]byte, r.MarshalSize())
+	packetBody := rawPacket[headerLength:]
+
+	binary.BigEndian.PutUint32(packetBody, r.SSRC)
+
+	for i, rp := range r.Reports {
+		data, err := rp.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		offset := ssrcLength + receptionReportLength*i
+		copy(packetBody[offset:], data)
+	}
+
+	if len(r.Reports) > countMax {
+		return nil, errTooManyReports
+	}
+
+	// The buffer is already sized for the profile extensions and their padding,
+	// so any trailing pad bytes are left as the zeroes MarshalSize allocated.
+	copy(packetBody[ssrcLength+receptionReportLength*len(r.Reports):], r.ProfileExtensions)
+
+	hData, err := r.Header().Marshal()
+	if err != nil {
+		return nil, err
+	}
+	copy(rawPacket, hData)
+
+	return rawPacket, nil
+}
+
+// Unmarshal decodes the ReceiverReport from binary.
+func (r *ReceiverReport) Unmarshal(rawPacket []byte) error {
+	/*
+	 *         0                   1                   2                   3
+	 *         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 * header |V=2|P|    RC   |   PT=RR=201   |             length            |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                     SSRC of packet sender                     |
+	 *        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+	 * report |                 SSRC_1 (SSRC of first source)                 |
+	 * block  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *   1    | fraction lost |       cumulative number of packets lost       |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |           extended highest sequence number received           |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                      interarrival jitter                      |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                         last SR (LSR)                         |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *        |                   delay since last SR (DLSR)                  |
+	 *        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+	 * report |                 SSRC_2 (SSRC of second source)                |
+	 * block  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 *   2    :                               ...                             :
+	 *        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
+	 *        |                  profile-specific extensions                  |
+	 *        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+	 */
+
+	if len(rawPacket) < (headerLength + ssrcLength) {
+		return errPacketTooShort
+	}
+
+	var header Header
+	if err := header.Unmarshal(rawPacket); err != nil {
+		return err
+	}
+
+	if header.Type != TypeReceiverReport {
+		return errWrongType
+	}
+
+	r.SSRC = binary.BigEndian.Uint32(rawPacket[rrSSRCOffset:])
+
+	for i := rrReportOffset; i < len(rawPacket) && len(r.Reports) < int(header.Count); i += receptionReportLength {
+		var rr ReceptionReport
+		if err := rr.Unmarshal(rawPacket[i:]); err != nil {
+			return err
+		}
+		r.Reports = append(r.Reports, rr)
+	}
+	r.ProfileExtensions = rawPacket[rrReportOffset+(len(r.Reports)*receptionReportLength):]
+
+	//nolint:gosec // G115
+	if uint8(len(r.Reports)) != header.Count {
+		return errInvalidHeader
+	}
+
+	return nil
+}
+
+func appendReceiverReportSSRCs(dst []uint32, header Header, pkt []byte) ([]uint32, error) {
+	if header.Type != TypeReceiverReport {
+		return dst, errWrongType
+	}
+	if len(pkt) < (headerLength + ssrcLength) {
+		return dst, errPacketTooShort
+	}
+
+	reports := 0
+	for i := rrReportOffset; i < len(pkt) && reports < int(header.Count); i += receptionReportLength {
+		var rr ReceptionReport
+		if err := rr.Unmarshal(pkt[i:]); err != nil {
+			return dst, err
+		}
+		dst = append(dst, rr.SSRC)
+		reports++
+	}
+	if reports != int(header.Count) {
+		return dst, errInvalidHeader
+	}
+
+	return dst, nil
+}
+
+// MarshalSize returns the size of the packet once marshaled.
+func (r *ReceiverReport) MarshalSize() int {
+	repsLength := 0
+	for _, rep := range r.Reports {
+		repsLength += rep.len()
+	}
+
+	extLength := len(r.ProfileExtensions)
+
+	return headerLength + ssrcLength + repsLength + extLength + getPadding(extLength)
+}
+
+// Header returns the Header associated with this packet.
+func (r *ReceiverReport) Header() Header {
+	return Header{
+		Count:  uint8(len(r.Reports)), //nolint:gosec // G115
+		Type:   TypeReceiverReport,
+		Length: uint16((r.MarshalSize() / 4) - 1), //nolint:gosec // G115
+	}
+}
+
+// DestinationSSRC returns an array of SSRC values that this packet refers to.
+func (r *ReceiverReport) DestinationSSRC() []uint32 {
+	out := make([]uint32, len(r.Reports))
+	for i, v := range r.Reports {
+		out[i] = v.SSRC
+	}
+
+	return out
+}
+
+func (r ReceiverReport) String() string {
+	var out strings.Builder
+	fmt.Fprintf(&out, "ReceiverReport from %x\n", r.SSRC)
+	out.WriteString("\tSSRC    \tLost\tLastSequence\n")
+	for _, i := range r.Reports {
+		fmt.Fprintf(&out, "\t%x\t%d/%d\t%d\n", i.SSRC, i.FractionLost, i.TotalLost, i.LastSequenceNumber)
+	}
+	fmt.Fprintf(&out, "\tProfile Extension Data: %v\n", r.ProfileExtensions)
+
+	return out.String()
+}

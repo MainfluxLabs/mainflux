@@ -1,0 +1,54 @@
+// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
+// SPDX-License-Identifier: MIT
+
+//go:build js && wasm
+// +build js,wasm
+
+package webrtc
+
+import (
+	"syscall/js"
+)
+
+// RTPTransceiver represents a combination of an RTPSender and an RTPReceiver that share a common mid.
+type RTPTransceiver struct {
+	// Pointer to the underlying JavaScript RTCRTPTransceiver object.
+	underlying js.Value
+}
+
+// JSValue returns the underlying RTCRtpTransceiver
+func (r *RTPTransceiver) JSValue() js.Value {
+	return r.underlying
+}
+
+// Direction returns the RTPTransceiver's current direction
+func (r *RTPTransceiver) Direction() RTPTransceiverDirection {
+	return NewRTPTransceiverDirection(r.underlying.Get("direction").String())
+}
+
+// Sender returns the RTPTransceiver's RTPSender if it has one
+func (r *RTPTransceiver) Sender() *RTPSender {
+	underlying := r.underlying.Get("sender")
+	if underlying.IsNull() {
+		return nil
+	}
+
+	return &RTPSender{underlying: underlying}
+}
+
+// Receiver returns the RTPTransceiver's RTPReceiver if it has one
+func (r *RTPTransceiver) Receiver() *RTPReceiver {
+	underlying := r.underlying.Get("receiver")
+	if underlying.IsNull() {
+		return nil
+	}
+
+	return &RTPReceiver{underlying: underlying}
+}
+
+// RTPHeaderEncryptionNegotiated reports if RFC 9335 RTP Header Extension Encryption ("Cryptex")
+// has been negotiated and is enabled for this transceiver. The underlying browser API does not
+// currently expose this state, so this always returns false.
+func (r *RTPTransceiver) RTPHeaderEncryptionNegotiated() bool {
+	return false
+}
