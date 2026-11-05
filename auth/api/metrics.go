@@ -111,6 +111,15 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (auth.I
 	return ms.svc.Identify(ctx, token)
 }
 
+func (ms *metricsMiddleware) IdentifyRecovery(ctx context.Context, token string) (auth.Identity, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "identify_recovery").Add(1)
+		ms.latency.With("method", "identify_recovery").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.IdentifyRecovery(ctx, token)
+}
+
 func (ms *metricsMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "authorize").Add(1)

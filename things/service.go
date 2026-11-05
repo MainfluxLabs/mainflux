@@ -396,7 +396,7 @@ func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMe
 
 	res, err := ts.auth.Identify(ctx, token)
 	if err != nil {
-		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return ThingsPage{}, err
 	}
 
 	grIDs, err := ts.getGroupIDsByMember(ctx, res.ID)
@@ -532,7 +532,7 @@ func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm Page
 
 	res, err := ts.auth.Identify(ctx, token)
 	if err != nil {
-		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return ProfilesPage{}, err
 	}
 
 	grIDs, err := ts.getGroupIDsByMember(ctx, res.ID)

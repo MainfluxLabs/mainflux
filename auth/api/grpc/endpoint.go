@@ -86,6 +86,27 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func identifyRecoveryEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(identityReq)
+		if err := req.validate(); err != nil {
+			return identityRes{}, err
+		}
+
+		id, err := svc.IdentifyRecovery(ctx, req.token)
+		if err != nil {
+			return identityRes{}, err
+		}
+
+		ret := identityRes{
+			id:    id.ID,
+			email: id.Email,
+		}
+
+		return ret, nil
+	}
+}
+
 func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(authReq)

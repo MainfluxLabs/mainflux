@@ -29,6 +29,7 @@ type grpcClient struct {
 	refresh                             endpoint.Endpoint
 	revokeSessions                      endpoint.Endpoint
 	identify                            endpoint.Endpoint
+	identifyRecovery                    endpoint.Endpoint
 	authorize                           endpoint.Endpoint
 	getOwnerIDByOrg                     endpoint.Endpoint
 	retrieveRole                        endpoint.Endpoint
@@ -73,6 +74,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"Identify",
+			encodeIdentifyRequest,
+			decodeIdentifyResponse,
+			protomfx.UserIdentity{},
+		).Endpoint()),
+		identifyRecovery: kitot.TraceClient(tracer, "identify_recovery")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"IdentifyRecovery",
 			encodeIdentifyRequest,
 			decodeIdentifyResponse,
 			protomfx.UserIdentity{},
@@ -226,6 +235,19 @@ func (client grpcClient) Identify(ctx context.Context, token string) (domain.Ide
 	defer cancel()
 
 	res, err := client.identify(ctx, identityReq{token: token})
+	if err != nil {
+		return domain.Identity{}, err
+	}
+
+	ir := res.(identityRes)
+	return domain.Identity{ID: ir.id, Email: ir.email}, nil
+}
+
+func (client grpcClient) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.identifyRecovery(ctx, identityReq{token: token})
 	if err != nil {
 		return domain.Identity{}, err
 	}

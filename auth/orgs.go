@@ -202,13 +202,13 @@ func (svc service) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, e
 }
 
 func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string) error {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return nil
-	}
-
-	user, err := svc.Identify(ctx, token)
+	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
+	}
+
+	if err := svc.isAdminUser(ctx, user.ID); err == nil {
+		return nil
 	}
 
 	role, err := svc.memberships.RetrieveRole(ctx, user.ID, orgID)

@@ -109,6 +109,7 @@ func newService(srv ...*httptest.Server) users.Service {
 		GoogleOAuth:         oauthGoogleCfg,
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
+		PassRegex:           passRegex,
 	}
 	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, authSvc, e, idProvider, c)
 }
@@ -144,6 +145,88 @@ func TestSelfRegister(t *testing.T) {
 	for _, tc := range cases {
 		_, err := svc.SelfRegister(context.Background(), tc.user, "")
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRegisterAdmin(t *testing.T) {
+	userRepo := usmocks.NewUserRepository(usersList)
+	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
+	invitesRepo := usmocks.NewPlatformInvitesRepository()
+	identityRepo := usmocks.NewIdentityRepository()
+	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	config := users.Config{
+		PassRegex: passRegex,
+	}
+	svc := users.New(userRepo, verificationRepo, invitesRepo, identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, config)
+
+	cases := map[string]struct {
+		user users.User
+		err  error
+	}{
+		"create admin with valid credentials": {
+			user: users.User{
+				Email:    "new-admin@example.com",
+				Password: "password",
+			},
+			err: nil,
+		},
+		"create admin with empty password": {
+			user: users.User{
+				Email: "empty-password-admin@example.com",
+			},
+			err: errors.ErrPasswordFormat,
+		},
+		"create admin with password that does not match the regex": {
+			user: users.User{
+				Email:    "short-password-admin@example.com",
+				Password: "short",
+			},
+			err: errors.ErrPasswordFormat,
+		},
+		"create admin with invalid e-mail": {
+			user: users.User{
+				Email:    wrong,
+				Password: "password",
+			},
+			err: errors.ErrMalformedEntity,
+		},
+		"create admin with empty e-mail": {
+			user: users.User{
+				Password: "password",
+			},
+			err: errors.ErrMalformedEntity,
+		},
+		"existing admin with empty password": {
+			user: users.User{
+				Email: admin.Email,
+			},
+			err: nil,
+		},
+		"promote existing user with empty password": {
+			user: users.User{
+				Email: user.Email,
+			},
+			err: nil,
+		},
+	}
+
+	for desc, tc := range cases {
+		err := svc.RegisterAdmin(context.Background(), tc.user)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+
+		savedUser, retrieveErr := userRepo.RetrieveByEmail(context.Background(), tc.user.Email)
+
+		if tc.err != nil {
+			assert.True(t, errors.Contains(err, users.ErrInvalidAdminCredentials), fmt.Sprintf("%s: expected %s got %s\n", desc, users.ErrInvalidAdminCredentials, err))
+			assert.True(t, errors.Contains(retrieveErr, dbutil.ErrNotFound), fmt.Sprintf("%s: expected %s got %s\n", desc, dbutil.ErrNotFound, retrieveErr))
+			continue
+		}
+
+		require.Nil(t, retrieveErr, fmt.Sprintf("%s: expected user to be saved, got %s\n", desc, retrieveErr))
+
+		role, err := authSvc.RetrieveRole(context.Background(), savedUser.ID)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error retrieving role: %s\n", desc, err))
+		assert.Equal(t, domain.RoleRootAdmin, role, fmt.Sprintf("%s: expected role %s got %s\n", desc, domain.RoleRootAdmin, role))
 	}
 }
 
@@ -508,13 +591,22 @@ func TestResetPassword(t *testing.T) {
 
 	resetToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.RecoveryKey)
 	assert.Nil(t, err, fmt.Sprintf("Generating reset token expected to succeed: %s", err))
+
+	loginToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.LoginKey)
+	assert.Nil(t, err, fmt.Sprintf("Generating login token expected to succeed: %s", err))
+
+	apiToken, err := authSvc.Issue(context.Background(), registerUser.ID, registerUser.Email, domain.APIKey)
+	assert.Nil(t, err, fmt.Sprintf("Generating API token expected to succeed: %s", err))
+
 	cases := map[string]struct {
 		token    string
 		password string
 		err      error
 	}{
-		"valid user reset password ":   {resetToken, registerUser.Email, nil},
-		"invalid user reset password ": {"", "newpassword", errors.ErrAuthentication},
+		"valid user reset password ":      {resetToken, registerUser.Email, nil},
+		"invalid user reset password ":    {"", "newpassword", errors.ErrAuthentication},
+		"reset password with login token": {loginToken, "newpassword", errors.ErrAuthentication},
+		"reset password with API token":   {apiToken, "newpassword", errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {
@@ -539,6 +631,68 @@ func TestSendPasswordReset(t *testing.T) {
 		err := svc.SendPasswordReset(context.Background(), host, tc.email, tc.token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
+	}
+}
+
+func TestEnableUser(t *testing.T) {
+	svc := newService()
+
+	tokenAdmin, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	tokenUser, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
+
+	// Rejected cases run first, so enabling as admin proves they left the user disabled.
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{"enable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
+		{"enable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
+		{"enable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
+		{"enable user as admin", tokenAdmin, registerUser.ID, nil},
+		{"enable already enabled user as admin", tokenAdmin, registerUser.ID, users.ErrAlreadyEnabledUser},
+	}
+
+	for _, tc := range cases {
+		err := svc.EnableUser(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestDisableUser(t *testing.T) {
+	svc := newService()
+
+	tokenAdmin, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	tokenUser, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	// Rejected cases run first, so disabling as admin proves they left the user enabled.
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{"disable admin as non-admin user", tokenUser, admin.ID, errors.ErrAuthorization},
+		{"disable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
+		{"disable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
+		{"disable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
+		{"disable user as admin", tokenAdmin, registerUser.ID, nil},
+		{"disable already disabled user as admin", tokenAdmin, registerUser.ID, users.ErrAlreadyDisabledUser},
+	}
+
+	for _, tc := range cases {
+		err := svc.DisableUser(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
