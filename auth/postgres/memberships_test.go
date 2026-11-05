@@ -522,6 +522,164 @@ func TestRetrieveOrgMemberships(t *testing.T) {
 	}
 }
 
+func TestRetrieveAdminsByOrg(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repoOrg := postgres.NewOrgRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
+
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	adminID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	editorID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	unknownID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     ownerID,
+		Name:        orgName,
+		Description: orgDesc,
+	}
+	err = repoOrg.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	oms := []auth.OrgMembership{
+		{
+			OrgID:    orgID,
+			MemberID: ownerID,
+			Role:     auth.Owner,
+		},
+		{
+			OrgID:    orgID,
+			MemberID: adminID,
+			Role:     auth.Admin,
+		},
+		{
+			OrgID:    orgID,
+			MemberID: editorID,
+			Role:     auth.Editor,
+		},
+	}
+	err = repoMembs.Save(context.Background(), oms...)
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	cases := []struct {
+		desc  string
+		orgID string
+		roles map[string]string
+		err   error
+	}{
+		{
+			desc:  "retrieve admins by org",
+			orgID: orgID,
+			roles: map[string]string{
+				ownerID: auth.Owner,
+				adminID: auth.Admin,
+			},
+			err: nil,
+		},
+		{
+			desc:  "retrieve admins by org with unknown org id",
+			orgID: unknownID,
+			roles: map[string]string{},
+			err:   nil,
+		},
+		{
+			desc:  "retrieve admins by org with invalid org id",
+			orgID: invalidID,
+			roles: map[string]string{},
+			err:   dbutil.ErrMalformedEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		admins, err := repoMembs.RetrieveAdminsByOrg(context.Background(), tc.orgID)
+		roles := make(map[string]string)
+		for _, om := range admins {
+			roles[om.MemberID] = om.Role
+		}
+		msg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.roles, roles)
+		assert.Equal(t, tc.roles, roles, msg)
+		msg = fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+}
+
+func TestRetrieveOrgIDsByAdmin(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repoOrg := postgres.NewOrgRepo(dbMiddleware)
+	repoMembs := postgres.NewOrgMembershipsRepo(dbMiddleware)
+
+	memberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	unknownID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	var orgIDs []string
+	roles := []string{auth.Owner, auth.Admin, auth.Editor, auth.Viewer}
+	for _, role := range roles {
+		orgID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		org := auth.Org{
+			ID:          orgID,
+			OwnerID:     memberID,
+			Name:        orgName,
+			Description: orgDesc,
+		}
+		err = repoOrg.Save(context.Background(), org)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		om := auth.OrgMembership{
+			OrgID:    orgID,
+			MemberID: memberID,
+			Role:     role,
+		}
+		err = repoMembs.Save(context.Background(), om)
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		orgIDs = append(orgIDs, orgID)
+	}
+
+	cases := []struct {
+		desc     string
+		memberID string
+		orgIDs   []string
+		err      error
+	}{
+		{
+			desc:     "retrieve org ids by admin",
+			memberID: memberID,
+			orgIDs:   orgIDs[:2],
+			err:      nil,
+		},
+		{
+			desc:     "retrieve org ids by admin with unknown member id",
+			memberID: unknownID,
+			orgIDs:   nil,
+			err:      nil,
+		},
+		{
+			desc:     "retrieve org ids by admin with invalid member id",
+			memberID: invalidID,
+			orgIDs:   nil,
+			err:      dbutil.ErrMalformedEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		ids, err := repoMembs.RetrieveOrgIDsByAdmin(context.Background(), tc.memberID)
+		msg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.orgIDs, ids)
+		assert.ElementsMatch(t, tc.orgIDs, ids, msg)
+		msg = fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+}
+
 func TestRetrieveAllMemberships(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repoOrg := postgres.NewOrgRepo(dbMiddleware)

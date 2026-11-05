@@ -35,6 +35,8 @@ type grpcServer struct {
 	activateOrgInvite                   kitgrpc.Handler
 	getDormantOrgInviteByPlatformInvite kitgrpc.Handler
 	viewOrg                             kitgrpc.Handler
+	getAdminsByOrg                      kitgrpc.Handler
+	getOrgIDsByAdmin                    kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -104,6 +106,16 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "view_org")(viewOrgEndpoint(svc)),
 			decodeViewOrgRequest,
 			encodeViewOrgResponse,
+		),
+		getAdminsByOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_admins_by_org")(getAdminsByOrgEndpoint(svc)),
+			decodeGetAdminsByOrgRequest,
+			encodeGetAdminsByOrgResponse,
+		),
+		getOrgIDsByAdmin: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_org_ids_by_admin")(getOrgIDsByAdminEndpoint(svc)),
+			decodeGetOrgIDsByAdminRequest,
+			encodeGetOrgIDsByAdminResponse,
 		),
 	}
 }
@@ -216,6 +228,24 @@ func (s *grpcServer) ViewOrg(ctx context.Context, req *protomfx.ViewOrgReq) (*pr
 	return res.(*protomfx.Org), nil
 }
 
+func (s *grpcServer) GetAdminsByOrg(ctx context.Context, req *protomfx.OrgID) (*protomfx.OrgMemberships, error) {
+	_, res, err := s.getAdminsByOrg.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*protomfx.OrgMemberships), nil
+}
+
+func (s *grpcServer) GetOrgIDsByAdmin(ctx context.Context, req *protomfx.MemberID) (*protomfx.OrgIDs, error) {
+	_, res, err := s.getOrgIDsByAdmin.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*protomfx.OrgIDs), nil
+}
+
 func decodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
@@ -274,6 +304,34 @@ func decodeGetOwnerIDByOrgRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeGetOwnerIDByOrgResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(ownerIDByOrgRes)
 	return &protomfx.OwnerID{Value: res.ownerID}, nil
+}
+
+func decodeGetAdminsByOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.OrgID)
+	return adminsByOrgReq{orgID: req.GetValue()}, nil
+}
+
+func encodeGetAdminsByOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(adminsByOrgRes)
+	oms := make([]*protomfx.OrgMembership, 0, len(res.memberships))
+	for _, om := range res.memberships {
+		oms = append(oms, &protomfx.OrgMembership{
+			MemberId: om.MemberID,
+			Role:     om.Role,
+		})
+	}
+
+	return &protomfx.OrgMemberships{Memberships: oms}, nil
+}
+
+func decodeGetOrgIDsByAdminRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.MemberID)
+	return orgIDsByAdminReq{memberID: req.GetValue()}, nil
+}
+
+func encodeGetOrgIDsByAdminResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgIDsByAdminRes)
+	return &protomfx.OrgIDs{Ids: res.orgIDs}, nil
 }
 
 func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
@@ -359,6 +417,7 @@ func encodeError(err error) error {
 	case errors.Contains(err, errors.ErrMalformedEntity),
 		err == apiutil.ErrInvalidAuthKey,
 		err == apiutil.ErrMissingOrgID,
+		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrMissingUserID:
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication),

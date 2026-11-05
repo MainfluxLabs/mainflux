@@ -263,6 +263,34 @@ func (lm *loggingMiddleware) GetOwnerIDByOrg(ctx context.Context, orgID string) 
 	return lm.svc.GetOwnerIDByOrg(ctx, orgID)
 }
 
+func (lm *loggingMiddleware) GetAdminsByOrg(ctx context.Context, orgID string) (_ []auth.OrgMembership, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_admins_by_org for org id %s took %s to complete",
+			orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetAdminsByOrg(ctx, orgID)
+}
+
+func (lm *loggingMiddleware) GetOrgIDsByAdmin(ctx context.Context, memberID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_org_ids_by_admin for member id %s took %s to complete",
+			memberID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetOrgIDsByAdmin(ctx, memberID)
+}
+
 func (lm *loggingMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

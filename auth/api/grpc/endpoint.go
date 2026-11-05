@@ -146,6 +146,38 @@ func getOwnerIDByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func getAdminsByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminsByOrgReq)
+		if err := req.validate(); err != nil {
+			return adminsByOrgRes{}, err
+		}
+
+		oms, err := svc.GetAdminsByOrg(ctx, req.orgID)
+		if err != nil {
+			return adminsByOrgRes{}, err
+		}
+
+		return adminsByOrgRes{memberships: oms}, nil
+	}
+}
+
+func getOrgIDsByAdminEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgIDsByAdminReq)
+		if err := req.validate(); err != nil {
+			return orgIDsByAdminRes{}, err
+		}
+
+		orgIDs, err := svc.GetOrgIDsByAdmin(ctx, req.memberID)
+		if err != nil {
+			return orgIDsByAdminRes{}, err
+		}
+
+		return orgIDsByAdminRes{orgIDs: orgIDs}, nil
+	}
+}
+
 func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(assignRoleReq)

@@ -345,3 +345,132 @@ func TestAuthorize(t *testing.T) {
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
 	}
 }
+
+func TestGetAdminsByOrg(t *testing.T) {
+	adminsOrgID := "adminsOrgID"
+	oms := []auth.OrgMembership{
+		{
+			MemberID: "ownerID",
+			OrgID:    adminsOrgID,
+			Role:     auth.Owner,
+		},
+		{
+			MemberID: "orgAdminID",
+			OrgID:    adminsOrgID,
+			Role:     auth.Admin,
+		},
+		{
+			MemberID: "editorID",
+			OrgID:    adminsOrgID,
+			Role:     auth.Editor,
+		},
+	}
+	err := membersMock.Save(context.Background(), oms...)
+	require.Nil(t, err, fmt.Sprintf("Saving org memberships expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc  string
+		orgID string
+		roles map[string]string
+		code  codes.Code
+	}{
+		{
+			desc:  "get admins by org",
+			orgID: adminsOrgID,
+			roles: map[string]string{
+				"ownerID":    auth.Owner,
+				"orgAdminID": auth.Admin,
+			},
+			code: codes.OK,
+		},
+		{
+			desc:  "get admins by org without admins",
+			orgID: "unknownOrgID",
+			roles: map[string]string{},
+			code:  codes.OK,
+		},
+		{
+			desc:  "get admins by org without org id",
+			orgID: "",
+			roles: map[string]string{},
+			code:  codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		admins, err := client.GetAdminsByOrg(context.Background(), tc.orgID)
+		roles := make(map[string]string)
+		for _, om := range admins {
+			roles[om.MemberID] = om.Role
+		}
+		msg := fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.roles, roles)
+		assert.Equal(t, tc.roles, roles, msg)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg = fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
+func TestGetOrgIDsByAdmin(t *testing.T) {
+	memberID := "multiOrgMemberID"
+	roleByOrgID := map[string]string{
+		"ownedOrgID":  auth.Owner,
+		"adminOrgID":  auth.Admin,
+		"editorOrgID": auth.Editor,
+		"viewerOrgID": auth.Viewer,
+	}
+	for orgID, role := range roleByOrgID {
+		om := auth.OrgMembership{
+			MemberID: memberID,
+			OrgID:    orgID,
+			Role:     role,
+		}
+		err := membersMock.Save(context.Background(), om)
+		require.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
+	}
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc     string
+		memberID string
+		orgIDs   []string
+		code     codes.Code
+	}{
+		{
+			desc:     "get org ids by admin",
+			memberID: memberID,
+			orgIDs:   []string{"ownedOrgID", "adminOrgID"},
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org ids by admin without orgs",
+			memberID: "unknownMemberID",
+			orgIDs:   nil,
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org ids by admin without member id",
+			memberID: "",
+			orgIDs:   nil,
+			code:     codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		orgIDs, err := client.GetOrgIDsByAdmin(context.Background(), tc.memberID)
+		msg := fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.orgIDs, orgIDs)
+		assert.ElementsMatch(t, tc.orgIDs, orgIDs, msg)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg = fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}

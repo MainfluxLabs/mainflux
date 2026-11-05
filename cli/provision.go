@@ -22,23 +22,21 @@ import (
 const jsonExt = ".json"
 const csvExt = ".csv"
 
-const csvThingsFieldCount = 4
+const csvThingsFieldCount = 3
 
 // These constants define the order of the CSV columns (fields) of records containing Things to be provisioned
 const (
 	thingID = iota
 	thingName
-	thingGroupID
-	thingProfileID
+	thingType
 )
 
-const csvProfilesFieldCount = 10
+const csvProfilesFieldCount = 9
 
 // These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
 const (
 	profileID = iota
 	profileName
-	profileGroupID
 	contentType
 	confWrite
 	confTransformerDataFilters
@@ -245,10 +243,9 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 			}
 
 			thing := mfxsdk.Thing{
-				Name:      record[thingName],
-				ID:        record[thingID],
-				ProfileID: record[thingProfileID],
-				GroupID:   record[thingGroupID],
+				Name: record[thingName],
+				ID:   record[thingID],
+				Type: record[thingType],
 			}
 
 			recordMetadata := record[csvThingsFieldCount:]
@@ -313,9 +310,8 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			}
 
 			profile := mfxsdk.Profile{
-				Name:    record[profileName],
-				ID:      record[profileID],
-				GroupID: record[profileGroupID],
+				Name: record[profileName],
+				ID:   record[profileID],
 			}
 
 			// Populate profile's config object
@@ -326,7 +322,7 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			if err != nil {
 				return []mfxsdk.Profile{}, err
 			}
-			profile.Config["write"] = writeBool
+			profile.Config["write_enabled"] = writeBool
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
