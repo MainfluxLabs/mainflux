@@ -438,7 +438,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 func (svc usersService) RefreshToken(ctx context.Context, token string) (string, error) {
 	t, err := svc.auth.RefreshToken(ctx, token)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrAuthentication, err)
+		return "", err
 	}
 
 	return t, nil
