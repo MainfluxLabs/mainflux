@@ -72,25 +72,31 @@ func TestDTLS(t *testing.T) {
 	cases := []struct {
 		desc     string
 		identity string
-		key      string
+		psk      []byte
 		success  bool
 	}{
 		{
-			desc:     "publish with thing ID and key as PSK",
+			desc:     "publish with thing ID and derived PSK",
 			identity: thingID,
-			key:      thingKey,
+			psk:      api.DerivePSK(thingKey),
 			success:  true,
 		},
 		{
 			desc:     "publish with wrong key",
 			identity: thingID,
-			key:      "wrong",
+			psk:      api.DerivePSK("wrong"),
+			success:  false,
+		},
+		{
+			desc:     "publish with thing key as PSK",
+			identity: thingID,
+			psk:      []byte(thingKey),
 			success:  false,
 		},
 		{
 			desc:     "publish with unknown thing ID",
 			identity: "unknown",
-			key:      thingKey,
+			psk:      api.DerivePSK(thingKey),
 			success:  false,
 		},
 	}
@@ -99,7 +105,7 @@ func TestDTLS(t *testing.T) {
 		// The handshake can run on the session context, so the deadline goes on the session.
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		conn, err := dtls.Dial(addr, dtls.NewDTLSClientOptions(
-			piondtls.WithPSK(func([]byte) ([]byte, error) { return []byte(tc.key), nil }),
+			piondtls.WithPSK(func([]byte) ([]byte, error) { return tc.psk, nil }),
 			piondtls.WithPSKIdentityHint([]byte(tc.identity)),
 			piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
 		), options.WithContext(ctx))
@@ -191,7 +197,7 @@ func TestDTLSConnectionID(t *testing.T) {
 	relay := startNATRelay(t, startDTLSServer(t, svc))
 
 	conn, err := dtls.Dial(relay.addr(), dtls.NewDTLSClientOptions(
-		piondtls.WithPSK(func([]byte) ([]byte, error) { return []byte(thingKey), nil }),
+		piondtls.WithPSK(func([]byte) ([]byte, error) { return api.DerivePSK(thingKey), nil }),
 		piondtls.WithPSKIdentityHint([]byte(thingID)),
 		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
 		piondtls.WithConnectionIDGenerator(piondtls.OnlySendCIDGenerator()),
@@ -211,4 +217,9 @@ func TestDTLSConnectionID(t *testing.T) {
 	publish("publish before address change")
 	relay.rebind(t)
 	publish("publish on the same session after address change")
+}
+
+func TestDerivePSK(t *testing.T) {
+	// Matches: echo -n <key> | sha256sum | cut -c1-32
+	assert.Equal(t, []byte("6395761e7cb4afc7a85bc2e7910dbe3e"), api.DerivePSK(thingKey))
 }

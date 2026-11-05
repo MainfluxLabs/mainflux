@@ -66,7 +66,14 @@ $GOBIN/mainfluxlabs-coap
 Over DTLS (`coaps://<host>:5684`) a thing authenticates in the handshake with a pre-shared key:
 
 - PSK identity: thing ID
-- PSK: thing key
+- PSK: the first 32 hex characters of the SHA-256 hash of the thing key
+
+The PSK is derived from the key because constrained DTLS stacks (mbedTLS, tinydtls, nRF91 modems) accept
+PSKs of at most 32 bytes, and the key is longer. Compute it with:
+
+```bash
+echo -n <thing_key> | sha256sum | cut -c1-32
+```
 
 A wrong key or an unknown thing ID fails the handshake. Requests over the session need no `auth` and
 `type` query parameters, and the key is never sent over the network. The adapter supports the
@@ -80,7 +87,8 @@ its observations. A thing that only observes commands should send something more
 message or a CoAP ping, which also keeps carrier NAT mappings alive.
 
 ```bash
-coap-client-openssl -m post -e '{"v":1}' -u <thing_id> -k <thing_key> "coaps://localhost/things/<thing_id>/messages"
+PSK=$(echo -n <thing_key> | sha256sum | cut -c1-32)
+coap-client-openssl -m post -e '{"v":1}' -u <thing_id> -k "$PSK" "coaps://localhost/things/<thing_id>/messages"
 ```
 
 ### Plain CoAP
