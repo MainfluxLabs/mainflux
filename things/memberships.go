@@ -56,6 +56,9 @@ type GroupMemberships interface {
 
 	// RemoveGroupMemberships removes memberships from the given group.
 	RemoveGroupMemberships(ctx context.Context, token, groupID string, memberIDs ...string) error
+
+	// RemoveGroupMembershipsByOrg removes memberships of the members from all groups of the org.
+	RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error
 }
 
 func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error {
@@ -242,6 +245,27 @@ func (ts *thingsService) RemoveGroupMemberships(ctx context.Context, token, grou
 	for _, mid := range memberIDs {
 		if err := ts.groupCache.RemoveGroupMembership(ctx, groupID, mid); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (ts *thingsService) RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error {
+	for _, mid := range memberIDs {
+		grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, mid)
+		if err != nil {
+			return err
+		}
+
+		for _, grID := range grIDs {
+			if err := ts.groupMemberships.Remove(ctx, grID, mid); err != nil {
+				return err
+			}
+
+			if err := ts.groupCache.RemoveGroupMembership(ctx, grID, mid); err != nil {
+				return err
+			}
 		}
 	}
 

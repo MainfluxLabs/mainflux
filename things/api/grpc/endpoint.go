@@ -318,6 +318,21 @@ func createGroupMembershipsEndpoint(svc things.Service) endpoint.Endpoint {
 	}
 }
 
+func removeGroupMembershipsByOrgEndpoint(svc things.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(removeGroupMembershipsByOrgReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		if err := svc.RemoveGroupMembershipsByOrg(ctx, req.orgID, req.memberIDs...); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func getGroupEndpoint(svc things.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(getGroupReq)

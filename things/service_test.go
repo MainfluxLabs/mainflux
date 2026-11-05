@@ -2850,6 +2850,103 @@ func TestRemoveGroupMemberships(t *testing.T) {
 	}
 }
 
+func TestRemoveGroupMembershipsByOrg(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	ctx := context.Background()
+	otherOrgGrs, err := svc.CreateGroups(ctx, otherOrgOwnerToken, otherOrgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	otherOrgGr := otherOrgGrs[0]
+
+	for i := range memberships {
+		memberships[i].GroupID = gr.ID
+	}
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	otherOrgGm := things.GroupMembership{
+		MemberID: viewer.ID,
+		GroupID:  otherOrgGr.ID,
+		Role:     things.Viewer,
+	}
+	err = svc.CreateGroupMemberships(ctx, otherOrgOwnerToken, redirectPathGroup, otherOrgGm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	cases := []struct {
+		desc      string
+		orgID     string
+		memberIDs []string
+		err       error
+	}{
+		{
+			desc:      "remove group memberships by org",
+			orgID:     orgID,
+			memberIDs: []string{viewer.ID, editor.ID},
+			err:       nil,
+		},
+		{
+			desc:      "remove already removed group memberships by org",
+			orgID:     orgID,
+			memberIDs: []string{viewer.ID},
+			err:       nil,
+		},
+		{
+			desc:      "remove group memberships by org of member without group memberships",
+			orgID:     orgID,
+			memberIDs: []string{unauthUser.ID},
+			err:       nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RemoveGroupMembershipsByOrg(context.Background(), tc.orgID, tc.memberIDs...)
+		msg := fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+
+	accessCases := []struct {
+		desc  string
+		token string
+		grID  string
+		err   error
+	}{
+		{
+			desc:  "view group as removed viewer",
+			token: viewerToken,
+			grID:  gr.ID,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "view group as removed editor",
+			token: editorToken,
+			grID:  gr.ID,
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "view group as remaining admin",
+			token: otherToken,
+			grID:  gr.ID,
+			err:   nil,
+		},
+		{
+			desc:  "view group of another org as removed viewer",
+			token: viewerToken,
+			grID:  otherOrgGr.ID,
+			err:   nil,
+		},
+	}
+
+	for _, tc := range accessCases {
+		_, err := svc.ViewGroup(context.Background(), tc.token, tc.grID)
+		msg := fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+}
+
 func TestUpdateThingKey(t *testing.T) {
 	svc := newService()
 
@@ -2912,7 +3009,8 @@ func TestUpdateThingKey(t *testing.T) {
 
 	for _, tc := range cases {
 		err := svc.UpdateExternalKey(context.Background(), tc.token, tc.externalKey, createdThing.ID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+		msg := fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 }
 
@@ -2982,7 +3080,8 @@ func TestRemoveExternalKey(t *testing.T) {
 
 	for _, tc := range cases {
 		err := svc.RemoveExternalKey(context.Background(), tc.token, tc.thingID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+		msg := fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 }
 

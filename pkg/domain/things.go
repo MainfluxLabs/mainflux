@@ -176,6 +176,7 @@ type ThingsClient interface {
 	GetGroupIDsByOrg(ctx context.Context, ar OrgAccessReq) ([]string, error)
 	GetThingIDsByProfile(ctx context.Context, profileID string) ([]string, error)
 	CreateGroupMemberships(ctx context.Context, memberships ...GroupMembership) error
+	RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error
 	GetGroup(ctx context.Context, groupID string) (Group, error)
 	GetKeyByThingID(ctx context.Context, thingID string) (ThingKey, error)
 }
