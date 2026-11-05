@@ -203,7 +203,8 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "things_11",
 				Up: []string{
-					// Fresh databases run this migration before group_memberships exists.
+					// Migration IDs sort lexically, so fresh databases run this migration
+					// before group_memberships exists.
 					`DO $$
 					BEGIN
 						IF to_regclass('group_memberships') IS NOT NULL THEN
