@@ -34,6 +34,11 @@ type orgIDsByAdminRes struct {
 	orgIDs []string
 }
 
+type orgMembershipRes struct {
+	memberID string
+	role     string
+}
+
 type orgRes struct {
 	id      string
 	ownerID string

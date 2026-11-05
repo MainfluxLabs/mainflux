@@ -475,6 +475,65 @@ func TestGetOrgIDsByAdmin(t *testing.T) {
 	}
 }
 
+func TestGetOrgMembership(t *testing.T) {
+	membershipOrgID := "membershipOrgID"
+	memberID := "membershipMemberID"
+	om := auth.OrgMembership{MemberID: memberID, OrgID: membershipOrgID, Role: auth.Editor}
+	err := membersMock.Save(context.Background(), om)
+	require.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc     string
+		orgID    string
+		memberID string
+		role     string
+		code     codes.Code
+	}{
+		{
+			desc:     "get org membership",
+			orgID:    membershipOrgID,
+			memberID: memberID,
+			role:     auth.Editor,
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org membership of non-member",
+			orgID:    membershipOrgID,
+			memberID: "unknownMemberID",
+			role:     "",
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org membership without org id",
+			orgID:    "",
+			memberID: memberID,
+			role:     "",
+			code:     codes.InvalidArgument,
+		},
+		{
+			desc:     "get org membership without member id",
+			orgID:    membershipOrgID,
+			memberID: "",
+			role:     "",
+			code:     codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		om, err := client.GetOrgMembership(context.Background(), tc.orgID, tc.memberID)
+		msg := fmt.Sprintf("%s: expected role %s got %s", tc.desc, tc.role, om.Role)
+		assert.Equal(t, tc.role, om.Role, msg)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg = fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
 func TestCreateDormantOrgInvite(t *testing.T) {
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))

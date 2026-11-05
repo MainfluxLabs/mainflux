@@ -896,6 +896,7 @@ paths:
       description: |
         Create group memberships for the given group and members.
         Org owners and org admins hold their group role through their org role and cannot be added.
+        A member must belong to the organization of the group.
       tags:
         - groups
       parameters:
@@ -906,7 +907,7 @@ paths:
         '201':
           description: Group memberships created.
         '400':
-          description: Failed due to malformed JSON.
+          description: Failed due to malformed JSON or a member that does not belong to the organization.
         '401':
           description: Missing or invalid access token provided.
         '404':

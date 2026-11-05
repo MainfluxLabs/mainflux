@@ -99,3 +99,7 @@ func (repo singleUserRepo) GetOrgIDsByAdmin(ctx context.Context, memberID string
 	// The standalone user is not a member of any org, and member listings must not fail.
 	return []string{}, nil
 }
+
+func (repo singleUserRepo) GetOrgMembership(ctx context.Context, orgID, memberID string) (domain.OrgMembership, error) {
+	return domain.OrgMembership{}, errUnsupported
+}

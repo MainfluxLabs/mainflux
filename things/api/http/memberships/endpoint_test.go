@@ -66,8 +66,13 @@ var (
 		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer},
 		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor},
 	}
-	group    = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
-	orgsList = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	group          = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
+	orgsList       = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	orgMemberships = []auth.OrgMembership{
+		{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Viewer},
+		{OrgID: orgID, MemberID: viewer.ID, Role: auth.Viewer},
+		{OrgID: orgID, MemberID: editor.ID, Role: auth.Viewer},
+	}
 )
 
 type testRequest struct {
@@ -98,7 +103,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
+	auth := mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
 	uc := thmocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
@@ -115,7 +120,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 

@@ -10,6 +10,9 @@ import (
 // ErrGroupMembershipExists indicates that membership already exists.
 var ErrGroupMembershipExists = errors.New("group membership already exists")
 
+// ErrMemberNotInOrg indicates that the member does not belong to the organization of the group.
+var ErrMemberNotInOrg = errors.New("member does not belong to the organization")
+
 // Domain type aliases
 type (
 	GroupMembership      = domain.GroupMembership
@@ -91,6 +94,14 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
 		if err != nil {
 			return err
+		}
+
+		om, err := ts.auth.GetOrgMembership(ctx, group.OrgID, gm.MemberID)
+		if err != nil {
+			return err
+		}
+		if om.Role == "" {
+			return ErrMemberNotInOrg
 		}
 
 		if err := ts.groupMemberships.Save(ctx, gm); err != nil {

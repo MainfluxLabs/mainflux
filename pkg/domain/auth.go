@@ -198,4 +198,7 @@ type AuthClient interface {
 
 	// GetOrgIDsByAdmin returns IDs of organizations where the member has the owner or admin role.
 	GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error)
+
+	// GetOrgMembership returns the membership of the member in the organization.
+	GetOrgMembership(ctx context.Context, orgID, memberID string) (OrgMembership, error)
 }

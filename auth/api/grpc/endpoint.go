@@ -178,6 +178,22 @@ func getOrgIDsByAdminEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func getOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgMembershipReq)
+		if err := req.validate(); err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		om, err := svc.GetOrgMembership(ctx, req.orgID, req.memberID)
+		if err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		return orgMembershipRes{memberID: om.MemberID, role: om.Role}, nil
+	}
+}
+
 func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(assignRoleReq)

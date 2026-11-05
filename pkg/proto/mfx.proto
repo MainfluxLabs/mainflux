@@ -102,6 +102,7 @@ service AuthService {
     rpc ViewOrg(ViewOrgReq) returns (Org) {}
     rpc GetAdminsByOrg(OrgID) returns (OrgMemberships) {}
     rpc GetOrgIDsByAdmin(MemberID) returns (OrgIDs) {}
+    rpc GetOrgMembership(OrgMembershipReq) returns (OrgMembership) {}
 }
 
 message ThingKey {
@@ -338,6 +339,11 @@ message OrgMembership {
 
 message OrgMemberships {
     repeated OrgMembership memberships = 1;
+}
+
+message OrgMembershipReq {
+    string org_id = 1;
+    string member_id = 2;
 }
 
 message GetGroupReq {

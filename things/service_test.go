@@ -98,6 +98,7 @@ var (
 		{OrgID: orgID, MemberID: viewer.ID, Role: auth.Viewer},
 		{OrgID: orgID, MemberID: unauthUser.ID, Role: auth.Viewer},
 		{OrgID: orgID, MemberID: orgAdmin.ID, Role: auth.Admin},
+		{OrgID: otherOrgID, MemberID: viewer.ID, Role: auth.Viewer},
 	}
 	metadata = map[string]any{"test": "data"}
 )
@@ -2603,6 +2604,18 @@ func TestCreateGroupMemberships(t *testing.T) {
 				},
 			},
 			err: things.ErrGroupMembershipExists,
+		},
+		{
+			desc:  "create group membership for non-org-member",
+			token: token,
+			memberships: []things.GroupMembership{
+				{
+					MemberID: otherOrgOwner.ID,
+					GroupID:  gr.ID,
+					Role:     things.Viewer,
+				},
+			},
+			err: things.ErrMemberNotInOrg,
 		},
 		{
 			desc:        "create group memberships as editor",
