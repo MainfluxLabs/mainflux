@@ -86,3 +86,12 @@ func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Conte
 func (repo singleUserRepo) ViewOrg(ctx context.Context, token, orgID string) (domain.Org, error) {
 	panic("not implemented")
 }
+
+func (repo singleUserRepo) GetAdminsByOrg(ctx context.Context, orgID string) ([]domain.OrgMembership, error) {
+	return nil, errUnsupported
+}
+
+func (repo singleUserRepo) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	// The standalone user is not a member of any org, and member listings must not fail.
+	return []string{}, nil
+}

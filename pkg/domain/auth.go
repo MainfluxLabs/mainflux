@@ -189,4 +189,10 @@ type AuthClient interface {
 
 	// ViewOrg retrieves organization details.
 	ViewOrg(ctx context.Context, token, orgID string) (Org, error)
+
+	// GetAdminsByOrg returns memberships with the owner or admin role in the organization.
+	GetAdminsByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)
+
+	// GetOrgIDsByAdmin returns IDs of organizations where the member has the owner or admin role.
+	GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error)
 }

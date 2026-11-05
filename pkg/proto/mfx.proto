@@ -98,6 +98,8 @@ service AuthService {
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc GetDormantOrgInviteByPlatformInvite(GetDormantOrgInviteByPlatformInviteReq) returns (OrgInvite) {}
     rpc ViewOrg(ViewOrgReq) returns (Org) {}
+    rpc GetAdminsByOrg(OrgID) returns (OrgMemberships) {}
+    rpc GetOrgIDsByAdmin(MemberID) returns (OrgIDs) {}
 }
 
 message ThingKey {
@@ -155,6 +157,14 @@ message OrgID {
 }
 
 message OwnerID {
+    string value = 1;
+}
+
+message OrgIDs {
+    repeated string ids = 1;
+}
+
+message MemberID {
     string value = 1;
 }
 
@@ -312,6 +322,15 @@ message Org {
     string id = 1;
     string owner_id = 2;
     string name = 3;
+}
+
+message OrgMembership {
+    string member_id = 1;
+    string role = 2;
+}
+
+message OrgMemberships {
+    repeated OrgMembership memberships = 1;
 }
 
 message GetGroupReq {
