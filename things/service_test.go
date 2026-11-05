@@ -103,11 +103,14 @@ var (
 )
 
 func newService() things.Service {
+	return newServiceWithGroupMemberships(mocks.NewGroupMembershipsRepository())
+}
+
+func newServiceWithGroupMemberships(groupMembershipsRepo things.GroupMembershipsRepository) things.Service {
 	auth := authmock.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
-	groupMembershipsRepo := mocks.NewGroupMembershipsRepository()
 	groupsRepo := mocks.NewGroupRepository(groupMembershipsRepo)
 	profileCache := mocks.NewProfileCache()
 	thingCache := mocks.NewThingCache()
@@ -1700,13 +1703,15 @@ func TestIdentify(t *testing.T) {
 }
 
 func TestCreateGroups(t *testing.T) {
-	svc := newService()
+	groupMembershipsRepo := mocks.NewGroupMembershipsRepository()
+	svc := newServiceWithGroupMemberships(groupMembershipsRepo)
 
 	cases := []struct {
 		desc  string
 		token string
 		orgID string
 		group things.Group
+		roles map[string]string
 		err   error
 	}{
 		{
@@ -1714,7 +1719,33 @@ func TestCreateGroups(t *testing.T) {
 			token: token,
 			orgID: orgID,
 			group: createdGroup,
+			roles: map[string]string{},
 			err:   nil,
+		},
+		{
+			desc:  "create group as org admin",
+			token: orgAdminToken,
+			orgID: orgID,
+			group: createdGroup,
+			roles: map[string]string{},
+			err:   nil,
+		},
+		{
+			desc:  "create group as org editor",
+			token: editorToken,
+			orgID: orgID,
+			group: createdGroup,
+			roles: map[string]string{
+				editor.ID: things.Admin,
+			},
+			err: nil,
+		},
+		{
+			desc:  "create group as org viewer",
+			token: viewerToken,
+			orgID: orgID,
+			group: createdGroup,
+			err:   errors.ErrAuthorization,
 		},
 		{
 			desc:  "create group with wrong credentials",
@@ -1747,10 +1778,22 @@ func TestCreateGroups(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := svc.CreateGroups(context.Background(), tc.token, tc.orgID, tc.group)
+		grs, err := svc.CreateGroups(context.Background(), tc.token, tc.orgID, tc.group)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-	}
+		if err != nil {
+			continue
+		}
 
+		pm := things.PageMetadata{}
+		page, err := groupMembershipsRepo.RetrieveByGroup(context.Background(), grs[0].ID, pm)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s\n", tc.desc, err))
+		roles := make(map[string]string)
+		for _, gm := range page.GroupMemberships {
+			roles[gm.MemberID] = gm.Role
+		}
+		msg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.roles, roles)
+		assert.Equal(t, tc.roles, roles, msg)
+	}
 }
 
 func TestListGroups(t *testing.T) {
