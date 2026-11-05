@@ -474,3 +474,25 @@ func TestGetOrgIDsByAdmin(t *testing.T) {
 		assert.Equal(t, tc.code, e.Code(), msg)
 	}
 }
+
+func TestCreateDormantOrgInvite(t *testing.T) {
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	gis := []domain.GroupInvite{
+		{
+			GroupID:    "groupID",
+			MemberRole: auth.Viewer,
+		},
+	}
+
+	platformInviteID := "platformInviteID"
+	ctx := context.Background()
+	err := client.CreateDormantOrgInvite(ctx, "token", orgID, auth.Admin, platformInviteID, gis)
+	e, ok := status.FromError(err)
+	assert.True(t, ok, "gRPC status can't be extracted from the error")
+	desc := "create dormant org invite with admin role and group invites"
+	msg := fmt.Sprintf("%s: expected %s got %s", desc, codes.InvalidArgument, e.Code())
+	assert.Equal(t, codes.InvalidArgument, e.Code(), msg)
+}

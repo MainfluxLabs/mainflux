@@ -7,6 +7,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 type identityReq struct {
@@ -168,6 +169,11 @@ func (req createDormantOrgInviteReq) validate() error {
 
 	if req.inviteeRole == "" {
 		return apiutil.ErrMissingRole
+	}
+
+	// Org admins hold their group roles through their org role.
+	if req.inviteeRole == auth.Admin && len(req.groupInvites) > 0 {
+		return errors.ErrMalformedEntity
 	}
 
 	if req.platformInviteID == "" {

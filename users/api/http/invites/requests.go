@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
 )
@@ -94,6 +95,11 @@ func (req createPlatformInviteRequest) validate() error {
 	if req.OrgID != "" {
 		if err := apiutil.ValidateOrgInviteeRole(req.Role); err != nil {
 			return err
+		}
+
+		// Org admins hold their group roles through their org role.
+		if req.Role == domain.OrgAdmin && len(req.GroupInvites) > 0 {
+			return errors.ErrMalformedEntity
 		}
 	}
 

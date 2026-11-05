@@ -32,6 +32,7 @@ const (
 	adminID            = "adminID"
 	editorID           = "editorID"
 	viewerID           = "viewerID"
+	groupID            = "groupID"
 	email              = "user@example.com"
 	adminEmail         = "admin@example.com"
 	editorEmail        = "editor@example.com"
@@ -74,9 +75,10 @@ type testRequest struct {
 }
 
 type invitesReq struct {
-	Email        string `json:"email,omitempty"`
-	Role         string `json:"role,omitempty"`
-	RedirectPath string `json:"redirect_path,omitempty"`
+	Email        string             `json:"email,omitempty"`
+	Role         string             `json:"role,omitempty"`
+	GroupInvites []auth.GroupInvite `json:"group_invites,omitempty"`
+	RedirectPath string             `json:"redirect_path,omitempty"`
 }
 
 func (tr testRequest) make() (*http.Response, error) {
@@ -150,6 +152,23 @@ func TestCreateOrgInvite(t *testing.T) {
 			ct:     contentType,
 			token:  ownerToken,
 			status: http.StatusCreated,
+		},
+		{
+			desc: "create org invite with admin role and group invites",
+			req: toJSON(invitesReq{
+				Email: admin.Email,
+				Role:  admin.Role,
+				GroupInvites: []auth.GroupInvite{
+					{
+						GroupID:    groupID,
+						MemberRole: auth.Viewer,
+					},
+				},
+				RedirectPath: redirectPathInvite,
+			}),
+			ct:     contentType,
+			token:  ownerToken,
+			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "create org invite with invalid auth token",
