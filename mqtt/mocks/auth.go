@@ -89,3 +89,11 @@ func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, 
 func (svc authServiceMock) ViewOrg(context.Context, string, string) (domain.Org, error) {
 	panic("not implemented")
 }
+
+func (svc authServiceMock) GetAdminsByOrg(context.Context, string) ([]domain.OrgMembership, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) GetOrgIDsByAdmin(context.Context, string) ([]string, error) {
+	panic("not implemented")
+}

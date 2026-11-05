@@ -102,6 +102,30 @@ func (req ownerIDByOrgReq) validate() error {
 	return nil
 }
 
+type adminsByOrgReq struct {
+	orgID string
+}
+
+func (req adminsByOrgReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	return nil
+}
+
+type orgIDsByAdminReq struct {
+	memberID string
+}
+
+func (req orgIDsByAdminReq) validate() error {
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	return nil
+}
+
 type assignRoleReq struct {
 	ID   string
 	Role string

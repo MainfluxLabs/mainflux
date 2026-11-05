@@ -74,6 +74,44 @@ func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID str
 	return page, nil
 }
 
+func (omr orgMembershipsRepository) RetrieveAdminsByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
+	q := `SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships
+		  WHERE org_id = $1 AND role IN ($2, $3);`
+
+	var dbms []dbOrgMembership
+	if err := omr.db.SelectContext(ctx, &dbms, q, orgID, auth.Owner, auth.Admin); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
+			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+		}
+
+		return nil, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
+	}
+
+	oms := make([]auth.OrgMembership, 0, len(dbms))
+	for _, dbm := range dbms {
+		oms = append(oms, toOrgMembership(dbm))
+	}
+
+	return oms, nil
+}
+
+func (omr orgMembershipsRepository) RetrieveOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	q := `SELECT org_id FROM org_memberships WHERE member_id = $1 AND role IN ($2, $3);`
+
+	var orgIDs []string
+	if err := omr.db.SelectContext(ctx, &orgIDs, q, memberID, auth.Owner, auth.Admin); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
+			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+		}
+
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return orgIDs, nil
+}
+
 func (omr orgMembershipsRepository) RetrieveRole(ctx context.Context, memberID, orgID string) (string, error) {
 	q := `SELECT role FROM org_memberships WHERE member_id = $1 AND org_id = $2`
 

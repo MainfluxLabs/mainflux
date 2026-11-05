@@ -191,3 +191,28 @@ func (svc authServiceMock) ViewOrg(_ context.Context, token, orgID string) (doma
 		Name:    org.Name,
 	}, nil
 }
+
+func (svc authServiceMock) GetAdminsByOrg(_ context.Context, orgID string) ([]domain.OrgMembership, error) {
+	var oms []domain.OrgMembership
+	for memberID, role := range svc.orgRoles[orgID] {
+		if role == auth.Owner || role == auth.Admin {
+			oms = append(oms, domain.OrgMembership{
+				MemberID: memberID,
+				Role:     role,
+			})
+		}
+	}
+
+	return oms, nil
+}
+
+func (svc authServiceMock) GetOrgIDsByAdmin(_ context.Context, memberID string) ([]string, error) {
+	var orgIDs []string
+	for orgID, roles := range svc.orgRoles {
+		if role := roles[memberID]; role == auth.Owner || role == auth.Admin {
+			orgIDs = append(orgIDs, orgID)
+		}
+	}
+
+	return orgIDs, nil
+}
