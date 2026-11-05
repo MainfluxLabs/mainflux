@@ -1089,17 +1089,15 @@ func (ts *thingsService) getGroupIDsByMember(ctx context.Context, memberID strin
 		seen[grID] = true
 	}
 
-	for _, orgID := range orgIDs {
-		orgGrIDs, err := ts.groups.RetrieveIDsByOrg(ctx, orgID)
-		if err != nil {
-			return []string{}, err
-		}
+	orgGrIDs, err := ts.groups.RetrieveIDsByOrgs(ctx, orgIDs)
+	if err != nil {
+		return []string{}, err
+	}
 
-		for _, grID := range orgGrIDs {
-			if !seen[grID] {
-				seen[grID] = true
-				grIDs = append(grIDs, grID)
-			}
+	for _, grID := range orgGrIDs {
+		if !seen[grID] {
+			seen[grID] = true
+			grIDs = append(grIDs, grID)
 		}
 	}
 
