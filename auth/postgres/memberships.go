@@ -84,7 +84,7 @@ func (omr orgMembershipsRepository) RetrieveAdminsByOrg(ctx context.Context, org
 			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 
-		return nil, errors.Wrap(auth.ErrRetrieveMembershipsByOrg, err)
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
 	oms := make([]auth.OrgMembership, 0, len(dbms))
