@@ -59,6 +59,7 @@ type GroupMemberships interface {
 }
 
 func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error {
+	adminRolesByGroup := make(map[string]map[string]string)
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -67,6 +68,21 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 		}
 		if err := ts.CanUserAccessGroup(ctx, ar); err != nil {
 			return err
+		}
+
+		// Org owners and org admins hold their group role through their org role.
+		adminRoles, ok := adminRolesByGroup[gm.GroupID]
+		if !ok {
+			roles, err := ts.getOrgAdminRoles(ctx, gm.GroupID)
+			if err != nil {
+				return err
+			}
+			adminRoles = roles
+			adminRolesByGroup[gm.GroupID] = roles
+		}
+
+		if _, ok := adminRoles[gm.MemberID]; ok {
+			return ErrGroupMembershipExists
 		}
 
 		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
@@ -129,20 +145,39 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		return GroupMembershipsPage{}, err
 	}
 
-	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, PageMetadata{Role: pm.Role})
+	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, PageMetadata{})
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
-	memberships := gmp.GroupMemberships
-	if len(memberships) == 0 {
-		return GroupMembershipsPage{GroupMemberships: []GroupMembership{}}, nil
+
+	adminRoles, err := ts.getOrgAdminRoles(ctx, groupID)
+	if err != nil {
+		return GroupMembershipsPage{}, err
 	}
 
-	memberIDs := make([]string, 0, len(memberships))
-	membershipByMemberID := make(map[string]GroupMembership, len(memberships))
-	for _, m := range memberships {
-		memberIDs = append(memberIDs, m.MemberID)
+	size := len(gmp.GroupMemberships) + len(adminRoles)
+	membershipByMemberID := make(map[string]GroupMembership, size)
+	for _, m := range gmp.GroupMemberships {
 		membershipByMemberID[m.MemberID] = m
+	}
+
+	// The org role of a member takes precedence over a stored group membership.
+	for memberID, role := range adminRoles {
+		membershipByMemberID[memberID] = GroupMembership{
+			MemberID: memberID,
+			Role:     role,
+		}
+	}
+
+	memberIDs := make([]string, 0, len(membershipByMemberID))
+	for memberID, m := range membershipByMemberID {
+		if pm.Role == "" || m.Role == pm.Role {
+			memberIDs = append(memberIDs, memberID)
+		}
+	}
+
+	if len(memberIDs) == 0 {
+		return GroupMembershipsPage{GroupMemberships: []GroupMembership{}}, nil
 	}
 
 	userPM := domain.UsersPageMetadata{
@@ -173,6 +208,7 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 }
 
 func (ts *thingsService) UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error {
+	adminRolesByGroup := make(map[string]map[string]string)
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -184,16 +220,24 @@ func (ts *thingsService) UpdateGroupMemberships(ctx context.Context, token strin
 			return err
 		}
 
-		role, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
-		if err != nil {
-			r, err := ts.groupMemberships.RetrieveRole(ctx, gm)
+		adminRoles, ok := adminRolesByGroup[gm.GroupID]
+		if !ok {
+			roles, err := ts.getOrgAdminRoles(ctx, gm.GroupID)
 			if err != nil {
 				return err
 			}
-			role = r
+			adminRoles = roles
+			adminRolesByGroup[gm.GroupID] = roles
 		}
-		if role == Owner {
+
+		if _, ok := adminRoles[gm.MemberID]; ok {
 			return errors.ErrAuthorization
+		}
+
+		if _, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID); err != nil {
+			if _, err := ts.groupMemberships.RetrieveRole(ctx, gm); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -221,17 +265,24 @@ func (ts *thingsService) RemoveGroupMemberships(ctx context.Context, token, grou
 		return err
 	}
 
+	adminRoles, err := ts.getOrgAdminRoles(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
 	for _, mid := range memberIDs {
-		role, err := ts.groupCache.ViewRole(ctx, groupID, mid)
-		if err != nil {
-			r, err := ts.groupMemberships.RetrieveRole(ctx, GroupMembership{GroupID: groupID, MemberID: mid})
-			if err != nil {
+		if _, ok := adminRoles[mid]; ok {
+			return errors.ErrAuthorization
+		}
+
+		if _, err := ts.groupCache.ViewRole(ctx, groupID, mid); err != nil {
+			gm := GroupMembership{
+				GroupID:  groupID,
+				MemberID: mid,
+			}
+			if _, err := ts.groupMemberships.RetrieveRole(ctx, gm); err != nil {
 				return err
 			}
-			role = r
-		}
-		if role == Owner {
-			return errors.ErrAuthorization
 		}
 	}
 

@@ -487,6 +487,15 @@ func TestListThings(t *testing.T) {
 			size: n2,
 			err:  nil,
 		},
+		"list all things as org admin without group memberships": {
+			token: orgAdminToken,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n2,
+			},
+			size: n2,
+			err:  nil,
+		},
 		"list all things with no limit": {
 			token: token,
 			pageMetadata: things.PageMetadata{
@@ -1183,6 +1192,15 @@ func TestListProfiles(t *testing.T) {
 			size: n2,
 			err:  nil,
 		},
+		"list all profiles as org admin without group memberships": {
+			token: orgAdminToken,
+			pageMetadata: things.PageMetadata{
+				Offset: 0,
+				Limit:  n2,
+			},
+			size: n2,
+			err:  nil,
+		},
 		"list all profiles with no limit": {
 			token: token,
 			pageMetadata: things.PageMetadata{
@@ -1770,6 +1788,26 @@ func TestListGroups(t *testing.T) {
 				Limit:  n,
 			},
 			size: n,
+			err:  nil,
+		},
+		{
+			desc:  "list groups as org admin without group memberships",
+			token: orgAdminToken,
+			meta: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			err:  nil,
+		},
+		{
+			desc:  "list groups as owner of another org",
+			token: otherOrgOwnerToken,
+			meta: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: 0,
 			err:  nil,
 		},
 		{
@@ -2500,6 +2538,30 @@ func TestCreateGroupMemberships(t *testing.T) {
 			err:         nil,
 		},
 		{
+			desc:  "create group membership for org owner",
+			token: otherToken,
+			memberships: []things.GroupMembership{
+				{
+					MemberID: user.ID,
+					GroupID:  gr.ID,
+					Role:     things.Viewer,
+				},
+			},
+			err: things.ErrGroupMembershipExists,
+		},
+		{
+			desc:  "create group membership for org admin",
+			token: token,
+			memberships: []things.GroupMembership{
+				{
+					MemberID: orgAdmin.ID,
+					GroupID:  gr.ID,
+					Role:     things.Viewer,
+				},
+			},
+			err: things.ErrGroupMembershipExists,
+		},
+		{
 			desc:        "create group memberships as editor",
 			token:       editorToken,
 			memberships: []things.GroupMembership{gm},
@@ -2549,7 +2611,32 @@ func TestListGroupMemberships(t *testing.T) {
 	}
 	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	var n uint64 = 4
+
+	// A group membership stored before the member became org admin.
+	orgAdminGm := things.GroupMembership{
+		GroupID:  gr.ID,
+		MemberID: orgAdmin.ID,
+		Role:     things.Viewer,
+	}
+	err = svc.CreateGroupMembershipsInternal(context.Background(), orgAdminGm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	var n uint64 = 5
+
+	page, err := svc.ListGroupMemberships(context.Background(), token, gr.ID, things.PageMetadata{})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	roles := make(map[string]string)
+	for _, gm := range page.GroupMemberships {
+		roles[gm.MemberID] = gm.Role
+	}
+	expectedRoles := map[string]string{
+		user.ID:      things.Owner,
+		orgAdmin.ID:  things.Owner,
+		otherUser.ID: things.Admin,
+		viewer.ID:    things.Viewer,
+		editor.ID:    things.Editor,
+	}
+	assert.Equal(t, expectedRoles, roles, "list group memberships with org owner and org admin")
+	assert.Equal(t, n, page.Total, fmt.Sprintf("expected total %d got %d\n", n, page.Total))
 
 	cases := []struct {
 		desc    string
@@ -2559,6 +2646,47 @@ func TestListGroupMemberships(t *testing.T) {
 		size    uint64
 		err     error
 	}{
+		{
+			desc:    "list group memberships by owner role",
+			token:   token,
+			groupID: gr.ID,
+			meta: things.PageMetadata{
+				Role: things.Owner,
+			},
+			size: 2,
+			err:  nil,
+		},
+		{
+			desc:    "list group memberships by admin role",
+			token:   token,
+			groupID: gr.ID,
+			meta: things.PageMetadata{
+				Role: things.Admin,
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "list group memberships by viewer role",
+			token:   token,
+			groupID: gr.ID,
+			meta: things.PageMetadata{
+				Role: things.Viewer,
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "list group memberships as org admin",
+			token:   orgAdminToken,
+			groupID: gr.ID,
+			meta: things.PageMetadata{
+				Offset: 0,
+				Limit:  n,
+			},
+			size: n,
+			err:  nil,
+		},
 		{
 			desc:    "list group memberships as owner",
 			token:   token,
@@ -2734,6 +2862,26 @@ func TestUpdateMemberships(t *testing.T) {
 			err:        errors.ErrAuthorization,
 		},
 		{
+			desc:  "update org admin role as owner",
+			token: token,
+			membership: things.GroupMembership{
+				GroupID:  gr.ID,
+				MemberID: orgAdmin.ID,
+				Role:     things.Viewer,
+			},
+			err: errors.ErrAuthorization,
+		},
+		{
+			desc:  "update role of non-member as owner",
+			token: token,
+			membership: things.GroupMembership{
+				GroupID:  gr.ID,
+				MemberID: unauthUser.ID,
+				Role:     things.Viewer,
+			},
+			err: dbutil.ErrNotFound,
+		},
+		{
 			desc:       "update group membership with wrong credentials",
 			token:      wrongValue,
 			membership: memberships[1],
@@ -2813,6 +2961,20 @@ func TestRemoveGroupMemberships(t *testing.T) {
 			groupID:  gr.ID,
 			memberID: user.ID,
 			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "remove org admin from group as owner",
+			token:    token,
+			groupID:  gr.ID,
+			memberID: orgAdmin.ID,
+			err:      errors.ErrAuthorization,
+		},
+		{
+			desc:     "remove non-member from group as owner",
+			token:    token,
+			groupID:  gr.ID,
+			memberID: unauthUser.ID,
+			err:      dbutil.ErrNotFound,
 		},
 		{
 			desc:     "remove membership from group as owner",

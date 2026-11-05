@@ -200,6 +200,18 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE things ADD COLUMN IF NOT EXISTS type VARCHAR(32) NOT NULL DEFAULT 'device';`,
 				},
 			},
+			{
+				Id: "things_11",
+				Up: []string{
+					// Fresh databases run this migration before group_memberships exists.
+					`DO $$
+					BEGIN
+						IF to_regclass('group_memberships') IS NOT NULL THEN
+							DELETE FROM group_memberships WHERE role = 'owner';
+						END IF;
+					END $$;`,
+				},
+			},
 		},
 	}
 

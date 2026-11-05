@@ -127,12 +127,19 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 		return []Group{}, err
 	}
 
-	memberships := []GroupMembership{{MemberID: ownerID, Role: Owner}}
+	// Org owners and org admins access every group in their org through their org role.
+	memberships := []GroupMembership{}
 	if ownerID != userID {
-		if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Editor); err != nil {
-			return nil, err
+		if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, domain.OrgAdmin); err != nil {
+			if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, Editor); err != nil {
+				return nil, err
+			}
+			gm := GroupMembership{
+				MemberID: userID,
+				Role:     Admin,
+			}
+			memberships = append(memberships, gm)
 		}
-		memberships = append(memberships, GroupMembership{MemberID: userID, Role: Admin})
 	}
 
 	grs := []Group{}

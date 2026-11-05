@@ -895,6 +895,7 @@ paths:
       summary: Create memberships by group.
       description: |
         Create group memberships for the given group and members.
+        Org owners and org admins hold their group role through their org role and cannot be added.
       tags:
         - groups
       parameters:
@@ -910,12 +911,15 @@ paths:
           description: Missing or invalid access token provided.
         '404':
           description: Failed due to non existing organization or group.
+        '409':
+          description: Failed due to an existing group membership or an org owner or org admin member.
         '500':
           $ref: "#/components/responses/ServiceError"
     get:
       summary: Retrieves memberships by group.
       description: |
         Retrieves page of group memberships for the given group ID.
+        Org owners and org admins are listed once with the owner role derived from their org role.
       tags:
         - groups
       parameters:
@@ -935,6 +939,7 @@ paths:
       summary: Update memberships by group.
       description: |
         Updates group memberships identified by group and members.
+        Roles of org owners and org admins cannot be updated.
       tags:
         - groups
       parameters:
@@ -948,6 +953,8 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Failed due to insufficient rights or an org owner or org admin member.
         '404':
           description: Failed due to non existing organization or group.
         '500':
@@ -956,6 +963,7 @@ paths:
       summary: Remove memberships by group.
       description: |
         Removes group memberships identified by group and member IDs.
+        Org owners and org admins cannot be removed.
       tags:
         - groups
       parameters:
@@ -969,6 +977,8 @@ paths:
           description: Failed due to malformed JSON.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: Failed due to insufficient rights or an org owner or org admin member.
         '404':
           description: Failed due to non existing organization or group.
         '500':

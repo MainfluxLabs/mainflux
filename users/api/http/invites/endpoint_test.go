@@ -18,6 +18,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
@@ -70,8 +71,11 @@ var (
 )
 
 type platformInviteReq struct {
-	Email        string `json:"email,omitempty"`
-	RedirectPath string `json:"redirect_path,omitempty"`
+	Email        string               `json:"email,omitempty"`
+	OrgID        string               `json:"org_id,omitempty"`
+	Role         string               `json:"role,omitempty"`
+	GroupInvites []domain.GroupInvite `json:"group_invites,omitempty"`
+	RedirectPath string               `json:"redirect_path,omitempty"`
 }
 
 type testRequest struct {
@@ -172,6 +176,24 @@ func TestCreatePlatformInvite(t *testing.T) {
 			contentType,
 			http.StatusUnauthorized,
 			"invalid",
+		},
+		{
+			"create platform invite with org admin role and group invites",
+			toJSON(platformInviteReq{
+				Email: "new@user.com",
+				OrgID: "orgID",
+				Role:  domain.OrgAdmin,
+				GroupInvites: []domain.GroupInvite{
+					{
+						GroupID:    "groupID",
+						MemberRole: domain.GroupViewer,
+					},
+				},
+				RedirectPath: inviteRedirectPath,
+			}),
+			contentType,
+			http.StatusBadRequest,
+			tokenAdmin,
 		},
 		{
 			"create platform invite with empty redirect path",
