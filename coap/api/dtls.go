@@ -5,6 +5,8 @@ package api
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	log "github.com/MainfluxLabs/mainflux/logger"
@@ -29,8 +31,11 @@ func DTLSOptions(things domain.ThingsClient, logger log.Logger) []piondtls.Serve
 	}
 }
 
+// pskSize is the PSK length most constrained DTLS stacks accept at most.
+const pskSize = 32
+
 // PSK returns the DTLS PSK callback, which takes the thing ID as the PSK identity
-// and the thing key as the pre-shared key.
+// and DerivePSK of the thing key as the pre-shared key.
 func PSK(things domain.ThingsClient, logger log.Logger) piondtls.PSKCallback {
 	return func(identity []byte) ([]byte, error) {
 		key, err := things.GetKeyByThingID(context.Background(), string(identity))
@@ -39,8 +44,16 @@ func PSK(things domain.ThingsClient, logger log.Logger) piondtls.PSKCallback {
 			return nil, err
 		}
 
-		return []byte(key.Value), nil
+		return DerivePSK(key.Value), nil
 	}
+}
+
+// DerivePSK returns the pre-shared key of a thing: the first 32 hex characters of the
+// SHA-256 hash of its key. The key itself is longer than constrained DTLS stacks accept,
+// and hex keeps the PSK usable as a string in clients and device configs.
+func DerivePSK(key string) []byte {
+	hash := sha256.Sum256([]byte(key))
+	return []byte(hex.EncodeToString(hash[:])[:pskSize])
 }
 
 // OnNewDTLSConn stores the key of the thing that completed the handshake, so that
