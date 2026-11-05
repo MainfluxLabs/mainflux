@@ -259,11 +259,12 @@ func (ts *thingsService) RemoveGroupMembershipsByOrg(ctx context.Context, orgID 
 		}
 
 		for _, grID := range grIDs {
-			if err := ts.groupMemberships.Remove(ctx, grID, mid); err != nil {
+			// The cache entry is removed first because a retry reads group IDs from the database.
+			if err := ts.groupCache.RemoveGroupMembership(ctx, grID, mid); err != nil {
 				return err
 			}
 
-			if err := ts.groupCache.RemoveGroupMembership(ctx, grID, mid); err != nil {
+			if err := ts.groupMemberships.Remove(ctx, grID, mid); err != nil {
 				return err
 			}
 		}
