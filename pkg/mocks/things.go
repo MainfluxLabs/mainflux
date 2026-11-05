@@ -286,6 +286,10 @@ func (svc *mainfluxThings) RemoveGroupMemberships(context.Context, string, strin
 	panic("not implemented")
 }
 
+func (svc *mainfluxThings) RemoveGroupMembershipsByOrg(context.Context, string, ...string) error {
+	panic("not implemented")
+}
+
 func (svc *mainfluxThings) UpdateExternalKey(context.Context, string, string, string) error {
 	panic("not implemented")
 }

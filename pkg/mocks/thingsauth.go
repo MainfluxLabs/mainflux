@@ -193,6 +193,10 @@ func (svc thingsServiceMock) CreateGroupMemberships(_ context.Context, _ ...doma
 	return nil
 }
 
+func (svc thingsServiceMock) RemoveGroupMembershipsByOrg(_ context.Context, _ string, _ ...string) error {
+	return nil
+}
+
 func (svc thingsServiceMock) GetGroup(_ context.Context, groupID string) (domain.Group, error) {
 	group, ok := svc.groups[groupID]
 	if !ok {

@@ -76,6 +76,7 @@ service ThingsService {
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
     rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
+    rpc RemoveGroupMembershipsByOrg(RemoveGroupMembershipsByOrgReq) returns (google.protobuf.Empty) {}
     rpc GetGroup(GetGroupReq) returns (Group) {}
     rpc GetKeyByThingID(ThingID) returns (ThingKey) {}
 }
@@ -300,6 +301,11 @@ message GroupMembership {
 
 message CreateGroupMembershipsReq {
     repeated GroupMembership memberships = 1;
+}
+
+message RemoveGroupMembershipsByOrgReq {
+    string org_id = 1;
+    repeated string member_ids = 2;
 }
 
 message GetDormantOrgInviteByPlatformInviteReq {

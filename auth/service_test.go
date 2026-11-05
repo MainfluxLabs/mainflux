@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -97,6 +98,30 @@ func newServiceWithMaxSessionDuration(maxDuration time.Duration) auth.Service {
 		mocks.NewUsersService(usersByIDs, usersByEmails), mocks.NewKeyRepository(), mocks.NewSessionRepository(),
 		mocks.NewRolesRepository(), membsRepo, mocks.NewInvitesRepository(), mocks.NewEmailer(),
 		uuid.NewMock(), jwt.New(secret), loginDuration, maxDuration, inviteDuration)
+}
+
+// failingGroupMembershipsRemoval is a things client whose group memberships removal fails.
+type failingGroupMembershipsRemoval struct {
+	domain.ThingsClient
+}
+
+func (failingGroupMembershipsRemoval) RemoveGroupMembershipsByOrg(context.Context, string, ...string) error {
+	return dbutil.ErrRemoveEntity
+}
+
+func newServiceWithThings(tc domain.ThingsClient) auth.Service {
+	membsRepo := mocks.NewOrgMembershipsRepository()
+	orgRepo := mocks.NewOrgRepository(membsRepo)
+	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
+	keyRepo := mocks.NewKeyRepository()
+	sessionRepo := mocks.NewSessionRepository()
+	roleRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
+	emailerMock := mocks.NewEmailer()
+	t := jwt.New(secret)
+
+	return auth.New(orgRepo, tc, uc, keyRepo, sessionRepo, roleRepo, membsRepo, invitesRepo,
+		emailerMock, uuid.NewMock(), t, loginDuration, maxSessionDuration, inviteDuration)
 }
 
 func TestRefreshSessionMaxDuration(t *testing.T) {
@@ -1338,6 +1363,36 @@ func TestRemoveOrgMemberships(t *testing.T) {
 		err := svc.RemoveOrgMemberships(context.Background(), tc.token, tc.orgID, tc.memberID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
+}
+
+func TestRemoveOrgMembershipsWithFailedGroupMembershipsRemoval(t *testing.T) {
+	tc := failingGroupMembershipsRemoval{
+		ThingsClient: thmocks.NewThingsServiceClient(nil, nil, createGroups()),
+	}
+	svc := newServiceWithThings(tc)
+
+	key := auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: ownerID,
+		Subject:  ownerEmail,
+	}
+	_, ownerToken, err := svc.Issue(context.Background(), "", key)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.RemoveOrgMemberships(context.Background(), ownerToken, or.ID, viewerID)
+	msg := fmt.Sprintf("expected %s got %s\n", dbutil.ErrRemoveEntity, err)
+	assert.True(t, errors.Contains(err, dbutil.ErrRemoveEntity), msg)
+
+	om, err := svc.ViewOrgMembership(context.Background(), ownerToken, or.ID, viewerID)
+	require.Nil(t, err, fmt.Sprintf("org membership expected to remain: %s\n", err))
+	assert.Equal(t, auth.Viewer, om.Role, fmt.Sprintf("expected %s got %s\n", auth.Viewer, om.Role))
 }
 
 func TestUpdateOrgMemberships(t *testing.T) {

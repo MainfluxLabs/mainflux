@@ -243,6 +243,11 @@ func (svc service) RemoveOrgMemberships(ctx context.Context, token string, orgID
 		return err
 	}
 
+	// Group memberships are removed first, so a failure leaves the members without group access.
+	if err := svc.things.RemoveGroupMembershipsByOrg(ctx, orgID, memberIDs...); err != nil {
+		return err
+	}
+
 	if err := svc.memberships.Remove(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}

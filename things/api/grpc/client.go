@@ -21,24 +21,25 @@ import (
 var _ domain.ThingsClient = (*grpcClient)(nil)
 
 type grpcClient struct {
-	timeout                time.Duration
-	getPubConfigByKey      endpoint.Endpoint
-	getConfigByThing       endpoint.Endpoint
-	canUserAccessThing     endpoint.Endpoint
-	canUserAccessThings    endpoint.Endpoint
-	canUserAccessProfile   endpoint.Endpoint
-	canUserAccessGroup     endpoint.Endpoint
-	canThingAccessGroup    endpoint.Endpoint
-	canThingCommand        endpoint.Endpoint
-	canThingGroupCommand   endpoint.Endpoint
-	identify               endpoint.Endpoint
-	getGroupIDByThing      endpoint.Endpoint
-	getGroupIDByProfile    endpoint.Endpoint
-	getGroupIDsByOrg       endpoint.Endpoint
-	getThingIDsByProfile   endpoint.Endpoint
-	createGroupMemberships endpoint.Endpoint
-	getGroup               endpoint.Endpoint
-	getKeyByThingID        endpoint.Endpoint
+	timeout                     time.Duration
+	getPubConfigByKey           endpoint.Endpoint
+	getConfigByThing            endpoint.Endpoint
+	canUserAccessThing          endpoint.Endpoint
+	canUserAccessThings         endpoint.Endpoint
+	canUserAccessProfile        endpoint.Endpoint
+	canUserAccessGroup          endpoint.Endpoint
+	canThingAccessGroup         endpoint.Endpoint
+	canThingCommand             endpoint.Endpoint
+	canThingGroupCommand        endpoint.Endpoint
+	identify                    endpoint.Endpoint
+	getGroupIDByThing           endpoint.Endpoint
+	getGroupIDByProfile         endpoint.Endpoint
+	getGroupIDsByOrg            endpoint.Endpoint
+	getThingIDsByProfile        endpoint.Endpoint
+	createGroupMemberships      endpoint.Endpoint
+	removeGroupMembershipsByOrg endpoint.Endpoint
+	getGroup                    endpoint.Endpoint
+	getKeyByThingID             endpoint.Endpoint
 }
 
 // NewClient returns new gRPC client instance implementing domain.Client.
@@ -167,6 +168,15 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
+		removeGroupMembershipsByOrg: kitot.TraceClient(tracer, "remove_group_memberships_by_org")(
+			kitgrpc.NewClient(
+				conn,
+				svcName,
+				"RemoveGroupMembershipsByOrg",
+				encodeRemoveGroupMembershipsByOrgRequest,
+				decodeEmptyResponse,
+				emptypb.Empty{},
+			).Endpoint()),
 		getGroup: kitot.TraceClient(tracer, "get_group")(kitgrpc.NewClient(
 			conn,
 			svcName,
@@ -350,6 +360,19 @@ func (client grpcClient) CreateGroupMemberships(ctx context.Context, memberships
 	return err
 }
 
+func (client grpcClient) RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	req := removeGroupMembershipsByOrgReq{
+		orgID:     orgID,
+		memberIDs: memberIDs,
+	}
+	_, err := client.removeGroupMembershipsByOrg(ctx, req)
+
+	return err
+}
+
 func (client grpcClient) GetKeyByThingID(ctx context.Context, thingID string) (domain.ThingKey, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
@@ -469,6 +492,14 @@ func encodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 	}
 
 	return protoReq, nil
+}
+
+func encodeRemoveGroupMembershipsByOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(removeGroupMembershipsByOrgReq)
+	return &protomfx.RemoveGroupMembershipsByOrgReq{
+		OrgId:     req.orgID,
+		MemberIds: req.memberIDs,
+	}, nil
 }
 
 func encodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
