@@ -26,6 +26,7 @@ type grpcServer struct {
 	refresh                             kitgrpc.Handler
 	revokeSessions                      kitgrpc.Handler
 	identify                            kitgrpc.Handler
+	identifyRecovery                    kitgrpc.Handler
 	authorize                           kitgrpc.Handler
 	getOwnerIDByOrg                     kitgrpc.Handler
 	assignRole                          kitgrpc.Handler
@@ -58,6 +59,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 		),
 		identify: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "identify")(identifyEndpoint(svc)),
+			decodeIdentifyRequest,
+			encodeIdentifyResponse,
+		),
+		identifyRecovery: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "identify_recovery")(identifyRecoveryEndpoint(svc)),
 			decodeIdentifyRequest,
 			encodeIdentifyResponse,
 		),
@@ -140,6 +146,14 @@ func (s *grpcServer) RevokeSessions(ctx context.Context, req *protomfx.RevokeSes
 
 func (s *grpcServer) Identify(ctx context.Context, token *protomfx.Token) (*protomfx.UserIdentity, error) {
 	_, res, err := s.identify.ServeGRPC(ctx, token)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.UserIdentity), nil
+}
+
+func (s *grpcServer) IdentifyRecovery(ctx context.Context, token *protomfx.Token) (*protomfx.UserIdentity, error) {
+	_, res, err := s.identifyRecovery.ServeGRPC(ctx, token)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -408,6 +422,7 @@ func encodeError(err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, auth.ErrKeyExpired),
+		errors.Contains(err, auth.ErrAPIKeyExpired),
 		errors.Contains(err, auth.ErrSessionReuse),
 		errors.Contains(err, auth.ErrSessionExpired),
 		err == apiutil.ErrMissingEmail,

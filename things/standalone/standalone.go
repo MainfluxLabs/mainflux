@@ -55,6 +55,10 @@ func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.I
 	return domain.Identity{ID: repo.email, Email: repo.email}, nil
 }
 
+func (repo singleUserRepo) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
+	return domain.Identity{}, errUnsupported
+}
+
 func (repo singleUserRepo) Authorize(ctx context.Context, ar domain.AuthzReq) error {
 	return errUnsupported
 }

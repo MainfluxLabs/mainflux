@@ -448,7 +448,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 func (svc usersService) RefreshToken(ctx context.Context, token string) (string, error) {
 	t, err := svc.auth.RefreshToken(ctx, token)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrAuthentication, err)
+		return "", err
 	}
 
 	return t, nil
@@ -835,11 +835,11 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 }
 
 func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {
-	ir, err := svc.identify(ctx, resetToken)
+	identity, err := svc.auth.IdentifyRecovery(ctx, resetToken)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-	u, err := svc.users.RetrieveByID(ctx, ir.id)
+	u, err := svc.users.RetrieveByID(ctx, identity.ID)
 	if err != nil {
 		return err
 	}
@@ -851,17 +851,17 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	if err != nil {
 		return err
 	}
-	if err := svc.users.UpdatePassword(ctx, ir.email, password); err != nil {
+	if err := svc.users.UpdatePassword(ctx, identity.Email, password); err != nil {
 		return err
 	}
 
-	return svc.auth.RevokeSessions(ctx, ir.id)
+	return svc.auth.RevokeSessions(ctx, identity.ID)
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
 	ir, err := svc.identify(ctx, token)
 	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+		return err
 	}
 
 	var userEmail, userID string
@@ -966,7 +966,7 @@ type userIdentity struct {
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
 	identity, err := svc.auth.Identify(ctx, token)
 	if err != nil {
-		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
+		return userIdentity{}, err
 	}
 
 	return userIdentity{identity.ID, identity.Email}, nil

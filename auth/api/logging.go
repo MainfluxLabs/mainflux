@@ -155,6 +155,19 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (_ auth.I
 	return lm.svc.Identify(ctx, key)
 }
 
+func (lm *loggingMiddleware) IdentifyRecovery(ctx context.Context, token string) (_ auth.Identity, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method identify_recovery took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.IdentifyRecovery(ctx, token)
+}
+
 func (lm *loggingMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))

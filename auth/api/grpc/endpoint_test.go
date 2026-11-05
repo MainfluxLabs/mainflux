@@ -136,6 +136,9 @@ func TestIdentify(t *testing.T) {
 	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
+	_, expiredAPIToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(-time.Minute), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing expired API key expected to succeed: %s", err))
+
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
@@ -148,6 +151,13 @@ func TestIdentify(t *testing.T) {
 		code  codes.Code
 	}{
 		{
+			desc:  "identify user with expired API token",
+			token: expiredAPIToken,
+			idt:   domain.Identity{},
+			err:   status.Error(codes.Unauthenticated, "use of expired API key"),
+			code:  codes.Unauthenticated,
+		},
+		{
 			desc:  "identify user with user token",
 			token: userToken,
 			idt:   domain.Identity{Email: email, ID: id},
@@ -157,9 +167,9 @@ func TestIdentify(t *testing.T) {
 		{
 			desc:  "identify user with recovery token",
 			token: recoveryToken,
-			idt:   domain.Identity{Email: email, ID: id},
-			err:   nil,
-			code:  codes.OK,
+			idt:   domain.Identity{},
+			err:   status.Error(codes.Unauthenticated, "unauthenticated access"),
+			code:  codes.Unauthenticated,
 		},
 		{
 			desc:  "identify user with API token",
@@ -189,6 +199,67 @@ func TestIdentify(t *testing.T) {
 		if err == nil {
 			assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, idt))
 		}
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
+	}
+}
+
+func TestIdentifyRecovery(t *testing.T) {
+	_, userToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing user key expected to succeed: %s", err))
+
+	_, recoveryToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
+
+	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc  string
+		token string
+		idt   domain.Identity
+		code  codes.Code
+	}{
+		{
+			desc:  "identify user with recovery token",
+			token: recoveryToken,
+			idt:   domain.Identity{Email: email, ID: id},
+			code:  codes.OK,
+		},
+		{
+			desc:  "identify user with user token",
+			token: userToken,
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "identify user with API token",
+			token: apiToken,
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "identify user with invalid token",
+			token: "invalid",
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "identify user with empty token",
+			token: "",
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+	}
+
+	for _, tc := range cases {
+		idt, err := client.IdentifyRecovery(context.Background(), tc.token)
+		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, idt))
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))

@@ -168,11 +168,9 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 	}
 
 	switch key.Type {
-	case RecoveryKey:
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
 	case LoginKey:
-		if key.ID == "" {
-			return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+		if _, err := svc.checkSession(ctx, key); err != nil {
+			return Identity{}, errors.Wrap(errIdentify, err)
 		}
 
 		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
@@ -187,6 +185,20 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 	}
 }
 
+func (svc service) IdentifyRecovery(ctx context.Context, token string) (Identity, error) {
+	key, err := svc.tokenizer.Parse(token)
+	if err != nil {
+		return Identity{}, errors.Wrap(errIdentify, err)
+	}
+
+	// Recovery keys are only valid for resetting a password.
+	if key.Type != RecoveryKey || key.IssuerID == "" {
+		return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+	}
+
+	return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+}
+
 func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) {
 	key.ExpiresAt = key.IssuedAt.Add(duration)
 	secret, err := svc.tokenizer.Issue(key)
@@ -197,14 +209,18 @@ func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) 
 	return key, secret, nil
 }
 
-func (svc service) login(token string) (string, string, error) {
+func (svc service) login(ctx context.Context, token string) (string, string, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err != nil {
 		return "", "", err
 	}
 	// Only login key token is valid for login.
-	if key.Type != LoginKey || key.IssuerID == "" {
+	if key.Type != LoginKey {
 		return "", "", errors.ErrAuthentication
+	}
+
+	if _, err := svc.checkSession(ctx, key); err != nil {
+		return "", "", err
 	}
 
 	return key.IssuerID, key.Subject, nil
@@ -259,7 +275,11 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 		return err
 	}
 
-	role, err := svc.roles.RetrieveRole(ctx, user.ID)
+	return svc.isAdminUser(ctx, user.ID)
+}
+
+func (svc service) isAdminUser(ctx context.Context, userID string) error {
+	role, err := svc.roles.RetrieveRole(ctx, userID)
 	if err != nil {
 		return err
 	}
