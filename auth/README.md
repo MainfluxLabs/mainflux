@@ -51,6 +51,8 @@ The service is configured using the environment variables presented in the follo
 
 Access tokens are rotated through the `POST /tokens/refresh` endpoint of the Users service, which exchanges a still-valid access token for a replacement in the same session, with a fresh expiry. The presented token is revoked at the same moment, so it stops working everywhere immediately and the caller must switch to the returned one.
 
+A session cannot be extended past `MF_AUTH_MAX_SESSION_DURATION` from the original login, regardless of how recently it was rotated.
+
 ## Deployment
 
 The service is distributed as a Docker container. Refer to the [`auth` service section](https://github.com/MainfluxLabs/mainflux/blob/master/docker/docker-compose.yml) in the Docker Compose file for a reference deployment configuration.
