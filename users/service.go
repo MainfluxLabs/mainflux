@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -45,6 +46,9 @@ var (
 
 	// ErrSelfRegisterDisabled indicates that self-registration is disabled in the service config.
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
+
+	// ErrInvalidAdminCredentials indicates that the configured root admin e-mail or password is invalid.
+	ErrInvalidAdminCredentials = errors.New("invalid root admin e-mail or password")
 )
 
 type (
@@ -77,9 +81,8 @@ type Service interface {
 	// for admin.
 	Register(ctx context.Context, token string, user User) (string, error)
 
-	// RegisterAdmin creates new root admin account. In case of the failed registration, a
-	// non-nil error value is returned. The user registration is only allowed
-	// for root admin.
+	// RegisterAdmin creates root admin account, validating e-mail and password on creation.
+	// Existing user with given e-mail is assigned root admin role and password is ignored.
 	RegisterAdmin(ctx context.Context, user User) error
 
 	// Login authenticates the user given its credentials. Successful
@@ -167,6 +170,7 @@ type usersService struct {
 	googleOAuth         oauth2.Config
 	githubOAuth         oauth2.Config
 	urls                ConfigURLs
+	passRegex           *regexp.Regexp
 }
 
 // Config holds configuration values for the users service.
@@ -177,6 +181,7 @@ type Config struct {
 	GoogleOAuth         oauth2.Config
 	GitHubOAuth         oauth2.Config
 	URLs                ConfigURLs
+	PassRegex           *regexp.Regexp
 }
 
 // New instantiates the users service implementation
@@ -196,6 +201,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		googleOAuth:         c.GoogleOAuth,
 		githubOAuth:         c.GitHubOAuth,
 		urls:                c.URLs,
+		passRegex:           c.PassRegex,
 	}
 }
 
@@ -360,6 +366,10 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		}
 
 		return nil
+	}
+
+	if err := user.Validate(svc.passRegex); err != nil {
+		return errors.Wrap(ErrInvalidAdminCredentials, err)
 	}
 
 	uid, err := svc.idProvider.ID()
