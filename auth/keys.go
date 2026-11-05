@@ -252,8 +252,8 @@ func (svc service) liveSession(ctx context.Context, token string) (Session, erro
 	return svc.checkSession(ctx, key)
 }
 
-// checkSession rejects a login key with no session, a revoked session, or a
-// session of another user.
+// checkSession rejects a login key with no session, a revoked session, a session
+// of another user, or a session past the maximum session duration.
 func (svc service) checkSession(ctx context.Context, key Key) (Session, error) {
 	if key.IssuerID == "" || key.ID == "" {
 		return Session{}, errors.ErrAuthentication
@@ -261,10 +261,18 @@ func (svc service) checkSession(ctx context.Context, key Key) (Session, error) {
 
 	session, err := svc.sessions.Retrieve(ctx, key.ID)
 	if err != nil {
-		return Session{}, errors.ErrAuthentication
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return Session{}, errors.ErrAuthentication
+		}
+
+		return Session{}, err
 	}
 
 	if session.Revoked() || session.UserID != key.IssuerID {
+		return Session{}, errors.ErrAuthentication
+	}
+
+	if getTimestamp().After(session.StartedAt.Add(svc.maxSessionDuration)) {
 		return Session{}, errors.ErrAuthentication
 	}
 

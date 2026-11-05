@@ -851,7 +851,7 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
 	ir, err := svc.identify(ctx, token)
 	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+		return err
 	}
 
 	var userEmail, userID string
@@ -952,7 +952,7 @@ type userIdentity struct {
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
 	identity, err := svc.auth.Identify(ctx, token)
 	if err != nil {
-		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
+		return userIdentity{}, err
 	}
 
 	return userIdentity{identity.ID, identity.Email}, nil

@@ -23,7 +23,7 @@ The service is configured using the environment variables presented in the follo
 | `MF_AUTH_GRPC_PORT`            | Auth service gRPC port                                                      | 8181                     |
 | `MF_AUTH_SERVER_CERT`          | Path to server certificate in PEM format                                    |                          |
 | `MF_AUTH_SERVER_KEY`           | Path to server key in PEM format                                            |                          |
-| `MF_AUTH_SECRET`               | Secret used for signing tokens, at least 32 bytes and 5 distinct characters (required) |                          |
+| `MF_AUTH_SECRET`               | Secret used for signing tokens, at least 32 characters with 5 distinct (required) |                          |
 | `MF_AUTH_LOGIN_TOKEN_DURATION` | Login key expiration period                                                 | 10h                      |
 | `MF_AUTH_MAX_SESSION_DURATION` | Maximum age of a session, beyond which it cannot be refreshed              | 168h                     |
 | `MF_INVITE_DURATION`           | Validity period for organization invitations                                | 168h                     |
@@ -50,8 +50,6 @@ The service is configured using the environment variables presented in the follo
 ## Token rotation
 
 Access tokens are rotated through the `POST /tokens/refresh` endpoint of the Users service, which exchanges a still-valid access token for a replacement in the same session, with a fresh expiry. The presented token is revoked at the same moment, so it stops working everywhere immediately and the caller must switch to the returned one.
-
-A session cannot be extended past `MF_AUTH_MAX_SESSION_DURATION` from the original login, regardless of how recently it was rotated.
 
 ## Deployment
 

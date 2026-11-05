@@ -136,6 +136,9 @@ func TestIdentify(t *testing.T) {
 	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
+	_, expiredAPIToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(-time.Minute), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing expired API key expected to succeed: %s", err))
+
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
@@ -147,6 +150,13 @@ func TestIdentify(t *testing.T) {
 		err   error
 		code  codes.Code
 	}{
+		{
+			desc:  "identify user with expired API token",
+			token: expiredAPIToken,
+			idt:   domain.Identity{},
+			err:   status.Error(codes.Unauthenticated, "use of expired API key"),
+			code:  codes.Unauthenticated,
+		},
 		{
 			desc:  "identify user with user token",
 			token: userToken,

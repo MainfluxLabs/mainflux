@@ -363,6 +363,7 @@ func encodeError(err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Contains(err, errors.ErrAuthentication),
 		errors.Contains(err, auth.ErrKeyExpired),
+		errors.Contains(err, auth.ErrAPIKeyExpired),
 		errors.Contains(err, auth.ErrSessionReuse),
 		errors.Contains(err, auth.ErrSessionExpired),
 		err == apiutil.ErrMissingEmail,

@@ -107,7 +107,7 @@ func TestRefreshSessionMaxDuration(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	_, err = svc.Identify(context.Background(), secret)
-	require.Nil(t, err, fmt.Sprintf("the token itself expected to still be valid: %s", err))
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("a token past the session cap expected to be rejected, got %s", err))
 
 	_, err = svc.RefreshToken(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/MainfluxLabs/mainflux"
 	"github.com/MainfluxLabs/mainflux/auth"
@@ -43,7 +44,7 @@ const (
 	stopWaitTime = 5 * time.Second
 	svcName      = "auth"
 
-	minSecretBytes         = 32
+	minSecretLength        = 32
 	minSecretDistinctChars = 5
 
 	defLogLevel           = "error"
@@ -349,8 +350,8 @@ func loadConfig() config {
 }
 
 func validateSecret(secret string) error {
-	if len(secret) < minSecretBytes {
-		return fmt.Errorf("secret must be at least %d bytes long", minSecretBytes)
+	if utf8.RuneCountInString(secret) < minSecretLength {
+		return fmt.Errorf("secret must be at least %d characters long", minSecretLength)
 	}
 
 	distinctChars := make(map[rune]struct{})
@@ -359,7 +360,10 @@ func validateSecret(secret string) error {
 	}
 
 	if len(distinctChars) < minSecretDistinctChars {
-		return fmt.Errorf("secret must contain at least %d distinct characters", minSecretDistinctChars)
+		return fmt.Errorf(
+			"secret must contain at least %d distinct characters",
+			minSecretDistinctChars,
+		)
 	}
 
 	return nil

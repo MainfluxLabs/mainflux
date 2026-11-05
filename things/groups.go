@@ -118,7 +118,7 @@ type GroupCache interface {
 func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, groups ...Group) ([]Group, error) {
 	user, err := ts.auth.Identify(ctx, token)
 	if err != nil {
-		return []Group{}, errors.Wrap(errors.ErrAuthentication, err)
+		return []Group{}, err
 	}
 	userID := user.ID
 
