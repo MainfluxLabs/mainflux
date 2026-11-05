@@ -921,6 +921,10 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 		return err
 	}
 
+	if err := svc.isAdmin(ctx, token); err != nil {
+		return err
+	}
+
 	dbUser, err := svc.users.RetrieveByID(ctx, id)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrNotFound, err)

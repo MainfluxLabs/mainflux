@@ -542,6 +542,68 @@ func TestSendPasswordReset(t *testing.T) {
 	}
 }
 
+func TestEnableUser(t *testing.T) {
+	svc := newService()
+
+	tokenAdmin, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	tokenUser, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
+
+	// Rejected cases run first, so enabling as admin proves they left the user disabled.
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{"enable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
+		{"enable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
+		{"enable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
+		{"enable user as admin", tokenAdmin, registerUser.ID, nil},
+		{"enable already enabled user as admin", tokenAdmin, registerUser.ID, users.ErrAlreadyEnabledUser},
+	}
+
+	for _, tc := range cases {
+		err := svc.EnableUser(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestDisableUser(t *testing.T) {
+	svc := newService()
+
+	tokenAdmin, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	tokenUser, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	// Rejected cases run first, so disabling as admin proves they left the user enabled.
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{"disable admin as non-admin user", tokenUser, admin.ID, errors.ErrAuthorization},
+		{"disable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
+		{"disable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
+		{"disable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
+		{"disable user as admin", tokenAdmin, registerUser.ID, nil},
+		{"disable already disabled user as admin", tokenAdmin, registerUser.ID, users.ErrAlreadyDisabledUser},
+	}
+
+	for _, tc := range cases {
+		err := svc.DisableUser(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
 func TestCreatePlatformInvite(t *testing.T) {
 	svc := newService()
 	tokenAdmin, err := svc.Login(context.Background(), admin)
