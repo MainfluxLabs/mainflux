@@ -127,6 +127,13 @@ func TestIssue(t *testing.T) {
 			status: http.StatusCreated,
 		},
 		{
+			desc:   "issue API key without duration",
+			req:    toJSON(issueRequest{Type: auth.APIKey}),
+			ct:     contentType,
+			token:  loginSecret,
+			status: http.StatusBadRequest,
+		},
+		{
 			desc:   "issue login key wrong content type",
 			req:    toJSON(lk),
 			ct:     "",
