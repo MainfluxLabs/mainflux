@@ -18,10 +18,11 @@ import (
 var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
-	adminIDs     []string
-	orgRoles     map[string]map[string]string
-	usersByEmail map[string]users.User
-	orgs         map[string]auth.Org
+	adminIDs      []string
+	platformRoles map[string]string
+	orgRoles      map[string]map[string]string
+	usersByEmail  map[string]users.User
+	orgs          map[string]auth.Org
 }
 
 // NewAuthService creates mock of auth service client.
@@ -29,11 +30,13 @@ type authServiceMock struct {
 func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, orgMemberships ...auth.OrgMembership) domain.AuthClient {
 	usersByEmail := make(map[string]users.User)
 	adminIDs := []string{adminID}
+	platformRoles := map[string]string{adminID: auth.RoleRootAdmin}
 	orgRoles := make(map[string]map[string]string)
 	orgs := make(map[string]auth.Org)
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
+		platformRoles[user.ID] = user.Role
 		if user.Role == auth.RoleRootAdmin || user.Role == auth.RoleAdmin {
 			adminIDs = append(adminIDs, user.ID)
 		}
@@ -52,10 +55,11 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 	}
 
 	return &authServiceMock{
-		adminIDs:     adminIDs,
-		orgRoles:     orgRoles,
-		usersByEmail: usersByEmail,
-		orgs:         orgs,
+		adminIDs:      adminIDs,
+		platformRoles: platformRoles,
+		orgRoles:      orgRoles,
+		usersByEmail:  usersByEmail,
+		orgs:          orgs,
 	}
 }
 
@@ -159,12 +163,13 @@ func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, orgID string) (str
 	return "", dbutil.ErrNotFound
 }
 
-func (svc authServiceMock) AssignRole(_ context.Context, _, _ string) error {
-	panic("not implemented")
+func (svc authServiceMock) AssignRole(_ context.Context, id, role string) error {
+	svc.platformRoles[id] = role
+	return nil
 }
 
-func (svc authServiceMock) RetrieveRole(_ context.Context, _ string) (string, error) {
-	panic("not implemented")
+func (svc authServiceMock) RetrieveRole(_ context.Context, id string) (string, error) {
+	return svc.platformRoles[id], nil
 }
 
 func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domain.GroupInvite) error {
