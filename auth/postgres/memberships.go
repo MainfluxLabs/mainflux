@@ -75,8 +75,7 @@ func (omr orgMembershipsRepository) RetrieveByOrg(ctx context.Context, orgID str
 }
 
 func (omr orgMembershipsRepository) RetrieveAdminsByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
-	q := `SELECT member_id, org_id, created_at, updated_at, role FROM org_memberships
-		  WHERE org_id = $1 AND role IN ($2, $3);`
+	q := `SELECT member_id, role FROM org_memberships WHERE org_id = $1 AND role IN ($2, $3);`
 
 	var dbms []dbOrgMembership
 	if err := omr.db.SelectContext(ctx, &dbms, q, orgID, auth.Owner, auth.Admin); err != nil {
