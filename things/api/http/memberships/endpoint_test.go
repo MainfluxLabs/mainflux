@@ -144,8 +144,11 @@ func TestCreateGroupMemberships(t *testing.T) {
 	invalidMembership := gm
 	invalidMembership.Role = wrongValue
 
+	nonMember := groupMembership{MemberID: "11111111-1111-1111-1111-111111111111", Email: "outsider@example.com", Role: things.Editor}
+
 	data := toJSON(membershipsReq{GroupMemberships: []groupMembership{gm}, RedirectPath: redirectPathGroup})
 	invalidData := toJSON(membershipsReq{GroupMemberships: []groupMembership{invalidMembership}, RedirectPath: redirectPathGroup})
+	nonMemberData := toJSON(membershipsReq{GroupMemberships: []groupMembership{nonMember}, RedirectPath: redirectPathGroup})
 
 	cases := []struct {
 		desc   string
@@ -167,6 +170,13 @@ func TestCreateGroupMemberships(t *testing.T) {
 			id:     gr.ID,
 			req:    invalidData,
 			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "create group memberships for non-org-member",
+			token:  token,
+			id:     gr.ID,
+			req:    nonMemberData,
+			status: http.StatusForbidden,
 		},
 		{
 			desc:   "create group memberships with invalid auth token",

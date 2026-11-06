@@ -188,7 +188,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, things.ErrGroupMembershipExists):
 		w.WriteHeader(http.StatusConflict)
 	case errors.Contains(err, things.ErrMemberNotInOrg):
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusForbidden)
 	case errors.Contains(err, uuid.ErrGeneratingID):
 		w.WriteHeader(http.StatusInternalServerError)
 	default:
