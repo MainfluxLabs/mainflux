@@ -1072,7 +1072,7 @@ components:
                 type: number
                 format: integer
                 example: 23456
-                description: Number of seconds issued token is valid for.
+                description: Number of seconds issued token is valid for. Required and must be positive for API keys.
     OrgReq:
       description: JSON-formatted document describing a request to create and update organizations.
       required: true

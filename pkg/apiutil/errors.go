@@ -144,6 +144,9 @@ var (
 	// ErrInvalidAPIKey indicates an invalid API key type.
 	ErrInvalidAPIKey = errors.New("invalid api key type")
 
+	// ErrMissingKeyDuration indicates a missing API key duration.
+	ErrMissingKeyDuration = errors.New("missing api key duration")
+
 	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type
 	ErrUnsupportedContentType = errors.New("unsupported content type")
 

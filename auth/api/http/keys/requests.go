@@ -30,6 +30,10 @@ func (req issueKeyReq) validate() error {
 		return apiutil.ErrInvalidAPIKey
 	}
 
+	if req.Type == auth.APIKey && req.Duration <= 0 {
+		return apiutil.ErrMissingKeyDuration
+	}
+
 	return nil
 }
 
