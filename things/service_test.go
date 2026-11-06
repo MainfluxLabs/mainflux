@@ -2655,6 +2655,25 @@ func TestCreateGroupMemberships(t *testing.T) {
 	}
 }
 
+func TestCreateGroupMembershipsBatchIsAtomic(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	valid := things.GroupMembership{GroupID: gr.ID, MemberID: editor.ID, Role: things.Editor}
+	nonMember := things.GroupMembership{GroupID: gr.ID, MemberID: otherOrgOwner.ID, Role: things.Viewer}
+
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, valid, nonMember)
+	assert.True(t, errors.Contains(err, things.ErrMemberNotInOrg), fmt.Sprintf("expected %s got %s", things.ErrMemberNotInOrg, err))
+
+	// The valid member must not have been persisted by the rejected batch, so
+	// re-adding it on its own succeeds rather than reporting an existing membership.
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, valid)
+	assert.Nil(t, err, fmt.Sprintf("re-adding the valid member expected to succeed: %s", err))
+}
+
 func TestListGroupMemberships(t *testing.T) {
 	svc := newService()
 

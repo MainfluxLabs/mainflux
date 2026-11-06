@@ -66,6 +66,10 @@ type GroupMemberships interface {
 
 func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error {
 	adminRolesByGroup := make(map[string]map[string]string)
+	groupByID := make(map[string]Group)
+
+	// Every membership is validated before any is saved, so a single rejected
+	// member does not leave the earlier members of the batch persisted.
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -91,9 +95,14 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 			return ErrGroupMembershipExists
 		}
 
-		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
-		if err != nil {
-			return err
+		group, ok := groupByID[gm.GroupID]
+		if !ok {
+			g, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+			if err != nil {
+				return err
+			}
+			group = g
+			groupByID[gm.GroupID] = g
 		}
 
 		om, err := ts.auth.GetOrgMembership(ctx, group.OrgID, gm.MemberID)
@@ -103,7 +112,9 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 		if om.Role == "" {
 			return ErrMemberNotInOrg
 		}
+	}
 
+	for _, gm := range gms {
 		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
 			return err
 		}
@@ -111,9 +122,12 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
+	}
+
+	for _, gm := range gms {
+		group := groupByID[gm.GroupID]
 
 		org, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
-
 		if err != nil {
 			continue
 		}
