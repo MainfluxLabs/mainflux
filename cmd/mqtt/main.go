@@ -186,6 +186,7 @@ func main() {
 		subjects := []string{
 			nats.SubjectThingCommands, nats.SubjectThingCommandsWithSubtopic,
 			nats.SubjectGroupCommands, nats.SubjectGroupCommandsWithSubtopic,
+			nats.SubjectOTAUpdates,
 		}
 		fwd := mqtt.NewForwarder(subjects, logger)
 		if err := fwd.Forward(svcName, nps, mpub); err != nil {

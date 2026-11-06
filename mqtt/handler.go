@@ -28,6 +28,7 @@ const (
 	topicPrefixGroups   = "groups"
 	topicSuffixCommands = "commands"
 	topicSuffixMessages = "messages"
+	topicSuffixOTA      = "ota"
 )
 
 var (
@@ -50,6 +51,7 @@ var (
 
 // Publisher specifies the minimal publishing capability the MQTT handler needs.
 type Publisher interface {
+	messaging.Publisher
 	messaging.CommandPublisher
 	messaging.MessageDispatcher
 }
@@ -136,10 +138,20 @@ func (h *handler) authorizePublish(thingID, topic string) error {
 		err = h.authorizeThingCommand(thingID, id)
 	case prefix == topicPrefixGroups && suffix == topicSuffixCommands:
 		err = h.authorizeGroupCommand(thingID, id)
+	case prefix == topicPrefixThings && suffix == topicSuffixOTA:
+		err = authorizeOTAStatus(thingID, id, parts)
 	}
 
 	if err != nil {
 		return errors.Wrap(ErrUnauthorizedPublishTopic, fmt.Errorf("%s for thing %s", topic, thingID))
+	}
+	return nil
+}
+
+// authorizeOTAStatus lets a thing publish only its own OTA status, since OTA updates come from the ota service alone.
+func authorizeOTAStatus(thingID, id string, parts []string) error {
+	if id != thingID || len(parts) != 4 || parts[3] != nats.OTAStatusSubtopic {
+		return errors.ErrAuthorization
 	}
 	return nil
 }
@@ -238,23 +250,26 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 	}
 
 	msg := protomfx.Message{
+		ThingId:  pc.ThingID,
 		Protocol: protocol,
 		Subtopic: subtopic,
 		Records:  []*protomfx.Record{{Payload: payload}},
+		Created:  time.Now().UnixNano(),
 	}
 
-	if err := messaging.FormatMessage(pc, &msg); err != nil {
-		return err
-	}
-
-	if nats.IsCommandsSubject(subject) {
-		if err := h.publishCommand(subject, msg); err != nil {
+	switch {
+	case nats.IsOTASubject(subject, nats.OTAStatusSubtopic):
+		// Built from the publisher's ID, since will messages skip AuthPublish.
+		return h.publisher.Publish(nats.GetOTASubject(pc.ThingID, nats.OTAStatusSubtopic), msg)
+	case nats.IsCommandsSubject(subject):
+		return h.publishCommand(subject, msg)
+	default:
+		// Profile transformations apply only to messages.
+		if err := messaging.FormatMessage(pc, &msg); err != nil {
 			return err
 		}
-		return nil
+		return h.publisher.Dispatch(msg, pc.ProfileConfig)
 	}
-
-	return h.publisher.Dispatch(msg, pc.ProfileConfig)
 }
 
 func (h *handler) publishCommand(subject string, msg protomfx.Message) error {
@@ -309,6 +324,8 @@ func parseTopic(topic, thingID string) (subject, subtopic string, err error) {
 		return nats.GetGroupCommandsSubject(id, subtopic), subtopic, nil
 	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
 		return nats.GetMessagesSubject(id, subtopic), subtopic, nil
+	case prefix == topicPrefixThings && suffix == topicSuffixOTA && subtopic == nats.OTAStatusSubtopic:
+		return nats.GetOTASubject(id, subtopic), subtopic, nil
 	}
 
 	return defaultTopicRoute(topic, thingID)
@@ -443,7 +460,7 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 }
 
 // validateCustomTopic enforces authorization only for topics that match
-// custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages).
+// custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages, things/thingID/ota).
 func validateCustomTopic(topic, thingID, groupID string) error {
 	// Reject leading-slash variants of the custom topic patterns.
 	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {
@@ -479,7 +496,7 @@ func validateCustomTopic(topic, thingID, groupID string) error {
 		if prefix == topicPrefixGroups && id != groupID {
 			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for group %s", topic, groupID))
 		}
-	case topicSuffixMessages:
+	case topicSuffixMessages, topicSuffixOTA:
 		if prefix == topicPrefixThings && id != thingID {
 			return errors.Wrap(ErrUnauthorizedSubscriptionTopic, fmt.Errorf("%s for thing %s", topic, thingID))
 		}

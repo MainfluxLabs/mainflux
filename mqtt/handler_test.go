@@ -120,42 +120,70 @@ func TestAuthPublish(t *testing.T) {
 			desc:    "publish to own thing messages topic",
 			client:  &sessionClient,
 			err:     nil,
-			topic:   strPtr("things/" + thingID + "/messages"),
+			topic:   new("things/" + thingID + "/messages"),
 			payload: payload,
 		},
 		{
 			desc:    "publish to recipient thing messages topic in same group",
 			client:  &sessionClient,
 			err:     nil,
-			topic:   strPtr("things/" + recipientID + "/messages"),
+			topic:   new("things/" + recipientID + "/messages"),
 			payload: payload,
 		},
 		{
 			desc:    "publish to recipient thing commands topic in same group",
 			client:  &sessionClient,
 			err:     nil,
-			topic:   strPtr("things/" + recipientID + "/commands"),
+			topic:   new("things/" + recipientID + "/commands"),
 			payload: payload,
 		},
 		{
 			desc:    "publish to thing in different group",
 			client:  &sessionClient,
 			err:     mqtt.ErrUnauthorizedPublishTopic,
-			topic:   strPtr("things/" + otherThingID + "/commands"),
+			topic:   new("things/" + otherThingID + "/commands"),
 			payload: payload,
 		},
 		{
 			desc:    "publish to own group commands topic",
 			client:  &sessionClient,
 			err:     nil,
-			topic:   strPtr("groups/" + groupID + "/commands"),
+			topic:   new("groups/" + groupID + "/commands"),
 			payload: payload,
 		},
 		{
 			desc:    "publish to different group commands topic",
 			client:  &sessionClient,
 			err:     mqtt.ErrUnauthorizedPublishTopic,
-			topic:   strPtr("groups/" + otherGroupID + "/commands"),
+			topic:   new("groups/" + otherGroupID + "/commands"),
+			payload: payload,
+		},
+		{
+			desc:    "publish own ota status",
+			client:  &sessionClient,
+			err:     nil,
+			topic:   new("things/" + thingID + "/ota/status"),
+			payload: payload,
+		},
+		{
+			desc:    "publish ota status of another thing",
+			client:  &sessionClient,
+			err:     mqtt.ErrUnauthorizedPublishTopic,
+			topic:   new("things/" + recipientID + "/ota/status"),
+			payload: payload,
+		},
+		{
+			desc:    "publish ota update",
+			client:  &sessionClient,
+			err:     mqtt.ErrUnauthorizedPublishTopic,
+			topic:   new("things/" + thingID + "/ota/update"),
+			payload: payload,
+		},
+		{
+			desc:    "publish to ota topic without subtopic",
+			client:  &sessionClient,
+			err:     mqtt.ErrUnauthorizedPublishTopic,
+			topic:   new("things/" + thingID + "/ota"),
 			payload: payload,
 		},
 		{
@@ -187,6 +215,8 @@ func TestAuthSubscribe(t *testing.T) {
 	unauthorizedGroupTopic := []string{"groups/other-group/commands/fw/update"}
 	thingWildcardTopic := []string{"things/+/messages"}
 	multiLevelWildcardTopic := []string{"things/#"}
+	otaUpdateTopic := []string{"things/" + thingID + "/ota/update"}
+	unauthorizedOTAUpdateTopic := []string{"things/" + otherThingID + "/ota/update"}
 
 	cases := []struct {
 		desc   string
@@ -235,6 +265,18 @@ func TestAuthSubscribe(t *testing.T) {
 			client: &sessionClient,
 			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
 			topic:  &multiLevelWildcardTopic,
+		},
+		{
+			desc:   "subscribe to own ota updates",
+			client: &sessionClient,
+			err:    nil,
+			topic:  &otaUpdateTopic,
+		},
+		{
+			desc:   "subscribe to another thing's ota updates",
+			client: &sessionClient,
+			err:    mqtt.ErrUnauthorizedSubscriptionTopic,
+			topic:  &unauthorizedOTAUpdateTopic,
 		},
 	}
 
