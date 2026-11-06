@@ -42,153 +42,64 @@ func Connect(cfg Config) (*sqlx.DB, error) {
 }
 
 func migrateDB(db *sqlx.DB) error {
+	// The schema is defined in a single migration. Databases created by earlier
+	// releases already have rules_1 recorded and are left untouched, because
+	// sql-migrate skips a migration whose identifier is already applied.
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
 				Id: "rules_1",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS rules (
-						id          UUID PRIMARY KEY,
-						profile_id  UUID NOT NULL,
-						group_id    UUID NOT NULL, 
-						name        VARCHAR(254) NOT NULL,
-						description VARCHAR(1024),
-						condition   JSONB NOT NULL,
-						actions     JSONB NOT NULL
+						id           UUID PRIMARY KEY,
+						group_id     UUID NOT NULL,
+						name         VARCHAR(254) NOT NULL,
+						description  VARCHAR(1024),
+						conditions   JSONB NOT NULL,
+						actions      JSONB NOT NULL,
+						operator     VARCHAR(3) NOT NULL DEFAULT '',
+						input_type   TEXT NOT NULL DEFAULT 'message',
+						input_config JSONB NOT NULL DEFAULT '{}'
 					)`,
-				},
-				Down: []string{"DROP TABLE rules"},
-			},
-			{
-				Id: "rules_2",
-				Up: []string{
-					`ALTER TABLE rules RENAME COLUMN condition TO conditions`,
-					`ALTER TABLE rules ADD COLUMN operator VARCHAR(3) NOT NULL DEFAULT ''`,
-					`UPDATE rules
-					 SET conditions = jsonb_build_array(jsonb_set(conditions, '{comparator}', conditions->'operator') - 'operator')
-					 WHERE jsonb_typeof(conditions) = 'object'`,
-				},
-			},
-			{
-				Id: "rules_3",
-				Up: []string{
-					`ALTER TABLE rules DROP COLUMN IF EXISTS profile_id;`,
-				},
-			},
-			{
-				Id: "rules_4",
-				Up: []string{
 					`CREATE TABLE IF NOT EXISTS rules_things (
-						rule_id   UUID NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
-						thing_id  UUID NOT NULL,
+						rule_id  UUID NOT NULL REFERENCES rules (id) ON DELETE CASCADE,
+						thing_id UUID NOT NULL,
 						PRIMARY KEY (rule_id, thing_id)
-					);`,
-				},
-			},
-			{
-				Id: "rules_5",
-				Up: []string{
+					)`,
 					`CREATE TABLE IF NOT EXISTS lua_scripts (
-						id          UUID NOT NULL,
+						id          UUID PRIMARY KEY,
 						group_id    UUID NOT NULL,
 						script      VARCHAR(65535) NOT NULL,
 						name        VARCHAR NOT NULL,
-						description VARCHAR NOT NULL,
-						PRIMARY KEY (id)
-					);`,
-					`CREATE TABLE IF NOT EXISTS lua_scripts_things (
-						thing_id      UUID NOT NULL,
-						lua_script_id UUID NOT NULL,
-						PRIMARY KEY (thing_id, lua_script_id),
-						FOREIGN KEY (lua_script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
-					);`,
+						description VARCHAR NOT NULL
+					)`,
 					`CREATE TABLE IF NOT EXISTS lua_script_runs (
-						id          UUID NOT NULL,
-						script_id   UUID NOT NULL,
+						id          UUID PRIMARY KEY,
+						script_id   UUID NOT NULL REFERENCES lua_scripts (id) ON DELETE CASCADE,
 						thing_id    UUID NOT NULL,
 						logs        JSONB NOT NULL,
 						started_at  TIMESTAMPTZ NOT NULL,
 						finished_at TIMESTAMPTZ NOT NULL,
 						status      TEXT NOT NULL,
 						error       TEXT NULL,
-						PRIMARY KEY (id),
-						FOREIGN KEY (script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
-					);`,
-					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_thing_id ON lua_script_runs(thing_id)`,
-					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_script_id ON lua_script_runs(script_id)`,
-				},
-				Down: []string{
-					`DROP TABLE IF EXISTS lua_scripts;`,
-					`DROP TABLE IF EXISTS lua_scripts_things;`,
-					`DROP TABLE IF EXISTS lua_script_runs;`,
-					`DROP INDEX IF EXISTS idx_lua_script_runs_thing_id;`,
-					`DROP INDEX IF EXISTS idx_lua_script_runs_script_id;`,
-				},
-			},
-			{
-				Id: "rules_6",
-				Up: []string{
-					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_type TEXT NOT NULL DEFAULT 'message'`,
+						rule_id     UUID NULL REFERENCES rules (id) ON DELETE CASCADE
+					)`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_thing_id ON lua_script_runs (thing_id)`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_script_id ON lua_script_runs (script_id)`,
+					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_rule_id ON lua_script_runs (rule_id)`,
 					`CREATE INDEX IF NOT EXISTS idx_rules_group_input_type ON rules (group_id, input_type)`,
 					`CREATE INDEX IF NOT EXISTS idx_rules_things_thing_id ON rules_things (thing_id)`,
 				},
 				Down: []string{
-					`DROP INDEX IF EXISTS idx_rules_things_thing_id`,
-					`DROP INDEX IF EXISTS idx_rules_group_input_type`,
-					`ALTER TABLE rules DROP COLUMN IF EXISTS input_type`,
-				},
-			},
-			{
-				Id: "rules_7",
-				Up: []string{
-					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_config JSONB NOT NULL DEFAULT '{}'`,
-				},
-				Down: []string{
-					`ALTER TABLE rules DROP COLUMN IF EXISTS input_config`,
-				},
-			},
-			{
-				Id: "rules_8",
-				Up: []string{
-					`DROP TABLE IF EXISTS lua_scripts_things`,
-				},
-				Down: []string{
-					`CREATE TABLE IF NOT EXISTS lua_scripts_things (
-						thing_id      UUID NOT NULL,
-						lua_script_id UUID NOT NULL,
-						PRIMARY KEY (thing_id, lua_script_id),
-						FOREIGN KEY (lua_script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE
-					);`,
-				},
-			},
-			{
-				// Backfills the "type" field on conditions created before script conditions
-				// existed, when every condition was implicitly a threshold condition.
-				Id: "rules_9",
-				Up: []string{
-					`UPDATE rules
-					 SET conditions = (
-						 SELECT jsonb_agg(elem || jsonb_build_object('type', COALESCE(elem->>'type', 'threshold')))
-						 FROM jsonb_array_elements(conditions) AS elem
-					 )
-					 WHERE EXISTS (
-						 SELECT 1 FROM jsonb_array_elements(conditions) AS elem WHERE NOT (elem ? 'type')
-					 )`,
-				},
-			},
-			{
-				Id: "rules_10",
-				Up: []string{
-					`ALTER TABLE lua_script_runs ADD COLUMN IF NOT EXISTS rule_id UUID NULL REFERENCES rules (id) ON DELETE CASCADE`,
-					`CREATE INDEX IF NOT EXISTS idx_lua_script_runs_rule_id ON lua_script_runs(rule_id)`,
-				},
-				Down: []string{
-					`DROP INDEX IF EXISTS idx_lua_script_runs_rule_id`,
-					`ALTER TABLE lua_script_runs DROP COLUMN IF EXISTS rule_id`,
+					`DROP TABLE IF EXISTS lua_script_runs`,
+					`DROP TABLE IF EXISTS lua_scripts`,
+					`DROP TABLE IF EXISTS rules_things`,
+					`DROP TABLE IF EXISTS rules`,
 				},
 			},
 		},
 	}
+
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }
