@@ -124,20 +124,38 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 		}
 	}
 
+	memberIDs := make([]string, 0, len(gms))
+	for _, gm := range gms {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
+
+	page, err := ts.users.GetUsersByIDs(ctx, memberIDs, domain.UsersPageMetadata{})
+	if err != nil {
+		return nil
+	}
+	emailByMember := make(map[string]string, len(page.Users))
+	for _, u := range page.Users {
+		emailByMember[u.ID] = u.Email
+	}
+
+	orgByID := make(map[string]domain.Org)
 	for _, gm := range gms {
 		group := groupByID[gm.GroupID]
 
-		org, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
-		if err != nil {
-			continue
+		org, ok := orgByID[group.OrgID]
+		if !ok {
+			o, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
+			if err != nil {
+				continue
+			}
+			org = o
+			orgByID[group.OrgID] = o
 		}
 
-		page, err := ts.users.GetUsersByIDs(ctx, []string{gm.MemberID}, domain.UsersPageMetadata{})
-		if err != nil {
+		recipientEmail, ok := emailByMember[gm.MemberID]
+		if !ok {
 			continue
 		}
-
-		recipientEmail := page.Users[0].Email
 
 		// Send e-mail notification
 		go func() {
