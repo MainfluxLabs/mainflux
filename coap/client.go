@@ -10,12 +10,11 @@ import (
 	"sync/atomic"
 
 	"github.com/MainfluxLabs/mainflux/logger"
-	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
-	"github.com/plgd-dev/go-coap/v2/message"
-	"github.com/plgd-dev/go-coap/v2/message/codes"
-	mux "github.com/plgd-dev/go-coap/v2/mux"
+	"github.com/plgd-dev/go-coap/v3/message"
+	"github.com/plgd-dev/go-coap/v3/message/codes"
+	mux "github.com/plgd-dev/go-coap/v3/mux"
 )
 
 // Client wraps CoAP client.
@@ -28,18 +27,15 @@ type Client interface {
 	Done() <-chan struct{}
 }
 
-// ErrOption indicates an error when adding an option.
-var ErrOption = errors.New("unable to set option")
-
 type client struct {
-	client  mux.Client
+	client  mux.Conn
 	token   message.Token
 	observe uint32
 	logger  logger.Logger
 }
 
 // NewClient instantiates a new Observer.
-func NewClient(c mux.Client, tkn message.Token, l logger.Logger) Client {
+func NewClient(c mux.Conn, tkn message.Token, l logger.Logger) Client {
 	return &client{
 		client:  c,
 		token:   tkn,
@@ -53,13 +49,16 @@ func (c *client) Done() <-chan struct{} {
 }
 
 func (c *client) Cancel() error {
-	m := message.Message{
-		Code:    codes.Content,
-		Token:   c.token,
-		Context: context.Background(),
-		Options: make(message.Options, 0, 16),
+	// A closed connection can't take the final notification.
+	if c.client.Context().Err() != nil {
+		return nil
 	}
-	if err := c.client.WriteMessage(&m); err != nil {
+
+	m := c.client.AcquireMessage(context.Background())
+	defer c.client.ReleaseMessage(m)
+	m.SetCode(codes.Content)
+	m.SetToken(c.token)
+	if err := c.client.WriteMessage(m); err != nil {
 		c.logger.Error(fmt.Sprintf("Error sending message: %s.", err))
 	}
 	return c.client.Close()
@@ -84,34 +83,13 @@ func (c *client) HandleCommand(_ string, cmd protomfx.Command) error {
 
 // notify sends the payload to the observer as the next notification.
 func (c *client) notify(payload []byte) error {
-	m := message.Message{
-		Code:    codes.Content,
-		Token:   c.token,
-		Context: c.client.Context(),
-		Body:    bytes.NewReader(payload),
-	}
+	m := c.client.AcquireMessage(c.client.Context())
+	defer c.client.ReleaseMessage(m)
+	m.SetCode(codes.Content)
+	m.SetToken(c.token)
+	m.SetContentFormat(message.TextPlain)
+	m.SetObserve(atomic.AddUint32(&c.observe, 1))
+	m.SetBody(bytes.NewReader(payload))
 
-	atomic.AddUint32(&c.observe, 1)
-	var opts message.Options
-	var buff []byte
-	opts, n, err := opts.SetContentFormat(buff, message.TextPlain)
-	if err == message.ErrTooSmall {
-		buff = append(buff, make([]byte, n)...)
-		_, _, err = opts.SetContentFormat(buff, message.TextPlain)
-	}
-	if err != nil {
-		c.logger.Error(fmt.Sprintf("Can't set content format: %s.", err))
-		return errors.Wrap(ErrOption, err)
-	}
-	opts, n, err = opts.SetObserve(buff, uint32(c.observe))
-	if err == message.ErrTooSmall {
-		buff = append(buff, make([]byte, n)...)
-		opts, _, err = opts.SetObserve(buff, uint32(c.observe))
-	}
-	if err != nil {
-		return fmt.Errorf("cannot set options to response: %w", err)
-	}
-
-	m.Options = opts
-	return c.client.WriteMessage(&m)
+	return c.client.WriteMessage(m)
 }
