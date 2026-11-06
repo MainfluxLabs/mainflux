@@ -34,6 +34,7 @@ volumes:
   mainfluxlabs-crl-volume:
   mainfluxlabs-uiconfigs-db-volume:
   mainfluxlabs-broker-volume:
+  mainfluxlabs-pyscripts-db-volume:
 
 services:
   ui:
@@ -699,6 +700,71 @@ services:
       - ${MF_WEBHOOKS_HTTP_PORT}:${MF_WEBHOOKS_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
+
+  pyscripts-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-pyscripts-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${MF_PYSCRIPTS_DB_USER}
+      POSTGRES_PASSWORD: ${MF_PYSCRIPTS_DB_PASS}
+      POSTGRES_DB: ${MF_PYSCRIPTS_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-pyscripts-db-volume:/var/lib/postgresql/data
+
+  pyscripts:
+    image: ${MF_RELEASE_PREFIX}/pyscripts:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-pyscripts
+    depends_on:
+      - things
+      - pyscripts-db
+    restart: unless-stopped
+    environment:
+      MF_PYSCRIPTS_LOG_LEVEL: ${MF_PYSCRIPTS_LOG_LEVEL}
+      MF_PYSCRIPTS_DB_HOST: pyscripts-db
+      MF_PYSCRIPTS_DB_PORT: ${MF_PYSCRIPTS_DB_PORT}
+      MF_PYSCRIPTS_DB_USER: ${MF_PYSCRIPTS_DB_USER}
+      MF_PYSCRIPTS_DB_PASS: ${MF_PYSCRIPTS_DB_PASS}
+      MF_PYSCRIPTS_DB: ${MF_PYSCRIPTS_DB}
+      MF_PYSCRIPTS_HTTP_PORT: ${MF_PYSCRIPTS_HTTP_PORT}
+      MF_PYSCRIPTS_SERVER_CERT: ${MF_PYSCRIPTS_SERVER_CERT}
+      MF_PYSCRIPTS_SERVER_KEY: ${MF_PYSCRIPTS_SERVER_KEY}
+      MF_PYSCRIPTS_CLIENT_TLS: ${MF_PYSCRIPTS_CLIENT_TLS}
+      MF_PYSCRIPTS_CA_CERTS: ${MF_PYSCRIPTS_CA_CERTS}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_PYSCRIPTS_ES_URL: ${MF_PYSCRIPTS_ES_URL}
+      MF_PYSCRIPTS_WORKERS: ${MF_PYSCRIPTS_WORKERS}
+      MF_PYSCRIPTS_RUN_TIMEOUT: ${MF_PYSCRIPTS_RUN_TIMEOUT}
+      MF_PYSCRIPTS_ACQUIRE_TIMEOUT: ${MF_PYSCRIPTS_ACQUIRE_TIMEOUT}
+      MF_PYSCRIPTS_START_TIMEOUT: ${MF_PYSCRIPTS_START_TIMEOUT}
+      MF_PYSCRIPTS_MAX_SCRIPT_SIZE: ${MF_PYSCRIPTS_MAX_SCRIPT_SIZE}
+      MF_PYSCRIPTS_MAX_OUTPUT_SIZE: ${MF_PYSCRIPTS_MAX_OUTPUT_SIZE}
+      MF_PYSCRIPTS_MAX_LOG_LINES: ${MF_PYSCRIPTS_MAX_LOG_LINES}
+      MF_PYSCRIPTS_MAX_CPU_SECONDS: ${MF_PYSCRIPTS_MAX_CPU_SECONDS}
+      MF_PYSCRIPTS_MAX_MEMORY: ${MF_PYSCRIPTS_MAX_MEMORY}
+      MF_PYSCRIPTS_MAX_FILE_SIZE: ${MF_PYSCRIPTS_MAX_FILE_SIZE}
+      MF_PYSCRIPTS_BLAS_THREADS: ${MF_PYSCRIPTS_BLAS_THREADS}
+    ports:
+      - ${MF_PYSCRIPTS_HTTP_PORT}:${MF_PYSCRIPTS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+    mem_limit: ${MF_PYSCRIPTS_MEM_LIMIT}
+    memswap_limit: ${MF_PYSCRIPTS_MEM_LIMIT}
+    cpus: ${MF_PYSCRIPTS_CPUS}
+    pids_limit: ${MF_PYSCRIPTS_PIDS_LIMIT}
+    read_only: true
+    tmpfs:
+      - /tmp:size=${MF_PYSCRIPTS_TMPFS_SIZE}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   smtp-notifier-db:
     image: postgres:13.3-alpine
