@@ -7,10 +7,12 @@ require (
 	github.com/Shopify/go-lua v0.0.0-20250718183320-1e37f32ad7d0
 	github.com/Shopify/goluago v0.0.0-20240527182001-ec4ec6c26eab
 	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/eclipse/paho.mqtt.golang v1.5.1
 	github.com/fatih/color v1.13.0
 	github.com/fiorix/go-smpp v0.0.0-20210403173735-2894b96e70ba
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-redis/redis/v8 v8.11.5
@@ -41,7 +43,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	golang.org/x/crypto v0.56.0
 	golang.org/x/net v0.57.0
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.22.0
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	gonum.org/v1/gonum v0.11.0
