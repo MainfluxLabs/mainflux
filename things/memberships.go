@@ -167,11 +167,11 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 }
 
 func (ts *thingsService) CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error {
-	for _, gm := range gms {
-		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
-			return err
-		}
+	if err := ts.groupMemberships.Save(ctx, gms...); err != nil {
+		return err
+	}
 
+	for _, gm := range gms {
 		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
