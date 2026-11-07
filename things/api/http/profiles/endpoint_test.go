@@ -149,6 +149,8 @@ func TestCreateProfiles(t *testing.T) {
 
 	data := `[{"name": "1"}, {"name": "2"}]`
 	invalidData := fmt.Sprintf(`[{"name": "%s"}]`, invalidName)
+	validConfigData := `[{"name": "cfg", "config": {"content_type": "application/senml+json", "write_enabled": true}}]`
+	invalidContentTypeData := `[{"name": "cfg", "config": {"content_type": "application/xml"}}]`
 
 	cases := []struct {
 		desc        string
@@ -216,6 +218,22 @@ func TestCreateProfiles(t *testing.T) {
 		{
 			desc:        "create profile with invalid name",
 			data:        invalidData,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusBadRequest,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create profile with valid config content type",
+			data:        validConfigData,
+			contentType: contentTypeJSON,
+			auth:        token,
+			status:      http.StatusCreated,
+			response:    emptyValue,
+		},
+		{
+			desc:        "create profile with invalid config content type",
+			data:        invalidContentTypeData,
 			contentType: contentTypeJSON,
 			auth:        token,
 			status:      http.StatusBadRequest,

@@ -1216,7 +1216,19 @@ components:
           description: Free-form profile name.
         config:
           type: object
-          description: Object-encoded profile config data.
+          description: Object-encoded profile config data. When present, the content type must be specified.
+          required:
+            - content_type
+          properties:
+            content_type:
+              type: string
+              enum:
+                - application/senml+json
+                - application/json
+              description: Message content type applied to published messages. Required when the configuration is present.
+            write_enabled:
+              type: boolean
+              description: Determines whether published messages are persisted.
         metadata:
           type: object
           description: Arbitrary, object-encoded profile's data.

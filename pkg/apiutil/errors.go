@@ -210,6 +210,9 @@ var (
 	// ErrInvalidThingType indicates an invalid or missing thing type
 	ErrInvalidThingType = errors.New("missing or invalid thing type")
 
+	// ErrInvalidContentType indicates an invalid profile configuration content type.
+	ErrInvalidContentType = errors.New("invalid profile content type")
+
 	// ErrMissingAuth indicates that neither a thing key nor a user token was provided.
 	ErrMissingAuth = errors.New("missing thing key or bearer token")
 
