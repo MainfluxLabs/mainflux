@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 
@@ -45,7 +46,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "rules_1",
+				Id: "rules_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS rules (
 						id          UUID PRIMARY KEY,
@@ -60,7 +61,7 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{"DROP TABLE rules"},
 			},
 			{
-				Id: "rules_2",
+				Id: "rules_02",
 				Up: []string{
 					`ALTER TABLE rules RENAME COLUMN condition TO conditions`,
 					`ALTER TABLE rules ADD COLUMN operator VARCHAR(3) NOT NULL DEFAULT ''`,
@@ -70,13 +71,13 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "rules_3",
+				Id: "rules_03",
 				Up: []string{
 					`ALTER TABLE rules DROP COLUMN IF EXISTS profile_id;`,
 				},
 			},
 			{
-				Id: "rules_4",
+				Id: "rules_04",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS rules_things (
 						rule_id   UUID NOT NULL REFERENCES rules(id) ON DELETE CASCADE,
@@ -86,7 +87,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "rules_5",
+				Id: "rules_05",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS lua_scripts (
 						id          UUID NOT NULL,
@@ -126,7 +127,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "rules_6",
+				Id: "rules_06",
 				Up: []string{
 					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_type TEXT NOT NULL DEFAULT 'message'`,
 					`CREATE INDEX IF NOT EXISTS idx_rules_group_input_type ON rules (group_id, input_type)`,
@@ -139,7 +140,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "rules_7",
+				Id: "rules_07",
 				Up: []string{
 					`ALTER TABLE rules ADD COLUMN IF NOT EXISTS input_config JSONB NOT NULL DEFAULT '{}'`,
 				},
@@ -148,7 +149,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "rules_8",
+				Id: "rules_08",
 				Up: []string{
 					`DROP TABLE IF EXISTS lua_scripts_things`,
 				},
@@ -164,7 +165,7 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				// Backfills the "type" field on conditions created before script conditions
 				// existed, when every condition was implicitly a threshold condition.
-				Id: "rules_9",
+				Id: "rules_09",
 				Up: []string{
 					`UPDATE rules
 					 SET conditions = (
@@ -189,6 +190,11 @@ func migrateDB(db *sqlx.DB) error {
 			},
 		},
 	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
+	}
+
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }

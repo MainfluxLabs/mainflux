@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -58,7 +59,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "certs_1",
+				Id: "certs_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS certs (
 						thing_id         UUID NOT NULL,
@@ -88,7 +89,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "certs_2",
+				Id: "certs_02",
 				Up: []string{
 					`ALTER TABLE certs ADD COLUMN IF NOT EXISTS key_bits INTEGER NOT NULL DEFAULT 0;`,
 				},
@@ -97,7 +98,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "certs_3",
+				Id: "certs_03",
 				Up: []string{
 					`ALTER TABLE certs ADD COLUMN IF NOT EXISTS downloaded BOOLEAN NOT NULL DEFAULT false;`,
 				},
@@ -106,6 +107,10 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -42,7 +43,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "downlinks_1",
+				Id: "downlinks_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS downlinks (
 						id          UUID PRIMARY KEY,
@@ -63,13 +64,13 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{"DROP TABLE downlinks"},
 			},
 			{
-				Id: "downlinks_2",
+				Id: "downlinks_02",
 				Up: []string{
 					`ALTER TABLE downlinks ALTER COLUMN url TYPE VARCHAR(1024)`,
 				},
 			},
 			{
-				Id: "downlinks_3",
+				Id: "downlinks_03",
 				Up: []string{
 					`ALTER TABLE downlinks DROP COLUMN scheduler`,
 					`ALTER TABLE downlinks DROP COLUMN time_zone`,
@@ -80,7 +81,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "downlinks_4",
+				Id: "downlinks_04",
 				Up: []string{
 					`ALTER TABLE downlinks DROP COLUMN cron_id`,
 					`UPDATE downlinks SET scheduler = jsonb_set(scheduler, '{time_zone}', '"UTC"')
@@ -88,13 +89,13 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "downlinks_5",
+				Id: "downlinks_05",
 				Up: []string{
 					`ALTER TABLE downlinks ADD COLUMN IF NOT EXISTS forecast BOOLEAN DEFAULT FALSE`,
 				},
 			},
 			{
-				Id: "downlinks_6",
+				Id: "downlinks_06",
 				Up: []string{
 					`ALTER TABLE downlinks ADD COLUMN IF NOT EXISTS time_filter JSONB`,
 					`UPDATE downlinks
@@ -109,7 +110,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "downlinks_7",
+				Id: "downlinks_07",
 				Up: []string{
 					`ALTER TABLE downlinks DROP COLUMN IF EXISTS start_time`,
 					`ALTER TABLE downlinks DROP COLUMN IF EXISTS end_time`,
@@ -119,6 +120,11 @@ func migrateDB(db *sqlx.DB) error {
 			},
 		},
 	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
+	}
+
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }
