@@ -235,3 +235,8 @@ func (svc authServiceMock) GetOrgIDsByAdmin(_ context.Context, memberID string) 
 
 	return orgIDs, nil
 }
+
+func (svc authServiceMock) GetOrgMembership(_ context.Context, orgID, memberID string) (domain.OrgMembership, error) {
+	role := svc.orgRoles[orgID][memberID]
+	return domain.OrgMembership{OrgID: orgID, MemberID: memberID, Role: role}, nil
+}

@@ -197,6 +197,15 @@ func (ms *metricsMiddleware) GetOrgIDsByAdmin(ctx context.Context, memberID stri
 	return ms.svc.GetOrgIDsByAdmin(ctx, memberID)
 }
 
+func (ms *metricsMiddleware) GetOrgMembership(ctx context.Context, orgID, memberID string) (auth.OrgMembership, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_org_membership").Add(1)
+		ms.latency.With("method", "get_org_membership").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetOrgMembership(ctx, orgID, memberID)
+}
+
 func (ms *metricsMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_org_memberships").Add(1)

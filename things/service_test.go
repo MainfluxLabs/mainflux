@@ -98,6 +98,7 @@ var (
 		{OrgID: orgID, MemberID: viewer.ID, Role: auth.Viewer},
 		{OrgID: orgID, MemberID: unauthUser.ID, Role: auth.Viewer},
 		{OrgID: orgID, MemberID: orgAdmin.ID, Role: auth.Admin},
+		{OrgID: otherOrgID, MemberID: viewer.ID, Role: auth.Viewer},
 	}
 	metadata = map[string]any{"test": "data"}
 )
@@ -2605,6 +2606,18 @@ func TestCreateGroupMemberships(t *testing.T) {
 			err: things.ErrGroupMembershipExists,
 		},
 		{
+			desc:  "create group membership for non-org-member",
+			token: token,
+			memberships: []things.GroupMembership{
+				{
+					MemberID: otherOrgOwner.ID,
+					GroupID:  gr.ID,
+					Role:     things.Viewer,
+				},
+			},
+			err: things.ErrMemberNotInOrg,
+		},
+		{
 			desc:        "create group memberships as editor",
 			token:       editorToken,
 			memberships: []things.GroupMembership{gm},
@@ -2640,6 +2653,25 @@ func TestCreateGroupMemberships(t *testing.T) {
 		err := svc.CreateGroupMemberships(context.Background(), tc.token, redirectPathGroup, tc.memberships...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
+}
+
+func TestCreateGroupMembershipsBatchIsAtomic(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	gr := grs[0]
+
+	valid := things.GroupMembership{GroupID: gr.ID, MemberID: editor.ID, Role: things.Editor}
+	nonMember := things.GroupMembership{GroupID: gr.ID, MemberID: otherOrgOwner.ID, Role: things.Viewer}
+
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, valid, nonMember)
+	assert.True(t, errors.Contains(err, things.ErrMemberNotInOrg), fmt.Sprintf("expected %s got %s", things.ErrMemberNotInOrg, err))
+
+	// The valid member must not have been persisted by the rejected batch, so
+	// re-adding it on its own succeeds rather than reporting an existing membership.
+	err = svc.CreateGroupMemberships(context.Background(), token, redirectPathGroup, valid)
+	assert.Nil(t, err, fmt.Sprintf("re-adding the valid member expected to succeed: %s", err))
 }
 
 func TestListGroupMemberships(t *testing.T) {

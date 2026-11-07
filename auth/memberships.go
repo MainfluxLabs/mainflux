@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -73,6 +74,9 @@ type OrgMemberships interface {
 
 	// GetOrgIDsByAdmin returns IDs of orgs where the member has the owner or admin role.
 	GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error)
+
+	// GetOrgMembership returns the membership of the member in the org identified by orgID.
+	GetOrgMembership(ctx context.Context, orgID, memberID string) (OrgMembership, error)
 }
 
 func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
@@ -119,6 +123,18 @@ func (svc service) GetAdminsByOrg(ctx context.Context, orgID string) ([]OrgMembe
 
 func (svc service) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
 	return svc.memberships.RetrieveOrgIDsByAdmin(ctx, memberID)
+}
+
+func (svc service) GetOrgMembership(ctx context.Context, orgID, memberID string) (OrgMembership, error) {
+	role, err := svc.memberships.RetrieveRole(ctx, memberID, orgID)
+	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return OrgMembership{OrgID: orgID, MemberID: memberID}, nil
+		}
+		return OrgMembership{}, err
+	}
+
+	return OrgMembership{OrgID: orgID, MemberID: memberID, Role: role}, nil
 }
 
 func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error) {

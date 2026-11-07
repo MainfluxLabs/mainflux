@@ -10,6 +10,9 @@ import (
 // ErrGroupMembershipExists indicates that membership already exists.
 var ErrGroupMembershipExists = errors.New("group membership already exists")
 
+// ErrMemberNotInOrg indicates that the member does not belong to the organization of the group.
+var ErrMemberNotInOrg = errors.New("member does not belong to the organization")
+
 // Domain type aliases
 type (
 	GroupMembership      = domain.GroupMembership
@@ -63,6 +66,10 @@ type GroupMemberships interface {
 
 func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error {
 	adminRolesByGroup := make(map[string]map[string]string)
+	groupByID := make(map[string]Group)
+
+	// Every membership is validated before any is saved, so a single rejected
+	// member does not leave the earlier members of the batch persisted.
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -88,31 +95,67 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 			return ErrGroupMembershipExists
 		}
 
-		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+		group, ok := groupByID[gm.GroupID]
+		if !ok {
+			g, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+			if err != nil {
+				return err
+			}
+			group = g
+			groupByID[gm.GroupID] = g
+		}
+
+		om, err := ts.auth.GetOrgMembership(ctx, group.OrgID, gm.MemberID)
 		if err != nil {
 			return err
 		}
-
-		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
-			return err
+		if om.Role == "" {
+			return ErrMemberNotInOrg
 		}
+	}
 
+	if err := ts.groupMemberships.Save(ctx, gms...); err != nil {
+		return err
+	}
+
+	for _, gm := range gms {
 		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
+	}
 
-		org, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
+	memberIDs := make([]string, 0, len(gms))
+	for _, gm := range gms {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
 
-		if err != nil {
-			continue
+	page, err := ts.users.GetUsersByIDs(ctx, memberIDs, domain.UsersPageMetadata{})
+	if err != nil {
+		return nil
+	}
+	emailByMember := make(map[string]string, len(page.Users))
+	for _, u := range page.Users {
+		emailByMember[u.ID] = u.Email
+	}
+
+	orgByID := make(map[string]domain.Org)
+	for _, gm := range gms {
+		group := groupByID[gm.GroupID]
+
+		org, ok := orgByID[group.OrgID]
+		if !ok {
+			o, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
+			if err != nil {
+				continue
+			}
+			org = o
+			orgByID[group.OrgID] = o
 		}
 
-		page, err := ts.users.GetUsersByIDs(ctx, []string{gm.MemberID}, domain.UsersPageMetadata{})
-		if err != nil {
+		recipientEmail, ok := emailByMember[gm.MemberID]
+		if !ok {
 			continue
 		}
-
-		recipientEmail := page.Users[0].Email
 
 		// Send e-mail notification
 		go func() {

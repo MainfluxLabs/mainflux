@@ -121,6 +121,23 @@ func (req orgIDsByAdminReq) validate() error {
 	return nil
 }
 
+type orgMembershipReq struct {
+	orgID    string
+	memberID string
+}
+
+func (req orgMembershipReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	return nil
+}
+
 type assignRoleReq struct {
 	ID   string
 	Role string

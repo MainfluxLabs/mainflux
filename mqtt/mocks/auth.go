@@ -101,3 +101,7 @@ func (svc authServiceMock) GetAdminsByOrg(context.Context, string) ([]domain.Org
 func (svc authServiceMock) GetOrgIDsByAdmin(context.Context, string) ([]string, error) {
 	panic("not implemented")
 }
+
+func (svc authServiceMock) GetOrgMembership(context.Context, string, string) (domain.OrgMembership, error) {
+	panic("not implemented")
+}

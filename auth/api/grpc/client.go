@@ -40,6 +40,7 @@ type grpcClient struct {
 	viewOrg                             endpoint.Endpoint
 	getAdminsByOrg                      endpoint.Endpoint
 	getOrgIDsByAdmin                    endpoint.Endpoint
+	getOrgMembership                    endpoint.Endpoint
 	timeout                             time.Duration
 }
 
@@ -165,6 +166,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			encodeGetOrgIDsByAdminRequest,
 			decodeGetOrgIDsByAdminResponse,
 			protomfx.OrgIDs{},
+		).Endpoint()),
+		getOrgMembership: kitot.TraceClient(tracer, "get_org_membership")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetOrgMembership",
+			encodeGetOrgMembershipRequest,
+			decodeGetOrgMembershipResponse,
+			protomfx.OrgMembership{},
 		).Endpoint()),
 
 		timeout: timeout,
@@ -557,6 +566,29 @@ func encodeGetOrgIDsByAdminRequest(_ context.Context, grpcReq any) (any, error) 
 func decodeGetOrgIDsByAdminResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.OrgIDs)
 	return orgIDsByAdminRes{orgIDs: res.GetIds()}, nil
+}
+
+func (client grpcClient) GetOrgMembership(ctx context.Context, orgID, memberID string) (domain.OrgMembership, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getOrgMembership(ctx, orgMembershipReq{orgID: orgID, memberID: memberID})
+	if err != nil {
+		return domain.OrgMembership{}, err
+	}
+
+	mr := res.(orgMembershipRes)
+	return domain.OrgMembership{OrgID: orgID, MemberID: mr.memberID, Role: mr.role}, nil
+}
+
+func encodeGetOrgMembershipRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(orgMembershipReq)
+	return &protomfx.OrgMembershipReq{OrgId: req.orgID, MemberId: req.memberID}, nil
+}
+
+func decodeGetOrgMembershipResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.OrgMembership)
+	return orgMembershipRes{memberID: res.GetMemberId(), role: res.GetRole()}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ any) (any, error) {

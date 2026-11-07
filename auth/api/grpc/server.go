@@ -37,6 +37,7 @@ type grpcServer struct {
 	viewOrg                             kitgrpc.Handler
 	getAdminsByOrg                      kitgrpc.Handler
 	getOrgIDsByAdmin                    kitgrpc.Handler
+	getOrgMembership                    kitgrpc.Handler
 }
 
 // NewServer returns new AuthServiceServer instance.
@@ -116,6 +117,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "get_org_ids_by_admin")(getOrgIDsByAdminEndpoint(svc)),
 			decodeGetOrgIDsByAdminRequest,
 			encodeGetOrgIDsByAdminResponse,
+		),
+		getOrgMembership: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "get_org_membership")(getOrgMembershipEndpoint(svc)),
+			decodeGetOrgMembershipRequest,
+			encodeGetOrgMembershipResponse,
 		),
 	}
 }
@@ -246,6 +252,15 @@ func (s *grpcServer) GetOrgIDsByAdmin(ctx context.Context, req *protomfx.MemberI
 	return res.(*protomfx.OrgIDs), nil
 }
 
+func (s *grpcServer) GetOrgMembership(ctx context.Context, req *protomfx.OrgMembershipReq) (*protomfx.OrgMembership, error) {
+	_, res, err := s.getOrgMembership.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*protomfx.OrgMembership), nil
+}
+
 func decodeAssignRoleRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.AssignRoleReq)
 	return assignRoleReq{ID: req.GetId(), Role: req.GetRole()}, nil
@@ -332,6 +347,16 @@ func decodeGetOrgIDsByAdminRequest(_ context.Context, grpcReq any) (any, error) 
 func encodeGetOrgIDsByAdminResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(orgIDsByAdminRes)
 	return &protomfx.OrgIDs{Ids: res.orgIDs}, nil
+}
+
+func decodeGetOrgMembershipRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.OrgMembershipReq)
+	return orgMembershipReq{orgID: req.GetOrgId(), memberID: req.GetMemberId()}, nil
+}
+
+func encodeGetOrgMembershipResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(orgMembershipRes)
+	return &protomfx.OrgMembership{MemberId: res.memberID, Role: res.role}, nil
 }
 
 func decodeCreateDormantOrgInviteRequest(_ context.Context, grpcReq any) (any, error) {
