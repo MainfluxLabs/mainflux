@@ -62,10 +62,24 @@ func (svc thingsServiceMock) CanUserAccessThing(_ context.Context, req domain.Us
 	return errors.ErrAuthorization
 }
 
-func (svc thingsServiceMock) CanUserAccessThings(ctx context.Context, req domain.UserAccessThingsReq) error {
+func (svc thingsServiceMock) CanUserAccessThings(_ context.Context, req domain.UserAccessThingsReq) error {
+	gr, ok := svc.groups[req.Token]
+	if !ok {
+		return errors.ErrAuthentication
+	}
+
+	if req.GroupID != "" && req.GroupID != gr.ID {
+		return errors.ErrAuthorization
+	}
+
 	for _, id := range req.IDs {
-		if err := svc.CanUserAccessThing(ctx, domain.UserAccessReq{Token: req.Token, ID: id, Action: req.Action}); err != nil {
-			return err
+		th, ok := svc.things[id]
+		if !ok {
+			return errors.ErrAuthorization
+		}
+
+		if th.GroupID != gr.ID {
+			return errors.ErrAuthorization
 		}
 	}
 
