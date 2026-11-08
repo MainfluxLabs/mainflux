@@ -333,6 +333,10 @@ func TestLogin(t *testing.T) {
 		Email:    "non-existentuser@example.com",
 		Password: validPass,
 	})
+	belowPolicyPassData := toJSON(users.User{
+		Email:    validEmail,
+		Password: "short",
+	})
 
 	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
@@ -347,6 +351,7 @@ func TestLogin(t *testing.T) {
 	}{
 		{"login with valid credentials", data, contentType, http.StatusCreated, tokenData},
 		{"login with invalid credentials", invalidData, contentType, http.StatusUnauthorized, unauthRes},
+		{"login with password below register policy", belowPolicyPassData, contentType, http.StatusUnauthorized, unauthRes},
 		{"login with invalid email address", invalidEmailData, contentType, http.StatusBadRequest, malformedRes},
 		{"login non-existent user", nonexistentData, contentType, http.StatusUnauthorized, unauthRes},
 		{"login with invalid request format", "{", contentType, http.StatusBadRequest, malformedRes},

@@ -146,7 +146,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	mux.Post("/tokens", kithttp.NewServer(
 		kitot.TraceServer(tracer, "login")(loginEndpoint(svc)),
-		decodeCredentials(passwordRegex),
+		decodeCredentials,
 		encodeResponse,
 		opts...,
 	))
@@ -311,24 +311,18 @@ func decodeUpdateUser(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeCredentials(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		var user users.User
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-		user.Email = strings.TrimSpace(user.Email)
-		req := userReq{
-			user:          user,
-			passwordRegex: passwordRegex,
-		}
-
-		return req, nil
+func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	var user users.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+	user.Email = strings.TrimSpace(user.Email)
+
+	return userReq{user: user}, nil
 }
 
 func decodeRefresh(_ context.Context, r *http.Request) (any, error) {

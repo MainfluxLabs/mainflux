@@ -85,6 +85,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidAuthKey),
 			errors.Contains(err, ErrInvalidIDFormat),
 			errors.Contains(err, ErrNameSize),
+			errors.Contains(err, ErrExternalKeySize),
 			errors.Contains(err, ErrLimitSize),
 			errors.Contains(err, ErrOffsetSize),
 			errors.Contains(err, ErrInvalidOrder),
@@ -118,6 +119,7 @@ func LoggingErrorEncoder(logger logger.Logger, enc kithttp.ErrorEncoder) kithttp
 			errors.Contains(err, ErrInvalidConditionType),
 			errors.Contains(err, ErrThingIDsSize),
 			errors.Contains(err, ErrInvalidThingType),
+			errors.Contains(err, ErrInvalidContentType),
 			errors.Contains(err, ErrMissingAuth):
 			logger.Error(err.Error())
 		}
@@ -196,6 +198,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingInviteID),
 		errors.Contains(err, ErrInvalidIDFormat),
 		errors.Contains(err, ErrNameSize),
+		errors.Contains(err, ErrExternalKeySize),
 		errors.Contains(err, ErrEmailSize),
 		errors.Contains(err, ErrInvalidStatus),
 		errors.Contains(err, ErrLimitSize),
@@ -230,6 +233,7 @@ func EncodeError(err error, w http.ResponseWriter) {
 		errors.Contains(err, ErrMissingProviderCode),
 		errors.Contains(err, ErrInvalidState),
 		errors.Contains(err, ErrInvalidThingType),
+		errors.Contains(err, ErrInvalidContentType),
 		errors.Contains(err, ErrInvalidAlarmLevel),
 		errors.Contains(err, ErrInvalidAlarmStatus),
 		errors.Contains(err, ErrInvalidInputType),

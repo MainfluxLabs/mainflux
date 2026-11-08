@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
@@ -20,12 +21,19 @@ const (
 )
 
 type userReq struct {
-	user          users.User
-	passwordRegex *regexp.Regexp
+	user users.User
 }
 
 func (req userReq) validate() error {
-	return req.user.Validate(req.passwordRegex)
+	if !email.IsEmail(req.user.Email) {
+		return errors.ErrMalformedEntity
+	}
+
+	if req.user.Password == "" {
+		return apiutil.ErrMissingPass
+	}
+
+	return nil
 }
 
 type selfRegisterUserReq struct {

@@ -1660,7 +1660,7 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th := ths[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -3273,7 +3273,7 @@ func TestRemoveExternalKey(t *testing.T) {
 
 	createdThing := createdThings[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), adminToken, externalKey, createdThing.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 

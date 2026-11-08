@@ -37,8 +37,8 @@ const (
 )
 
 type issueRequest struct {
-	Duration time.Duration `json:"duration,omitempty"`
-	Type     uint32        `json:"type,omitempty"`
+	Duration int64  `json:"duration,omitempty"`
+	Type     uint32 `json:"type,omitempty"`
 }
 
 type testRequest struct {
@@ -95,7 +95,7 @@ func TestIssue(t *testing.T) {
 	client := ts.Client()
 
 	lk := issueRequest{Type: auth.LoginKey}
-	ak := issueRequest{Type: auth.APIKey, Duration: time.Hour}
+	ak := issueRequest{Type: auth.APIKey, Duration: int64(time.Hour / time.Second)}
 	rk := issueRequest{Type: auth.RecoveryKey}
 
 	cases := []struct {
@@ -197,6 +197,25 @@ func TestIssue(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
+
+	ak1h := issueRequest{Type: auth.APIKey, Duration: int64(time.Hour / time.Second)}
+	expReq := testRequest{
+		client:      client,
+		method:      http.MethodPost,
+		url:         fmt.Sprintf("%s/keys", ts.URL),
+		contentType: contentType,
+		token:       loginSecret,
+		body:        strings.NewReader(toJSON(ak1h)),
+	}
+	expRes, err := expReq.make()
+	assert.Nil(t, err, fmt.Sprintf("issue API key for expiry check: unexpected error %s", err))
+	var kr struct {
+		IssuedAt  time.Time `json:"issued_at"`
+		ExpiresAt time.Time `json:"expires_at"`
+	}
+	err = json.NewDecoder(expRes.Body).Decode(&kr)
+	assert.Nil(t, err, fmt.Sprintf("decode issued key: unexpected error %s", err))
+	assert.WithinDuration(t, kr.IssuedAt.Add(time.Hour), kr.ExpiresAt, time.Second, "API key must expire the requested duration after issuance")
 }
 
 func TestRetrieve(t *testing.T) {

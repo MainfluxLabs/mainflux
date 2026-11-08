@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	maxLimitSize = 200
-	maxNameSize  = 1024
+	maxLimitSize       = 200
+	maxNameSize        = 1024
+	minExternalKeySize = 8
 )
 
 type createThingReq struct {
@@ -298,6 +299,10 @@ func (req updateExternalKeyReq) validate() error {
 
 	if req.Key == "" {
 		return apiutil.ErrMissingExternalThingKey
+	}
+
+	if len(req.Key) < minExternalKeySize || len(req.Key) > maxNameSize {
+		return apiutil.ErrExternalKeySize
 	}
 
 	return nil

@@ -9,7 +9,8 @@ SERVICES = users things http coap ws postgres-writer postgres-reader timescale-w
 DOCKERS = $(addprefix docker_,$(SERVICES))
 DOCKERS_DEV = $(addprefix docker_dev_,$(SERVICES))
 CGO_ENABLED ?= 0
-GOARCH ?= amd64
+GOOS ?= linux
+GOARCH ?= $(shell go env GOARCH)
 VERSION ?= $(shell git describe --abbrev=0 --tags)
 COMMIT ?= $(shell git rev-parse HEAD)
 TIME ?= $(shell date +%F_%T)
