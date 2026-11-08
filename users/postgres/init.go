@@ -6,6 +6,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 
@@ -46,7 +47,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "users_1",
+				Id: "users_01",
 				Up: []string{
 					`CREATE TYPE user_status AS ENUM ('enabled', 'disabled')`,
 					`CREATE TABLE IF NOT EXISTS users (
@@ -63,7 +64,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "users_2",
+				Id: "users_02",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS verifications (
 						email      VARCHAR(254) NOT NULL,
@@ -78,7 +79,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "users_3",
+				Id: "users_03",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS platform_invites (
 						id            UUID NOT NULL,
@@ -95,7 +96,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "users_4",
+				Id: "users_04",
 				Up: []string{
 					`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`,
 
@@ -114,6 +115,10 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

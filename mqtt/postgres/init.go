@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -43,7 +44,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "mqtt_1",
+				Id: "mqtt_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS subscriptions (
 					    subtopic    VARCHAR(1024),
@@ -60,13 +61,13 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "mqtt_2",
+				Id: "mqtt_02",
 				Up: []string{
 					`ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_client_id_key`,
 				},
 			},
 			{
-				Id: "mqtt_3",
+				Id: "mqtt_03",
 				Up: []string{
 					`ALTER TABLE subscriptions DROP COLUMN IF EXISTS status`,
 					`DELETE FROM subscriptions s1
@@ -81,13 +82,18 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "mqtt_4",
+				Id: "mqtt_04",
 				Up: []string{
 					`ALTER TABLE subscriptions RENAME COLUMN subtopic TO topic`,
 				},
 			},
 		},
 	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
+	}
+
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }

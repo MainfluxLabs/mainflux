@@ -6,6 +6,7 @@ package timescale
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -46,7 +47,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "messages_1",
+				Id: "messages_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS senml (
 						time          BIGINT NOT NULL,
@@ -83,7 +84,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "messages_2",
+				Id: "messages_02",
 				Up: []string{
 					`ALTER TABLE json DROP CONSTRAINT IF EXISTS json_pkey`,
 					`ALTER TABLE json ADD COLUMN IF NOT EXISTS payload_hash INTEGER`,
@@ -95,7 +96,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "messages_3",
+				Id: "messages_03",
 				Up: []string{
 					`ALTER TABLE json RENAME COLUMN publisher TO thing_id`,
 					`ALTER TABLE senml RENAME COLUMN publisher TO thing_id`,
@@ -110,6 +111,10 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

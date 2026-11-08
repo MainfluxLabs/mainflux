@@ -6,6 +6,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -46,7 +47,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "messages_1",
+				Id: "messages_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS messages (
 						subtopic      VARCHAR(254),
@@ -70,7 +71,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "messages_2",
+				Id: "messages_02",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS json (
 						created       BIGINT,
@@ -85,25 +86,25 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "messages_3",
+				Id: "messages_03",
 				Up: []string{
 					`ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_pkey`,
 				},
 			},
 			{
-				Id: "messages_4",
+				Id: "messages_04",
 				Up: []string{
 					`ALTER TABLE messages ALTER COLUMN time TYPE BIGINT USING CAST(time AS BIGINT);`,
 				},
 			},
 			{
-				Id: "messages_5",
+				Id: "messages_05",
 				Up: []string{
 					`ALTER TABLE messages RENAME TO senml;`,
 				},
 			},
 			{
-				Id: "messages_6",
+				Id: "messages_06",
 				Up: []string{
 					`CREATE INDEX IF NOT EXISTS idx_json_created ON json(created DESC)`,
 					`CREATE INDEX IF NOT EXISTS idx_json_publisher_created ON json(publisher, created DESC)`,
@@ -116,7 +117,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "messages_7",
+				Id: "messages_07",
 				Up: []string{
 					`ALTER TABLE json ADD COLUMN IF NOT EXISTS payload_hash INTEGER`,
 					`CREATE UNIQUE INDEX IF NOT EXISTS idx_json_dedup ON json(created, publisher, subtopic, payload_hash)`,
@@ -127,7 +128,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "messages_8",
+				Id: "messages_08",
 				Up: []string{
 					`ALTER TABLE json RENAME COLUMN publisher TO thing_id`,
 					`ALTER TABLE senml RENAME COLUMN publisher TO thing_id`,
@@ -142,6 +143,10 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
