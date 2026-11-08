@@ -145,7 +145,7 @@ func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
 	case RootSub:
-		return svc.isAdmin(ctx, ar.Token)
+		return svc.canAccessPlatform(ctx, ar.Token)
 	case OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
@@ -231,7 +231,7 @@ func getTimestamp() time.Time {
 }
 
 func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -254,7 +254,7 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 }
 
 func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -269,17 +269,13 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 	return nil
 }
 
-func (svc service) isAdmin(ctx context.Context, token string) error {
+func (svc service) canAccessPlatform(ctx context.Context, token string) error {
 	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	return svc.isAdminUser(ctx, user.ID)
-}
-
-func (svc service) isAdminUser(ctx context.Context, userID string) error {
-	role, err := svc.roles.RetrieveRole(ctx, userID)
+	role, err := svc.roles.RetrieveRole(ctx, user.ID)
 	if err != nil {
 		return err
 	}

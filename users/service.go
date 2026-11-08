@@ -398,7 +398,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 }
 
 func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return "", err
 	}
 
@@ -673,7 +673,7 @@ func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, e
 		return User{}, err
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		if user.id != id {
 			return User{}, errors.ErrAuthorization
 		}
@@ -710,7 +710,7 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 		Metadata: dbUser.Metadata,
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return u, nil
 	}
 
@@ -720,7 +720,7 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UsersPage, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return UsersPage{}, err
 	}
 
@@ -751,7 +751,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, []Identity{}, err
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return User{}, []User{}, []Identity{}, err
 	}
 
@@ -778,7 +778,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 }
 
 func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User, identities []Identity) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -869,7 +869,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	switch {
 	// Admin changes password for another user
 	case oldPassword == "" && email != "":
-		if err := svc.isAdmin(ctx, token); err != nil {
+		if err := svc.canAccessPlatform(ctx, token); err != nil {
 			return err
 		}
 		u, err := svc.users.RetrieveByEmail(ctx, email)
@@ -931,7 +931,7 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 		return err
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -972,7 +972,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 	return userIdentity{identity.ID, identity.Email}, nil
 }
 
-func (svc usersService) isAdmin(ctx context.Context, token string) error {
+func (svc usersService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}

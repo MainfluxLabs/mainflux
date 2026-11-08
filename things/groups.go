@@ -184,7 +184,7 @@ func (ts *thingsService) CreateGroups(ctx context.Context, token, orgID string, 
 }
 
 func (ts *thingsService) ListGroups(ctx context.Context, token string, pm PageMetadata) (GroupPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if err := ts.canAccessPlatform(ctx, token); err == nil {
 		return ts.groups.RetrieveAll(ctx, pm)
 	}
 
