@@ -82,7 +82,7 @@ func (rs *readersService) ListJSONMessages(ctx context.Context, token string, ke
 		}
 		rpm.ThingID = pc.ThingID
 	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
+		if err := rs.canAccessPlatform(ctx, token); err != nil {
 			return JSONMessagesPage{}, err
 		}
 	}
@@ -104,7 +104,7 @@ func (rs *readersService) ListSenMLMessages(ctx context.Context, token string, k
 		}
 		rpm.ThingID = pc.ThingID
 	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
+		if err := rs.canAccessPlatform(ctx, token); err != nil {
 			return SenMLMessagesPage{}, err
 		}
 	}
@@ -120,7 +120,7 @@ func (rs *readersService) ExportJSONMessages(ctx context.Context, token string, 
 			return JSONMessagesPage{}, err
 		}
 	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
+		if err := rs.canAccessPlatform(ctx, token); err != nil {
 			return JSONMessagesPage{}, err
 		}
 	}
@@ -136,7 +136,7 @@ func (rs *readersService) ExportSenMLMessages(ctx context.Context, token string,
 			return SenMLMessagesPage{}, err
 		}
 	default:
-		if err := rs.isAdmin(ctx, token); err != nil {
+		if err := rs.canAccessPlatform(ctx, token); err != nil {
 			return SenMLMessagesPage{}, err
 		}
 	}
@@ -145,7 +145,7 @@ func (rs *readersService) ExportSenMLMessages(ctx context.Context, token string,
 }
 
 func (rs *readersService) Backup(ctx context.Context, token string) (Backup, error) {
-	if err := rs.isAdmin(ctx, token); err != nil {
+	if err := rs.canAccessPlatform(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -172,7 +172,7 @@ func (rs *readersService) Backup(ctx context.Context, token string) (Backup, err
 }
 
 func (rs *readersService) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := rs.isAdmin(ctx, token); err != nil {
+	if err := rs.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -206,7 +206,7 @@ func (rs *readersService) DeleteSenMLMessages(ctx context.Context, token string,
 }
 
 func (rs *readersService) DeleteAllJSONMessages(ctx context.Context, token string, rpm JSONPageMetadata) error {
-	if err := rs.isAdmin(ctx, token); err != nil {
+	if err := rs.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -214,7 +214,7 @@ func (rs *readersService) DeleteAllJSONMessages(ctx context.Context, token strin
 }
 
 func (rs *readersService) DeleteAllSenMLMessages(ctx context.Context, token string, rpm SenMLPageMetadata) error {
-	if err := rs.isAdmin(ctx, token); err != nil {
+	if err := rs.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -229,7 +229,7 @@ func (rs *readersService) RemoveMessagesByThing(ctx context.Context, thingID str
 	return rs.senml.RemoveByThing(ctx, thingID)
 }
 
-func (rs *readersService) isAdmin(ctx context.Context, token string) error {
+func (rs *readersService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := rs.authc.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return err
 	}

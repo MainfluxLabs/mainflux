@@ -390,7 +390,7 @@ func (ts *thingsService) ViewMetadataByKey(ctx context.Context, key ThingKey) (M
 }
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if err := ts.canAccessPlatform(ctx, token); err == nil {
 		return ts.things.RetrieveAll(ctx, pm)
 	}
 
@@ -526,7 +526,7 @@ func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Pro
 }
 
 func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if err := ts.canAccessPlatform(ctx, token); err == nil {
 		return ts.profiles.RetrieveAll(ctx, pm)
 	}
 
@@ -835,7 +835,7 @@ func (ts *thingsService) GetOrgIDByGroup(ctx context.Context, groupID string) (s
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	if err := ts.isAdmin(ctx, token); err != nil {
+	if err := ts.canAccessPlatform(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -868,7 +868,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := ts.isAdmin(ctx, token); err != nil {
+	if err := ts.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -931,7 +931,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 	return ts.profiles.RetrieveByGroups(ctx, []string{groupID}, pm)
 }
 
-func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
+func (ts *thingsService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := ts.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}

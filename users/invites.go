@@ -78,7 +78,7 @@ type PlatformInvitesRepository interface {
 }
 
 func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (PlatformInvite, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return PlatformInvite{}, err
 	}
 
@@ -125,7 +125,7 @@ func (svc usersService) CreatePlatformInvite(ctx context.Context, token, redirec
 }
 
 func (svc usersService) RevokePlatformInvite(ctx context.Context, token, inviteID string) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -163,7 +163,7 @@ func (svc usersService) ViewPlatformInvite(ctx context.Context, inviteID string)
 }
 
 func (svc usersService) ListPlatformInvites(ctx context.Context, token string, pm PageMetadata) (PlatformInvitesPage, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return PlatformInvitesPage{}, err
 	}
 

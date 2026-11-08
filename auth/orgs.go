@@ -126,7 +126,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 }
 
 func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return svc.orgs.RetrieveAll(ctx, pm)
 	}
 
@@ -207,7 +207,7 @@ func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string
 		return err
 	}
 
-	if err := svc.isAdminUser(ctx, user.ID); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return nil
 	}
 

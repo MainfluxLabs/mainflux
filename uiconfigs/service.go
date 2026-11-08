@@ -115,7 +115,7 @@ func (svc *configService) ViewOrgConfig(ctx context.Context, token, orgID string
 }
 
 func (svc *configService) ListOrgsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (OrgConfigPage, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return svc.orgConfigs.RetrieveAll(ctx, pm)
 	}
 
@@ -159,7 +159,7 @@ func (svc *configService) RemoveOrgConfig(ctx context.Context, orgID string) err
 }
 
 func (svc *configService) BackupOrgsConfigs(ctx context.Context, token string) (OrgConfigBackup, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return OrgConfigBackup{}, err
 	}
 
@@ -180,7 +180,7 @@ func (svc *configService) ViewThingConfig(ctx context.Context, token, thingID st
 }
 
 func (svc *configService) ListThingsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (ThingConfigPage, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return svc.thingConfigs.RetrieveAll(ctx, pm)
 	}
 
@@ -235,7 +235,7 @@ func (svc *configService) RemoveThingConfigByGroup(ctx context.Context, groupID 
 }
 
 func (svc *configService) BackupThingsConfigs(ctx context.Context, token string) (ThingConfigBackup, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return ThingConfigBackup{}, err
 	}
 
@@ -256,7 +256,7 @@ func (svc *configService) ViewGroupConfig(ctx context.Context, token, groupID st
 }
 
 func (svc *configService) ListGroupsConfigs(ctx context.Context, token string, pm apiutil.PageMetadata) (GroupConfigPage, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return svc.groupConfigs.RetrieveAll(ctx, pm)
 	}
 
@@ -300,7 +300,7 @@ func (svc *configService) RemoveGroupConfig(ctx context.Context, groupID string)
 }
 
 func (svc *configService) BackupGroupsConfigs(ctx context.Context, token string) (GroupConfigBackup, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return GroupConfigBackup{}, err
 	}
 
@@ -331,7 +331,7 @@ func (svc *configService) Backup(ctx context.Context, token string) (Backup, err
 }
 
 func (svc *configService) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -364,7 +364,7 @@ func (svc *configService) canAccessOrg(ctx context.Context, token, orgID, subjec
 	return nil
 }
 
-func (svc *configService) isAdmin(ctx context.Context, token string) error {
+func (svc *configService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
