@@ -86,7 +86,7 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 

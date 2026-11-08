@@ -84,6 +84,9 @@ var (
 	// ErrNameSize indicates that name size exceeds the max.
 	ErrNameSize = errors.New("invalid name size")
 
+	// ErrExternalKeySize indicates that the external thing key size is out of the allowed range.
+	ErrExternalKeySize = errors.New("invalid external key size")
+
 	// ErrEmailSize indicates that email size exceeds the max.
 	ErrEmailSize = errors.New("invalid email size")
 

@@ -1958,7 +1958,7 @@ func TestUpdateExternalKey(t *testing.T) {
 	}{
 		{
 			"update external key",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			token,
@@ -1966,7 +1966,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key with invalid auth token",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			wrongValue,
@@ -1974,7 +1974,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key with empty auth token",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			emptyValue,
@@ -1982,7 +1982,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key as unauthorized user",
-			`{"key": "abcd123"}`,
+			`{"key": "abcd1234"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			otherToken,
@@ -1990,7 +1990,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key to nonexistent thing",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			"nonexistent",
 			contentTypeJSON,
 			token,
@@ -2014,7 +2014,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key without content type",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			emptyValue,
 			token,
@@ -2055,7 +2055,7 @@ func TestRemoveExternalKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	createdThing := createdThings[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, createdThing.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -2275,7 +2275,7 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
