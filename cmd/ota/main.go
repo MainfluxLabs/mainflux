@@ -45,70 +45,70 @@ const (
 	svcName      = "ota"
 	stopWaitTime = 5 * time.Second
 
-	defBrokerURL         = "nats://localhost:4222"
-	defLogLevel          = "error"
-	defDBHost            = "localhost"
-	defDBPort            = "5432"
-	defDBUser            = "mainflux"
-	defDBPass            = "mainflux"
-	defDB                = svcName
-	defDBSSLMode         = "disable"
-	defDBSSLCert         = ""
-	defDBSSLKey          = ""
-	defDBSSLRootCert     = ""
-	defClientTLS         = "false"
-	defCACerts           = ""
-	defHTTPPort          = "9032"
-	defJaegerURL         = ""
-	defServerCert        = ""
-	defServerKey         = ""
-	defThingsGRPCURL     = "localhost:8183"
-	defThingsGRPCTimeout = "1s"
-	defAuthGRPCURL       = "localhost:8181"
-	defAuthGRPCTimeout   = "1s"
-	defESURL             = "redis://localhost:6379/0"
-	defFirmwareURL       = "https://localhost/fs/groupfiles"
-	defTimeoutInterval   = "10m"
+	defBrokerURL            = "nats://localhost:4222"
+	defLogLevel             = "error"
+	defDBHost               = "localhost"
+	defDBPort               = "5432"
+	defDBUser               = "mainflux"
+	defDBPass               = "mainflux"
+	defDB                   = svcName
+	defDBSSLMode            = "disable"
+	defDBSSLCert            = ""
+	defDBSSLKey             = ""
+	defDBSSLRootCert        = ""
+	defClientTLS            = "false"
+	defCACerts              = ""
+	defHTTPPort             = "9032"
+	defJaegerURL            = ""
+	defServerCert           = ""
+	defServerKey            = ""
+	defThingsGRPCURL        = "localhost:8183"
+	defThingsGRPCTimeout    = "1s"
+	defAuthGRPCURL          = "localhost:8181"
+	defAuthGRPCTimeout      = "1s"
+	defESURL                = "redis://localhost:6379/0"
+	defFirmwareURL          = "https://localhost/fs/groupfiles"
+	defTimeoutCheckInterval = "10m"
 
-	envBrokerURL         = "MF_BROKER_URL"
-	envLogLevel          = "MF_OTA_LOG_LEVEL"
-	envDBHost            = "MF_OTA_DB_HOST"
-	envDBPort            = "MF_OTA_DB_PORT"
-	envDBUser            = "MF_OTA_DB_USER"
-	envDBPass            = "MF_OTA_DB_PASS"
-	envDB                = "MF_OTA_DB"
-	envDBSSLMode         = "MF_OTA_DB_SSL_MODE"
-	envDBSSLCert         = "MF_OTA_DB_SSL_CERT"
-	envDBSSLKey          = "MF_OTA_DB_SSL_KEY"
-	envDBSSLRootCert     = "MF_OTA_DB_SSL_ROOT_CERT"
-	envClientTLS         = "MF_OTA_CLIENT_TLS"
-	envCACerts           = "MF_OTA_CA_CERTS"
-	envHTTPPort          = "MF_OTA_HTTP_PORT"
-	envServerCert        = "MF_OTA_SERVER_CERT"
-	envServerKey         = "MF_OTA_SERVER_KEY"
-	envJaegerURL         = "MF_JAEGER_URL"
-	envThingsGRPCURL     = "MF_THINGS_AUTH_GRPC_URL"
-	envThingsGRPCTimeout = "MF_THINGS_AUTH_GRPC_TIMEOUT"
-	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
-	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
-	envESURL             = "MF_OTA_ES_URL"
-	envFirmwareURL       = "MF_OTA_FIRMWARE_URL"
-	envTimeoutInterval   = "MF_OTA_TIMEOUT_CHECK_INTERVAL"
+	envBrokerURL            = "MF_BROKER_URL"
+	envLogLevel             = "MF_OTA_LOG_LEVEL"
+	envDBHost               = "MF_OTA_DB_HOST"
+	envDBPort               = "MF_OTA_DB_PORT"
+	envDBUser               = "MF_OTA_DB_USER"
+	envDBPass               = "MF_OTA_DB_PASS"
+	envDB                   = "MF_OTA_DB"
+	envDBSSLMode            = "MF_OTA_DB_SSL_MODE"
+	envDBSSLCert            = "MF_OTA_DB_SSL_CERT"
+	envDBSSLKey             = "MF_OTA_DB_SSL_KEY"
+	envDBSSLRootCert        = "MF_OTA_DB_SSL_ROOT_CERT"
+	envClientTLS            = "MF_OTA_CLIENT_TLS"
+	envCACerts              = "MF_OTA_CA_CERTS"
+	envHTTPPort             = "MF_OTA_HTTP_PORT"
+	envServerCert           = "MF_OTA_SERVER_CERT"
+	envServerKey            = "MF_OTA_SERVER_KEY"
+	envJaegerURL            = "MF_JAEGER_URL"
+	envThingsGRPCURL        = "MF_THINGS_AUTH_GRPC_URL"
+	envThingsGRPCTimeout    = "MF_THINGS_AUTH_GRPC_TIMEOUT"
+	envAuthGRPCURL          = "MF_AUTH_GRPC_URL"
+	envAuthGRPCTimeout      = "MF_AUTH_GRPC_TIMEOUT"
+	envESURL                = "MF_OTA_ES_URL"
+	envFirmwareURL          = "MF_OTA_FIRMWARE_URL"
+	envTimeoutCheckInterval = "MF_OTA_TIMEOUT_CHECK_INTERVAL"
 )
 
 type config struct {
-	brokerURL         string
-	logLevel          string
-	dbConfig          postgres.Config
-	httpConfig        servers.Config
-	thingsConfig      clients.Config
-	authConfig        clients.Config
-	jaegerURL         string
-	thingsGRPCTimeout time.Duration
-	authGRPCTimeout   time.Duration
-	esURL             string
-	firmwareURL       string
-	timeoutInterval   time.Duration
+	brokerURL            string
+	logLevel             string
+	dbConfig             postgres.Config
+	httpConfig           servers.Config
+	thingsConfig         clients.Config
+	authConfig           clients.Config
+	jaegerURL            string
+	thingsGRPCTimeout    time.Duration
+	authGRPCTimeout      time.Duration
+	esURL                string
+	firmwareURL          string
+	timeoutCheckInterval time.Duration
 }
 
 func main() {
@@ -165,7 +165,7 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return failTimedOut(ctx, svc, cfg.timeoutInterval)
+		return failTimedOut(ctx, svc, cfg.timeoutCheckInterval)
 	})
 
 	g.Go(func() error {
@@ -221,9 +221,12 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
-	timeoutInterval, err := time.ParseDuration(mainflux.Env(envTimeoutInterval, defTimeoutInterval))
+	timeoutCheckInterval, err := time.ParseDuration(mainflux.Env(envTimeoutCheckInterval, defTimeoutCheckInterval))
 	if err != nil {
-		log.Fatalf("Invalid %s value: %s", envTimeoutInterval, err.Error())
+		log.Fatalf("Invalid %s value: %s", envTimeoutCheckInterval, err.Error())
+	}
+	if timeoutCheckInterval <= 0 {
+		log.Fatalf("Invalid %s value: must be positive", envTimeoutCheckInterval)
 	}
 
 	thingsConfig := clients.Config{
@@ -241,18 +244,18 @@ func loadConfig() config {
 	}
 
 	return config{
-		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
-		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:          dbConfig,
-		httpConfig:        httpConfig,
-		thingsConfig:      thingsConfig,
-		authConfig:        authConfig,
-		jaegerURL:         mainflux.Env(envJaegerURL, defJaegerURL),
-		thingsGRPCTimeout: thingsAuthGRPCTimeout,
-		authGRPCTimeout:   authGRPCTimeout,
-		esURL:             mainflux.Env(envESURL, defESURL),
-		firmwareURL:       mainflux.Env(envFirmwareURL, defFirmwareURL),
-		timeoutInterval:   timeoutInterval,
+		brokerURL:            mainflux.Env(envBrokerURL, defBrokerURL),
+		logLevel:             mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:             dbConfig,
+		httpConfig:           httpConfig,
+		thingsConfig:         thingsConfig,
+		authConfig:           authConfig,
+		jaegerURL:            mainflux.Env(envJaegerURL, defJaegerURL),
+		thingsGRPCTimeout:    thingsAuthGRPCTimeout,
+		authGRPCTimeout:      authGRPCTimeout,
+		esURL:                mainflux.Env(envESURL, defESURL),
+		firmwareURL:          mainflux.Env(envFirmwareURL, defFirmwareURL),
+		timeoutCheckInterval: timeoutCheckInterval,
 	}
 }
 

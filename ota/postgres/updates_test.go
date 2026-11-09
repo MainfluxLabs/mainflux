@@ -38,7 +38,7 @@ func saveUpdate(t *testing.T, repo ota.UpdateRepository, groupID string, created
 		FileName:  "fw.bin",
 		Version:   "1.4.0",
 		FileSize:  412,
-		Checksum:  "9f2ca71e",
+		Checksum:  "9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e",
 		Timeout:   time.Hour,
 		CreatedAt: createdAt,
 	}

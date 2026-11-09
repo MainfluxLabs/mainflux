@@ -15,7 +15,7 @@ const (
 	maxThingIDs     = 1000
 	maxFileNameSize = 255
 	maxVersionSize  = 254
-	maxChecksumSize = 64
+	checksumSize    = 64
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 	// ErrMissingVersion indicates a missing or too long firmware version.
 	ErrMissingVersion = errors.New("missing or invalid version")
 
-	// ErrInvalidChecksum indicates a too long firmware checksum.
+	// ErrInvalidChecksum indicates a firmware checksum that is not a SHA-256 hex digest.
 	ErrInvalidChecksum = errors.New("invalid checksum")
 
 	// ErrInvalidFileSize indicates a negative firmware file size.
@@ -73,7 +73,7 @@ func (req createUpdateReq) validate() error {
 		return ErrMissingVersion
 	}
 
-	if len(req.Checksum) > maxChecksumSize {
+	if req.Checksum != "" && len(req.Checksum) != checksumSize {
 		return ErrInvalidChecksum
 	}
 
