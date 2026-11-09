@@ -16,6 +16,7 @@ const (
 	maxFileNameSize = 255
 	maxVersionSize  = 254
 	checksumSize    = 64
+	maxTimeout      = 7 * 24 * 60 * 60
 )
 
 var (
@@ -34,7 +35,7 @@ var (
 	// ErrInvalidFileSize indicates a negative firmware file size.
 	ErrInvalidFileSize = errors.New("invalid file size")
 
-	// ErrInvalidTimeout indicates a negative timeout.
+	// ErrInvalidTimeout indicates a negative or too long timeout.
 	ErrInvalidTimeout = errors.New("invalid timeout")
 )
 
@@ -81,7 +82,7 @@ func (req createUpdateReq) validate() error {
 		return ErrInvalidFileSize
 	}
 
-	if req.Timeout < 0 {
+	if req.Timeout < 0 || req.Timeout > maxTimeout {
 		return ErrInvalidTimeout
 	}
 

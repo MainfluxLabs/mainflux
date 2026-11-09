@@ -168,6 +168,13 @@ func TestCreateUpdate(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:        "create update with too long timeout",
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","timeout":9223372036854775807,"thing_ids":["%s"]}`, fwVersion, thingID),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "create update without things",
 			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","thing_ids":[]}`, fwVersion),
 			contentType: contentType,
