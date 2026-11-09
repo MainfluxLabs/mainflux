@@ -35,7 +35,7 @@ only in `reported` are not part of the delta.
   (`things.<id>.commands.shadow`, protocol `shadows`).
 - **Reported state** is updated automatically as the thing publishes messages. The service consumes
   messages from the broker, flattens each into a state patch, and merges the patch into `reported`
-  (no-op writes are skipped). SenML records are keyed by record name. A JSON array is merged item by item, oldest first, so the latest value of a repeated key wins; items that are not JSON objects are skipped.
+  (no-op writes are skipped). SenML records are keyed by record name. A JSON array is merged item by item, oldest first, so the latest value of a repeated key wins.
 - On each reported-state change, any still-pending delta is re-published, so a reconnecting device
   receives commands it missed while offline.
 
