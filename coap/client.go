@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -16,6 +17,9 @@ import (
 	"github.com/plgd-dev/go-coap/v3/message/codes"
 	mux "github.com/plgd-dev/go-coap/v3/mux"
 )
+
+// notificationTimeout is MAX_TRANSMIT_WAIT (RFC 7252), so every retransmission of a notification fits.
+var notificationTimeout = 93 * time.Second
 
 // Client wraps CoAP client.
 type Client interface {
@@ -56,6 +60,8 @@ func (c *client) Cancel() error {
 
 	m := c.client.AcquireMessage(context.Background())
 	defer c.client.ReleaseMessage(m)
+	// Non-confirmable, so that cancelling never waits for an ACK from a client that may be gone.
+	m.SetType(message.NonConfirmable)
 	m.SetCode(codes.Content)
 	m.SetToken(c.token)
 	if err := c.client.WriteMessage(m); err != nil {
@@ -85,7 +91,10 @@ func (c *client) HandleCommand(_ string, cmd protomfx.Command) error {
 
 // notify sends the payload to the observer as the next notification.
 func (c *client) notify(payload []byte) error {
-	m := c.client.AcquireMessage(c.client.Context())
+	ctx, cancel := context.WithTimeout(c.client.Context(), notificationTimeout)
+	defer cancel()
+
+	m := c.client.AcquireMessage(ctx)
 	defer c.client.ReleaseMessage(m)
 	m.SetCode(codes.Content)
 	m.SetToken(c.token)
