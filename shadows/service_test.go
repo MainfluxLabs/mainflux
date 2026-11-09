@@ -271,6 +271,15 @@ func TestConsumeMessage(t *testing.T) {
 			reported: shadows.State{"led": "on", "temp": "21", "humidity": "40"},
 			delta:    nil,
 		},
+		{
+			desc: "consume message skips a record that is not a JSON object",
+			records: []*protomfx.Record{
+				{Payload: []byte(`"text"`), Time: 1},
+				{Payload: toPayload(shadows.State{"temp": "22"}), Time: 2},
+			},
+			reported: shadows.State{"led": "on", "temp": "22", "humidity": "40"},
+			delta:    nil,
+		},
 	}
 
 	for _, tc := range cases {

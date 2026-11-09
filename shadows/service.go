@@ -176,7 +176,9 @@ func decodeState(msg protomfx.Message) (State, bool) {
 func decodeJSON(records []*protomfx.Record) (State, bool) {
 	// Oldest first, so the latest value of a repeated key wins.
 	records = slices.Clone(records)
-	slices.SortStableFunc(records, func(a, b *protomfx.Record) int { return cmp.Compare(a.Time, b.Time) })
+	slices.SortStableFunc(records, func(a, b *protomfx.Record) int {
+		return cmp.Compare(a.Time, b.Time)
+	})
 
 	s := State{}
 	for _, record := range records {
