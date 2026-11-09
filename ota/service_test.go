@@ -47,6 +47,7 @@ func newService() (ota.Service, *otamocks.CommandPublisher) {
 	things := map[string]domain.Thing{
 		token:    {ID: thingID, GroupID: groupID},
 		thingKey: {ID: thingID, GroupID: groupID},
+		thingID:  {ID: thingID, GroupID: groupID},
 	}
 	groups := map[string]domain.Group{token: {ID: groupID}}
 	tc := mocks.NewThingsServiceClient(nil, things, groups)
