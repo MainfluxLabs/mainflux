@@ -42,7 +42,7 @@ var firmware = ota.Update{
 	FileName: "fw-sensor-1.4.0.bin",
 	Version:  fwVersion,
 	FileSize: 412,
-	Checksum: "9f2ca71e",
+	Checksum: "9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e",
 	Timeout:  time.Hour,
 }
 
@@ -108,7 +108,7 @@ func TestCreateUpdate(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","file_size":412,"checksum":"9f2ca71e","timeout":3600,"thing_ids":["%s"]}`, fwVersion, thingID)
+	validData := fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","file_size":412,"checksum":"9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e","timeout":3600,"thing_ids":["%s"]}`, fwVersion, thingID)
 
 	cases := []struct {
 		desc        string
@@ -148,6 +148,13 @@ func TestCreateUpdate(t *testing.T) {
 		{
 			desc:        "create update without version",
 			data:        fmt.Sprintf(`{"file_name":"fw.bin","thing_ids":["%s"]}`, thingID),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create update with invalid checksum length",
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"9f2ca71e","thing_ids":["%s"]}`, fwVersion, thingID),
 			contentType: contentType,
 			token:       token,
 			status:      http.StatusBadRequest,

@@ -213,6 +213,7 @@ components:
           example: 421888
         checksum:
           type: string
+          minLength: 64
           maxLength: 64
           description: Hex-encoded SHA-256 of the firmware.
           example: 9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e
