@@ -12,8 +12,8 @@ import (
 )
 
 type keyReq struct {
-	Type     uint32        `json:"type,omitempty"`
-	Duration time.Duration `json:"duration,omitempty"`
+	Type     uint32 `json:"type,omitempty"`
+	Duration int64  `json:"duration,omitempty"`
 }
 
 const keysEndpoint = "keys"
@@ -28,7 +28,7 @@ const (
 )
 
 func (sdk mfSDK) Issue(d time.Duration, token string) (KeyRes, error) {
-	datareq := keyReq{Type: APIKey, Duration: d}
+	datareq := keyReq{Type: APIKey, Duration: int64(d / time.Second)}
 	data, err := json.Marshal(datareq)
 	if err != nil {
 		return KeyRes{}, err

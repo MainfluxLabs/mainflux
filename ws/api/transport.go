@@ -44,6 +44,7 @@ func MakeHandler(svc ws.Service, l log.Logger) http.Handler {
 	mux.GetFunc("/things/:id/commands/*", thingCommandsHandshake(svc))
 	mux.GetFunc("/groups/:id/commands", groupCommandsHandshake(svc))
 	mux.GetFunc("/groups/:id/commands/*", groupCommandsHandshake(svc))
+	mux.GetFunc("/health", mainflux.Health(protocol))
 	mux.GetFunc("/version", mainflux.Health(protocol))
 	mux.Handle("/metrics", promhttp.Handler())
 

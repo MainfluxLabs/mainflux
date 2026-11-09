@@ -51,11 +51,11 @@ const (
 )
 
 var (
-	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password, Role: auth.Owner}
-	otherUser     = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Editor}
+	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
+	otherUser     = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
 	admin         = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
-	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerToken, Password: password, Role: auth.Viewer}
-	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorToken, Password: password, Role: auth.Editor}
+	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerToken, Password: password}
+	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorToken, Password: password}
 	usersList     = []users.User{admin, user, otherUser}
 	usersByEmails = map[string]users.User{userEmail: {ID: user.ID, Email: user.Email}, otherUserEmail: {ID: otherUser.ID, Email: otherUser.Email}, viewerEmail: {ID: viewer.ID, Email: viewer.Email},
 		editorEmail: {ID: editor.ID, Email: editor.Email}}
@@ -66,8 +66,13 @@ var (
 		{MemberID: viewer.ID, Email: viewer.Email, Role: things.Viewer},
 		{MemberID: editor.ID, Email: editor.Email, Role: things.Editor},
 	}
-	group    = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
-	orgsList = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	group          = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
+	orgsList       = []auth.Org{{ID: orgID, OwnerID: user.ID}}
+	orgMemberships = []auth.OrgMembership{
+		{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Viewer},
+		{OrgID: orgID, MemberID: viewer.ID, Role: auth.Viewer},
+		{OrgID: orgID, MemberID: editor.ID, Role: auth.Viewer},
+	}
 )
 
 type testRequest struct {
@@ -98,7 +103,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
+	auth := mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
 	uc := thmocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
@@ -115,7 +120,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
@@ -139,8 +144,11 @@ func TestCreateGroupMemberships(t *testing.T) {
 	invalidMembership := gm
 	invalidMembership.Role = wrongValue
 
+	nonMember := groupMembership{MemberID: "11111111-1111-1111-1111-111111111111", Email: "outsider@example.com", Role: things.Editor}
+
 	data := toJSON(membershipsReq{GroupMemberships: []groupMembership{gm}, RedirectPath: redirectPathGroup})
 	invalidData := toJSON(membershipsReq{GroupMemberships: []groupMembership{invalidMembership}, RedirectPath: redirectPathGroup})
+	nonMemberData := toJSON(membershipsReq{GroupMemberships: []groupMembership{nonMember}, RedirectPath: redirectPathGroup})
 
 	cases := []struct {
 		desc   string
@@ -162,6 +170,13 @@ func TestCreateGroupMemberships(t *testing.T) {
 			id:     gr.ID,
 			req:    invalidData,
 			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "create group memberships for non-org-member",
+			token:  token,
+			id:     gr.ID,
+			req:    nonMemberData,
+			status: http.StatusForbidden,
 		},
 		{
 			desc:   "create group memberships with invalid auth token",

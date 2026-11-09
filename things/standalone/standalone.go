@@ -55,6 +55,10 @@ func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.I
 	return domain.Identity{ID: repo.email, Email: repo.email}, nil
 }
 
+func (repo singleUserRepo) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
+	return domain.Identity{}, errUnsupported
+}
+
 func (repo singleUserRepo) Authorize(ctx context.Context, ar domain.AuthzReq) error {
 	return errUnsupported
 }
@@ -85,4 +89,17 @@ func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Conte
 
 func (repo singleUserRepo) ViewOrg(ctx context.Context, token, orgID string) (domain.Org, error) {
 	panic("not implemented")
+}
+
+func (repo singleUserRepo) GetAdminsByOrg(ctx context.Context, orgID string) ([]domain.OrgMembership, error) {
+	return nil, errUnsupported
+}
+
+func (repo singleUserRepo) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	// The standalone user is not a member of any org, and member listings must not fail.
+	return []string{}, nil
+}
+
+func (repo singleUserRepo) GetOrgMembership(ctx context.Context, orgID, memberID string) (domain.OrgMembership, error) {
+	return domain.OrgMembership{}, errUnsupported
 }

@@ -390,13 +390,13 @@ func (ts *thingsService) ViewMetadataByKey(ctx context.Context, key ThingKey) (M
 }
 
 func (ts *thingsService) ListThings(ctx context.Context, token string, pm PageMetadata) (ThingsPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if err := ts.canAccessPlatform(ctx, token); err == nil {
 		return ts.things.RetrieveAll(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, token)
 	if err != nil {
-		return ThingsPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return ThingsPage{}, err
 	}
 
 	grIDs, err := ts.getGroupIDsByMember(ctx, res.ID)
@@ -526,13 +526,13 @@ func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Pro
 }
 
 func (ts *thingsService) ListProfiles(ctx context.Context, token string, pm PageMetadata) (ProfilesPage, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if err := ts.canAccessPlatform(ctx, token); err == nil {
 		return ts.profiles.RetrieveAll(ctx, pm)
 	}
 
 	res, err := ts.auth.Identify(ctx, token)
 	if err != nil {
-		return ProfilesPage{}, errors.Wrap(errors.ErrAuthentication, err)
+		return ProfilesPage{}, err
 	}
 
 	grIDs, err := ts.getGroupIDsByMember(ctx, res.ID)
@@ -835,7 +835,7 @@ func (ts *thingsService) GetOrgIDByGroup(ctx context.Context, groupID string) (s
 }
 
 func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, error) {
-	if err := ts.isAdmin(ctx, token); err != nil {
+	if err := ts.canAccessPlatform(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -868,7 +868,7 @@ func (ts *thingsService) Backup(ctx context.Context, token string) (Backup, erro
 }
 
 func (ts *thingsService) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := ts.isAdmin(ctx, token); err != nil {
+	if err := ts.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -931,7 +931,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 	return ts.profiles.RetrieveByGroups(ctx, []string{groupID}, pm)
 }
 
-func (ts *thingsService) isAdmin(ctx context.Context, token string) error {
+func (ts *thingsService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := ts.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
@@ -1077,11 +1077,55 @@ func (ts *thingsService) getGroupIDsByMember(ctx context.Context, memberID strin
 			return []string{}, err
 		}
 	}
+
+	// Org owners and org admins access every group in their orgs without group memberships.
+	orgIDs, err := ts.auth.GetOrgIDsByAdmin(ctx, memberID)
+	if err != nil {
+		return []string{}, err
+	}
+
+	seen := make(map[string]bool, len(grIDs))
+	for _, grID := range grIDs {
+		seen[grID] = true
+	}
+
+	orgGrIDs, err := ts.groups.RetrieveIDsByOrgs(ctx, orgIDs)
+	if err != nil {
+		return []string{}, err
+	}
+
+	for _, grID := range orgGrIDs {
+		if !seen[grID] {
+			seen[grID] = true
+			grIDs = append(grIDs, grID)
+		}
+	}
+
 	return grIDs, nil
 }
 
+func (ts *thingsService) getOrgAdminRoles(ctx context.Context, groupID string) (map[string]string, error) {
+	orgID, err := ts.getOrgIDByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	oms, err := ts.auth.GetAdminsByOrg(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	roles := make(map[string]string, len(oms))
+	// Org admins hold every right of the org owner within groups.
+	for _, om := range oms {
+		roles[om.MemberID] = Owner
+	}
+
+	return roles, nil
+}
+
 func (ts *thingsService) GetGroupIDsByOrg(ctx context.Context, orgID string, token string) ([]string, error) {
-	if err := ts.isAdmin(ctx, token); err == nil {
+	if err := ts.canAccessOrg(ctx, token, orgID, domain.OrgSub, domain.OrgAdmin); err == nil {
 		return ts.groups.RetrieveIDsByOrg(ctx, orgID)
 	}
 

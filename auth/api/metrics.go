@@ -111,6 +111,15 @@ func (ms *metricsMiddleware) Identify(ctx context.Context, token string) (auth.I
 	return ms.svc.Identify(ctx, token)
 }
 
+func (ms *metricsMiddleware) IdentifyRecovery(ctx context.Context, token string) (auth.Identity, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "identify_recovery").Add(1)
+		ms.latency.With("method", "identify_recovery").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.IdentifyRecovery(ctx, token)
+}
+
 func (ms *metricsMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "authorize").Add(1)
@@ -168,6 +177,33 @@ func (ms *metricsMiddleware) GetOwnerIDByOrg(ctx context.Context, orgID string) 
 	}(time.Now())
 
 	return ms.svc.GetOwnerIDByOrg(ctx, orgID)
+}
+
+func (ms *metricsMiddleware) GetAdminsByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_admins_by_org").Add(1)
+		ms.latency.With("method", "get_admins_by_org").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetAdminsByOrg(ctx, orgID)
+}
+
+func (ms *metricsMiddleware) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_org_ids_by_admin").Add(1)
+		ms.latency.With("method", "get_org_ids_by_admin").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetOrgIDsByAdmin(ctx, memberID)
+}
+
+func (ms *metricsMiddleware) GetOrgMembership(ctx context.Context, orgID, memberID string) (auth.OrgMembership, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "get_org_membership").Add(1)
+		ms.latency.With("method", "get_org_membership").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.GetOrgMembership(ctx, orgID, memberID)
 }
 
 func (ms *metricsMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) error {

@@ -6,6 +6,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -46,7 +47,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "things_1",
+				Id: "things_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS groups (
 						id          UUID UNIQUE NOT NULL,
@@ -104,7 +105,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_2",
+				Id: "things_02",
 				Up: []string{
 					`ALTER TABLE IF EXISTS group_policies RENAME TO group_roles;
 						ALTER TABLE IF EXISTS group_roles RENAME COLUMN policy to role;
@@ -116,7 +117,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_3",
+				Id: "things_03",
 				Up: []string{
 					`UPDATE things 
 						SET name = CONCAT('th_', id)
@@ -127,7 +128,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_4",
+				Id: "things_04",
 				Up: []string{
 					`ALTER TABLE groups DROP CONSTRAINT groups_pkey;
 						ALTER TABLE groups DROP COLUMN IF EXISTS owner_id;
@@ -146,7 +147,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_5",
+				Id: "things_05",
 				Up: []string{
 					`ALTER TABLE IF EXISTS channels RENAME TO profiles;
 						ALTER TABLE IF EXISTS profiles RENAME COLUMN profile TO config;
@@ -161,7 +162,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_6",
+				Id: "things_06",
 				Up: []string{
 					`ALTER TABLE things ADD COLUMN profile_id UUID;
 						ALTER TABLE things ADD CONSTRAINT fk_things_profile_id
@@ -173,7 +174,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_7",
+				Id: "things_07",
 				Up: []string{
 					`ALTER TABLE things DROP CONSTRAINT fk_things_profile_id;
 						ALTER TABLE things ADD CONSTRAINT fk_things_profile_id
@@ -181,7 +182,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_8",
+				Id: "things_08",
 				Up: []string{
 					`ALTER TABLE group_roles RENAME TO group_memberships`,
 					`ALTER TABLE group_memberships RENAME CONSTRAINT group_policies_pkey TO group_memberships_pkey`,
@@ -189,7 +190,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "things_9",
+				Id: "things_09",
 				Up: []string{
 					`ALTER TABLE things ADD COLUMN external_key VARCHAR(1024) UNIQUE NULL CHECK (LENGTH(external_key) >= 5);`,
 				},
@@ -200,7 +201,17 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE things ADD COLUMN IF NOT EXISTS type VARCHAR(32) NOT NULL DEFAULT 'device';`,
 				},
 			},
+			{
+				Id: "things_11",
+				Up: []string{
+					`DELETE FROM group_memberships WHERE role = 'owner'`,
+				},
+			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

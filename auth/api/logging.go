@@ -155,6 +155,19 @@ func (lm *loggingMiddleware) Identify(ctx context.Context, key string) (_ auth.I
 	return lm.svc.Identify(ctx, key)
 }
 
+func (lm *loggingMiddleware) IdentifyRecovery(ctx context.Context, token string) (_ auth.Identity, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method identify_recovery took %s to complete", time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.IdentifyRecovery(ctx, token)
+}
+
 func (lm *loggingMiddleware) Authorize(ctx context.Context, ar auth.AuthzReq) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method authorize took %s to complete", time.Since(begin))
@@ -248,6 +261,48 @@ func (lm *loggingMiddleware) GetOwnerIDByOrg(ctx context.Context, orgID string) 
 	}(time.Now())
 
 	return lm.svc.GetOwnerIDByOrg(ctx, orgID)
+}
+
+func (lm *loggingMiddleware) GetAdminsByOrg(ctx context.Context, orgID string) (_ []auth.OrgMembership, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_admins_by_org for org id %s took %s to complete",
+			orgID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetAdminsByOrg(ctx, orgID)
+}
+
+func (lm *loggingMiddleware) GetOrgIDsByAdmin(ctx context.Context, memberID string) (_ []string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_org_ids_by_admin for member id %s took %s to complete",
+			memberID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetOrgIDsByAdmin(ctx, memberID)
+}
+
+func (lm *loggingMiddleware) GetOrgMembership(ctx context.Context, orgID, memberID string) (_ auth.OrgMembership, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method get_org_membership for org %s member %s took %s to complete",
+			orgID, memberID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.GetOrgMembership(ctx, orgID, memberID)
 }
 
 func (lm *loggingMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (err error) {

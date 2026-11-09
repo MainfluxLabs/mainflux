@@ -11,6 +11,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	mfjson "github.com/MainfluxLabs/mainflux/pkg/transformers/json"
+	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx" // required for DB access
@@ -33,20 +34,20 @@ func New(db *sqlx.DB) consumers.MessageConsumer {
 }
 
 func (tr timescaleRepo) ConsumeMessage(_ string, msg protomfx.Message) error {
-	msgs, err := messaging.SplitMessage(msg)
-	if err != nil {
-		return err
-	}
-
 	switch msg.ContentType {
 	case messaging.JSONContentType:
-		return tr.saveJSON(msgs)
+		return tr.saveJSON(messaging.ToJSONMessages(msg))
 	default:
+		msgs, err := messaging.ToSenMLMessages(msg)
+		if err != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
+		}
+
 		return tr.saveSenML(msgs)
 	}
 }
 
-func (tr timescaleRepo) saveSenML(msgs []protomfx.Message) (err error) {
+func (tr timescaleRepo) saveSenML(msgs []senml.Message) (err error) {
 	q := `INSERT INTO senml (subtopic, thing_id, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -71,12 +72,7 @@ func (tr timescaleRepo) saveSenML(msgs []protomfx.Message) (err error) {
 		}
 	}()
 
-	for _, msg := range msgs {
-		dbmsg, err := messaging.ToSenMLMessage(msg)
-		if err != nil {
-			return errors.Wrap(errors.ErrSaveMessages, err)
-		}
-
+	for _, dbmsg := range msgs {
 		if _, err := tx.NamedExec(q, dbmsg); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)
 			if ok {
@@ -98,7 +94,7 @@ type jsonRow struct {
 	PayloadHash int32 `db:"payload_hash"`
 }
 
-func (tr timescaleRepo) saveJSON(msgs []protomfx.Message) error {
+func (tr timescaleRepo) saveJSON(msgs []mfjson.Message) error {
 	q := `INSERT INTO json (created, subtopic, thing_id, protocol, payload, payload_hash)
           VALUES (:created, :subtopic, :thing_id, :protocol, :payload, :payload_hash)
           ON CONFLICT (created, thing_id, subtopic, payload_hash) DO NOTHING;`
@@ -120,9 +116,7 @@ func (tr timescaleRepo) saveJSON(msgs []protomfx.Message) error {
 		}
 	}()
 
-	for _, msg := range msgs {
-		dbmsg := messaging.ToJSONMessage(msg)
-
+	for _, dbmsg := range msgs {
 		row := jsonRow{Message: dbmsg, PayloadHash: messaging.PayloadHash(dbmsg.Payload)}
 		if _, err := tx.NamedExec(q, row); err != nil {
 			pgErr, ok := err.(*pgconn.PgError)

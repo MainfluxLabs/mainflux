@@ -5,13 +5,21 @@ package webhooks
 
 import (
 	"context"
+	stderrors "errors"
+	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"golang.org/x/sync/errgroup"
 )
+
+const forwardWorkers = 10
+
+// ErrForwardWebhooks indicates that forwarding to one or more webhooks failed.
+var ErrForwardWebhooks = errors.New("failed to forward webhooks")
 
 // PageMetadata contains page metadata that helps navigation.
 type PageMetadata struct {
@@ -199,10 +207,25 @@ func (ws *webhooksService) ConsumeWebhook(_ string, webhook protomfx.Webhook) er
 		return err
 	}
 
-	for _, wh := range whs.Webhooks {
-		if err := ws.forwarder.Forward(ctx, webhook, wh); err != nil {
-			return err
-		}
+	errs := make([]error, len(whs.Webhooks))
+
+	var g errgroup.Group
+	g.SetLimit(forwardWorkers)
+
+	for i, wh := range whs.Webhooks {
+		g.Go(func() error {
+			if err := ws.forwarder.Forward(ctx, webhook, wh); err != nil {
+				errs[i] = fmt.Errorf("webhook %s: %w", wh.ID, err)
+			}
+
+			return nil
+		})
+	}
+
+	g.Wait()
+
+	if err := stderrors.Join(errs...); err != nil {
+		return errors.Wrap(ErrForwardWebhooks, err)
 	}
 
 	return nil

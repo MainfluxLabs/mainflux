@@ -4,11 +4,15 @@
 package smpp
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/fiorix/go-smpp/smpp"
 	"github.com/fiorix/go-smpp/smpp/pdu/pdufield"
@@ -50,7 +54,12 @@ func New(cfg Config, from string) notifiers.Sender {
 	return ret
 }
 
-func (n *sender) Send(to []string, notification protomfx.Notification) error {
+func (n *sender) Send(to []string, notification protomfx.Notification, _ domain.Group) error {
+	text, err := smsText(notification)
+	if err != nil {
+		return err
+	}
+
 	send := &smpp.ShortMessage{
 		Src:           n.from,
 		DstList:       to,
@@ -59,14 +68,34 @@ func (n *sender) Send(to []string, notification protomfx.Notification) error {
 		DestAddrTON:   n.destAddrTON,
 		SourceAddrNPI: n.sourceAddrNPI,
 		DestAddrNPI:   n.destAddrNPI,
-		Text:          pdutext.Raw(notification.Payload),
+		Text:          pdutext.Raw(text),
 		Register:      pdufield.NoDeliveryReceipt,
 	}
-	_, err := n.transmitter.Submit(send)
+	_, err = n.transmitter.Submit(send)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// smsText returns a short text describing an alarm, or the payload of a message.
+func smsText(notification protomfx.Notification) ([]byte, error) {
+	if alarm := notification.GetAlarm(); alarm != nil {
+		label := strings.ToUpper(notifiers.AlarmLevelLabel(alarm.Level))
+		text := fmt.Sprintf("[%s] Alarm on thing %s", label, alarm.ThingId)
+
+		if conditions := notifiers.FormatConditions(alarm.RuleInfo); conditions != "" {
+			text = fmt.Sprintf("%s: %s", text, conditions)
+		}
+
+		return []byte(text), nil
+	}
+
+	if message := notification.GetMessage(); message != nil {
+		return messaging.ToPayload(*message)
+	}
+
+	return nil, notifiers.ErrMissingSource
 }
 
 func (n *sender) ValidateContacts(contacts []string) error {

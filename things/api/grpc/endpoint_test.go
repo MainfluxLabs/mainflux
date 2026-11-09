@@ -86,7 +86,7 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	sth := ths[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, sth.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -226,5 +226,65 @@ func TestCanUserAccessThings(t *testing.T) {
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "OK expected to be true")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", desc, tc.code, e.Code()))
+	}
+}
+
+func TestRemoveGroupMembershipsByOrg(t *testing.T) {
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	memberID := "574106f7-030e-4881-8ab0-151195c29f94"
+	gm := things.GroupMembership{
+		MemberID: memberID,
+		GroupID:  grs[0].ID,
+		Role:     things.Viewer,
+	}
+	err = svc.CreateGroupMembershipsInternal(context.Background(), gm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	thingsAddr := fmt.Sprintf("localhost:%d", port)
+	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.NewClient(thingsAddr, creds)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	cli := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc      string
+		orgID     string
+		memberIDs []string
+		code      codes.Code
+	}{
+		{
+			desc:      "remove group memberships by org",
+			orgID:     orgID,
+			memberIDs: []string{memberID},
+			code:      codes.OK,
+		},
+		{
+			desc:      "remove group memberships by org without org id",
+			orgID:     "",
+			memberIDs: []string{memberID},
+			code:      codes.InvalidArgument,
+		},
+		{
+			desc:      "remove group memberships by org without member ids",
+			orgID:     orgID,
+			memberIDs: []string{},
+			code:      codes.InvalidArgument,
+		},
+		{
+			desc:      "remove group memberships by org with empty member id",
+			orgID:     orgID,
+			memberIDs: []string{""},
+			code:      codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		err := cli.RemoveGroupMembershipsByOrg(context.Background(), tc.orgID, tc.memberIDs...)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
 	}
 }

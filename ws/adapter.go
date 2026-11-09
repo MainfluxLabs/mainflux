@@ -67,7 +67,7 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 		return err
 	}
 
-	if len(msg.Payload) == 0 {
+	if len(msg.Records) == 0 || len(msg.Records[0].Payload) == 0 {
 		return messaging.ErrPublishMessage
 	}
 

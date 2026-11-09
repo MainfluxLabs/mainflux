@@ -86,6 +86,27 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func identifyRecoveryEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(identityReq)
+		if err := req.validate(); err != nil {
+			return identityRes{}, err
+		}
+
+		id, err := svc.IdentifyRecovery(ctx, req.token)
+		if err != nil {
+			return identityRes{}, err
+		}
+
+		ret := identityRes{
+			id:    id.ID,
+			email: id.Email,
+		}
+
+		return ret, nil
+	}
+}
+
 func authorizeEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(authReq)
@@ -122,6 +143,54 @@ func getOwnerIDByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return ownerIDByOrgRes{ownerID: ownerID}, nil
+	}
+}
+
+func getAdminsByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminsByOrgReq)
+		if err := req.validate(); err != nil {
+			return adminsByOrgRes{}, err
+		}
+
+		oms, err := svc.GetAdminsByOrg(ctx, req.orgID)
+		if err != nil {
+			return adminsByOrgRes{}, err
+		}
+
+		return adminsByOrgRes{memberships: oms}, nil
+	}
+}
+
+func getOrgIDsByAdminEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgIDsByAdminReq)
+		if err := req.validate(); err != nil {
+			return orgIDsByAdminRes{}, err
+		}
+
+		orgIDs, err := svc.GetOrgIDsByAdmin(ctx, req.memberID)
+		if err != nil {
+			return orgIDsByAdminRes{}, err
+		}
+
+		return orgIDsByAdminRes{orgIDs: orgIDs}, nil
+	}
+}
+
+func getOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgMembershipReq)
+		if err := req.validate(); err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		om, err := svc.GetOrgMembership(ctx, req.orgID, req.memberID)
+		if err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		return orgMembershipRes{memberID: om.MemberID, role: om.Role}, nil
 	}
 }
 

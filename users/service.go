@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -46,6 +47,9 @@ var (
 
 	// ErrSelfRegisterDisabled indicates that self-registration is disabled in the service config.
 	ErrSelfRegisterDisabled = errors.New("self register disabled")
+
+	// ErrInvalidAdminCredentials indicates that the configured root admin e-mail or password is invalid.
+	ErrInvalidAdminCredentials = errors.New("invalid root admin e-mail or password")
 )
 
 type (
@@ -78,9 +82,8 @@ type Service interface {
 	// for admin.
 	Register(ctx context.Context, token string, user User) (string, error)
 
-	// RegisterAdmin creates new root admin account. In case of the failed registration, a
-	// non-nil error value is returned. The user registration is only allowed
-	// for root admin.
+	// RegisterAdmin creates root admin account, validating e-mail and password on creation.
+	// Existing user with given e-mail is assigned root admin role and password is ignored.
 	RegisterAdmin(ctx context.Context, user User) error
 
 	// Login authenticates the user given its credentials. Successful
@@ -169,6 +172,7 @@ type usersService struct {
 	githubOAuth         oauth2.Config
 	oidc                *oidcClient
 	urls                ConfigURLs
+	passRegex           *regexp.Regexp
 }
 
 // Config holds configuration values for the users service.
@@ -180,6 +184,7 @@ type Config struct {
 	GitHubOAuth         oauth2.Config
 	OIDC                OIDCConfig
 	URLs                ConfigURLs
+	PassRegex           *regexp.Regexp
 }
 
 // New instantiates the users service implementation
@@ -200,6 +205,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		githubOAuth:         c.GitHubOAuth,
 		oidc:                newOIDCClient(c.OIDC),
 		urls:                c.URLs,
+		passRegex:           c.PassRegex,
 	}
 }
 
@@ -366,6 +372,10 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		return nil
 	}
 
+	if err := user.Validate(svc.passRegex); err != nil {
+		return errors.Wrap(ErrInvalidAdminCredentials, err)
+	}
+
 	uid, err := svc.idProvider.ID()
 	if err != nil {
 		return err
@@ -392,7 +402,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 }
 
 func (svc usersService) Register(ctx context.Context, token string, user User) (string, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return "", err
 	}
 
@@ -442,7 +452,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 func (svc usersService) RefreshToken(ctx context.Context, token string) (string, error) {
 	t, err := svc.auth.RefreshToken(ctx, token)
 	if err != nil {
-		return "", errors.Wrap(errors.ErrAuthentication, err)
+		return "", err
 	}
 
 	return t, nil
@@ -748,7 +758,7 @@ func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, e
 		return User{}, err
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		if user.id != id {
 			return User{}, errors.ErrAuthorization
 		}
@@ -785,7 +795,7 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 		Metadata: dbUser.Metadata,
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return u, nil
 	}
 
@@ -795,7 +805,7 @@ func (svc usersService) ViewProfile(ctx context.Context, token string) (User, er
 }
 
 func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMetadata) (UsersPage, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return UsersPage{}, err
 	}
 
@@ -826,7 +836,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, []Identity{}, err
 	}
 
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return User{}, []User{}, []Identity{}, err
 	}
 
@@ -853,7 +863,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 }
 
 func (svc usersService) Restore(ctx context.Context, token string, admin User, users []User, identities []Identity) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -910,11 +920,11 @@ func (svc usersService) GenerateResetToken(ctx context.Context, email, redirectP
 }
 
 func (svc usersService) ResetPassword(ctx context.Context, resetToken, password string) error {
-	ir, err := svc.identify(ctx, resetToken)
+	identity, err := svc.auth.IdentifyRecovery(ctx, resetToken)
 	if err != nil {
 		return errors.Wrap(errors.ErrAuthentication, err)
 	}
-	u, err := svc.users.RetrieveByID(ctx, ir.id)
+	u, err := svc.users.RetrieveByID(ctx, identity.ID)
 	if err != nil {
 		return err
 	}
@@ -926,17 +936,17 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 	if err != nil {
 		return err
 	}
-	if err := svc.users.UpdatePassword(ctx, ir.email, password); err != nil {
+	if err := svc.users.UpdatePassword(ctx, identity.Email, password); err != nil {
 		return err
 	}
 
-	return svc.auth.RevokeSessions(ctx, ir.id)
+	return svc.auth.RevokeSessions(ctx, identity.ID)
 }
 
 func (svc usersService) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
 	ir, err := svc.identify(ctx, token)
 	if err != nil {
-		return errors.Wrap(errors.ErrAuthentication, err)
+		return err
 	}
 
 	var userEmail, userID string
@@ -944,7 +954,7 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	switch {
 	// Admin changes password for another user
 	case oldPassword == "" && email != "":
-		if err := svc.isAdmin(ctx, token); err != nil {
+		if err := svc.canAccessPlatform(ctx, token); err != nil {
 			return err
 		}
 		u, err := svc.users.RetrieveByEmail(ctx, email)
@@ -1006,6 +1016,10 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 		return err
 	}
 
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
+		return err
+	}
+
 	dbUser, err := svc.users.RetrieveByID(ctx, id)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrNotFound, err)
@@ -1037,13 +1051,13 @@ type userIdentity struct {
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
 	identity, err := svc.auth.Identify(ctx, token)
 	if err != nil {
-		return userIdentity{}, errors.Wrap(errors.ErrAuthentication, err)
+		return userIdentity{}, err
 	}
 
 	return userIdentity{identity.ID, identity.Email}, nil
 }
 
-func (svc usersService) isAdmin(ctx context.Context, token string) error {
+func (svc usersService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}

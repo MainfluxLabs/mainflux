@@ -408,6 +408,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 		GitHubOAuth:         c.githubOauthConfig,
 		OIDC:                c.oidcConfig,
 		URLs:                c.urls,
+		PassRegex:           c.passRegex,
 	}
 
 	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, ac, svcEmailer, idProvider, usersCfg)

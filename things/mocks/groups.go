@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -131,6 +132,20 @@ func (grm *groupRepositoryMock) RetrieveIDsByOrg(_ context.Context, orgID string
 			continue
 		}
 
+	}
+
+	return grIDs, nil
+}
+
+func (grm *groupRepositoryMock) RetrieveIDsByOrgs(_ context.Context, orgIDs []string) ([]string, error) {
+	grm.mu.Lock()
+	defer grm.mu.Unlock()
+
+	var grIDs []string
+	for _, gr := range grm.groups {
+		if slices.Contains(orgIDs, gr.OrgID) {
+			grIDs = append(grIDs, gr.ID)
+		}
 	}
 
 	return grIDs, nil

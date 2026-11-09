@@ -18,6 +18,7 @@ const (
 	retrieveGroupByID               = "retrieve_group_by_id"
 	retrieveGroupByIDs              = "retrieve_group_by_ids"
 	retrieveGroupIDsByOrg           = "retrieve_group_ids_by_org"
+	retrieveGroupIDsByOrgs          = "retrieve_group_ids_by_orgs"
 	saveGroupMembership             = "save_group_membership"
 	retrieveRole                    = "retrieve_role"
 	removeGroupMembership           = "remove_group_membership"
@@ -111,6 +112,14 @@ func (grm groupRepositoryMiddleware) RetrieveIDsByOrg(ctx context.Context, orgID
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return grm.repo.RetrieveIDsByOrg(ctx, orgID)
+}
+
+func (grm groupRepositoryMiddleware) RetrieveIDsByOrgs(ctx context.Context, orgIDs []string) ([]string, error) {
+	span := dbutil.CreateSpan(ctx, grm.tracer, retrieveGroupIDsByOrgs)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return grm.repo.RetrieveIDsByOrgs(ctx, orgIDs)
 }
 
 func (grm groupRepositoryMiddleware) RetrieveIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error) {

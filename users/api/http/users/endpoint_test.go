@@ -19,6 +19,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -332,6 +333,10 @@ func TestLogin(t *testing.T) {
 		Email:    "non-existentuser@example.com",
 		Password: validPass,
 	})
+	belowPolicyPassData := toJSON(users.User{
+		Email:    validEmail,
+		Password: "short",
+	})
 
 	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
@@ -346,6 +351,7 @@ func TestLogin(t *testing.T) {
 	}{
 		{"login with valid credentials", data, contentType, http.StatusCreated, tokenData},
 		{"login with invalid credentials", invalidData, contentType, http.StatusUnauthorized, unauthRes},
+		{"login with password below register policy", belowPolicyPassData, contentType, http.StatusUnauthorized, unauthRes},
 		{"login with invalid email address", invalidEmailData, contentType, http.StatusBadRequest, malformedRes},
 		{"login non-existent user", nonexistentData, contentType, http.StatusUnauthorized, unauthRes},
 		{"login with invalid request format", "{", contentType, http.StatusBadRequest, malformedRes},
@@ -934,7 +940,7 @@ func TestPasswordReset(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, domain.RecoveryKey)
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
 
 	reqData.Password = user.Password

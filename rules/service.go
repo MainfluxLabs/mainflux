@@ -268,18 +268,14 @@ func (rs *rulesService) AssignThings(ctx context.Context, token, ruleID string, 
 		return err
 	}
 
-	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupEditor}); err != nil {
-		return err
+	ar := domain.UserAccessThingsReq{
+		Token:   token,
+		IDs:     thingIDs,
+		GroupID: rule.GroupID,
+		Action:  domain.GroupEditor,
 	}
-
-	for _, thingID := range thingIDs {
-		grID, err := rs.things.GetGroupIDByThing(ctx, thingID)
-		if err != nil {
-			return err
-		}
-		if grID != rule.GroupID {
-			return errors.ErrAuthorization
-		}
+	if err := rs.things.CanUserAccessThings(ctx, ar); err != nil {
+		return err
 	}
 
 	return rs.rules.AssignThings(ctx, ruleID, thingIDs...)
@@ -436,21 +432,26 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 	ctx := context.Background()
 
-	var payload any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-		return err
-	}
-
-	page, err := rs.rules.RetrieveByThing(ctx, msg.ThingId, PageMetadata{InputType: InputTypeMessage})
+	body, err := messaging.ToPayload(msg)
 	if err != nil {
 		return err
 	}
 
-	for _, rule := range page.Rules {
+	var payload any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return err
+	}
+
+	rls, err := rs.rules.RetrieveByThingAndInputType(ctx, msg.ThingId, InputTypeMessage)
+	if err != nil {
+		return err
+	}
+
+	for _, rule := range rls {
 		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != msg.Subtopic {
 			continue
 		}
-		if err := rs.runRule(ctx, &msg, payload, rule); err != nil {
+		if err := rs.runRule(ctx, &msg, body, payload, rule); err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
 		}
 	}
@@ -461,7 +462,7 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 	ctx := context.Background()
 
-	page, err := rs.rules.RetrieveByThing(ctx, alarm.ThingId, PageMetadata{InputType: InputTypeAlarm})
+	rls, err := rs.rules.RetrieveByThingAndInputType(ctx, alarm.ThingId, InputTypeAlarm)
 	if err != nil {
 		return err
 	}
@@ -485,10 +486,9 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 		Subtopic: alarm.Subtopic,
 		Protocol: alarm.Protocol,
 		Created:  alarm.Created,
-		Payload:  payload,
 	}
 
-	for _, rule := range page.Rules {
+	for _, rule := range rls {
 		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != alarm.Subtopic {
 			continue
 		}
@@ -508,17 +508,15 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			case ActionTypeSMTP, ActionTypeSMPP:
 				subject := fmt.Sprintf("%s.%s", action.Type, action.ID)
 				notification := protomfx.Notification{
-					ThingId:  msg.ThingId,
-					Subtopic: msg.Subtopic,
-					Protocol: msg.Protocol,
-					Payload:  msg.Payload,
-					Created:  msg.Created,
+					Source: &protomfx.Notification_Alarm{
+						Alarm: &alarm,
+					},
 				}
 				err = rs.pub.PublishNotification(subject, notification)
 			case ActionTypeWebhook:
 				webhook := protomfx.Webhook{
 					ThingId: msg.ThingId,
-					Payload: msg.Payload,
+					Payload: payload,
 					Created: msg.Created,
 				}
 				err = rs.pub.PublishWebhook(subjectWebhooks, webhook)
@@ -586,6 +584,10 @@ type RepositoryRules interface {
 	// RetrieveByThing retrieves rules assigned to a certain thing,
 	// identified by a given thing ID.
 	RetrieveByThing(ctx context.Context, thingID string, pm PageMetadata) (RulesPage, error)
+
+	// RetrieveByThingAndInputType retrieves all rules of the given input type assigned to
+	// the given thing.
+	RetrieveByThingAndInputType(ctx context.Context, thingID, inputType string) ([]Rule, error)
 
 	// RetrieveByGroup retrieves rules related to a certain group,
 	// identified by a given group ID.

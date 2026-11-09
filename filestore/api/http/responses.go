@@ -93,6 +93,8 @@ func (res streamFileRes) Headers() map[string]string {
 	}
 	if res.file.Size > 0 {
 		h["Accept-Ranges"] = "bytes"
+		// Constrained clients cannot parse chunked transfer encoding.
+		h["Content-Length"] = strconv.FormatInt(res.file.Size, 10)
 	}
 	if res.file.Partial {
 		first := res.file.Offset

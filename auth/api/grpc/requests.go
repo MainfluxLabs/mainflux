@@ -7,21 +7,16 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 type identityReq struct {
 	token string
-	kind  uint32
 }
 
 func (req identityReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
-	}
-	if req.kind != auth.LoginKey &&
-		req.kind != auth.APIKey &&
-		req.kind != auth.RecoveryKey {
-		return apiutil.ErrInvalidAuthKey
 	}
 
 	return nil
@@ -102,6 +97,47 @@ func (req ownerIDByOrgReq) validate() error {
 	return nil
 }
 
+type adminsByOrgReq struct {
+	orgID string
+}
+
+func (req adminsByOrgReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	return nil
+}
+
+type orgIDsByAdminReq struct {
+	memberID string
+}
+
+func (req orgIDsByAdminReq) validate() error {
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	return nil
+}
+
+type orgMembershipReq struct {
+	orgID    string
+	memberID string
+}
+
+func (req orgMembershipReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	return nil
+}
+
 type assignRoleReq struct {
 	ID   string
 	Role string
@@ -150,6 +186,11 @@ func (req createDormantOrgInviteReq) validate() error {
 
 	if req.inviteeRole == "" {
 		return apiutil.ErrMissingRole
+	}
+
+	// Org admins hold their group roles through their org role.
+	if req.inviteeRole == auth.Admin && len(req.groupInvites) > 0 {
+		return errors.ErrMalformedEntity
 	}
 
 	if req.platformInviteID == "" {

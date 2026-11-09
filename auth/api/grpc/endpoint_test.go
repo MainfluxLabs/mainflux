@@ -136,6 +136,9 @@ func TestIdentify(t *testing.T) {
 	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
+	_, expiredAPIToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(-time.Minute), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing expired API key expected to succeed: %s", err))
+
 	authAddr := fmt.Sprintf("localhost:%d", port)
 	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
@@ -148,6 +151,13 @@ func TestIdentify(t *testing.T) {
 		code  codes.Code
 	}{
 		{
+			desc:  "identify user with expired API token",
+			token: expiredAPIToken,
+			idt:   domain.Identity{},
+			err:   status.Error(codes.Unauthenticated, "use of expired API key"),
+			code:  codes.Unauthenticated,
+		},
+		{
 			desc:  "identify user with user token",
 			token: userToken,
 			idt:   domain.Identity{Email: email, ID: id},
@@ -157,9 +167,9 @@ func TestIdentify(t *testing.T) {
 		{
 			desc:  "identify user with recovery token",
 			token: recoveryToken,
-			idt:   domain.Identity{Email: email, ID: id},
-			err:   nil,
-			code:  codes.OK,
+			idt:   domain.Identity{},
+			err:   status.Error(codes.Unauthenticated, "unauthenticated access"),
+			code:  codes.Unauthenticated,
 		},
 		{
 			desc:  "identify user with API token",
@@ -189,6 +199,67 @@ func TestIdentify(t *testing.T) {
 		if err == nil {
 			assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, idt))
 		}
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
+	}
+}
+
+func TestIdentifyRecovery(t *testing.T) {
+	_, userToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing user key expected to succeed: %s", err))
+
+	_, recoveryToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing recovery key expected to succeed: %s", err))
+
+	_, apiToken, err := svc.Issue(context.Background(), userToken, auth.Key{Type: auth.APIKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc  string
+		token string
+		idt   domain.Identity
+		code  codes.Code
+	}{
+		{
+			desc:  "identify user with recovery token",
+			token: recoveryToken,
+			idt:   domain.Identity{Email: email, ID: id},
+			code:  codes.OK,
+		},
+		{
+			desc:  "identify user with user token",
+			token: userToken,
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "identify user with API token",
+			token: apiToken,
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "identify user with invalid token",
+			token: "invalid",
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+		{
+			desc:  "identify user with empty token",
+			token: "",
+			idt:   domain.Identity{},
+			code:  codes.Unauthenticated,
+		},
+	}
+
+	for _, tc := range cases {
+		idt, err := client.IdentifyRecovery(context.Background(), tc.token)
+		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.idt, idt))
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
@@ -273,4 +344,214 @@ func TestAuthorize(t *testing.T) {
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		assert.Equal(t, tc.code, e.Code(), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code()))
 	}
+}
+
+func TestGetAdminsByOrg(t *testing.T) {
+	adminsOrgID := "adminsOrgID"
+	oms := []auth.OrgMembership{
+		{
+			MemberID: "ownerID",
+			OrgID:    adminsOrgID,
+			Role:     auth.Owner,
+		},
+		{
+			MemberID: "orgAdminID",
+			OrgID:    adminsOrgID,
+			Role:     auth.Admin,
+		},
+		{
+			MemberID: "editorID",
+			OrgID:    adminsOrgID,
+			Role:     auth.Editor,
+		},
+	}
+	err := membersMock.Save(context.Background(), oms...)
+	require.Nil(t, err, fmt.Sprintf("Saving org memberships expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc  string
+		orgID string
+		roles map[string]string
+		code  codes.Code
+	}{
+		{
+			desc:  "get admins by org",
+			orgID: adminsOrgID,
+			roles: map[string]string{
+				"ownerID":    auth.Owner,
+				"orgAdminID": auth.Admin,
+			},
+			code: codes.OK,
+		},
+		{
+			desc:  "get admins by org without admins",
+			orgID: "unknownOrgID",
+			roles: map[string]string{},
+			code:  codes.OK,
+		},
+		{
+			desc:  "get admins by org without org id",
+			orgID: "",
+			roles: map[string]string{},
+			code:  codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		admins, err := client.GetAdminsByOrg(context.Background(), tc.orgID)
+		roles := make(map[string]string)
+		for _, om := range admins {
+			roles[om.MemberID] = om.Role
+		}
+		msg := fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.roles, roles)
+		assert.Equal(t, tc.roles, roles, msg)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg = fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
+func TestGetOrgIDsByAdmin(t *testing.T) {
+	memberID := "multiOrgMemberID"
+	roleByOrgID := map[string]string{
+		"ownedOrgID":  auth.Owner,
+		"adminOrgID":  auth.Admin,
+		"editorOrgID": auth.Editor,
+		"viewerOrgID": auth.Viewer,
+	}
+	for orgID, role := range roleByOrgID {
+		om := auth.OrgMembership{
+			MemberID: memberID,
+			OrgID:    orgID,
+			Role:     role,
+		}
+		err := membersMock.Save(context.Background(), om)
+		require.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
+	}
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc     string
+		memberID string
+		orgIDs   []string
+		code     codes.Code
+	}{
+		{
+			desc:     "get org ids by admin",
+			memberID: memberID,
+			orgIDs:   []string{"ownedOrgID", "adminOrgID"},
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org ids by admin without orgs",
+			memberID: "unknownMemberID",
+			orgIDs:   nil,
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org ids by admin without member id",
+			memberID: "",
+			orgIDs:   nil,
+			code:     codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		orgIDs, err := client.GetOrgIDsByAdmin(context.Background(), tc.memberID)
+		msg := fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.orgIDs, orgIDs)
+		assert.ElementsMatch(t, tc.orgIDs, orgIDs, msg)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg = fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
+func TestGetOrgMembership(t *testing.T) {
+	membershipOrgID := "membershipOrgID"
+	memberID := "membershipMemberID"
+	om := auth.OrgMembership{MemberID: memberID, OrgID: membershipOrgID, Role: auth.Editor}
+	err := membersMock.Save(context.Background(), om)
+	require.Nil(t, err, fmt.Sprintf("Saving org membership expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc     string
+		orgID    string
+		memberID string
+		role     string
+		code     codes.Code
+	}{
+		{
+			desc:     "get org membership",
+			orgID:    membershipOrgID,
+			memberID: memberID,
+			role:     auth.Editor,
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org membership of non-member",
+			orgID:    membershipOrgID,
+			memberID: "unknownMemberID",
+			role:     "",
+			code:     codes.OK,
+		},
+		{
+			desc:     "get org membership without org id",
+			orgID:    "",
+			memberID: memberID,
+			role:     "",
+			code:     codes.InvalidArgument,
+		},
+		{
+			desc:     "get org membership without member id",
+			orgID:    membershipOrgID,
+			memberID: "",
+			role:     "",
+			code:     codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		om, err := client.GetOrgMembership(context.Background(), tc.orgID, tc.memberID)
+		msg := fmt.Sprintf("%s: expected role %s got %s", tc.desc, tc.role, om.Role)
+		assert.Equal(t, tc.role, om.Role, msg)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg = fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
+func TestCreateDormantOrgInvite(t *testing.T) {
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	gis := []domain.GroupInvite{
+		{
+			GroupID:    "groupID",
+			MemberRole: auth.Viewer,
+		},
+	}
+
+	platformInviteID := "platformInviteID"
+	ctx := context.Background()
+	err := client.CreateDormantOrgInvite(ctx, "token", orgID, auth.Admin, platformInviteID, gis)
+	e, ok := status.FromError(err)
+	assert.True(t, ok, "gRPC status can't be extracted from the error")
+	desc := "create dormant org invite with admin role and group invites"
+	msg := fmt.Sprintf("%s: expected %s got %s", desc, codes.InvalidArgument, e.Code())
+	assert.Equal(t, codes.InvalidArgument, e.Code(), msg)
 }

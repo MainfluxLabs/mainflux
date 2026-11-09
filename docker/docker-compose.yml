@@ -15,7 +15,7 @@ volumes:
   mainfluxlabs-auth-redis-volume:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
-  mainfluxlabs-mqtt-db-volume:
+  mainfluxlabs-mqtt-adapter-db-volume:
   mainfluxlabs-timescale-db-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
@@ -355,9 +355,9 @@ services:
       - mainfluxlabs-mqtt-broker-volume:/mosquitto/data
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
 
-  mqtt-db:
+  mqtt-adapter-db:
     image: postgres:13.3-alpine
-    container_name: mainfluxlabs-mqtt-db
+    container_name: mainfluxlabs-mqtt-adapter-db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${MF_MQTT_ADAPTER_DB_USER}
@@ -366,7 +366,7 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-mqtt-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-mqtt-adapter-db-volume:/var/lib/postgresql/data
 
   mqtt-adapter:
     image: ${MF_RELEASE_PREFIX}/mqtt:${MF_RELEASE_TAG}
@@ -375,7 +375,7 @@ services:
       - mosquitto
       - things
       - broker
-      - mqtt-db
+      - mqtt-adapter-db
     restart: unless-stopped
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
@@ -603,7 +603,7 @@ services:
       seaweedfs-volume:
         condition: service_healthy
     restart: unless-stopped
-    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_SEAWEED_CHUNK_SIZE}"
+    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_SEAWEED_CHUNK_MIB}"
     expose:
       - 8888
     networks:
@@ -637,7 +637,7 @@ services:
       MF_FILESTORE_DB: ${MF_FILESTORE_DB}
       MF_FILESTORE_DB_SSL_MODE: ${MF_FILESTORE_DB_SSL_MODE}
       MF_FILESTORE_DB_SSL_CERT: ${MF_FILESTORE_DB_SSL_CERT}
-      MF_FILESTORE_TLS: ${MF_FILESTORE_TLS}
+      MF_FILESTORE_CLIENT_TLS: ${MF_FILESTORE_CLIENT_TLS}
       MF_FILESTORE_HTTP_PORT: ${MF_FILESTORE_HTTP_PORT}
       MF_FILESTORE_SERVER_CERT: ${MF_FILESTORE_SERVER_CERT}
       MF_FILESTORE_SERVER_KEY: ${MF_FILESTORE_SERVER_KEY}
@@ -650,9 +650,9 @@ services:
       MF_FILESTORE_SEAWEED_URL: ${MF_FILESTORE_SEAWEED_URL}
       MF_FILESTORE_SEAWEED_PREFIX: ${MF_FILESTORE_SEAWEED_PREFIX}
       MF_FILESTORE_SEAWEED_TIMEOUT: ${MF_FILESTORE_SEAWEED_TIMEOUT}
-      MF_FILESTORE_SEAWEED_CHUNK_SIZE: ${MF_FILESTORE_SEAWEED_CHUNK_SIZE}
+      MF_FILESTORE_SEAWEED_CHUNK_MIB: ${MF_FILESTORE_SEAWEED_CHUNK_MIB}
       MF_FILESTORE_FILES_PATH: ${MF_FILESTORE_FILES_PATH}
-      MF_FILESTORE_MAX_UPLOAD_SIZE: ${MF_FILESTORE_MAX_UPLOAD_SIZE}
+      MF_FILESTORE_UPLOAD_LIMIT_MIB: ${MF_FILESTORE_UPLOAD_LIMIT_MIB}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     ports:
@@ -739,6 +739,9 @@ services:
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
       MF_EMAIL_TEMPLATES_DIR: ${MF_EMAIL_TEMPLATES_DIR}
       MF_SMTP_NOTIFIER_FROM_ADDR: ${MF_SMTP_NOTIFIER_FROM_ADDR}
+      MF_HOST: ${MF_HOST}
+      MF_SMTP_NOTIFIER_THING_PATH: ${MF_SMTP_NOTIFIER_THING_PATH}
+      MF_SMTP_NOTIFIER_RULE_PATH: ${MF_SMTP_NOTIFIER_RULE_PATH}
       MF_SMTP_NOTIFIER_DB_HOST: smtp-notifier-db
       MF_SMTP_NOTIFIER_DB_PORT: ${MF_SMTP_NOTIFIER_DB_PORT}
       MF_SMTP_NOTIFIER_DB_USER: ${MF_SMTP_NOTIFIER_DB_USER}
@@ -760,6 +763,7 @@ services:
     volumes:
       - ./templates/base.tmpl:/base.tmpl
       - ./templates/smtp/notification.tmpl:/notification.tmpl
+      - ./templates/smtp/alarm.tmpl:/alarm.tmpl
 
   downlinks-db:
     image: postgres:13.3-alpine

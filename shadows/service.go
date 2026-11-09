@@ -167,26 +167,26 @@ func decodeState(msg protomfx.Message) (State, bool) {
 		return decodeSenML(msg)
 	}
 
+	payload, err := messaging.ToPayload(msg)
+	if err != nil {
+		return nil, false
+	}
+
 	var s State
-	if err := json.Unmarshal(msg.Payload, &s); err != nil {
+	if err := json.Unmarshal(payload, &s); err != nil {
 		return nil, false
 	}
 	return s, true
 }
 
 func decodeSenML(msg protomfx.Message) (State, bool) {
-	records, err := messaging.SplitMessage(msg)
+	msgs, err := messaging.ToSenMLMessages(msg)
 	if err != nil {
 		return nil, false
 	}
 
 	s := State{}
-	for _, r := range records {
-		sm, err := messaging.ToSenMLMessage(r)
-		if err != nil {
-			continue
-		}
-
+	for _, sm := range msgs {
 		switch {
 		case sm.Value != nil:
 			s[sm.Name] = *sm.Value

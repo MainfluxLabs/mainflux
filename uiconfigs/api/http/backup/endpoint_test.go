@@ -49,7 +49,7 @@ const (
 
 var usersList = []domain.User{
 	{ID: adminID, Email: adminEmail},
-	{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
+	{ID: editorID, Email: editorEmail},
 	{ID: unauthID, Email: unauthEmail},
 }
 
@@ -84,7 +84,10 @@ func newService() uiconfigs.Service {
 	thingConfigs := uimocks.NewThingConfigRepository()
 	groupConfigs := uimocks.NewGroupConfigRepository()
 
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil)
+	orgMemberships := []domain.OrgMembership{
+		{OrgID: orgID, MemberID: editorID, Role: domain.OrgEditor},
+	}
+	authClient := pkgmocks.NewAuthService(adminID, usersList, nil, orgMemberships...)
 
 	things := map[string]domain.Thing{
 		editorToken: {ID: thingID, GroupID: groupID},

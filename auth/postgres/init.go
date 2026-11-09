@@ -6,6 +6,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib" // required for SQL access
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -44,7 +45,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "auth_1",
+				Id: "auth_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS users_roles (
 						role    VARCHAR(12) CHECK (role IN ('root', 'admin')),
@@ -88,7 +89,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "auth_2",
+				Id: "auth_02",
 				Up: []string{
 					`ALTER TABLE member_relations RENAME TO org_memberships`,
 					`ALTER TABLE org_memberships RENAME CONSTRAINT member_relations_org_id_fkey TO org_memberships_org_id_fkey`,
@@ -97,7 +98,7 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{},
 			},
 			{
-				Id: "auth_3",
+				Id: "auth_03",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS org_invites (
 						id           UUID NOT NULL,
@@ -119,7 +120,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "auth_4",
+				Id: "auth_04",
 				Up: []string{
 					`ALTER TABLE org_invites ALTER COLUMN invitee_id DROP NOT NULL;`,
 					`CREATE TABLE IF NOT EXISTS dormant_org_invites (
@@ -134,7 +135,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "auth_5",
+				Id: "auth_05",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS org_invites_groups (
 						org_invite_id UUID NOT NULL,
@@ -149,14 +150,14 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "auth_6",
+				Id: "auth_06",
 				Up: []string{
 					`ALTER TABLE org_invites_groups RENAME COLUMN group_role TO member_role;`,
 				},
 				Down: []string{},
 			},
 			{
-				Id: "auth_7",
+				Id: "auth_07",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS sessions (
 						jti        UUID NOT NULL,
@@ -175,6 +176,10 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

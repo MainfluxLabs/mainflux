@@ -7,13 +7,18 @@ package protomfx;
 
 import "google/protobuf/empty.proto";
 
+message Record {
+    bytes payload = 1;
+    int64 time    = 2; // Unix timestamp in nanoseconds
+}
+
 message Message {
-    string thing_id     = 1;
-    string subtopic     = 2;
-    bytes payload       = 3;
-    string content_type = 4;
-    string protocol     = 5;
-    int64 created       = 6; // Unix timestamp in nanoseconds
+    string thing_id         = 1;
+    string subtopic         = 2;
+    string content_type     = 3;
+    string protocol         = 4;
+    int64 created           = 5; // Unix timestamp in nanoseconds
+    repeated Record records = 6;
 }
 
 message Command {
@@ -41,11 +46,12 @@ message Alarm {
 }
 
 message Notification {
-    string thing_id  = 1;
-    string subtopic  = 2;
-    string protocol  = 3;
-    bytes  payload   = 4;
-    int64  created   = 5;
+    oneof source {
+        Alarm   alarm   = 1;
+        Message message = 2;
+    }
+    string rule_id   = 3;
+    bytes  rule_info = 4;
 }
 
 message Webhook {
@@ -70,6 +76,7 @@ service ThingsService {
     rpc GetGroupIDsByOrg(OrgAccessReq) returns (GroupIDs) {}
     rpc GetThingIDsByProfile(ProfileID) returns (ThingIDs) {}
     rpc CreateGroupMemberships(CreateGroupMembershipsReq) returns (google.protobuf.Empty) {}
+    rpc RemoveGroupMembershipsByOrg(RemoveGroupMembershipsByOrgReq) returns (google.protobuf.Empty) {}
     rpc GetGroup(GetGroupReq) returns (Group) {}
     rpc GetKeyByThingID(ThingID) returns (ThingKey) {}
 }
@@ -84,6 +91,7 @@ service AuthService {
     rpc Refresh(Token) returns (Token) {}
     rpc RevokeSessions(RevokeSessionsReq) returns (google.protobuf.Empty) {}
     rpc Identify(Token) returns (UserIdentity) {}
+    rpc IdentifyRecovery(Token) returns (UserIdentity) {}
     rpc Authorize(AuthorizeReq) returns (google.protobuf.Empty) {}
     rpc GetOwnerIDByOrg(OrgID) returns (OwnerID) {}
     rpc AssignRole(AssignRoleReq) returns (google.protobuf.Empty) {}
@@ -92,6 +100,9 @@ service AuthService {
     rpc ActivateOrgInvite(ActivateOrgInviteReq) returns (google.protobuf.Empty) {}
     rpc GetDormantOrgInviteByPlatformInvite(GetDormantOrgInviteByPlatformInviteReq) returns (OrgInvite) {}
     rpc ViewOrg(ViewOrgReq) returns (Org) {}
+    rpc GetAdminsByOrg(OrgID) returns (OrgMemberships) {}
+    rpc GetOrgIDsByAdmin(MemberID) returns (OrgIDs) {}
+    rpc GetOrgMembership(OrgMembershipReq) returns (OrgMembership) {}
 }
 
 message ThingKey {
@@ -149,6 +160,14 @@ message OrgID {
 }
 
 message OwnerID {
+    string value = 1;
+}
+
+message OrgIDs {
+    repeated string ids = 1;
+}
+
+message MemberID {
     string value = 1;
 }
 
@@ -285,6 +304,11 @@ message CreateGroupMembershipsReq {
     repeated GroupMembership memberships = 1;
 }
 
+message RemoveGroupMembershipsByOrgReq {
+    string org_id = 1;
+    repeated string member_ids = 2;
+}
+
 message GetDormantOrgInviteByPlatformInviteReq {
     string platform_invite_id = 1;
 }
@@ -306,6 +330,20 @@ message Org {
     string id = 1;
     string owner_id = 2;
     string name = 3;
+}
+
+message OrgMembership {
+    string member_id = 1;
+    string role = 2;
+}
+
+message OrgMemberships {
+    repeated OrgMembership memberships = 1;
+}
+
+message OrgMembershipReq {
+    string org_id = 1;
+    string member_id = 2;
 }
 
 message GetGroupReq {

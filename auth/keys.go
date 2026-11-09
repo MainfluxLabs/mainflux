@@ -65,6 +65,10 @@ type Keys interface {
 
 	// ListAPIKeys retrieves API keys.
 	ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error)
+
+	// IdentifyRecovery validates a password recovery token and returns
+	// the identity it was issued for. Any other token type is rejected.
+	IdentifyRecovery(ctx context.Context, token string) (Identity, error)
 }
 
 // KeyRepository specifies Key persistence API.
@@ -241,15 +245,34 @@ func (svc service) liveSession(ctx context.Context, token string) (Session, erro
 	if err != nil {
 		return Session{}, err
 	}
-	if key.Type != LoginKey || key.IssuerID == "" || key.ID == "" {
+	if key.Type != LoginKey {
+		return Session{}, errors.ErrAuthentication
+	}
+
+	return svc.checkSession(ctx, key)
+}
+
+// checkSession rejects a login key with no session, a revoked session, a session
+// of another user, or a session past the maximum session duration.
+func (svc service) checkSession(ctx context.Context, key Key) (Session, error) {
+	if key.IssuerID == "" || key.ID == "" {
 		return Session{}, errors.ErrAuthentication
 	}
 
 	session, err := svc.sessions.Retrieve(ctx, key.ID)
 	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return Session{}, errors.ErrAuthentication
+		}
+
+		return Session{}, err
+	}
+
+	if session.Revoked() || session.UserID != key.IssuerID {
 		return Session{}, errors.ErrAuthentication
 	}
-	if session.Revoked() {
+
+	if getTimestamp().After(session.StartedAt.Add(svc.maxSessionDuration)) {
 		return Session{}, errors.ErrAuthentication
 	}
 
@@ -275,7 +298,7 @@ func (svc service) purgeDeadSessions(ctx context.Context) {
 }
 
 func (svc service) Revoke(ctx context.Context, token, id string) error {
-	issuerID, _, err := svc.login(token)
+	issuerID, _, err := svc.login(ctx, token)
 	if err != nil {
 		return errors.Wrap(errRevoke, err)
 	}
@@ -286,7 +309,7 @@ func (svc service) Revoke(ctx context.Context, token, id string) error {
 }
 
 func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, error) {
-	issuerID, _, err := svc.login(token)
+	issuerID, _, err := svc.login(ctx, token)
 	if err != nil {
 		return Key{}, errors.Wrap(errRetrieve, err)
 	}
@@ -295,7 +318,7 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 }
 
 func (svc service) ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error) {
-	issuerID, _, err := svc.login(token)
+	issuerID, _, err := svc.login(ctx, token)
 	if err != nil {
 		return KeysPage{}, errors.Wrap(errRetrieve, err)
 	}
@@ -304,7 +327,7 @@ func (svc service) ListAPIKeys(ctx context.Context, token string, pm PageMetadat
 }
 
 func (svc service) userKey(ctx context.Context, token string, key Key) (Key, string, error) {
-	id, sub, err := svc.login(token)
+	id, sub, err := svc.login(ctx, token)
 	if err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
 	}

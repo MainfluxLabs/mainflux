@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
-	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers"
 	"github.com/MainfluxLabs/mainflux/pkg/transformers/senml"
 	"github.com/stretchr/testify/assert"
@@ -72,32 +71,20 @@ func TestTransformPayloadTime(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		msg := protomfx.Message{
-			Payload:     senmlPayload(t, tc.time),
-			ContentType: senml.JSON,
-			Created:     created,
-		}
-
-		err := senml.TransformPayload(&msg)
+		records, err := senml.TransformPayload(senml.JSON, senmlPayload(t, tc.time), created)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s", tc.desc, tc.err, err))
 		if tc.err != nil {
 			continue
 		}
 
-		var msgs []senml.Message
-		require.Nil(t, json.Unmarshal(msg.Payload, &msgs), fmt.Sprintf("%s: unmarshalling transformed payload", tc.desc))
-		require.Len(t, msgs, 1, tc.desc)
-		assert.Equal(t, tc.want, msgs[0].Time, fmt.Sprintf("%s: expected %d, got %d", tc.desc, tc.want, msgs[0].Time))
+		require.Len(t, records, 1, tc.desc)
+		resMsg := fmt.Sprintf("%s: expected %d, got %d", tc.desc, tc.want, records[0].Time)
+		assert.Equal(t, tc.want, records[0].Time, resMsg)
 	}
 }
 
 func TestTransformPayloadTimeOutOfRange(t *testing.T) {
-	msg := protomfx.Message{
-		Payload:     senmlPayload(t, 1e10),
-		ContentType: senml.JSON,
-	}
-
-	err := senml.TransformPayload(&msg)
+	_, err := senml.TransformPayload(senml.JSON, senmlPayload(t, 1e10), 0)
 
 	assert.True(t, errors.Contains(err, errors.ErrMalformedEntity), "out-of-range timestamp should map to a 400")
 	assert.Equal(t, transformers.ErrTimestampOutOfRange.Error(), err.(errors.Error).Msg(), "specific reason should survive to the response body")

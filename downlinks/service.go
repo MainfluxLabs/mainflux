@@ -435,7 +435,7 @@ func (ds *downlinksService) LoadAndScheduleTasks(ctx context.Context) error {
 func (ds *downlinksService) publish(config *domain.ProfileConfig, thingID string, payload []byte) error {
 	msg := protomfx.Message{
 		Protocol: downlinkProtocol,
-		Payload:  payload,
+		Records:  []*protomfx.Record{{Payload: payload}},
 	}
 
 	conn := domain.PubConfigInfo{
@@ -464,7 +464,7 @@ func (ds *downlinksService) getLimiter(baseURL string) *rate.Limiter {
 }
 
 func (ds *downlinksService) Backup(ctx context.Context, token string) ([]Downlink, error) {
-	if err := ds.isAdmin(ctx, token); err != nil {
+	if err := ds.canAccessPlatform(ctx, token); err != nil {
 		return nil, err
 	}
 
@@ -472,7 +472,7 @@ func (ds *downlinksService) Backup(ctx context.Context, token string) ([]Downlin
 }
 
 func (ds *downlinksService) Restore(ctx context.Context, token string, dls []Downlink) error {
-	if err := ds.isAdmin(ctx, token); err != nil {
+	if err := ds.canAccessPlatform(ctx, token); err != nil {
 		return err
 	}
 
@@ -483,7 +483,7 @@ func (ds *downlinksService) Restore(ctx context.Context, token string, dls []Dow
 	return ds.scheduleTasks(ctx, dls...)
 }
 
-func (ds *downlinksService) isAdmin(ctx context.Context, token string) error {
+func (ds *downlinksService) canAccessPlatform(ctx context.Context, token string) error {
 	if err := ds.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}

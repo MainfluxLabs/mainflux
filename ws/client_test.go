@@ -74,7 +74,7 @@ func TestHandle(t *testing.T) {
 		{
 			desc:            "handling with different id from ws.Client",
 			thingID:         msg.ThingId,
-			expectedPayload: msg.Payload,
+			expectedPayload: msg.Records[0].Payload,
 			expectMsg:       true,
 		},
 		{

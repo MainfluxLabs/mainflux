@@ -377,7 +377,7 @@ func TestRetrieveByKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	th.ID = ths[0].ID
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = thingRepo.UpdateExternalKey(context.Background(), externalKey, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -919,7 +919,7 @@ func TestRemoveExternalKey(t *testing.T) {
 	_, err = thingRepo.Save(context.Background(), thing)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	const externalKey = "abc123"
+	const externalKey = "abc12345"
 	err = thingRepo.UpdateExternalKey(context.Background(), externalKey, thing.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 

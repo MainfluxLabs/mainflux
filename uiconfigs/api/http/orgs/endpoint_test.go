@@ -51,8 +51,8 @@ const (
 
 var usersList = []domain.User{
 	{ID: adminID, Email: adminEmail},
-	{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
-	{ID: viewerID, Email: viewerEmail, Role: domain.OrgViewer},
+	{ID: editorID, Email: editorEmail},
+	{ID: viewerID, Email: viewerEmail},
 	{ID: unauthID, Email: unauthEmail},
 }
 
@@ -87,7 +87,11 @@ func newService() uiconfigs.Service {
 	thingConfigs := uimocks.NewThingConfigRepository()
 	groupConfigs := uimocks.NewGroupConfigRepository()
 
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil)
+	orgMemberships := []domain.OrgMembership{
+		{OrgID: orgID, MemberID: editorID, Role: domain.OrgEditor},
+		{OrgID: orgID, MemberID: viewerID, Role: domain.OrgViewer},
+	}
+	authClient := pkgmocks.NewAuthService(adminID, usersList, nil, orgMemberships...)
 	thingsClient := pkgmocks.NewThingsServiceClient(map[string]domain.Profile{}, nil, nil)
 
 	return uiconfigs.New(orgConfigs, thingConfigs, groupConfigs, thingsClient, authClient, uuid.NewMock(), logger.NewMock())
