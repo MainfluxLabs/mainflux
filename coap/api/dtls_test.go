@@ -22,6 +22,7 @@ import (
 	dtlsserver "github.com/plgd-dev/go-coap/v3/dtls/server"
 	"github.com/plgd-dev/go-coap/v3/message"
 	"github.com/plgd-dev/go-coap/v3/message/codes"
+	"github.com/plgd-dev/go-coap/v3/message/pool"
 	coapnet "github.com/plgd-dev/go-coap/v3/net"
 	"github.com/plgd-dev/go-coap/v3/options"
 	"github.com/stretchr/testify/assert"
@@ -222,4 +223,50 @@ func TestDTLSConnectionID(t *testing.T) {
 func TestDerivePSK(t *testing.T) {
 	// Matches: echo -n <key> | sha256sum | cut -c1-32
 	assert.Equal(t, []byte("6395761e7cb4afc7a85bc2e7910dbe3e"), api.DerivePSK(thingKey))
+}
+
+// observeServiceMock ends an observation the way the adapter does: by cancelling its observer.
+type observeServiceMock struct {
+	serviceMock
+	observers chan coap.Client
+}
+
+func (svc *observeServiceMock) Subscribe(_ context.Context, _ domain.ThingKey, _ string, c coap.Client) error {
+	svc.observers <- c
+	return nil
+}
+
+func (svc *observeServiceMock) Unsubscribe(context.Context, domain.ThingKey, string, string) error {
+	return (<-svc.observers).Cancel()
+}
+
+func (svc *observeServiceMock) RemoveObserver(string, coap.Client) error {
+	return nil
+}
+
+func TestDTLSCancelObservation(t *testing.T) {
+	svc := &observeServiceMock{
+		serviceMock: serviceMock{keys: make(chan domain.ThingKey, 1)},
+		observers:   make(chan coap.Client, 1),
+	}
+	addr := startDTLSServer(t, svc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, err := dtls.Dial(addr, dtls.NewDTLSClientOptions(
+		piondtls.WithPSK(func([]byte) ([]byte, error) { return api.DerivePSK(thingKey), nil }),
+		piondtls.WithPSKIdentityHint([]byte(thingID)),
+		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
+	), options.WithContext(ctx))
+	require.NoError(t, err)
+	defer conn.Close()
+
+	observation, err := conn.Observe(ctx, "/things/"+thingID+"/commands/shadow", func(*pool.Message) {})
+	require.NoError(t, err, "observe commands")
+	require.NoError(t, observation.Cancel(ctx), "cancel observation")
+
+	resp, err := conn.Post(ctx, "/things/"+thingID+"/messages", message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
+	require.NoError(t, err, "publish on the same session after cancelling the observation")
+	assert.Equal(t, codes.Changed, resp.Code(), "publish on the same session after cancelling the observation")
+	assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, "publish on the same session after cancelling the observation")
 }

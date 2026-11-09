@@ -61,7 +61,9 @@ func (c *client) Cancel() error {
 	if err := c.client.WriteMessage(m); err != nil {
 		c.logger.Error(fmt.Sprintf("Error sending message: %s.", err))
 	}
-	return c.client.Close()
+
+	// The connection stays open: it may carry other observations, and over DTLS closing it ends the session.
+	return nil
 }
 
 func (c *client) Token() string {
