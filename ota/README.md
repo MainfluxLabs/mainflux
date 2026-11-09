@@ -17,7 +17,7 @@ An update describes the firmware and who should install it.
 | `file_size`   | Firmware size in bytes                                                      |
 | `checksum`    | Hex-encoded SHA-256 of the firmware, for the thing to verify the download   |
 | `description` | Free text                                                                   |
-| `timeout`     | Seconds without progress after which a thing is marked failed (default 24h) |
+| `timeout`     | Seconds without progress after which a thing is marked failed (default 24h, max 7 days)  |
 | `stats`       | Number of the update's things by status                                     |
 
 Each thing of an update has its own progress: `status`, `error`, `reported_version` and `updated_at`.

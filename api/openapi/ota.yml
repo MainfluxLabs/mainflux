@@ -224,9 +224,10 @@ components:
           type: integer
           format: int64
           minimum: 0
+          maximum: 604800
           description: |
             Seconds without progress after which a thing is marked failed. Defaults
-            to 86400 (24 hours) when omitted or 0.
+            to 86400 (24 hours) when omitted or 0, at most 604800 (7 days).
           example: 86400
         thing_ids:
           type: array
