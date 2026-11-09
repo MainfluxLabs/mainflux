@@ -97,3 +97,16 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKe
 	return lm.svc.Unsubscribe(ctx, key, subtopic, token)
 
 }
+
+func (lm *loggingMiddleware) RemoveObserver(subtopic string, c coap.Client) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_observer for client token %s took %s to complete", c.Token(), time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveObserver(subtopic, c)
+}

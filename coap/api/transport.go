@@ -201,7 +201,7 @@ func handleGet(m *mux.Message, c mux.Conn, key domain.ThingKey) (bool, error) {
 		}
 		// A closed connection can't receive notifications, so its observation ends with it.
 		c.AddOnClose(func() {
-			_ = service.Unsubscribe(context.Background(), key, subtopic, observer.Token())
+			_ = service.RemoveObserver(subtopic, observer)
 		})
 		return true, nil
 	}
