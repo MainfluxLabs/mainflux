@@ -29,21 +29,21 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/CreateScriptsReq"
       responses:
-        '201':
+        "201":
           description: Scripts created.
-        '400':
+        "400":
           description: |
             Malformed request, script exceeds the size limit, or the source does
             not compile. A syntax error is reported with Python's own message.
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group editor required.
-        '415':
+        "415":
           description: Unsupported content type.
-        '500':
+        "500":
           description: The python worker failed while compiling the script.
-        '503':
+        "503":
           description: No python worker available to compile the script.
     get:
       summary: Lists scripts belonging to a group.
@@ -57,15 +57,15 @@ paths:
         - $ref: "#/components/parameters/Direction"
         - $ref: "#/components/parameters/Name"
       responses:
-        '200':
+        "200":
           description: Page of scripts.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScriptsPage"
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group viewer required.
 
   /scripts/{scriptId}:
@@ -76,17 +76,17 @@ paths:
       parameters:
         - $ref: "#/components/parameters/ScriptId"
       responses:
-        '200':
+        "200":
           description: The script.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Script"
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group viewer required.
-        '404':
+        "404":
           description: Script does not exist.
     put:
       summary: Updates a script.
@@ -97,19 +97,19 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/UpdateScriptReq"
       responses:
-        '200':
+        "200":
           description: Script updated.
-        '400':
+        "400":
           description: |
             Malformed request, script exceeds the size limit, or the source does
             not compile. A syntax error is reported with Python's own message.
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group editor required.
-        '404':
+        "404":
           description: Script does not exist.
-        '503':
+        "503":
           description: No python worker available to compile the script.
 
   /scripts:
@@ -120,13 +120,13 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/RemoveScriptsReq"
       responses:
-        '204':
+        "204":
           description: Scripts removed.
-        '400':
+        "400":
           description: Malformed request.
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group editor required.
 
   /scripts/{scriptId}/run:
@@ -146,23 +146,23 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/RunScriptReq"
       responses:
-        '200':
+        "200":
           description: The run, whether the script succeeded or failed.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Run"
-        '400':
+        "400":
           description: Malformed request, or payload exceeds the size limit.
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group editor required.
-        '404':
+        "404":
           description: Script does not exist.
-        '500':
+        "500":
           description: The python worker failed.
-        '503':
+        "503":
           description: |
             No python worker became available within
             MF_PYSCRIPTS_ACQUIRE_TIMEOUT. The request was shed, not queued;
@@ -183,17 +183,17 @@ paths:
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
-        '200':
+        "200":
           description: Page of runs.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RunsPage"
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group viewer required.
-        '404':
+        "404":
           description: Script does not exist.
 
   /runs:
@@ -204,13 +204,13 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/RemoveRunsReq"
       responses:
-        '204':
+        "204":
           description: Runs removed.
-        '400':
+        "400":
           description: Malformed request.
-        '401':
+        "401":
           description: Missing or invalid access token.
-        '403':
+        "403":
           description: Group editor required.
 
   /health:
@@ -219,7 +219,7 @@ paths:
       tags:
         - health
       responses:
-        '200':
+        "200":
           description: Service is up.
 
 components:
@@ -370,7 +370,7 @@ components:
         created:
           type: integer
           format: int64
-        publisher_id:
+        thing_id:
           type: string
 
     Run:
