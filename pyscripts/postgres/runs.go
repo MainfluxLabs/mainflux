@@ -19,7 +19,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var maxRunsPerScript = 1000
+const maxRunsPerScript = 1000
 
 func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.ScriptRun) ([]pyscripts.ScriptRun, error) {
 	tx, err := sr.db.BeginTxx(ctx, nil)

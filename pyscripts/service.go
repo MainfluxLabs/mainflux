@@ -16,7 +16,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var (
+const (
 	groupRate  = rate.Limit(2)
 	groupBurst = 10
 )
