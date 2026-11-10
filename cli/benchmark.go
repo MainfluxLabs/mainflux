@@ -30,6 +30,7 @@ var (
 	errInvalidThings       = errors.New("things must be at least 1")
 	errInvalidBackfillDays = errors.New("backfill days must be at least 1")
 	errInvalidBatch        = errors.New("batch must be at least 1")
+	errMTLSRequiresHTTPS   = errors.New("mtls requires an https HTTP adapter URL")
 )
 
 var (
@@ -158,8 +159,8 @@ number of messages is sent.`,
 	return cmd
 }
 
-// validateBenchFlags rejects flag values that leave no entity to provision or
-// no time window to backfill.
+// validateBenchFlags rejects flag values that leave no entity to provision, no time window to
+// backfill, or no TLS connection to carry client certificates.
 func validateBenchFlags() error {
 	switch {
 	case benchOrgs < 1:
@@ -172,6 +173,8 @@ func validateBenchFlags() error {
 		return errInvalidBackfillDays
 	case benchBatch < 1:
 		return errInvalidBatch
+	case benchMTLS && !strings.HasPrefix(HTTPAdapterURL, "https://"):
+		return errMTLSRequiresHTTPS
 	default:
 		return nil
 	}
