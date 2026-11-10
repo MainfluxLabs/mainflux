@@ -157,13 +157,19 @@ func (urm *userRepositoryMock) BackupAll(ctx context.Context) ([]users.User, err
 	return users, nil
 }
 
-func (urm *userRepositoryMock) UpdatePassword(_ context.Context, token, password string) error {
+func (urm *userRepositoryMock) UpdatePassword(_ context.Context, email, password string) error {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := urm.usersByEmail[token]; !ok {
+	user, ok := urm.usersByEmail[email]
+	if !ok {
 		return dbutil.ErrNotFound
 	}
+
+	user.Password = password
+	urm.usersByEmail[email] = user
+	urm.usersByID[user.ID] = user
+
 	return nil
 }
 

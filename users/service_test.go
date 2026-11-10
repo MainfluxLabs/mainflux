@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -110,7 +111,7 @@ func newService(srv ...*httptest.Server) users.Service {
 		URLs:                cfgURLs,
 		PassMinLength:       users.MinPasswordLength,
 	}
-	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, authSvc, e, idProvider, c)
+	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), authSvc, e, idProvider, logger.NewMock(), c)
 }
 
 func TestSelfRegister(t *testing.T) {
@@ -156,7 +157,7 @@ func TestRegisterAdmin(t *testing.T) {
 	config := users.Config{
 		PassMinLength: users.MinPasswordLength,
 	}
-	svc := users.New(userRepo, verificationRepo, invitesRepo, identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, config)
+	svc := users.New(userRepo, verificationRepo, invitesRepo, identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), config)
 
 	cases := map[string]struct {
 		user users.User
@@ -312,47 +313,81 @@ func TestLogin(t *testing.T) {
 func TestLoginPasswordForms(t *testing.T) {
 	composed := "pässwörd-ünïcödé"
 	decomposed := norm.NFD.String(composed)
-	legacyUser := users.User{Email: "legacy@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: "12345678"}
-	legacyDecomposedUser := users.User{Email: "legacy-nfd@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: decomposed}
-
+	legacyUser := users.User{Email: "legacy@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: usmocks.LegacyHashPrefix + "12345678"}
+	legacyDecomposedUser := users.User{Email: "legacy-nfd@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: usmocks.LegacyHashPrefix + decomposed}
+	oauthUser := users.User{Email: "oauth-only@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f99"}
 	unicodeUser := users.User{Email: "unicode@example.com", Password: composed}
 
-	userRepo := usmocks.NewUserRepository([]users.User{legacyUser, legacyDecomposedUser})
-	authSvc := mocks.NewAuthService(admin.ID, []users.User{legacyUser, legacyDecomposedUser, unicodeUser}, nil)
-	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), usmocks.NewIdentityRepository(), usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, users.Config{SelfRegisterEnabled: true})
+	userRepo := usmocks.NewUserRepository([]users.User{legacyUser, legacyDecomposedUser, oauthUser})
+	authSvc := mocks.NewAuthService(admin.ID, []users.User{legacyUser, legacyDecomposedUser, oauthUser, unicodeUser}, nil)
+	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), usmocks.NewIdentityRepository(), usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), users.Config{SelfRegisterEnabled: true})
 
 	_, err := svc.SelfRegister(context.Background(), unicodeUser, "")
 	require.Nil(t, err, fmt.Sprintf("self register expected to succeed: %s", err))
 
-	cases := map[string]struct {
+	cases := []struct {
+		desc string
 		user users.User
+		hash string
 		err  error
 	}{
-		"login with composed form of password": {
+		{
+			desc: "login with composed form of password",
 			user: unicodeUser,
+			hash: composed,
 			err:  nil,
 		},
-		"login with decomposed form of password": {
+		{
+			desc: "login with decomposed form of password",
 			user: users.User{Email: unicodeUser.Email, Password: decomposed},
+			hash: composed,
 			err:  nil,
 		},
-		"login with existing password that does not meet the policy": {
-			user: legacyUser,
+		{
+			desc: "login with legacy hash of password that does not meet the policy",
+			user: users.User{Email: legacyUser.Email, Password: "12345678"},
+			hash: "12345678",
 			err:  nil,
 		},
-		"login with existing password hashed before normalization": {
-			user: legacyDecomposedUser,
+		{
+			desc: "login after legacy hash was replaced",
+			user: users.User{Email: legacyUser.Email, Password: "12345678"},
+			hash: "12345678",
 			err:  nil,
 		},
-		"login with empty password": {
+		{
+			desc: "login with wrong password and legacy hash",
+			user: users.User{Email: legacyDecomposedUser.Email, Password: composed},
+			hash: legacyDecomposedUser.Password,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "login with legacy hash of password as received",
+			user: users.User{Email: legacyDecomposedUser.Email, Password: decomposed},
+			hash: composed,
+			err:  nil,
+		},
+		{
+			desc: "login with empty password",
 			user: users.User{Email: legacyUser.Email},
+			hash: "12345678",
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "login with user without password",
+			user: users.User{Email: oauthUser.Email, Password: "any-password-at-all"},
+			hash: "",
 			err:  errors.ErrAuthentication,
 		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		_, err := svc.Login(context.Background(), tc.user)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		stored, err := userRepo.RetrieveByEmail(context.Background(), tc.user.Email)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.hash, stored.Password, fmt.Sprintf("%s: expected stored hash %s got %s", tc.desc, tc.hash, stored.Password))
 	}
 }
 
@@ -615,26 +650,27 @@ func TestChangePassword(t *testing.T) {
 	userToken, _ := svc.Login(context.Background(), registerUser)
 	adminToken, _ := svc.Login(context.Background(), admin)
 
-	cases := map[string]struct {
+	cases := []struct {
+		desc        string
 		token       string
 		email       string
 		password    string
 		oldPassword string
 		err         error
 	}{
-		"valid user change password ":                    {userToken, "", "fresh-river-stone", registerUser.Password, nil},
-		"valid user change password with wrong password": {userToken, "", "fresh-river-stone", "wrongpassword", errors.ErrInvalidPassword},
-		"valid user change password invalid token":       {"", "", "fresh-river-stone", registerUser.Password, errors.ErrAuthentication},
+		{"valid user change password", userToken, "", "fresh-river-stone", registerUser.Password, nil},
+		{"valid user change password with wrong password", userToken, "", "fresh-river-stone", "wrongpassword", errors.ErrInvalidPassword},
+		{"valid user change password invalid token", "", "", "fresh-river-stone", registerUser.Password, errors.ErrAuthentication},
 
-		"valid admin change user password ":             {adminToken, registerUser.Email, "fresh-river-stone", "", nil},
-		"valid admin change password with wrong email":  {adminToken, "wrongemail@example.com", "fresh-river-stone", "", dbutil.ErrNotFound},
-		"valid admin change password invalid token":     {"", registerUser.Email, "fresh-river-stone", "", errors.ErrAuthentication},
-		"valid user change password to common password": {userToken, "", "1q2w3e4r5t6y7u8i", registerUser.Password, errors.ErrPasswordFormat},
+		{"valid admin change user password", adminToken, registerUser.Email, "fresh-river-stone", "", nil},
+		{"valid admin change password with wrong email", adminToken, "wrongemail@example.com", "fresh-river-stone", "", dbutil.ErrNotFound},
+		{"valid admin change password invalid token", "", registerUser.Email, "fresh-river-stone", "", errors.ErrAuthentication},
+		{"valid admin change user password to common password", adminToken, registerUser.Email, "1q2w3e4r5t6y7u8i", "", errors.ErrPasswordFormat},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		err := svc.ChangePassword(context.Background(), tc.token, tc.email, tc.password, tc.oldPassword)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 
 	}
 }

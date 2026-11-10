@@ -59,12 +59,14 @@ The service is configured using the environment variables presented in the follo
 Passwords are checked on registration, self-registration, platform invite registration, password change and password reset. Login does not apply the policy, so existing passwords keep working.
 
 - The password is normalized to Unicode NFKC before validation and hashing.
-- Length is at least `MF_USERS_PASS_MIN_LENGTH` and at most 128 characters, counted in Unicode code points. Until passwords are hashed with Argon2id, it is also limited to 72 bytes in UTF-8.
+- Length is at least `MF_USERS_PASS_MIN_LENGTH` and at most 128 characters, counted in Unicode code points.
 - All characters are allowed, including spaces, symbols and Unicode. There are no uppercase, digit or special character requirements.
 - The password must not be on the [NCSC list of the 100,000 most used passwords](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/100k-most-used-passwords-NCSC.txt), compared case-insensitively.
 - The password must not contain the local part of the user's e-mail address, compared case-insensitively, when the local part has at least 3 characters.
 
 `MF_USERS_ADMIN_PASSWORD` must meet the policy, otherwise the service fails to start.
+
+Passwords are hashed with Argon2id (19 MiB of memory, 2 iterations, parallelism 1) and stored in PHC string format. Passwords hashed with bcrypt by earlier versions keep working: on the next successful login, the bcrypt hash is replaced with an Argon2id hash.
 
 ## Deployment
 

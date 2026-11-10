@@ -19,9 +19,6 @@ const (
 	// MaxPasswordLength is the maximum password length in Unicode code points.
 	MaxPasswordLength = 128
 
-	// bcrypt rejects longer input; remove once passwords are hashed with Argon2id.
-	maxPasswordBytes = 72
-
 	minEmailLocalPartLength = 3
 )
 
@@ -71,7 +68,7 @@ func ValidatePassword(password, email string, minLength int) error {
 	if length < minLength {
 		return errors.Wrap(ErrPasswordTooShort, errors.ErrPasswordFormat)
 	}
-	if length > MaxPasswordLength || len(password) > maxPasswordBytes {
+	if length > MaxPasswordLength {
 		return errors.Wrap(ErrPasswordTooLong, errors.ErrPasswordFormat)
 	}
 

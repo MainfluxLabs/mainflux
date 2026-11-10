@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users/argon2"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,4 +154,28 @@ func TestVerificationRetrieve(t *testing.T) {
 		_, err := repo.RetrieveByToken(context.Background(), tc.verification.Token)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+}
+
+func TestVerificationArgon2idHashStorage(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repo := postgres.NewEmailVerificationRepo(dbMiddleware)
+
+	hash, err := argon2.New().Hash("correct horse battery staple")
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	token, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	verification := users.EmailVerification{
+		Token:     token,
+		User:      users.User{Email: "argon2-verification@example.com", Password: hash},
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(time.Hour),
+	}
+
+	_, err = repo.Save(context.Background(), verification)
+	require.Nil(t, err, fmt.Sprintf("save verification with Argon2id hash: unexpected error: %s", err))
+
+	saved, err := repo.RetrieveByToken(context.Background(), token)
+	require.Nil(t, err, fmt.Sprintf("retrieve verification: unexpected error: %s", err))
+	assert.Equal(t, hash, saved.User.Password, "retrieved hash expected to equal the saved hash")
 }

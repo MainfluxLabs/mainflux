@@ -547,7 +547,6 @@ components:
         - Unicode NFKC normalized before validation and hashing.
         - At least `MF_USERS_PASS_MIN_LENGTH` characters (15 by default) and at most 128,
           counted in Unicode code points after normalization.
-        - Temporarily at most 72 bytes in UTF-8, because of the bcrypt hash.
         - All characters are allowed, including spaces, symbols and Unicode.
           No uppercase, digit or special character requirements.
         - Must not be on the NCSC list of the 100,000 most used passwords (case-insensitive).

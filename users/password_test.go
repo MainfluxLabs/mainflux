@@ -36,10 +36,10 @@ func TestValidatePassword(t *testing.T) {
 			email:    "user@example.com",
 			err:      users.ErrPasswordTooLong,
 		},
-		"password longer than bcrypt limit": {
-			password: strings.Repeat("ab", 37),
+		"password longer than 72 bytes": {
+			password: strings.Repeat("čć", 37),
 			email:    "user@example.com",
-			err:      users.ErrPasswordTooLong,
+			err:      nil,
 		},
 		"common password": {
 			password: "1q2w3e4r5t6y7u8i",

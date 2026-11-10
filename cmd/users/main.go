@@ -28,6 +28,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
+	"github.com/MainfluxLabs/mainflux/users/argon2"
 	"github.com/MainfluxLabs/mainflux/users/bcrypt"
 	"github.com/MainfluxLabs/mainflux/users/emailer"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
@@ -350,7 +351,9 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 
 func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c config, logger logger.Logger) users.Service {
 	database := dbutil.NewDatabase(db)
-	hasher := bcrypt.New()
+	hasher := argon2.New()
+	// Only verifies bcrypt hashes from earlier versions, replaced on login; remove once none remain.
+	legacyHasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 	platformInvitesRepo := tracing.PlatformInvitesRepositoryMiddleware(postgres.NewPlatformInvitesRepo(database), tracer)
@@ -390,7 +393,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 		PassMinLength:       c.passMinLength,
 	}
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, ac, svcEmailer, idProvider, usersCfg)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, legacyHasher, ac, svcEmailer, idProvider, logger, usersCfg)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

@@ -120,7 +120,7 @@ func newService() users.Service {
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
 	}
-	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, auth, email, idProvider, c)
+	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), auth, email, idProvider, logger.NewMock(), c)
 }
 
 func newServer(svc users.Service) *httptest.Server {

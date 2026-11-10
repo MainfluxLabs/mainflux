@@ -64,7 +64,7 @@ func newUserService() users.Service {
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
 	}
-	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, identityRepo, hasher, auth, emailer, idProvider, c)
+	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), auth, emailer, idProvider, logger.NewMock(), c)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
