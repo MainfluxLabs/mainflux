@@ -34,17 +34,13 @@ const (
 	// service log, so a worker failing in a loop cannot fill it.
 	maxStderrLog = 64 << 10
 
-	// backfillInterval is how often the pool retries workers it failed to start.
-	// It also bounds how long a rate-limited respawn leaves the pool short, so it
-	// is deliberately well below the 30s it began as: at 30s a caller could empty
-	// the pool and keep every other tenant on 503 for most of a minute.
+	// backfillInterval is how often the pool retries workers it failed to
+	// start. It also bounds how long a rate-limited respawn leaves the pool
+	// short.
 	backfillInterval = 5 * time.Second
 
-	// respawnRate is the sustained number of worker respawns allowed per second,
-	// over a burst of one full pool. Retiring a worker is still reachable from a
-	// script - exceeding the output cap does it - and each respawn costs a
-	// python start plus a numpy import, so the rate is capped and anything over
-	// it is left to backfill.
+	// respawnRate caps sustained worker respawns per second, over a burst of
+	// one full pool. A script can force a respawn, and each one imports numpy.
 	respawnRate = 1.0
 
 	// orphanGrace bounds how long a cancelled job waits for the pid of a child
@@ -53,14 +49,8 @@ const (
 	orphanGrace = 500 * time.Millisecond
 )
 
-// hideProcess and reapOrphans are the two process-level controls the pool wants
-// from the host, and only Linux implements them. They are variables so that
-// hardening.go can install the real ones in its init and the package still
-// builds everywhere else - a developer's machine compiles and tests this package
-// constantly, and that should not require a second file carrying stubs.
-//
-// The no-ops are the honest behaviour off Linux: there is no /proc to hide and
-// this process is not a container's PID 1, so there is nothing to reap.
+// hideProcess and reapOrphans are variables so hardening.go can install the
+// Linux implementations. Elsewhere they are no-ops.
 var (
 	hideProcess = func() error { return nil }
 	reapOrphans = func(logger.Logger) {}
@@ -95,9 +85,8 @@ type Config struct {
 	// AcquireTimeout bounds how long a caller waits for a free worker before the
 	// pool sheds the request. Without it a saturated pool queues indefinitely.
 	AcquireTimeout time.Duration
-	// StartTimeout bounds the handshake with a newly spawned worker. Without it a
-	// python process that starts but never reports ready hangs startup forever,
-	// so the service never reaches its HTTP listener.
+	// StartTimeout bounds the handshake with a newly spawned worker, so one
+	// that never reports ready cannot hang startup.
 	StartTimeout time.Duration
 	MaxOutput    int64
 	MaxLogLines  int
@@ -105,19 +94,15 @@ type Config struct {
 	Limits       Limits
 }
 
-// Input and Result are declared by the pyscripts package, which owns the
-// contract this package implements. They are aliased rather than re-declared so
-// the frame structs and the collector keep working on them directly.
+// Input and Result are aliased from pyscripts, which owns the contract.
 type (
 	Input  = pyscripts.Input
 	Result = pyscripts.Result
 )
 
-// outcome is a Result plus what only this package needs to know about it.
-// produced records whether the child actually reported an outcome, as opposed to
-// being killed before it could, which is how Validate tells a syntax error from
-// a check that never got to compile. It stays unexported because no caller
-// outside this package has any use for it.
+// outcome is a Result plus produced, which records whether the child reported
+// an outcome rather than being killed first. Validate uses it to tell a syntax
+// error from a check that never compiled.
 type outcome struct {
 	Result
 	produced bool
@@ -129,10 +114,8 @@ type pool struct {
 	free   chan *worker
 	mu     sync.Mutex
 	closed bool
-	// missing counts workers the pool owes itself because a spawn failed. A
-	// failure is often transient - the machine briefly out of memory, say - so
-	// the deficit is retried rather than being accepted for the process
-	// lifetime.
+	// missing counts workers owed because a spawn failed. Such failures are
+	// often transient, so the deficit is retried.
 	missing int
 
 	// tokens and drawn implement the respawn budget as a leaky bucket, refilled
@@ -156,10 +139,8 @@ func New(cfg Config, log logger.Logger) (pyscripts.Runner, error) {
 
 	p := &pool{cfg: cfg, logger: log, free: make(chan *worker, cfg.Workers)}
 
-	// A worker that fails to start does not stop the service: refusing to boot
-	// over a transient failure is worse than serving on a smaller pool, and the
-	// shortfall is made up in the background. Failing them all is different -
-	// there is nothing to serve with.
+	// A pool short of workers still serves while backfill makes up the
+	// shortfall. A pool with none cannot.
 	for i := 0; i < cfg.Workers; i++ {
 		w, err := p.spawn()
 		if err != nil {
@@ -185,20 +166,13 @@ func New(cfg Config, log logger.Logger) (pyscripts.Runner, error) {
 	return p, nil
 }
 
-// backfill tops the pool back up to its configured size. Without it one failed
-// spawn - at startup or when replacing a dead worker - leaves the pool
-// permanently short, with nothing but a single log line to say so.
+// backfill tops the pool back up to its configured size.
 func (p *pool) backfill() {
 	t := time.NewTicker(backfillInterval)
 	defer t.Stop()
 
 	for range t.C {
-		// Clear the whole deficit, not one worker of it. Replacing a single worker
-		// per tick meant a pool that lost several at once - or whose respawns were
-		// deferred here by the rate limit - came back one worker every
-		// backfillInterval, so the rate limit could turn a brief retirement into a
-		// far longer shortage than no limit at all. Each spawn is still sequential,
-		// which is what keeps this from becoming the storm the limit guards against.
+		// Clear the whole deficit each tick, one spawn at a time.
 		for {
 			p.mu.Lock()
 			owed, closed := p.missing, p.closed
@@ -214,9 +188,8 @@ func (p *pool) backfill() {
 
 			w, err := p.spawn()
 			if err != nil {
-				// Leave the rest owed and wait for the next tick rather than
-				// retrying immediately: a spawn that just failed is likely to fail
-				// again, and the machine may be the reason.
+				// Leave the rest owed until the next tick: a spawn that just
+				// failed is likely to fail again.
 				p.logger.Warn(fmt.Sprintf("replacing a missing python worker failed: %s", err))
 				break
 			}
@@ -253,10 +226,8 @@ func (p *pool) Validate(ctx context.Context, code string) (string, error) {
 		return "", err
 	}
 
-	// A check that never reported means the child was killed before it could
-	// compile, so Error holds the reason it died rather than a verdict on the
-	// source. Returning it as a syntax message would tell the author their valid
-	// script is not valid python.
+	// A check that never reported was killed before compiling, so Error holds
+	// its cause of death, not a verdict on the source.
 	if !res.produced {
 		return "", errors.Wrap(ErrWorkerFailed, errors.New(res.Error))
 	}
@@ -264,29 +235,15 @@ func (p *pool) Validate(ctx context.Context, code string) (string, error) {
 	return res.Error, nil
 }
 
-// onWorker performs one job on a pooled worker, retrying on a fresh one when the
-// worker it drew turns out to be dead. Workers can die while sitting idle in the
-// pool - a script that escapes the process-group kill can take one down long
-// after its own run finished - and a corpse is an infrastructure detail the
-// caller should never see as a failed request.
-//
-// Only ErrWorkerFailed is retried: a script that raised, timed out or hit a
-// limit has genuinely run, and a cancelled request must not be retried at all.
+// onWorker performs one job on a pooled worker, retrying on a fresh one when
+// the worker it drew was already dead. Only ErrWorkerFailed is retried: a
+// script that raised, timed out or hit a limit has genuinely run.
 func (p *pool) onWorker(ctx context.Context, job func(*worker, context.Context) (outcome, error)) (outcome, error) {
 	var err error
 
-	// One budget for the request, not one per attempt. Rebuilding the timeouts
-	// inside the loop multiplied both by maxWorkerAttempts, so a pool that kept
-	// failing could hold a single caller for three acquisitions plus three full
-	// runs - about 45s against a configured 10s - with nothing bounding the
-	// request as a whole, since the HTTP server sets no write deadline.
-	//
-	// The ceiling this imposes is the budget plus reapGrace, not the budget: when
-	// the run deadline passes, awaitFinish kills the child and then waits that
-	// long for the worker to confirm, on a timer the context does not bound. With
-	// the defaults that is 5s+10s+5s, and a request measured at 20.7s against it.
-	// Adding reapGrace to the budget would raise the ceiling rather than lower
-	// it, so it stays outside.
+	// One budget bounds the whole request, not each attempt. The real ceiling
+	// is the budget plus reapGrace, since awaitFinish waits that long after
+	// killing the child.
 	budget, stopBudget := context.WithTimeout(ctx, p.cfg.AcquireTimeout+p.cfg.Timeout)
 	defer stopBudget()
 
@@ -328,11 +285,8 @@ func (p *pool) onWorker(ctx context.Context, job func(*worker, context.Context) 
 		ran := w.dispatched
 		p.discard(w)
 
-		// A retry exists to mask a worker that was already dead, where the job
-		// never ran. Once the job has been handed over, retrying re-executes the
-		// script - side effects included - and spends another worker doing it: a
-		// script that kills its own worker could otherwise make one request run
-		// it three times and retire three workers.
+		// Once the job is dispatched, a retry would run the script again, side
+		// effects included.
 		if ctx.Err() != nil || budget.Err() != nil || ran || !errors.Contains(err, ErrWorkerFailed) {
 			return outcome{}, err
 		}
@@ -406,9 +360,8 @@ func (p *pool) discard(w *worker) {
 		return
 	}
 
-	// Replaced off the request path: spawn waits for a worker to import numpy,
-	// and the caller's result is already in hand. Charging it that wait would
-	// make every timed-out or output-capped run pay a full worker startup.
+	// Replaced off the request path, so the caller does not wait for a new
+	// worker to import numpy.
 	go p.replace()
 }
 
@@ -465,10 +418,8 @@ func (p *pool) mayRespawn() bool {
 	return true
 }
 
-// spawn starts one worker. Every pipe it opens is tracked so a failure anywhere
-// closes all of them: discard calls spawn on each worker death, so leaking a
-// handful of descriptors per failure walks the table down under a recurring
-// fault rather than failing steadily.
+// spawn starts one worker. Every pipe it opens is closed if any step fails,
+// since a leak would recur on every worker death.
 func (p *pool) spawn() (w *worker, err error) {
 	var opened []*os.File
 
@@ -515,10 +466,8 @@ func (p *pool) spawn() (w *worker, err error) {
 		return nil, err
 	}
 
-	// -I isolates the interpreter: no user site-packages, no PYTHONPATH, no cwd on
-	// sys.path. It also implies -E, which is why bytecode writing is disabled with
-	// -B rather than PYTHONDONTWRITEBYTECODE - that variable was being set and
-	// silently ignored.
+	// -I isolates the interpreter and implies -E, so bytecode writing is
+	// disabled with -B rather than PYTHONDONTWRITEBYTECODE.
 	cmd := exec.Command(p.cfg.Python, "-I", "-B", "-c", workerSrc)
 	cmd.Stdin = jobR
 	cmd.Stdout = ctlW
@@ -565,11 +514,8 @@ func (p *pool) spawn() (w *worker, err error) {
 
 	p.logger.Info(fmt.Sprintf("python worker ready: pid=%d %s", cmd.Process.Pid, ready.Loaded))
 
-	// Seccomp is the only thing keeping a script off the network and away from
-	// other processes, and the /proc hiding is what keeps it from forging an exit
-	// frame on the control channel. A worker reporting either missing is refused
-	// outright, so the service fails to boot rather than run untrusted code
-	// unconfined - there is no legitimate configuration that serves without them.
+	// A worker without seccomp or /proc hiding would run untrusted code
+	// unconfined, so it is refused and the service fails to boot.
 	if ready.Sandbox != sandboxSeccomp {
 		w.stop()
 		return nil, errors.Wrap(ErrWorkerFailed, errors.New(fmt.Sprintf("worker reported no seccomp filter (%s)", ready.Sandbox)))
@@ -602,9 +548,7 @@ type worker struct {
 	seq   uint64
 	dirty bool
 	// crossed records that the last run saw a frame stamped with another job's
-	// sequence number. It is dropped rather than acted on, but it means either a
-	// straggler the previous drain missed or a script writing frames by hand, so
-	// it is worth a line in the log.
+	// sequence number. The frame is dropped, but logged.
 	crossed bool
 	// dispatched records that the job frame reached the worker. A failure after
 	// that point must not be retried on another worker: the script may already
@@ -616,11 +560,9 @@ type worker struct {
 	// evidence they happened.
 	garbled atomic.Int64
 
-	// child is the pid of the run this worker is currently hosting, or 0. The
-	// run has its own session, so stopping the worker does not reach it: without
-	// a record of the pid, any path that abandons a run - a broken data channel,
-	// a worker that never reports the kill - leaks a live process holding the
-	// data pipe. Read by stop, which can run on another goroutine.
+	// child is the pid of the run this worker is hosting, or 0. The run has its
+	// own session, so stopping the worker does not reach it. Read by stop,
+	// which can run on another goroutine.
 	child atomic.Int64
 
 	// done is closed when the worker is stopped, so its pump goroutines can give
@@ -695,12 +637,8 @@ func (w *worker) exchange(ctx context.Context, job jobFrame, cfg Config) (outcom
 	return w.awaitFinish(ctx, job.Seq, pid, cfg)
 }
 
-// flushData discards anything left on the data channel before a job is handed
-// over. A run that was cut short can leave frames its drain never reached, and
-// since a crossed frame no longer retires the worker those frames can still be
-// queued when the next job arrives. They would be recognised and dropped by
-// their sequence number anyway - this just means the next run never sees them at
-// all, rather than relying on the filter for something that can be cleared.
+// flushData discards frames a cut-short run left on the data channel, so the
+// next run never sees them.
 func (w *worker) flushData() {
 	for {
 		select {
@@ -711,12 +649,9 @@ func (w *worker) flushData() {
 	}
 }
 
-// abandoned records a run the caller stopped waiting for before the worker had
-// acknowledged it. The job frame has already reached the worker, so something
-// ran: returning a bare context error instead would both lose the run record -
-// the service saves runs on a context that outlives the request precisely so a
-// disconnect does not - and answer the caller differently than the identical
-// timeout one frame later would.
+// abandoned records a run the caller stopped waiting for after the job reached
+// the worker, so the run is still saved and answered like the equivalent
+// timeout.
 func abandoned(cfg Config, started time.Time, cause error) outcome {
 	return outcome{Result: Result{
 		Logs:       []string{},
@@ -750,17 +685,10 @@ func (w *worker) awaitStart(ctx context.Context, seq uint64) (int, error) {
 	}
 }
 
-// killPending disposes of a child the worker may already have forked for a job
-// this caller has stopped waiting for. The job frame reaches the worker before
-// the handshake completes, so giving up in that window leaves a run executing
-// with nothing holding its pid - and the child has its own session, so retiring
-// the worker does not reach it either. It would run on until a limit caught it,
-// or indefinitely if it was only sleeping.
-//
-// The wait is bounded and only happens on a path that has already failed: the
-// pid frame is written immediately after the fork, so it is either in hand at
-// once or the worker is wedged and there is nothing to kill. Draining errCh here
-// is safe because this worker is always discarded afterwards.
+// killPending kills a child the worker may already have forked for a job this
+// caller stopped waiting for. The child has its own session, so retiring the
+// worker does not reach it. The wait is bounded, and draining errCh is safe
+// because this worker is always discarded afterwards.
 func (w *worker) killPending(seq uint64) {
 	t := time.NewTimer(orphanGrace)
 	defer t.Stop()
@@ -812,10 +740,8 @@ func (w *worker) awaitFinish(ctx context.Context, seq uint64, pid int, cfg Confi
 			return c.finish(f, d), nil
 
 		case <-w.errCh:
-			// The child owns fd 3 and can break this channel itself - an oversized
-			// length header is enough. The job was dispatched and a pid reported,
-			// so the run happened: it is recorded as a failed run and the worker
-			// retired, rather than lost as a 500 that leaves no trace of what ran.
+			// The child can break fd 3 itself. The run happened, so it is
+			// recorded as failed and the worker retired.
 			w.killRun(pid)
 			w.dirty = true
 			c.res.FinishedAt = time.Now()
@@ -834,10 +760,8 @@ func (w *worker) awaitFinish(ctx context.Context, seq uint64, pid int, cfg Confi
 	}
 }
 
-// healthy reports whether this worker can still take a job. A worker that died
-// while idle leaves its pump goroutine's error queued and its process gone, and
-// without this check it stays in the pool as a landmine that fails the next
-// request to draw it.
+// healthy reports whether this worker can still take a job, catching one that
+// died while idle.
 func (w *worker) healthy() bool {
 	select {
 	case <-w.errCh:
@@ -852,18 +776,10 @@ func (w *worker) healthy() bool {
 	return w.cmd.Process.Signal(syscall.Signal(0)) == nil
 }
 
-// killRun kills one run. The group kill is the normal path: isolate calls setsid
-// before any user code, so a settled child leads its own group and dies with
-// everything it started.
-//
-// The bare-pid fallback covers the window before that - the worker reports the
-// pid immediately after forking, so Go can know it before the child has reached
-// setsid, and until then it is still in the worker's group where a group kill
-// finds nothing. That fallback is the one signal here that could land on a
-// stranger: Go never waits on these children, so nothing pins the number, and
-// after the worker parent has reaped one it can be reassigned. So it is sent
-// only when the pid is still parented by the worker that reported it, or when
-// parentage cannot be established at all.
+// killRun kills one run's process group. Before the child reaches setsid it is
+// still in the worker's group, so its bare pid is signalled instead, but only
+// while the pid is still parented by this worker or parentage is unknown, since
+// a reaped pid can be reused.
 func (w *worker) killRun(pid int) {
 	if pid <= 0 {
 		return
@@ -898,11 +814,9 @@ func (w *worker) stop() {
 	}
 }
 
-// drainStderr copies a worker's stderr into the service log. Runs no longer
-// reach this pipe - isolate puts /dev/null on the child's fd 2 - so what arrives
-// here is the worker process itself failing, which is worth seeing in full. The
-// cap is there because this is a log sink with no other bound: a worker stuck in
-// a loop that writes to stderr would otherwise fill the log indefinitely.
+// drainStderr copies a worker's own stderr into the service log, capped at
+// maxStderrLog. Runs have /dev/null on fd 2, so nothing they write arrives
+// here.
 func (w *worker) drainStderr(r *os.File, log logger.Logger) {
 	defer r.Close()
 

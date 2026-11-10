@@ -68,11 +68,8 @@ type Service interface {
 }
 
 type pyscriptsService struct {
-	scripts ScriptRepository
-	runner  Runner
-	// maxScriptSize bounds stored script source. It is held here rather than in a
-	// package variable so the limit arrives with the service it governs, as every
-	// other configured bound in this repository does.
+	scripts       ScriptRepository
+	runner        Runner
 	maxScriptSize int
 	things        domain.ThingsClient
 	idProvider    uuid.IDProvider

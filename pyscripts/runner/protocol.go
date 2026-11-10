@@ -41,16 +41,11 @@ type ctlFrame struct {
 	Hidden  bool   `json:"hidden,omitempty"`
 }
 
-// dataFrame travels on fd 3, which the child must keep in order to emit logs and
-// its result. User code can therefore write here, so nothing on this channel is
-// trusted to say whether a run has finished.
+// dataFrame travels on fd 3, which user code can write to, so nothing on it is
+// trusted to end a run.
 //
-// Seq names the job the frame belongs to. It separates one run's output from the
-// next on a reused worker, which matters because a run cut short can leave
-// frames the drain never reached. It is not a security control: the child can
-// stamp whatever it likes, and a forged seq buys nothing it could not already do
-// by writing frames for its own run. What it does buy is that a straggler from
-// an earlier job is recognisable rather than silently folded into a later one.
+// Seq names the job a frame belongs to, so a straggler from an earlier run on
+// the same worker is recognised. It is not a security control.
 type dataFrame struct {
 	Kind  string `json:"kind"`
 	Seq   uint64 `json:"seq"`
@@ -100,10 +95,8 @@ func readFrame(r io.Reader, v any) (int, error) {
 		return 0, err
 	}
 
-	// The body was consumed whole, so the stream is still aligned on the next
-	// frame boundary even though this payload is unusable. That distinction is
-	// what errBadFrame carries: the reader can skip this frame and carry on,
-	// where a length it could not trust leaves it with nowhere to resume.
+	// The body was consumed whole, so the stream is still aligned and the
+	// reader can skip this frame.
 	if err := json.Unmarshal(b, v); err != nil {
 		return len(b), errBadFrame
 	}
@@ -139,13 +132,8 @@ func (w *worker) pumpData() {
 		var d dataFrame
 		n, err := readFrame(w.data, &d)
 
-		// A frame this pump cannot parse is the child's doing - it holds fd 3 and
-		// may write whatever it likes - so it must not cost the worker. Returning
-		// here left the pipe unread for the worker's remaining life, which made
-		// the worker unusable and handed any caller a one-line way to burn one per
-		// request: os.write(3, b"\x00\x00\x00\x01x") is enough. The frame is
-		// counted and dropped, and the run ends on its own terms - with no result
-		// of its own if that is all it sent.
+		// The child can write anything to fd 3, so an unparseable frame is
+		// counted and dropped rather than costing the worker.
 		if err == errBadFrame {
 			w.garbled.Add(1)
 			continue

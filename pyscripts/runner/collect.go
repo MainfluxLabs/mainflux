@@ -15,12 +15,9 @@ import (
 const maxDrain = 500 * time.Millisecond
 
 // collector accumulates what a run claims on the data channel and enforces the
-// output cap as it reads. Everything the child writes is a claim: it holds the
-// data pipe, so it can emit whatever frames it likes. Only the parent-written
-// exit frame decides that a run is over.
-//
-// Both the main loop and the post-exit drain feed the same collector, so the
-// output cap and the log limits cannot drift apart between them.
+// output cap. Only the parent-written exit frame decides that a run is over.
+// The main loop and the post-exit drain share one collector, so their limits
+// cannot drift apart.
 type collector struct {
 	cfg     Config
 	pid     int
@@ -53,17 +50,9 @@ func newCollector(cfg Config, pid int, seq uint64, kill func(int)) *collector {
 	}
 }
 
-// accept folds one data frame in. Crossing the output cap kills the run and
-// stops anything further being kept, but reading continues so the stream reaches
-// a known boundary.
-//
-// A frame belonging to another job is a straggler from a run whose drain did not
-// reach it. It is dropped, and deliberately not charged against this run's cap:
-// charging it meant a predecessor that had written close to MaxOutput could push
-// an innocent run over the limit, killing a child that had produced nothing and
-// reporting an output limit the script never approached. A script cannot use
-// that to evade its own cap, because its own frames carry its own seq; writing
-// frames under a foreign seq only forfeits them.
+// accept folds one data frame in. Crossing the output cap kills the run, but
+// reading continues so the stream reaches a known boundary. Frames from another
+// job are dropped and not charged against this run's cap.
 func (c *collector) accept(m dataMsg) {
 	if m.frame.Seq != c.seq {
 		c.crossed = true
@@ -84,12 +73,8 @@ func (c *collector) accept(m dataMsg) {
 		if !c.over {
 			c.over = true
 
-			// Only while the child is still ours to signal. Once the exit frame
-			// has arrived the worker parent has already waited on the child and
-			// killed its group, and Go never waits on it, so nothing pins the
-			// pid: signalling it then could land on an unrelated process group
-			// that has since been given the same number - plausibly another
-			// run's, in this same container.
+			// Only before the exit frame: after it the child has been reaped,
+			// and its pid may belong to another process.
 			if !c.reaped {
 				c.kill(c.pid)
 			}
@@ -109,12 +94,9 @@ func (c *collector) accept(m dataMsg) {
 	}
 }
 
-// drain consumes the tail of a run's data stream up to the worker's flush
-// sentinel, which carries the nonce the exit frame named. Reaching it proves the
-// stream is frame-aligned at the run's end, so every frame the child wrote has
-// been read and the next run starts on a boundary. Failing to within maxDrain
-// means a length-prefixed frame was left half-written and is still consuming the
-// stream - the worker is retired rather than handed on. It reports alignment.
+// drain reads a run's data stream up to the worker's flush sentinel, which
+// proves the stream is frame-aligned. It reports whether the sentinel arrived
+// within maxDrain; if not, the worker is retired.
 func (c *collector) drain(ch <-chan dataMsg, nonce string) bool {
 	// A drain only ever runs after the exit frame, by which point the child has
 	// been waited on and its group killed.
@@ -139,16 +121,9 @@ func (c *collector) drain(ch <-chan dataMsg, nonce string) bool {
 	}
 }
 
-// finish turns what was collected into the run's outcome. A cause Go knows about
-// outranks whatever the child claimed, since the child may have reported success
-// right before being killed.
-//
-// produced has to agree with that override. It says whether Error is the child's
-// own verdict rather than a cause of death, and Validate relies on it to tell a
-// syntax error from a run that never got to compile. Were it left as c.got, a
-// check whose result arrived just before the deadline or a cancellation would
-// report "timeout after 10s" as the compile verdict, and creating a perfectly
-// valid script would answer 400 "script is not valid python: timeout after 10s".
+// finish turns what was collected into the run's outcome. A cause Go knows
+// about outranks whatever the child claimed, and produced is cleared to match,
+// so Validate never reports a timeout as a syntax error.
 func (c *collector) finish(exit ctlFrame, d *deadline) outcome {
 	c.res.FinishedAt = time.Now()
 	c.res.produced = c.got && !c.over && !d.fired
@@ -165,17 +140,9 @@ func (c *collector) finish(exit ctlFrame, d *deadline) outcome {
 	return c.res
 }
 
-// spoiled reports whether the worker may still hold frames from this run. A run
-// cut short, or a drain that ran out of budget with frames still arriving,
-// leaves the stream in a state nobody can describe, so such a worker is retired
-// rather than reused.
-//
-// A crossed frame is deliberately not one of those cases. It is the one kind of
-// residue that *is* describable: it carries another job's sequence number, so
-// the next run's collector drops it on sight. Retiring the worker for it would
-// hand any caller a one-line way to empty the pool - a single forged frame per
-// run, each costing a respawn that blocks on importing numpy - and would buy
-// nothing the filter does not already do.
+// spoiled reports whether the worker may still hold frames from this run, in
+// which case it is retired. A crossed frame does not count: the next collector
+// drops it by its sequence number.
 func (c *collector) spoiled(d *deadline) bool {
 	return c.over || d.fired || c.overran
 }
@@ -204,11 +171,8 @@ func (d *deadline) fire(cause error) {
 	d.reap = d.timer.C
 }
 
-// reasonFor names why a run was cut short. A run context carries the configured
-// timeout and the caller's own cancellation on the same channel, so the two have
-// to be told apart: a client that hung up mid-run would otherwise be recorded as
-// having exhausted a limit it never reached, and that error is what gets
-// persisted, since the run is saved on a context that outlives the request.
+// reasonFor tells the run's timeout apart from the caller's cancellation, which
+// arrive on the same channel, so the saved run records the real cause.
 func reasonFor(cause error, timeout time.Duration) string {
 	if cause == context.Canceled {
 		return "run cancelled by the caller"

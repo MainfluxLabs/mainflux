@@ -9,31 +9,16 @@ package runner
 // found without scrolling one long literal.
 const workerSrc = pyPrelude + pyFraming + pySandbox + pyExec + pyLoop
 
-// pyPrelude imports what the pool depends on and reports what it got. Both
-// imports are optional in principle - numpy for the pre-warm that makes forking
-// worthwhile, pyseccomp for the sandbox - so each is detected and named in the
-// ready frame rather than failing silently.
+// pyPrelude imports numpy and pyseccomp and reports what it got in the ready
+// frame. Both imports catch Exception, because pyseccomp raises RuntimeError
+// rather than ImportError when libseccomp is missing.
 //
-// Both catch Exception, not ImportError, and that is the whole point. pyseccomp
-// is a pure-python ctypes wrapper: it resolves libseccomp at import time and
-// raises RuntimeError("Unable to find libseccomp") when the shared library is
-// absent. Catching only ImportError let that escape, so instead of degrading to
-// SANDBOX "none" the worker died mid-prelude - no ready frame, every spawn
-// burning StartTimeout, and New reporting that no worker could be started. A
-// missing optional dependency took the whole service down, three layers from
-// its cause. The reason is folded into the reported string so the ready log
-// names it rather than leaving a silent downgrade.
+// fd 3 carries logs and results to Go. fd 4 is reserved for a future callback
+// API and is not read yet.
 //
-// fd 3 carries logs and results to Go. fd 4 is reserved for the Python API that
-// will let a script call back into Mainflux, and is not read yet.
-//
-// hide_self is what actually protects the control channel. The service sets
-// PR_SET_DUMPABLE on itself, but execve resets that flag, so the python process
-// starts dumpable again - and a script could then reopen the worker's fd 1
-// through /proc/<ppid>/fd/1 and write a forged exit frame, ending its own run in
-// Go's eyes while continuing to run. Putting /dev/null on the child's fd 1 is
-// not enough on its own. The flag is inherited across fork, so forked children
-// are covered too, and the result is reported in the ready frame.
+// hide_self clears the dumpable flag, which execve resets, so a script cannot
+// reach the worker's fd 1 through /proc and forge an exit frame. Forked
+// children inherit it.
 const pyPrelude = `
 import os, sys, json, struct, ast, errno, signal, io
 
@@ -53,10 +38,7 @@ except Exception as e:
 DATA, API = 3, 4
 MAX_LINE = 8192
 
-# MAX_RESULT keeps a result frame inside the reader's frame ceiling. Without it a
-# script returning a few megabytes of string declared a length Go would not read,
-# which left the stream with no safe place to resume and cost the worker - an
-# infrastructure failure reported for what is really an oversized answer.
+# MAX_RESULT keeps a result frame within the frame size Go will read.
 MAX_RESULT = 4 * 1024 * 1024
 PR_SET_DUMPABLE, PR_GET_DUMPABLE = 4, 3
 
@@ -72,14 +54,9 @@ def hide_self():
 HIDDEN = hide_self()
 `
 
-// pyFraming is the wire: length-prefixed JSON, plus the stdout/stderr capture
-// that turns script output into log frames.
-//
-// send marshals with allow_nan=False because Go's json rejects the bare NaN that
-// Python emits, which would make the frame undecodable and take the worker down
-// with it. Out buffers rather than emitting a frame per write, because print()
-// calls write() once per argument and a frame each would split every
-// multi-argument print in half.
+// pyFraming is the wire: length-prefixed JSON, plus capture of script output as
+// log frames. send uses allow_nan=False because Go rejects bare NaN. Out
+// buffers by line because print() writes once per argument.
 const pyFraming = `
 def send(fd, obj):
     b = json.dumps(obj, allow_nan=False).encode()
@@ -146,67 +123,25 @@ class Out:
             self.buf = ""
 `
 
-// pySandbox holds every control applied to a run. All of it executes in the
-// forked child: limiting the parent would cripple the process holding the numpy
-// the pool exists to keep warm.
+// pySandbox holds every control applied to a run, all in the forked child so
+// the parent's warm numpy is unaffected.
 //
-// The seccomp filter is an allow-list: its default action denies, and only the
-// syscalls named in ALLOWED_SYSCALLS - plus the argument-filtered ones below -
-// get through. A deny-list had to foresee every dangerous call (bpf,
-// userfaultfd, perf_event_open, keyctl, and the next one), and anything it
-// missed stayed reachable; default-deny refuses them all without naming them,
-// so the kernel surface a script can touch is the vetted set rather than
-// everything minus a blacklist. The default is EPERM, not KILL: a syscall the
-// list forgot surfaces as an OSError the author can see instead of a bare
-// SIGSYS, and for attack surface the two are identical, since seccomp refuses
-// the call before its handler runs either way.
+// The seccomp filter is an allow-list with an EPERM default, so a call it
+// misses surfaces as an OSError. On top of it: clone only with CLONE_THREAD, so
+// no fork; clone3 and openat2 return ENOSYS so glibc falls back to calls the
+// filter can inspect; open and openat are read-only and fail with EROFS;
+// signals go only to the child's own pid; prlimit64 can only read. A syscall
+// through another ABI hits the default and is denied.
 //
-// Four shapes are too dangerous to allow outright but needed in one form, so
-// each is argument-filtered on top of the list. clone is allowed only with
-// CLONE_THREAD set, so threads work and a fork - a second process on the same
-// data pipe, racing to write the result frame and multiplying the memory cap -
-// is refused; clone3 answers ENOSYS so glibc retries with the clone we allow.
-// open/openat are allowed for reading only; write or create flags return EROFS,
-// so the filesystem reads as read-only rather than merely forbidden, and
-// openat2 is ENOSYS so glibc falls back to the openat we can inspect. Signals
-// are allowed only to the child's own pid. prlimit64 is allowed only to read a
-// limit, so a script cannot lift the caps confine() set. Everything else -
-// sockets, execve, setsid, the mutating filesystem calls - is simply absent
-// from the list and denied by the default.
+// RLIMIT_CPU's soft limit sits below the hard one, so SIGXCPU names the cause
+// before SIGKILL. RLIMIT_DATA is used rather than RLIMIT_AS, which breaks
+// importing numpy. It does not charge anonymous MAP_SHARED mappings, so those
+// are refused.
 //
-// Nothing widens the filter to the secondary ABIs now. With a deny default, a
-// syscall arriving through another ABI - i386 by int 0x80, or x32 - hits an
-// architecture the filter does not hold and takes the default, which denies it;
-// under the old ALLOW default that same path bypassed every rule, so the arches
-// had to be added explicitly. Default-deny closes the gap for free.
-//
-// Two rlimit choices are deliberate. RLIMIT_CPU's soft limit sits below the hard
-// one: with them equal the kernel goes straight to SIGKILL, indistinguishable
-// from the deadline kill, whereas a second of headroom lets SIGXCPU arrive first
-// so the cause can be named. And RLIMIT_DATA rather than RLIMIT_AS, because
-// numpy's BLAS backend reserves a large address space at import and an AS cap
-// makes "import numpy" itself raise MemoryError. RLIMIT_DATA bounds the brk and
-// the private anonymous mappings a run allocates, which is where malloc and
-// numpy arrays land - but it does not charge an anonymous MAP_SHARED mapping,
-// which is why allow_mmap_except_shared_anon refuses that one case outright.
-// With it refused, memfd_create absent from the allow-list, and the read-only
-// filesystem denying tmpfs and /dev/shm, RLIMIT_DATA is the only bound a run's
-// memory can reach.
-//
-// Out has to pass for a text stream, not merely absorb writes. Libraries probe
-// what they are printing to - isatty, fileno, encoding, writelines - and with
-// only write and flush each probe raised AttributeError from inside the library,
-// so a script using tqdm or rich failed with a traceback through someone else's
-// code rather than its own. fileno raises io.UnsupportedOperation, which is what
-// a stream without a descriptor is supposed to raise and what callers expect to
-// catch.
-//
-// isolate puts /dev/null on fds 0, 1 and 2: the child has no business reading job
-// frames, fd 1 is Go's control channel, which a script must not be able to forge
-// an exit frame on, and fd 2 is the worker's stderr pipe, which the service
-// copies into its own log. Rebinding sys.stderr is not enough on its own, since
-// os.write(2, ...) goes straight past it - and those bytes are never seen by the
-// collector, so they count against neither the output cap nor the log limit.
+// Out implements enough of a text stream (isatty, fileno, encoding, writelines)
+// for libraries such as tqdm and rich. isolate puts /dev/null on fds 0, 1 and
+// 2, so a script can neither forge an exit frame on fd 1 nor bypass the output
+// caps through fd 2.
 const pySandbox = `
 ALLOWED_SYSCALLS = (
     "exit", "exit_group", "rt_sigreturn", "restart_syscall",
@@ -256,9 +191,8 @@ O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT = 0o3, 0o1, 0o2, 0o100
 
 MAP_SHARED, MAP_ANONYMOUS = 0x01, 0x20
 
-# Denied by the default anyway; named so the error is EROFS - "read-only
-# filesystem" - rather than the blanket EPERM, which is the truthful reason a
-# write failed and what a caller catching OSError expects.
+# Denied by the default anyway; named so a write fails with EROFS rather than
+# EPERM.
 MUTATING_SYSCALLS = (
     "creat", "mkdir", "mkdirat", "rmdir",
     "link", "linkat", "symlink", "symlinkat",
@@ -321,14 +255,8 @@ def allow_read_rlimit(f):
         pass
 
 def allow_mmap_except_shared_anon(f):
-    # mmap is governed by these rules instead of a blanket allow, because a
-    # blanket allow is unconditional and cannot be narrowed afterwards. The case
-    # to refuse is an anonymous MAP_SHARED mapping: RLIMIT_DATA does not charge it
-    # to the process, so a run could map gigabytes it is never billed for and
-    # drive the host out of memory. Two allows express "not (shared and anon)" -
-    # any file-backed or any private mapping, which is every mapping numpy and the
-    # dynamic loader actually make - and the ERRNO names the gap so the refusal
-    # reads as "cannot allocate memory" rather than a blanket EPERM.
+    # mmap is allowed except for anonymous MAP_SHARED, which RLIMIT_DATA does
+    # not charge. ENOMEM names the refusal.
     for name in ("mmap", "mmap2"):
         try:
             f.add_rule(pyseccomp.ALLOW, name, pyseccomp.Arg(3, pyseccomp.MASKED_EQ, MAP_ANONYMOUS, 0))
@@ -403,18 +331,11 @@ def isolate(job):
     confine(job.get("limits") or {})
 `
 
-// pyExec evaluates a script and compiles one for validation. Both run in a
-// forked, confined child; doing either in the worker parent would leave it
-// unbounded and one pathological input away from taking the worker down.
-//
-// run_code implements the result rule: the value is the last top-level
-// expression, as a notebook cell behaves. It pops a trailing expression node,
-// execs the rest and evals that node. The alternative - a magic "result"
-// variable - fails silently on a typo.
-//
-// check_source catches BaseException because a pathological source can raise
-// RecursionError or MemoryError, neither of which derives from Exception.
-// user_traceback skips this file's frames so the author sees their own line.
+// pyExec evaluates a script and compiles one for validation, both in a forked,
+// confined child. run_code returns the last top-level expression, as a notebook
+// cell does. check_source catches BaseException because a pathological source
+// can raise RecursionError or MemoryError. user_traceback skips this file's
+// frames.
 const pyExec = `
 def run_code(code, ns):
     tree = ast.parse(code, "script.py", "exec")
@@ -469,19 +390,12 @@ def execute(job, code):
         send_data({"kind": "result", "value": None, "error": user_traceback(e)})
 `
 
-// pyLoop takes jobs forever. Every job is answered with a pid frame and an exit
-// frame on the control channel, which the child cannot write to - so only this
-// parent can declare a run over.
-//
-// fork_and_wait returns the pid immediately because Go has no handle on a child
-// it did not create; without it a deadline could only kill the whole worker. It
-// kills the process group after reaping, since the direct child is gone but
-// anything it forked is not, and a survivor would write into the next run on
-// this worker.
-//
-// The source travels with every job rather than being cached here: a cache in
-// __main__ outlives the run that filled it and is readable by the next run's
-// forked child, which is another group's source disclosed across tenants.
+// pyLoop takes jobs forever, answering each with a pid frame and an exit frame
+// on the control channel, which only this parent can write. fork_and_wait
+// reports the pid at once so Go can kill a run at its deadline, and kills the
+// process group after reaping so nothing a run forked survives into the next.
+// The source travels with every job rather than being cached, so one run cannot
+// read another's.
 const pyLoop = `
 def answered(seq, status, sig, nonce):
     send(1, {"kind": "exit", "seq": seq, "status": status, "signal": sig, "nonce": nonce})
@@ -500,13 +414,9 @@ def fork_and_wait(seq, target):
     except (ProcessLookupError, PermissionError, OSError):
         pass
 
-    # A run that writes a partial length-prefixed frame to fd 3 and exits leaves
-    # the data stream mid-frame, and the next run's bytes would be read as the
-    # rest of it. The nonce is minted here, after the child is dead, so a script
-    # can never emit it: it rides the unforgeable control channel on the exit
-    # frame and is echoed on the data channel, where Go reaches it only if the
-    # stream is aligned - otherwise the echo is swallowed by the dangling frame
-    # and the worker is retired rather than handed on poisoned.
+    # The nonce is minted after the child is dead, so a script cannot emit it.
+    # Go sees its echo on the data channel only if the stream is frame-aligned;
+    # a partial frame swallows it and the worker is retired.
     nonce = os.urandom(16).hex()
     send(DATA, {"kind": "flush", "seq": seq, "nonce": nonce})
     answered(seq,
