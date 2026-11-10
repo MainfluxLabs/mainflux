@@ -80,6 +80,8 @@ paths:
           description: Issued new key.
         '400':
           description: Failed due to malformed JSON.
+        '403':
+          description: API keys cannot be issued from an impersonated session.
         '409':
           description: Failed due to using already existing ID.
         '415':

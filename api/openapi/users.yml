@@ -490,7 +490,7 @@ paths:
         The token carries the root admin as impersonator, and audit events
         raised with it record both users. Root admins, disabled users and
         the caller cannot be impersonated, and an impersonated session
-        cannot start another impersonation.
+        cannot start another impersonation or issue API keys.
       tags:
         - users
       parameters:

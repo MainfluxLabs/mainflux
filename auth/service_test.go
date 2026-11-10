@@ -161,6 +161,10 @@ func TestIssue(t *testing.T) {
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	impersonator := &domain.Identity{ID: ownerID, Email: ownerEmail}
+	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		key   auth.Key
@@ -212,6 +216,15 @@ func TestIssue(t *testing.T) {
 			},
 			token: "invalid",
 			err:   errors.ErrAuthentication,
+		},
+		{
+			desc: "issue API key with an impersonated token",
+			key: auth.Key{
+				Type:     auth.APIKey,
+				IssuedAt: time.Now(),
+			},
+			token: impersonatedSecret,
+			err:   errors.ErrAuthorization,
 		},
 		{
 			desc: "issue API key with no time",

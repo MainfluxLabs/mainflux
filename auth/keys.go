@@ -338,6 +338,16 @@ func (svc service) userKey(ctx context.Context, token string, key Key) (Key, str
 		return Key{}, "", errors.Wrap(errIssueUser, err)
 	}
 
+	// An API key outlives the impersonated session and records no impersonator.
+	loginKey, err := svc.tokenizer.Parse(token)
+	if err != nil {
+		return Key{}, "", errors.Wrap(errIssueUser, err)
+	}
+
+	if loginKey.Impersonator != nil {
+		return Key{}, "", errors.Wrap(errIssueUser, errors.ErrAuthorization)
+	}
+
 	key.IssuerID = id
 	if key.Subject == "" {
 		key.Subject = sub
