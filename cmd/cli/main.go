@@ -17,6 +17,7 @@ const defURL string = "http://localhost"
 
 func main() {
 	var rootURL string
+	var insecure bool
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
 		AuthURL:         fmt.Sprintf("%s/svcauth", defURL),
@@ -58,8 +59,9 @@ func main() {
 				sdkConf.ReaderURL = rootURL + "/reader"
 			}
 			cli.HTTPAdapterURL = sdkConf.HTTPAdapterURL
-			cli.TLSVerification = sdkConf.TLSVerification
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
+			sdkConf.TLSVerification = !insecure
+			cli.TLSVerification = sdkConf.TLSVerification
 			s := sdk.NewSDK(sdkConf)
 			cli.SetSDK(s)
 		},
@@ -162,10 +164,10 @@ func main() {
 	)
 
 	rootCmd.PersistentFlags().BoolVarP(
-		&sdkConf.TLSVerification,
+		&insecure,
 		"insecure",
 		"i",
-		sdkConf.TLSVerification,
+		insecure,
 		"Do not check for TLS cert",
 	)
 

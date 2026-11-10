@@ -225,40 +225,67 @@ func TestConsumeMessage(t *testing.T) {
 
 	cases := []struct {
 		desc     string
-		payload  []byte
+		records  []*protomfx.Record
 		reported shadows.State
 		delta    shadows.State
 	}{
 		{
 			desc:     "consume message with empty payload is ignored",
-			payload:  []byte{},
+			records:  []*protomfx.Record{{Payload: []byte{}}},
 			reported: nil,
 			delta:    shadows.State{"led": "on"},
 		},
 		{
 			desc:     "consume message matching desired state clears the delta",
-			payload:  toPayload(shadows.State{"led": "on"}),
+			records:  []*protomfx.Record{{Payload: toPayload(shadows.State{"led": "on"})}},
 			reported: shadows.State{"led": "on"},
 			delta:    nil,
 		},
 		{
 			desc:     "consume message diverging from desired state repopulates the delta",
-			payload:  toPayload(shadows.State{"led": "off"}),
+			records:  []*protomfx.Record{{Payload: toPayload(shadows.State{"led": "off"})}},
 			reported: shadows.State{"led": "off"},
 			delta:    shadows.State{"led": "on"},
 		},
 		{
 			desc:     "consume message with extra key merges into reported state",
-			payload:  toPayload(shadows.State{"temp": "20"}),
+			records:  []*protomfx.Record{{Payload: toPayload(shadows.State{"temp": "20"})}},
 			reported: shadows.State{"led": "off", "temp": "20"},
 			delta:    shadows.State{"led": "on"},
+		},
+		{
+			desc: "consume message with multiple records merges all records into reported state",
+			records: []*protomfx.Record{
+				{Payload: toPayload(shadows.State{"temp": "21"}), Time: 1},
+				{Payload: toPayload(shadows.State{"humidity": "40"}), Time: 2},
+			},
+			reported: shadows.State{"led": "off", "temp": "21", "humidity": "40"},
+			delta:    shadows.State{"led": "on"},
+		},
+		{
+			desc: "consume message with repeated key keeps the latest record value",
+			records: []*protomfx.Record{
+				{Payload: toPayload(shadows.State{"led": "on"}), Time: 2},
+				{Payload: toPayload(shadows.State{"led": "off"}), Time: 1},
+			},
+			reported: shadows.State{"led": "on", "temp": "21", "humidity": "40"},
+			delta:    nil,
+		},
+		{
+			desc: "consume message skips a record that is not a JSON object",
+			records: []*protomfx.Record{
+				{Payload: []byte(`"text"`), Time: 1},
+				{Payload: toPayload(shadows.State{"temp": "22"}), Time: 2},
+			},
+			reported: shadows.State{"led": "on", "temp": "22", "humidity": "40"},
+			delta:    nil,
 		},
 	}
 
 	for _, tc := range cases {
 		msg := protomfx.Message{
 			ThingId: thingID,
-			Records: []*protomfx.Record{{Payload: tc.payload}},
+			Records: tc.records,
 		}
 
 		err := svc.ConsumeMessage("", msg)
