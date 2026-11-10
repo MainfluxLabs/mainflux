@@ -28,8 +28,8 @@ func NewSessionRepository(db dbutil.Database) auth.SessionRepository {
 }
 
 func (sr sessionRepo) Save(ctx context.Context, session auth.Session) error {
-	q := `INSERT INTO sessions (jti, user_id, family_id, started_at, revoked_at)
-	      VALUES (:jti, :user_id, :family_id, :started_at, :revoked_at)`
+	q := `INSERT INTO sessions (jti, user_id, family_id, impersonator_id, started_at, revoked_at)
+	      VALUES (:jti, :user_id, :family_id, :impersonator_id, :started_at, :revoked_at)`
 
 	if _, err := sr.db.NamedExecContext(ctx, q, toDBSession(session)); err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
@@ -43,7 +43,7 @@ func (sr sessionRepo) Save(ctx context.Context, session auth.Session) error {
 }
 
 func (sr sessionRepo) Retrieve(ctx context.Context, jti string) (auth.Session, error) {
-	q := `SELECT jti, user_id, family_id, started_at, revoked_at FROM sessions WHERE jti = $1`
+	q := `SELECT jti, user_id, family_id, impersonator_id, started_at, revoked_at FROM sessions WHERE jti = $1`
 
 	dbs := dbSession{}
 	if err := sr.db.QueryRowxContext(ctx, q, jti).StructScan(&dbs); err != nil {
@@ -67,7 +67,7 @@ func (sr sessionRepo) Rotate(ctx context.Context, jti, nextJTI string, at time.T
 
 	rq := `UPDATE sessions SET revoked_at = $1
 	       WHERE jti = $2 AND revoked_at IS NULL
-	       RETURNING jti, user_id, family_id, started_at, revoked_at`
+	       RETURNING jti, user_id, family_id, impersonator_id, started_at, revoked_at`
 
 	dbs := dbSession{}
 	if err := tx.QueryRowxContext(ctx, rq, at, jti).StructScan(&dbs); err != nil {
@@ -80,14 +80,15 @@ func (sr sessionRepo) Rotate(ctx context.Context, jti, nextJTI string, at time.T
 		return auth.Session{}, false, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
-	iq := `INSERT INTO sessions (jti, user_id, family_id, started_at, revoked_at)
-	       VALUES (:jti, :user_id, :family_id, :started_at, :revoked_at)`
+	iq := `INSERT INTO sessions (jti, user_id, family_id, impersonator_id, started_at, revoked_at)
+	       VALUES (:jti, :user_id, :family_id, :impersonator_id, :started_at, :revoked_at)`
 
 	next := dbSession{
-		JTI:       nextJTI,
-		UserID:    dbs.UserID,
-		FamilyID:  dbs.FamilyID,
-		StartedAt: dbs.StartedAt,
+		JTI:            nextJTI,
+		UserID:         dbs.UserID,
+		FamilyID:       dbs.FamilyID,
+		ImpersonatorID: dbs.ImpersonatorID,
+		StartedAt:      dbs.StartedAt,
 	}
 
 	if _, err := tx.NamedExecContext(ctx, iq, next); err != nil {
@@ -134,29 +135,32 @@ func (sr sessionRepo) RemoveExpired(ctx context.Context, before time.Time) error
 }
 
 type dbSession struct {
-	JTI       string       `db:"jti"`
-	UserID    string       `db:"user_id"`
-	FamilyID  string       `db:"family_id"`
-	StartedAt time.Time    `db:"started_at"`
-	RevokedAt sql.NullTime `db:"revoked_at"`
+	JTI            string         `db:"jti"`
+	UserID         string         `db:"user_id"`
+	FamilyID       string         `db:"family_id"`
+	ImpersonatorID sql.NullString `db:"impersonator_id"`
+	StartedAt      time.Time      `db:"started_at"`
+	RevokedAt      sql.NullTime   `db:"revoked_at"`
 }
 
 func toDBSession(s auth.Session) dbSession {
 	return dbSession{
-		JTI:       s.JTI,
-		UserID:    s.UserID,
-		FamilyID:  s.FamilyID,
-		StartedAt: s.StartedAt,
-		RevokedAt: sql.NullTime{Time: s.RevokedAt, Valid: !s.RevokedAt.IsZero()},
+		JTI:            s.JTI,
+		UserID:         s.UserID,
+		FamilyID:       s.FamilyID,
+		ImpersonatorID: sql.NullString{String: s.ImpersonatorID, Valid: s.ImpersonatorID != ""},
+		StartedAt:      s.StartedAt,
+		RevokedAt:      sql.NullTime{Time: s.RevokedAt, Valid: !s.RevokedAt.IsZero()},
 	}
 }
 
 func toSession(dbs dbSession) auth.Session {
 	s := auth.Session{
-		JTI:       dbs.JTI,
-		UserID:    dbs.UserID,
-		FamilyID:  dbs.FamilyID,
-		StartedAt: dbs.StartedAt,
+		JTI:            dbs.JTI,
+		UserID:         dbs.UserID,
+		FamilyID:       dbs.FamilyID,
+		ImpersonatorID: dbs.ImpersonatorID.String,
+		StartedAt:      dbs.StartedAt,
 	}
 	if dbs.RevokedAt.Valid {
 		s.RevokedAt = dbs.RevokedAt.Time

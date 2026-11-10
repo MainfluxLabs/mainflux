@@ -173,7 +173,13 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 			return Identity{}, errors.Wrap(errIdentify, err)
 		}
 
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+		identity := Identity{
+			ID:           key.IssuerID,
+			Email:        key.Subject,
+			Impersonator: key.Impersonator,
+		}
+
+		return identity, nil
 	case APIKey:
 		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)
 		if err != nil {

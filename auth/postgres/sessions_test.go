@@ -71,6 +71,11 @@ func TestSessionSaveAndRetrieve(t *testing.T) {
 func TestSessionRotate(t *testing.T) {
 	repo := newSessionRepo()
 	session := newSession(t)
+
+	impersonatorID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	session.ImpersonatorID = impersonatorID
+
 	require.Nil(t, repo.Save(context.Background(), session), "saving session expected to succeed")
 
 	successor := rotate(t, session)
@@ -156,10 +161,11 @@ func TestSessionRotate(t *testing.T) {
 			desc: "retrieve the successor written by the rotation",
 			jti:  successor.JTI,
 			session: auth.Session{
-				JTI:       successor.JTI,
-				UserID:    session.UserID,
-				FamilyID:  session.FamilyID,
-				StartedAt: session.StartedAt,
+				JTI:            successor.JTI,
+				UserID:         session.UserID,
+				FamilyID:       session.FamilyID,
+				ImpersonatorID: session.ImpersonatorID,
+				StartedAt:      session.StartedAt,
 			},
 			err: nil,
 		},
@@ -167,11 +173,12 @@ func TestSessionRotate(t *testing.T) {
 			desc: "retrieve the rotated session",
 			jti:  session.JTI,
 			session: auth.Session{
-				JTI:       session.JTI,
-				UserID:    session.UserID,
-				FamilyID:  session.FamilyID,
-				StartedAt: session.StartedAt,
-				RevokedAt: revokedAt,
+				JTI:            session.JTI,
+				UserID:         session.UserID,
+				FamilyID:       session.FamilyID,
+				ImpersonatorID: session.ImpersonatorID,
+				StartedAt:      session.StartedAt,
+				RevokedAt:      revokedAt,
 			},
 			err: nil,
 		},
@@ -189,6 +196,7 @@ func TestSessionRotate(t *testing.T) {
 		assert.Equal(t, tc.session.JTI, retrieved.JTI, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.JTI, retrieved.JTI))
 		assert.Equal(t, tc.session.UserID, retrieved.UserID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.UserID, retrieved.UserID))
 		assert.Equal(t, tc.session.FamilyID, retrieved.FamilyID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.FamilyID, retrieved.FamilyID))
+		assert.Equal(t, tc.session.ImpersonatorID, retrieved.ImpersonatorID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.ImpersonatorID, retrieved.ImpersonatorID))
 		assert.True(t, tc.session.StartedAt.Equal(retrieved.StartedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.StartedAt, retrieved.StartedAt))
 		assert.True(t, tc.session.RevokedAt.Equal(retrieved.RevokedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.RevokedAt, retrieved.RevokedAt))
 	}

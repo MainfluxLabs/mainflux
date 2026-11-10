@@ -696,6 +696,45 @@ func TestDisableUser(t *testing.T) {
 	}
 }
 
+func TestImpersonate(t *testing.T) {
+	svc := newService()
+
+	tokenAdmin, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	tokenUser, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
+
+	cases := []struct {
+		desc  string
+		token string
+		id    string
+		err   error
+	}{
+		{"impersonate user as root admin", tokenAdmin, user.ID, nil},
+		{"impersonate user as non-root user", tokenUser, unauthUser.ID, errors.ErrAuthorization},
+		{"impersonate user with invalid token", wrong, user.ID, errors.ErrAuthentication},
+		{"impersonate self as root admin", tokenAdmin, admin.ID, errors.ErrAuthorization},
+		{"impersonate non-existing user as root admin", tokenAdmin, wrong, dbutil.ErrNotFound},
+		{"impersonate disabled user as root admin", tokenAdmin, registerUser.ID, errors.ErrAuthorization},
+	}
+
+	for _, tc := range cases {
+		token, err := svc.Impersonate(context.Background(), tc.token, tc.id)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if tc.err != nil {
+			continue
+		}
+
+		profile, err := svc.ViewProfile(context.Background(), token)
+		require.Nil(t, err, fmt.Sprintf("%s: viewing profile expected to succeed: %s", tc.desc, err))
+		assert.Equal(t, tc.id, profile.ID, fmt.Sprintf("%s: expected user id %s got %s\n", tc.desc, tc.id, profile.ID))
+	}
+}
+
 func TestCreatePlatformInvite(t *testing.T) {
 	svc := newService()
 	tokenAdmin, err := svc.Login(context.Background(), admin)

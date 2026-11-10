@@ -192,6 +192,16 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		opts...,
 	))
 
+	mux.Post("/users/:id/impersonate", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "impersonate"),
+			withIdentity,
+		)(impersonateEndpoint(svc)),
+		decodeImpersonate,
+		encodeResponse,
+		opts...,
+	))
+
 	return mux
 }
 
@@ -471,6 +481,15 @@ func decodePasswordChange(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFun
 
 func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {
 	req := changeUserStatusReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
+func decodeImpersonate(_ context.Context, r *http.Request) (any, error) {
+	req := impersonateReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
 	}

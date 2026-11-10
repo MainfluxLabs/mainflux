@@ -649,6 +649,13 @@ func TestIdentify(t *testing.T) {
 	otherUserSecret, err := tokenizer.Issue(auth.Key{ID: loginKey.ID, Type: auth.LoginKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Signing a login key with another user's session expected to succeed: %s", err))
 
+	impersonator := &domain.Identity{ID: ownerID, Email: ownerEmail}
+	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
+	refreshedImpersonatedSecret, err := svc.RefreshToken(context.Background(), impersonatedSecret)
+	assert.Nil(t, err, fmt.Sprintf("Refreshing impersonated login key expected to succeed: %s", err))
+
 	cases := []struct {
 		desc string
 		key  string
@@ -659,6 +666,12 @@ func TestIdentify(t *testing.T) {
 			desc: "identify login key",
 			key:  loginSecret,
 			idt:  auth.Identity{ID: id, Email: email},
+			err:  nil,
+		},
+		{
+			desc: "identify refreshed impersonated login key",
+			key:  refreshedImpersonatedSecret,
+			idt:  auth.Identity{ID: id, Email: email, Impersonator: impersonator},
 			err:  nil,
 		},
 		{
@@ -708,7 +721,7 @@ func TestIdentify(t *testing.T) {
 	for _, tc := range cases {
 		idt, err := svc.Identify(context.Background(), tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.idt, idt))
+		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %v got %v\n", tc.desc, tc.idt, idt))
 	}
 }
 
@@ -759,7 +772,7 @@ func TestIdentifyRecovery(t *testing.T) {
 	for _, tc := range cases {
 		idt, err := svc.IdentifyRecovery(context.Background(), tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.idt, idt))
+		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %v got %v\n", tc.desc, tc.idt, idt))
 	}
 }
 

@@ -175,6 +175,15 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS sessions`,
 				},
 			},
+			{
+				Id: "auth_08",
+				Up: []string{
+					`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS impersonator_id UUID`,
+				},
+				Down: []string{
+					`ALTER TABLE sessions DROP COLUMN IF EXISTS impersonator_id`,
+				},
+			},
 		},
 	}
 

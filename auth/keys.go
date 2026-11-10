@@ -130,6 +130,10 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 		FamilyID:  familyID,
 		StartedAt: startedAt,
 	}
+	if key.Impersonator != nil {
+		session.ImpersonatorID = key.Impersonator.ID
+	}
+
 	if err := svc.sessions.Save(ctx, session); err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
 	}
@@ -156,12 +160,14 @@ func (svc service) RefreshToken(ctx context.Context, token string) (string, erro
 		return "", errors.Wrap(errRefresh, err)
 	}
 
+	// The impersonator comes from the signed token, so it survives rotation unchanged.
 	_, secret, err := svc.tmpKey(svc.loginDuration, Key{
-		ID:       jti,
-		Type:     LoginKey,
-		IssuerID: key.IssuerID,
-		Subject:  key.Subject,
-		IssuedAt: getTimestamp(),
+		ID:           jti,
+		Type:         LoginKey,
+		IssuerID:     key.IssuerID,
+		Subject:      key.Subject,
+		IssuedAt:     getTimestamp(),
+		Impersonator: key.Impersonator,
 	})
 
 	if err != nil {

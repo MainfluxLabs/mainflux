@@ -37,10 +37,12 @@ const (
 	APIKey
 )
 
-// Identity contains ID and Email.
+// Identity contains ID and Email. Impersonator is set when a root admin
+// acts on behalf of the user through an impersonated session.
 type Identity struct {
-	ID    string `json:"id,omitempty"`
-	Email string `json:"email,omitempty"`
+	ID           string    `json:"id,omitempty"`
+	Email        string    `json:"email,omitempty"`
+	Impersonator *Identity `json:"impersonator,omitempty"`
 }
 
 // AuthzReq represents an argument struct for authorization requests.
@@ -120,6 +122,8 @@ type Key struct {
 	Subject   string    `json:"subject,omitempty"`
 	IssuedAt  time.Time `json:"issued_at,omitempty"`
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	// Impersonator is set only on login keys of impersonated sessions.
+	Impersonator *Identity `json:"-"`
 }
 
 // Expired reports whether the key is expired.
@@ -136,11 +140,12 @@ func (k Key) Expired() bool {
 // kills that one token, not the session: normal rotation revokes the old JTI
 // at the same moment it mints a successor in the same family.
 type Session struct {
-	JTI       string
-	UserID    string
-	FamilyID  string
-	StartedAt time.Time
-	RevokedAt time.Time
+	JTI            string
+	UserID         string
+	FamilyID       string
+	ImpersonatorID string
+	StartedAt      time.Time
+	RevokedAt      time.Time
 }
 
 func (s Session) Revoked() bool {
@@ -156,6 +161,9 @@ type KeysPage struct {
 type AuthClient interface {
 	// Issue issues a token for the given id, email and key type.
 	Issue(ctx context.Context, id, email string, keyType uint32) (string, error)
+
+	// IssueImpersonated issues a login token for the given user on behalf of the impersonator.
+	IssueImpersonated(ctx context.Context, id, email string, impersonator Identity) (string, error)
 
 	// RefreshToken issues a new token to the owner of the provided still-valid one.
 	RefreshToken(ctx context.Context, token string) (string, error)

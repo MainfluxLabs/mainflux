@@ -179,14 +179,18 @@ message Token {
 }
 
 message UserIdentity {
-    string id    = 1;
-    string email = 2;
+    string id                 = 1;
+    string email              = 2;
+    string impersonator_id    = 3;
+    string impersonator_email = 4;
 }
 
 message IssueReq {
-    string id    = 1;
-    string email = 2;
-    uint32 type  = 3;
+    string id                 = 1;
+    string email              = 2;
+    uint32 type               = 3;
+    string impersonator_id    = 4;
+    string impersonator_email = 5;
 }
 
 message RevokeSessionsReq {
