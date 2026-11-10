@@ -38,6 +38,10 @@ const (
 
 	DefaultRSAKeyBits   = RSAKeyBits2048
 	DefaultECDSAKeyBits = ECDSAKeyBits256
+
+	// CRLValidity is longer than the daily CRL refresh interval, so the published CRL stays valid
+	// when a refresh fails.
+	CRLValidity = 2 * 24 * time.Hour
 )
 
 type Cert struct {
@@ -331,7 +335,7 @@ func (a *agent) GenerateCRL(revokedSerials []RevokedSerial) ([]byte, error) {
 	template := &x509.RevocationList{
 		Number:              big.NewInt(now.UnixNano()),
 		ThisUpdate:          now,
-		NextUpdate:          now.Add(24 * time.Hour),
+		NextUpdate:          now.Add(CRLValidity),
 		RevokedCertificateEntries: revokedCerts,
 	}
 
