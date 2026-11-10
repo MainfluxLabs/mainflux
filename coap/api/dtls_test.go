@@ -270,3 +270,50 @@ func TestDTLSCancelObservation(t *testing.T) {
 	assert.Equal(t, codes.Changed, resp.Code(), "publish on the same session after cancelling the observation")
 	assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, "publish on the same session after cancelling the observation")
 }
+
+// closeServiceMock counts the observers removed when their connection closes.
+type closeServiceMock struct {
+	serviceMock
+	removed atomic.Int32
+}
+
+func (svc *closeServiceMock) Subscribe(context.Context, domain.ThingKey, string, coap.Client) error {
+	return nil
+}
+
+func (svc *closeServiceMock) Unsubscribe(context.Context, domain.ThingKey, string, string) error {
+	return nil
+}
+
+func (svc *closeServiceMock) RemoveObserver(string, coap.Client) error {
+	svc.removed.Add(1)
+	return nil
+}
+
+func TestDTLSCloseRemovesObservers(t *testing.T) {
+	svc := &closeServiceMock{}
+	addr := startDTLSServer(t, svc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, err := dtls.Dial(addr, dtls.NewDTLSClientOptions(
+		piondtls.WithPSK(func([]byte) ([]byte, error) { return api.DerivePSK(thingKey), nil }),
+		piondtls.WithPSKIdentityHint([]byte(thingID)),
+		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
+	), options.WithContext(ctx))
+	require.NoError(t, err)
+
+	path := "/things/" + thingID + "/commands/shadow"
+	for range 5 {
+		observation, err := conn.Observe(ctx, path, func(*pool.Message) {})
+		require.NoError(t, err, "observe commands")
+		require.NoError(t, observation.Cancel(ctx), "cancel observation")
+	}
+	_, err = conn.Observe(ctx, path, func(*pool.Message) {})
+	require.NoError(t, err, "observe commands")
+
+	require.NoError(t, conn.Close())
+	assert.Eventually(t, func() bool { return svc.removed.Load() > 0 }, 3*time.Second, 10*time.Millisecond, "expected the observation to end with the connection")
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, int32(1), svc.removed.Load(), "expected only the remaining observation to be removed")
+}
