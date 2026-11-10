@@ -480,6 +480,35 @@ func TestRunScript(t *testing.T) {
 	}
 }
 
+func TestRunScriptLargeInteger(t *testing.T) {
+	things := pkgmocks.NewThingsServiceClient(
+		nil,
+		map[string]domain.Thing{token: {ID: "thing", GroupID: groupID}},
+		map[string]domain.Group{token: {ID: groupID}},
+	)
+	run := psmocks.NewRunner()
+	svc := pyscripts.New(psmocks.NewScriptRepository(), run, things, uuid.NewMock(), logger.NewMock(), maxScriptSize)
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	s := createScript(t, svc, "a")
+
+	req := testRequest{
+		client:      ts.Client(),
+		method:      http.MethodPost,
+		url:         fmt.Sprintf("%s/scripts/%s/run", ts.URL, s.ID),
+		contentType: contentType,
+		token:       token,
+		body:        strings.NewReader(`{"payload":{"id":9007199254740993}}`),
+	}
+	res, err := req.make()
+	require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+	res.Body.Close()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode, fmt.Sprintf("expected status %d got %d", http.StatusOK, res.StatusCode))
+	assert.Equal(t, json.Number("9007199254740993"), run.Input.Payload["id"], "expected an integer above 2^53 to reach the script unchanged")
+}
+
 func TestListRunsByScript(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)

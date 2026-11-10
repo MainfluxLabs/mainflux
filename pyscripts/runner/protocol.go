@@ -4,6 +4,7 @@
 package runner
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -97,7 +98,9 @@ func readFrame(r io.Reader, v any) (int, error) {
 
 	// The body was consumed whole, so the stream is still aligned and the
 	// reader can skip this frame.
-	if err := json.Unmarshal(b, v); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	if err := dec.Decode(v); err != nil {
 		return len(b), errBadFrame
 	}
 

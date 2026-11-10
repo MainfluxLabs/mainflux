@@ -5,6 +5,7 @@ package postgres_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -134,6 +135,24 @@ func TestSaveRunWithNulByte(t *testing.T) {
 	require.Len(t, got.Logs, 1, "expected one log line")
 	assert.Equal(t, "log\u0000line", got.Logs[0], "expected a NUL byte in a log line to round-trip")
 	assert.Equal(t, "ValueError: \uFFFD", got.Error, "expected a NUL byte in the error to be replaced")
+}
+
+func TestSaveRunWithLargeInteger(t *testing.T) {
+	cleanUp(t)
+	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))
+	ctx := context.Background()
+
+	s := saveScriptFixture(t, repo)
+
+	value := json.Number("12345678901234567891")
+	run := newRun(t, s.ID, pyscripts.ScriptRunStatusSuccess, value, nil)
+
+	_, err := repo.SaveRuns(ctx, run)
+	require.Nil(t, err, fmt.Sprintf("unexpected save error: %s", err))
+
+	got, err := repo.RetrieveRunByID(ctx, run.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected retrieve error: %s", err))
+	assert.Equal(t, value, got.Value, "expected an integer above 2^53 to round-trip exactly")
 }
 
 func TestRetrieveRunByID(t *testing.T) {

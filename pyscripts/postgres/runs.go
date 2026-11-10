@@ -4,6 +4,7 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -250,7 +251,9 @@ func toRun(dbr dbScriptRun) (pyscripts.ScriptRun, error) {
 
 	var value any
 	if len(dbr.Value) > 0 {
-		if err := json.Unmarshal(dbr.Value, &value); err != nil {
+		dec := json.NewDecoder(bytes.NewReader(dbr.Value))
+		dec.UseNumber()
+		if err := dec.Decode(&value); err != nil {
 			return pyscripts.ScriptRun{}, err
 		}
 	}

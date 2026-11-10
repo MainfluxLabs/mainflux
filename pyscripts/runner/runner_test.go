@@ -5,6 +5,7 @@ package runner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -161,7 +162,7 @@ func TestRun(t *testing.T) {
 			workers: func(t *testing.T) []*worker {
 				return []*worker{newTestWorker(t, answer(3.0, ""))}
 			},
-			value: 3.0,
+			value: json.Number("3"),
 			free:  1,
 			err:   nil,
 		},
@@ -170,7 +171,7 @@ func TestRun(t *testing.T) {
 			workers: func(t *testing.T) []*worker {
 				return []*worker{newTestWorker(t, nil), newTestWorker(t, answer(3.0, ""))}
 			},
-			value:   3.0,
+			value:   json.Number("3"),
 			free:    1,
 			missing: 1,
 			err:     nil,
@@ -183,7 +184,7 @@ func TestRun(t *testing.T) {
 				dead.cmd.Wait()
 				return []*worker{dead, newTestWorker(t, answer(3.0, ""))}
 			},
-			value:   3.0,
+			value:   json.Number("3"),
 			free:    1,
 			missing: 1,
 			err:     nil,

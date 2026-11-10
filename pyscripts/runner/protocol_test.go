@@ -111,6 +111,15 @@ func TestReadFrameAfterBadFrame(t *testing.T) {
 	assert.Equal(t, valid, f, "expected the frame after a bad one to decode")
 }
 
+func TestReadFrameLargeInteger(t *testing.T) {
+	payload := []byte(`{"kind":"result","seq":1,"value":12345678901234567891}`)
+
+	var f dataFrame
+	_, err := readFrame(bytes.NewReader(rawFrame(payload)), &f)
+	require.Nil(t, err, fmt.Sprintf("unexpected read error: %s", err))
+	assert.Equal(t, json.Number("12345678901234567891"), f.Value, "expected an integer above 2^53 to be kept exactly")
+}
+
 func TestPumpData(t *testing.T) {
 	r, wr, err := os.Pipe()
 	require.Nil(t, err, fmt.Sprintf("unexpected pipe error: %s", err))

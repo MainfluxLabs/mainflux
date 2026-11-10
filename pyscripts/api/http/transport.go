@@ -217,7 +217,9 @@ func decodeRunScript(_ context.Context, r *http.Request) (any, error) {
 		id:    bone.GetValue(r, apiutil.IDKey),
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	dec := json.NewDecoder(r.Body)
+	dec.UseNumber()
+	if err := dec.Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 

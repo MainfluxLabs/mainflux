@@ -15,6 +15,7 @@ var _ pyscripts.Runner = (*Runner)(nil)
 type Runner struct {
 	mu          sync.Mutex
 	Result      pyscripts.Result
+	Input       pyscripts.Input
 	RunErr      error
 	Invalid     map[string]string
 	ValidateErr error
@@ -25,9 +26,11 @@ func NewRunner() *Runner {
 	return &Runner{Invalid: make(map[string]string)}
 }
 
-func (r *Runner) Run(_ context.Context, _ string, _ pyscripts.Input) (pyscripts.Result, error) {
+func (r *Runner) Run(_ context.Context, _ string, in pyscripts.Input) (pyscripts.Result, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	r.Input = in
 
 	if r.RunErr != nil {
 		return pyscripts.Result{}, r.RunErr
