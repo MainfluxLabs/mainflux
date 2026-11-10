@@ -102,7 +102,7 @@ func (sr scriptRepository) RetrieveScriptsByGroup(ctx context.Context, groupID s
 	whereClause := dbutil.BuildWhereClause(gq, nq)
 
 	query := fmt.Sprintf(`
-		SELECT id, group_id, name, description, source, checksum, created_at, updated_at
+		SELECT id, group_id, name, description, checksum, created_at, updated_at
 		FROM scripts %s ORDER BY %s %s %s;
 	`, whereClause, oq, dq, olq)
 

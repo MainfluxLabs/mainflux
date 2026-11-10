@@ -123,7 +123,7 @@ type ScriptRepository interface {
 	// RetrieveScriptByID retrieves a single Script denoted by ID.
 	RetrieveScriptByID(ctx context.Context, id string) (Script, error)
 
-	// RetrieveScriptsByGroup retrieves a list of Scripts belonging to a specific Group.
+	// RetrieveScriptsByGroup retrieves a list of Scripts belonging to a specific Group, without their source.
 	RetrieveScriptsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ScriptsPage, error)
 
 	// UpdateScript updates the Script denoted by script.ID.
