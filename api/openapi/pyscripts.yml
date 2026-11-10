@@ -30,7 +30,16 @@ paths:
         $ref: "#/components/requestBodies/CreateScriptsReq"
       responses:
         "201":
-          description: Scripts created.
+          description: Scripts created, in request order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scripts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Script"
         "400":
           description: |
             Malformed request, script exceeds the size limit, or the source does
