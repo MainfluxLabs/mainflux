@@ -15,6 +15,7 @@ import (
 const defURL string = "http://localhost"
 
 func main() {
+	var insecure bool
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
 		AuthURL:         fmt.Sprintf("%s/svcauth", defURL),
@@ -33,6 +34,7 @@ func main() {
 		Use: "mainfluxlabs-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
+			sdkConf.TLSVerification = !insecure
 			s := sdk.NewSDK(sdkConf)
 			cli.SetSDK(s)
 		},
@@ -126,10 +128,10 @@ func main() {
 	)
 
 	rootCmd.PersistentFlags().BoolVarP(
-		&sdkConf.TLSVerification,
+		&insecure,
 		"insecure",
 		"i",
-		sdkConf.TLSVerification,
+		insecure,
 		"Do not check for TLS cert",
 	)
 
