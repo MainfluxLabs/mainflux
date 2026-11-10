@@ -5,6 +5,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -15,7 +16,7 @@ import (
 )
 
 // oidcHTTPTimeout bounds every request to the identity provider, so a hanging
-// provider can't block OIDC logins indefinitely.
+// provider cannot block OIDC logins indefinitely.
 const oidcHTTPTimeout = 10 * time.Second
 
 var errInvalidBoolClaim = errors.New("invalid boolean claim")
@@ -35,6 +36,23 @@ func (b *oidcBool) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+// oidcEmailClaims holds the e-mail claims of an ID token or a UserInfo response.
+type oidcEmailClaims struct {
+	Email         string    `json:"email"`
+	EmailVerified *oidcBool `json:"email_verified"`
+}
+
+// verified reports whether the provider sent email_verified set to true.
+func (c oidcEmailClaims) verified() bool {
+	return c.EmailVerified != nil && bool(*c.EmailVerified)
+}
+
+// oidcIdentityID scopes the subject to its issuer, since sub is unique only within one issuer.
+// An issuer URL contains no fragment, so "#" separates issuer and subject unambiguously.
+func oidcIdentityID(issuer, subject string) string {
+	return fmt.Sprintf("%s#%s", issuer, subject)
 }
 
 // OIDCConfig holds configuration of a generic OpenID Connect provider.
@@ -100,6 +118,40 @@ func (c *oidcClient) oauthConfig() (oauth2.Config, error) {
 	cfg := c.cfg.OAuth
 	cfg.Endpoint = provider.Endpoint()
 	return cfg, nil
+}
+
+// emailClaims returns the e-mail claims of the ID token, or of UserInfo when the ID token has no e-mail.
+func (c *oidcClient) emailClaims(ctx context.Context, idToken *oidc.IDToken, oauthToken *oauth2.Token) (oidcEmailClaims, error) {
+	var claims oidcEmailClaims
+	if err := idToken.Claims(&claims); err != nil {
+		return oidcEmailClaims{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+	if claims.Email != "" {
+		return claims, nil
+	}
+
+	// Some providers only expose the e-mail through the UserInfo endpoint.
+	provider, err := c.discover()
+	if err != nil {
+		return oidcEmailClaims{}, err
+	}
+
+	userInfo, err := provider.UserInfo(ctx, oauth2.StaticTokenSource(oauthToken))
+	if err != nil {
+		return oidcEmailClaims{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+	// UserInfo must describe the same user as the ID token.
+	if userInfo.Subject != idToken.Subject {
+		return oidcEmailClaims{}, errors.ErrAuthentication
+	}
+
+	// UserInfo claims replace the ID token claims, so email_verified describes the UserInfo e-mail.
+	var userInfoClaims oidcEmailClaims
+	if err := userInfo.Claims(&userInfoClaims); err != nil {
+		return oidcEmailClaims{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	return userInfoClaims, nil
 }
 
 func (c *oidcClient) verifier() (*oidc.IDTokenVerifier, error) {

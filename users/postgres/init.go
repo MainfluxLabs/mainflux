@@ -114,6 +114,16 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
 				},
 			},
+			{
+				Id: "users_05",
+				Up: []string{
+					`ALTER TABLE oauth_identities ALTER COLUMN provider_user_id TYPE VARCHAR(512)`,
+				},
+				Down: []string{
+					`DELETE FROM oauth_identities WHERE length(provider_user_id) > 128`,
+					`ALTER TABLE oauth_identities ALTER COLUMN provider_user_id TYPE VARCHAR(128)`,
+				},
+			},
 		},
 	}
 
