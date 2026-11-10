@@ -89,7 +89,7 @@ func (cs *CertScheduler) Start(ctx context.Context, schedule mfcron.Scheduler) e
 // refreshCRL reissues the CRL before it expires, because the proxy rejects every client
 // certificate once the CRL expires.
 func (cs *CertScheduler) refreshCRL(ctx context.Context) {
-	if cs.crlPath == "" {
+	if cs.crlPath == "" || cs.pki == nil {
 		return
 	}
 
