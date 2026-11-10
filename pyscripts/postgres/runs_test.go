@@ -122,7 +122,8 @@ func TestSaveRunWithNulByte(t *testing.T) {
 
 	s := saveScriptFixture(t, repo)
 
-	run := newRun(t, s.ID, pyscripts.ScriptRunStatusSuccess, "x\u0000y", []string{"log\u0000line"})
+	run := newRun(t, s.ID, pyscripts.ScriptRunStatusFail, "x\u0000y", []string{"log\u0000line"})
+	run.Error = "ValueError: \u0000"
 
 	_, err := repo.SaveRuns(ctx, run)
 	require.Nil(t, err, fmt.Sprintf("unexpected save error for NUL byte payload: %s", err))
@@ -132,6 +133,7 @@ func TestSaveRunWithNulByte(t *testing.T) {
 	assert.Equal(t, "x\u0000y", got.Value, "expected a NUL byte in the value to round-trip")
 	require.Len(t, got.Logs, 1, "expected one log line")
 	assert.Equal(t, "log\u0000line", got.Logs[0], "expected a NUL byte in a log line to round-trip")
+	assert.Equal(t, "ValueError: \uFFFD", got.Error, "expected a NUL byte in the error to be replaced")
 }
 
 func TestRetrieveRunByID(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -235,7 +236,7 @@ func toDBRun(r pyscripts.ScriptRun) (dbScriptRun, error) {
 		StartedAt:      r.StartedAt,
 		FinishedAt:     r.FinishedAt,
 		Status:         r.Status,
-		Error:          sql.NullString{String: r.Error, Valid: r.Error != ""},
+		Error:          sql.NullString{String: strings.ReplaceAll(r.Error, "\x00", "\uFFFD"), Valid: r.Error != ""},
 	}, nil
 }
 
