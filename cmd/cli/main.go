@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/cli"
 	sdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
@@ -15,6 +16,7 @@ import (
 const defURL string = "http://localhost"
 
 func main() {
+	var rootURL string
 	var insecure bool
 	msgContentType := string(sdk.CTJSONSenML)
 	sdkConf := sdk.Config{
@@ -33,8 +35,33 @@ func main() {
 	var rootCmd = &cobra.Command{
 		Use: "mainfluxlabs-cli",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if rootURL != "" {
+				rootURL = strings.TrimSuffix(rootURL, "/")
+				flags := cmd.Flags()
+				if !flags.Changed("auth-url") {
+					sdkConf.AuthURL = rootURL + "/svcauth"
+				}
+				if !flags.Changed("things-url") {
+					sdkConf.ThingsURL = rootURL + "/svcthings"
+				}
+				if !flags.Changed("users-url") {
+					sdkConf.UsersURL = rootURL + "/svcusers"
+				}
+				if !flags.Changed("webhooks-url") {
+					sdkConf.WebhooksURL = rootURL + "/svcwebhooks"
+				}
+				if !flags.Changed("http-url") {
+					sdkConf.HTTPAdapterURL = rootURL + "/http"
+				}
+				if !flags.Changed("certs-url") {
+					sdkConf.CertsURL = rootURL
+				}
+				sdkConf.ReaderURL = rootURL + "/reader"
+			}
+			cli.HTTPAdapterURL = sdkConf.HTTPAdapterURL
 			sdkConf.MsgContentType = sdk.ContentType(msgContentType)
 			sdkConf.TLSVerification = !insecure
+			cli.TLSVerification = sdkConf.TLSVerification
 			s := sdk.NewSDK(sdkConf)
 			cli.SetSDK(s)
 		},
@@ -54,6 +81,7 @@ func main() {
 	provisionCmd := cli.NewProvisionCmd()
 	certsCmd := cli.NewCertsCmd()
 	keysCmd := cli.NewKeysCmd()
+	benchmarkCmd := cli.NewBenchmarkCmd()
 
 	// Root Commands
 	rootCmd.AddCommand(healthCmd)
@@ -69,8 +97,16 @@ func main() {
 	rootCmd.AddCommand(provisionCmd)
 	rootCmd.AddCommand(certsCmd)
 	rootCmd.AddCommand(keysCmd)
+	rootCmd.AddCommand(benchmarkCmd)
 
 	// Root Flags
+	rootCmd.PersistentFlags().StringVar(
+		&rootURL,
+		"url",
+		"",
+		"Deployment base URL from which service URLs that are not set explicitly are derived",
+	)
+
 	rootCmd.PersistentFlags().StringVarP(
 		&sdkConf.AuthURL,
 		"auth-url",

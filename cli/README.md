@@ -6,6 +6,12 @@ make cli
 ```
 
 ## Usage
+### Remote deployment
+The `--url` flag derives every service URL from the deployment base URL, and an explicitly set service URL flag takes precedence.
+```bash
+mainfluxlabs-cli --url https://example.com things get all <user_token>
+```
+
 ### Service
 #### Get Mainflux Things services Health Check
 ```bash
@@ -308,3 +314,34 @@ mainfluxlabs-cli keys revoke <key_id> <user_token>
 ```bash
 mainfluxlabs-cli keys retrieve <key_id> <user_token>
 ```
+
+### Benchmark
+Provision orgs, groups, transformer profiles, and things, then publish backfilled JSON messages over the HTTP adapter to load-test ingestion and storage.
+
+#### Run a benchmark
+```bash
+mainfluxlabs-cli benchmark <username> <password>
+```
+
+#### Run against a remote deployment
+```bash
+mainfluxlabs-cli benchmark <username> <password> --url https://example.com
+```
+
+#### Flags
+| Flag              | Default   | Description                                                     |
+| ----------------- | --------- | --------------------------------------------------------------- |
+| `--orgs`          | `3`       | Number of orgs to create                                        |
+| `--groups`        | `5`       | Number of groups per org                                        |
+| `--things`        | `100`     | Number of things to create                                      |
+| `--messages`      | `10000`   | Number of messages to send                                      |
+| `--rate`          | `0`       | Approximate maximum messages per second, `0` disables the limit |
+| `--batch`         | `100`     | Maximum number of messages per HTTP request                     |
+| `--backfill-days` | `30`      | Spread message timestamps over the last N days                  |
+| `--mtls`          | `false`   | Authenticate a random half of the things over mutual TLS        |
+
+Each request carries a random number of messages between 1 and `--batch`, sent as a JSON object for a single message and as a JSON array otherwise. The sustained ingestion rate is bounded by the database insert rate, so `--rate` should be set to that rate to prevent the message broker buffer from overflowing.
+
+With `--mtls`, the selected things obtain client certificates from the certs service and publish over HTTPS without the `Authorization` header, so the deployment must verify client certificates and still accept the header from the remaining things.
+
+The results report the requests and messages per authentication type and the failed requests per cause.
