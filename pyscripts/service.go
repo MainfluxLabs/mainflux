@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	poolRate  = rate.Limit(2)
-	poolBurst = 10
+	groupRate  = rate.Limit(2)
+	groupBurst = 10
 )
 
 type groupRateLimiter struct {
@@ -26,7 +26,7 @@ type groupRateLimiter struct {
 }
 
 func (g *groupRateLimiter) allow(groupID string) bool {
-	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(poolRate, poolBurst))
+	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(groupRate, groupBurst))
 	return l.(*rate.Limiter).Allow()
 }
 
@@ -77,7 +77,7 @@ type pyscriptsService struct {
 	things        domain.ThingsClient
 	idProvider    uuid.IDProvider
 	logger        logger.Logger
-	poolLimiter   groupRateLimiter
+	groupLimiter  groupRateLimiter
 }
 
 var _ Service = (*pyscriptsService)(nil)
@@ -99,7 +99,7 @@ func (ps *pyscriptsService) CreateScripts(ctx context.Context, token, groupID st
 		return []Script{}, err
 	}
 
-	if !ps.poolLimiter.allow(groupID) {
+	if !ps.groupLimiter.allow(groupID) {
 		return []Script{}, ErrRateLimited
 	}
 
@@ -152,7 +152,7 @@ func (ps *pyscriptsService) UpdateScript(ctx context.Context, token string, scri
 		return err
 	}
 
-	if !ps.poolLimiter.allow(existing.GroupID) {
+	if !ps.groupLimiter.allow(existing.GroupID) {
 		return ErrRateLimited
 	}
 
@@ -189,7 +189,7 @@ func (ps *pyscriptsService) RemoveScriptsByGroup(ctx context.Context, groupID st
 	// The group is gone, so drop its rate-limiter entry rather than leaking it for
 	// the process lifetime. This runs on the GroupRemoved event, which is how a
 	// deleted group's scripts are cleaned up too.
-	ps.poolLimiter.remove(groupID)
+	ps.groupLimiter.remove(groupID)
 
 	return nil
 }
@@ -206,7 +206,7 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	if !ps.poolLimiter.allow(script.GroupID) {
+	if !ps.groupLimiter.allow(script.GroupID) {
 		return ScriptRun{}, ErrRateLimited
 	}
 
