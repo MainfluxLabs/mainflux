@@ -41,6 +41,11 @@ paths:
           description: Group editor required.
         "415":
           description: Unsupported content type.
+        "429":
+          description: |
+            The group exceeded its rate limit. Creating, updating and running
+            scripts share one limit per group: 2 requests per second, with
+            bursts of up to 10. Retrying later is safe.
         "500":
           description: The python worker failed while compiling the script.
         "503":
@@ -109,6 +114,11 @@ paths:
           description: Group editor required.
         "404":
           description: Script does not exist.
+        "429":
+          description: |
+            The group exceeded its rate limit. Creating, updating and running
+            scripts share one limit per group: 2 requests per second, with
+            bursts of up to 10. Retrying later is safe.
         "503":
           description: No python worker available to compile the script.
 
@@ -160,6 +170,11 @@ paths:
           description: Group editor required.
         "404":
           description: Script does not exist.
+        "429":
+          description: |
+            The group exceeded its rate limit. Creating, updating and running
+            scripts share one limit per group: 2 requests per second, with
+            bursts of up to 10. Retrying later is safe.
         "500":
           description: The python worker failed.
         "503":
