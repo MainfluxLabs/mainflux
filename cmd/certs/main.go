@@ -150,6 +150,7 @@ func main() {
 	tlsCert, caCert, err := loadCertificates(cfg)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to load CA certificates for issuing client certs: %s", err))
+		os.Exit(1)
 	}
 
 	tlsConfig := configureTLSServer(cfg, caCert)
@@ -158,6 +159,7 @@ func main() {
 	pkiAgent, err := pki.NewAgent(tlsCert)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to create PKI agent: %s", err))
+		os.Exit(1)
 	}
 
 	db := connectToDB(cfg.dbConfig, logger)
