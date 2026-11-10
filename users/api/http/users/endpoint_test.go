@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -39,7 +38,7 @@ const (
 	validEmail       = "user@example.com"
 	adminEmail       = "admin@example.com"
 	invalidEmail     = "userexample.com"
-	validPass        = "password"
+	validPass        = "brave-ocean-lantern"
 	invalidToken     = "invalid"
 	invalidPass      = "wrong"
 	prefix           = "fe6b4e92-cc98-425e-b0aa-"
@@ -72,7 +71,7 @@ var (
 	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword          = toJSON(apiutil.ErrorRes{Err: errors.ErrPasswordFormat.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordTooShort.Error()})
 	malformedRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
 	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
 	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
@@ -81,11 +80,10 @@ var (
 	invalidRestPassRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
 	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
 	idProvider            = uuid.New()
-	passRegex             = regexp.MustCompile(`^\S{8,}$`)
 	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		User:      users.User{Email: "example@verify.com", Password: "brave-ocean-lantern"},
 		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -167,7 +165,7 @@ func newService() users.Service {
 
 func newServer(svc users.Service) *httptest.Server {
 	ac := mocks.NewAuthService(admin.ID, usersList, nil)
-	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock(), passRegex)
+	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
 
@@ -477,7 +475,7 @@ func TestListUsers(t *testing.T) {
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "password",
+			Password: "brave-ocean-lantern",
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)
@@ -669,7 +667,7 @@ func TestSearchUsers(t *testing.T) {
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "password",
+			Password: "brave-ocean-lantern",
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)

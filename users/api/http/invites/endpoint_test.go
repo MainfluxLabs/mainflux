@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -33,7 +32,7 @@ const (
 	contentType = "application/json"
 	validEmail  = "user@example.com"
 	adminEmail  = "admin@example.com"
-	validPass   = "password"
+	validPass   = "brave-ocean-lantern"
 
 	inviteDuration     = 7 * 24 * time.Hour
 	inviteRedirectPath = "/register/invite"
@@ -44,10 +43,9 @@ var (
 	admin      = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
 	usersList  = []users.User{admin, user}
 	idProvider = uuid.New()
-	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		User:      users.User{Email: "example@verify.com", Password: "brave-ocean-lantern"},
 		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -127,7 +125,7 @@ func newService() users.Service {
 
 func newServer(svc users.Service) *httptest.Server {
 	ac := mocks.NewAuthService(admin.ID, usersList, nil)
-	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock(), passRegex)
+	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
 

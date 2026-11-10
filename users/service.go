@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -170,7 +169,7 @@ type usersService struct {
 	googleOAuth         oauth2.Config
 	githubOAuth         oauth2.Config
 	urls                ConfigURLs
-	passRegex           *regexp.Regexp
+	passMinLength       int
 }
 
 // Config holds configuration values for the users service.
@@ -181,7 +180,7 @@ type Config struct {
 	GoogleOAuth         oauth2.Config
 	GitHubOAuth         oauth2.Config
 	URLs                ConfigURLs
-	PassRegex           *regexp.Regexp
+	PassMinLength       int
 }
 
 // New instantiates the users service implementation
@@ -201,13 +200,17 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		googleOAuth:         c.GoogleOAuth,
 		githubOAuth:         c.GitHubOAuth,
 		urls:                c.URLs,
-		passRegex:           c.PassRegex,
+		passMinLength:       c.PassMinLength,
 	}
 }
 
 func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPath string) (string, error) {
 	if !svc.selfRegisterEnabled {
 		return "", ErrSelfRegisterDisabled
+	}
+
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
+		return "", err
 	}
 
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
@@ -219,7 +222,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 		return "", dbutil.ErrConflict
 	}
 
-	hash, err := svc.hasher.Hash(user.Password)
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -285,7 +288,11 @@ func (svc usersService) RegisterByInvite(ctx context.Context, user User, inviteI
 		return "", err
 	}
 
-	hash, err := svc.hasher.Hash(user.Password)
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
+		return "", err
+	}
+
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -368,7 +375,11 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		return nil
 	}
 
-	if err := user.Validate(svc.passRegex); err != nil {
+	if err := user.Validate(); err != nil {
+		return errors.Wrap(ErrInvalidAdminCredentials, err)
+	}
+
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
 		return errors.Wrap(ErrInvalidAdminCredentials, err)
 	}
 
@@ -378,7 +389,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 	}
 	user.ID = uid
 
-	hash, err := svc.hasher.Hash(user.Password)
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -402,6 +413,10 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
+		return "", err
+	}
+
 	uid, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
@@ -409,7 +424,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 
 	user.ID = uid
 
-	hash, err := svc.hasher.Hash(user.Password)
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -439,7 +454,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if dbUser.Password == "" {
 		return "", errors.ErrAuthentication
 	}
-	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
+	if err := svc.comparePassword(user.Password, dbUser.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
@@ -854,7 +869,11 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 		return dbutil.ErrNotFound
 	}
 
-	password, err = svc.hasher.Hash(password)
+	if err := ValidatePassword(password, u.Email, svc.passMinLength); err != nil {
+		return err
+	}
+
+	password, err = svc.hashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -901,7 +920,11 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return errors.ErrAuthentication
 	}
 
-	hashedPassword, err := svc.hasher.Hash(password)
+	if err := ValidatePassword(password, userEmail, svc.passMinLength); err != nil {
+		return err
+	}
+
+	hashedPassword, err := svc.hashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -911,6 +934,21 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	}
 
 	return svc.auth.RevokeSessions(ctx, userID)
+}
+
+func (svc usersService) hashPassword(password string) (string, error) {
+	return svc.hasher.Hash(NormalizePassword(password))
+}
+
+func (svc usersService) comparePassword(password, hash string) error {
+	normalized := NormalizePassword(password)
+	err := svc.hasher.Compare(normalized, hash)
+	if err == nil || normalized == password {
+		return err
+	}
+
+	// Passwords set before normalization was introduced are hashed as received.
+	return svc.hasher.Compare(password, hash)
 }
 
 func (svc usersService) SendPasswordReset(_ context.Context, redirectPath, email, token string) error {

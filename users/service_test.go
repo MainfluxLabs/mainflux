@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	"golang.org/x/text/unicode/norm"
 )
 
 const (
@@ -36,19 +36,19 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "password"}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "brave-ocean-lantern"}
 	noPasswordAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
-	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
-	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
-	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "password"}
+	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "brave-ocean-lantern"}
+	selfRegister    = users.User{Email: "self-register@example.com", Password: "brave-ocean-lantern"}
+	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "brave-ocean-lantern"}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "brave-ocean-lantern"}
 	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
+	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "brave-ocean-lantern"}
 	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		User:      users.User{Email: "example@verify.com", Password: "brave-ocean-lantern"},
 		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fb",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -71,7 +71,6 @@ var (
 	verificationsList = []users.EmailVerification{verification, duplicateVerification, expiredVerification}
 
 	idProvider = uuid.New()
-	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 )
 
 func newService(srv ...*httptest.Server) users.Service {
@@ -109,7 +108,7 @@ func newService(srv ...*httptest.Server) users.Service {
 		GoogleOAuth:         oauthGoogleCfg,
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
-		PassRegex:           passRegex,
+		PassMinLength:       users.MinPasswordLength,
 	}
 	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, authSvc, e, idProvider, c)
 }
@@ -155,7 +154,7 @@ func TestRegisterAdmin(t *testing.T) {
 	identityRepo := usmocks.NewIdentityRepository()
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	config := users.Config{
-		PassRegex: passRegex,
+		PassMinLength: users.MinPasswordLength,
 	}
 	svc := users.New(userRepo, verificationRepo, invitesRepo, identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, config)
 
@@ -166,7 +165,7 @@ func TestRegisterAdmin(t *testing.T) {
 		"create admin with valid credentials": {
 			user: users.User{
 				Email:    "new-admin@example.com",
-				Password: "password",
+				Password: "brave-ocean-lantern",
 			},
 			err: nil,
 		},
@@ -176,23 +175,30 @@ func TestRegisterAdmin(t *testing.T) {
 			},
 			err: errors.ErrPasswordFormat,
 		},
-		"create admin with password that does not match the regex": {
+		"create admin with password that is too short": {
 			user: users.User{
 				Email:    "short-password-admin@example.com",
 				Password: "short",
 			},
 			err: errors.ErrPasswordFormat,
 		},
+		"create admin with common password": {
+			user: users.User{
+				Email:    "common-password-admin@example.com",
+				Password: "Password1!",
+			},
+			err: errors.ErrPasswordFormat,
+		},
 		"create admin with invalid e-mail": {
 			user: users.User{
 				Email:    wrong,
-				Password: "password",
+				Password: "brave-ocean-lantern",
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"create admin with empty e-mail": {
 			user: users.User{
-				Password: "password",
+				Password: "brave-ocean-lantern",
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -293,6 +299,53 @@ func TestLogin(t *testing.T) {
 		},
 		"login failed auth": {
 			user: nonExistingUser,
+			err:  errors.ErrAuthentication,
+		},
+	}
+
+	for desc, tc := range cases {
+		_, err := svc.Login(context.Background(), tc.user)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestLoginPasswordForms(t *testing.T) {
+	composed := "pässwörd-ünïcödé"
+	decomposed := norm.NFD.String(composed)
+	legacyUser := users.User{Email: "legacy@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: "12345678"}
+	legacyDecomposedUser := users.User{Email: "legacy-nfd@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: decomposed}
+
+	unicodeUser := users.User{Email: "unicode@example.com", Password: composed}
+
+	userRepo := usmocks.NewUserRepository([]users.User{legacyUser, legacyDecomposedUser})
+	authSvc := mocks.NewAuthService(admin.ID, []users.User{legacyUser, legacyDecomposedUser, unicodeUser}, nil)
+	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), usmocks.NewIdentityRepository(), usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, users.Config{SelfRegisterEnabled: true})
+
+	_, err := svc.SelfRegister(context.Background(), unicodeUser, "")
+	require.Nil(t, err, fmt.Sprintf("self register expected to succeed: %s", err))
+
+	cases := map[string]struct {
+		user users.User
+		err  error
+	}{
+		"login with composed form of password": {
+			user: unicodeUser,
+			err:  nil,
+		},
+		"login with decomposed form of password": {
+			user: users.User{Email: unicodeUser.Email, Password: decomposed},
+			err:  nil,
+		},
+		"login with existing password that does not meet the policy": {
+			user: legacyUser,
+			err:  nil,
+		},
+		"login with existing password hashed before normalization": {
+			user: legacyDecomposedUser,
+			err:  nil,
+		},
+		"login with empty password": {
+			user: users.User{Email: legacyUser.Email},
 			err:  errors.ErrAuthentication,
 		},
 	}
@@ -430,7 +483,7 @@ func TestListUsers(t *testing.T) {
 		email := fmt.Sprintf("TestListUsers%d@example.com", i)
 		user := users.User{
 			Email:    email,
-			Password: "passpass",
+			Password: "brave-ocean-lantern",
 		}
 		_, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -569,13 +622,14 @@ func TestChangePassword(t *testing.T) {
 		oldPassword string
 		err         error
 	}{
-		"valid user change password ":                    {userToken, "", "newpassword", registerUser.Password, nil},
-		"valid user change password with wrong password": {userToken, "", "newpassword", "wrongpassword", errors.ErrInvalidPassword},
-		"valid user change password invalid token":       {"", "", "newpassword", registerUser.Password, errors.ErrAuthentication},
+		"valid user change password ":                    {userToken, "", "fresh-river-stone", registerUser.Password, nil},
+		"valid user change password with wrong password": {userToken, "", "fresh-river-stone", "wrongpassword", errors.ErrInvalidPassword},
+		"valid user change password invalid token":       {"", "", "fresh-river-stone", registerUser.Password, errors.ErrAuthentication},
 
-		"valid admin change user password ":            {adminToken, registerUser.Email, "newpassword", "", nil},
-		"valid admin change password with wrong email": {adminToken, "wrongemail@example.com", "newpassword", "", dbutil.ErrNotFound},
-		"valid admin change password invalid token":    {"", registerUser.Email, "newpassword", "", errors.ErrAuthentication},
+		"valid admin change user password ":             {adminToken, registerUser.Email, "fresh-river-stone", "", nil},
+		"valid admin change password with wrong email":  {adminToken, "wrongemail@example.com", "fresh-river-stone", "", dbutil.ErrNotFound},
+		"valid admin change password invalid token":     {"", registerUser.Email, "fresh-river-stone", "", errors.ErrAuthentication},
+		"valid user change password to common password": {userToken, "", "1q2w3e4r5t6y7u8i", registerUser.Password, errors.ErrPasswordFormat},
 	}
 
 	for desc, tc := range cases {
@@ -603,10 +657,11 @@ func TestResetPassword(t *testing.T) {
 		password string
 		err      error
 	}{
-		"valid user reset password ":      {resetToken, registerUser.Email, nil},
-		"invalid user reset password ":    {"", "newpassword", errors.ErrAuthentication},
-		"reset password with login token": {loginToken, "newpassword", errors.ErrAuthentication},
-		"reset password with API token":   {apiToken, "newpassword", errors.ErrAuthentication},
+		"valid user reset password ":        {resetToken, "fresh-river-stone", nil},
+		"reset password with weak password": {resetToken, "register-user-pass", errors.ErrPasswordFormat},
+		"invalid user reset password ":      {"", "fresh-river-stone", errors.ErrAuthentication},
+		"reset password with login token":   {loginToken, "fresh-river-stone", errors.ErrAuthentication},
+		"reset password with API token":     {apiToken, "fresh-river-stone", errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {
