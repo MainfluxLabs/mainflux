@@ -26,7 +26,10 @@ type thingKeyContextKey struct{}
 func DTLSOptions(things domain.ThingsClient, logger log.Logger) []piondtls.ServerOption {
 	return []piondtls.ServerOption{
 		piondtls.WithPSK(PSK(things, logger)),
-		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8, piondtls.TLS_PSK_WITH_AES_128_GCM_SHA256),
+		piondtls.WithCipherSuites(
+			piondtls.TLS_PSK_WITH_AES_128_CCM_8,
+			piondtls.TLS_PSK_WITH_AES_128_GCM_SHA256,
+		),
 		piondtls.WithConnectionIDGenerator(piondtls.RandomCIDGenerator(cidSize)),
 	}
 }
@@ -72,7 +75,8 @@ func OnNewDTLSConn(things domain.ThingsClient, logger log.Logger) func(*udpclien
 
 		key, err := things.GetKeyByThingID(context.Background(), string(state.IdentityHint))
 		if err != nil {
-			logger.Warn(fmt.Sprintf("Failed to retrieve key of thing %s: %s", state.IdentityHint, err))
+			thingID := string(state.IdentityHint)
+			logger.Warn(fmt.Sprintf("Failed to retrieve key of thing %s: %s", thingID, err))
 			_ = conn.Close()
 			return
 		}

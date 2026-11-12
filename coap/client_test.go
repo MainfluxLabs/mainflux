@@ -58,7 +58,8 @@ func TestCancelSilentObserver(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("cancel: waited for an ACK from a silent observer")
 	}
-	assert.Equal(t, message.NonConfirmable, <-types, "cancel: expected a non-confirmable final notification")
+	assert.Equal(t, message.NonConfirmable, <-types,
+		"cancel: expected a non-confirmable final notification")
 }
 
 func TestNotifySilentObserver(t *testing.T) {
@@ -69,7 +70,8 @@ func TestNotifySilentObserver(t *testing.T) {
 	observer, types := silentObserver(t)
 
 	done := make(chan error, 1)
-	go func() { done <- observer.HandleCommand("", protomfx.Command{Payload: []byte(`{"led":1}`)}) }()
+	cmd := protomfx.Command{Payload: []byte(`{"led":1}`)}
+	go func() { done <- observer.HandleCommand("", cmd) }()
 
 	select {
 	case err := <-done:

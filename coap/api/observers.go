@@ -58,7 +58,7 @@ func (co *connObservers) remove(subtopic, token string) {
 	delete(co.observers, observation{token: token, subtopic: subtopic})
 }
 
-// removeAll ends the connection's observations, since a closed connection can't receive notifications.
+// removeAll ends the connection's observations, since a closed connection cannot be notified.
 func (co *connObservers) removeAll() {
 	co.mu.Lock()
 	observers := co.observers

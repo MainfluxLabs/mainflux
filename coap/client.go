@@ -18,7 +18,7 @@ import (
 	mux "github.com/plgd-dev/go-coap/v3/mux"
 )
 
-// notificationTimeout is MAX_TRANSMIT_WAIT (RFC 7252), so every retransmission of a notification fits.
+// notificationTimeout is MAX_TRANSMIT_WAIT (RFC 7252), so all notification retransmissions fit.
 var notificationTimeout = 93 * time.Second
 
 // Client wraps CoAP client.
@@ -53,7 +53,7 @@ func (c *client) Done() <-chan struct{} {
 }
 
 func (c *client) Cancel() error {
-	// A closed connection can't take the final notification.
+	// A closed connection cannot take the final notification.
 	if c.client.Context().Err() != nil {
 		return nil
 	}
@@ -68,7 +68,7 @@ func (c *client) Cancel() error {
 		c.logger.Error(fmt.Sprintf("Error sending message: %s.", err))
 	}
 
-	// The connection stays open: it may carry other observations, and over DTLS closing it ends the session.
+	// The connection stays open: it may carry other observations, and closing ends a DTLS session.
 	return nil
 }
 

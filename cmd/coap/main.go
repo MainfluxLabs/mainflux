@@ -187,15 +187,22 @@ func loadConfig() config {
 	}
 }
 
-func startCOAPServers(ctx context.Context, cfg config, svc coap.Service, things domain.ThingsClient, l logger.Logger) error {
+func startCOAPServers(ctx context.Context, cfg config, svc coap.Service, things domain.ThingsClient,
+	l logger.Logger) error {
 	handler := options.WithMux(api.MakeCoAPHandler(svc, l))
-	errorLogger := options.WithErrors(func(err error) { l.Warn(fmt.Sprintf("CoAP server error: %s", err)) })
+	errorLogger := options.WithErrors(func(err error) {
+		l.Warn(fmt.Sprintf("CoAP server error: %s", err))
+	})
 	errCh := make(chan error, 2)
 
 	if cfg.plainEnabled {
 		l.Info(fmt.Sprintf("CoAP adapter service started, exposed port %s", cfg.coapConfig.Port))
 		go func() {
-			errCh <- gocoap.ListenAndServeWithOptions("udp", ":"+cfg.coapConfig.Port, handler, errorLogger, noInactivityMonitor{})
+			errCh <- gocoap.ListenAndServeWithOptions("udp", ":"+cfg.coapConfig.Port,
+				handler,
+				errorLogger,
+				noInactivityMonitor{},
+			)
 		}()
 	}
 
@@ -206,7 +213,9 @@ func startCOAPServers(ctx context.Context, cfg config, svc coap.Service, things 
 			handler,
 			errorLogger,
 			options.WithOnNewConn(api.OnNewDTLSConn(things, l)),
-			options.WithInactivityMonitor(cfg.dtlsIdleTimeout, func(conn *udpclient.Conn) { _ = conn.Close() }),
+			options.WithInactivityMonitor(cfg.dtlsIdleTimeout, func(conn *udpclient.Conn) {
+				_ = conn.Close()
+			}),
 		)
 	}()
 
@@ -219,7 +228,7 @@ func startCOAPServers(ctx context.Context, cfg config, svc coap.Service, things 
 	}
 }
 
-// noInactivityMonitor keeps idle connections open, since observers receive commands without sending anything.
+// noInactivityMonitor keeps idle connections open, since observers wait for commands silently.
 type noInactivityMonitor struct{}
 
 func (noInactivityMonitor) UDPServerApply(cfg *udpserver.Config) {

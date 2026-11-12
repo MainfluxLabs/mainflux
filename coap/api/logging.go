@@ -100,7 +100,8 @@ func (lm *loggingMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKe
 
 func (lm *loggingMiddleware) RemoveObserver(subtopic string, c coap.Client) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_observer for client token %s took %s to complete", c.Token(), time.Since(begin))
+		message := fmt.Sprintf("Method remove_observer for client token %s took %s to complete",
+			c.Token(), time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

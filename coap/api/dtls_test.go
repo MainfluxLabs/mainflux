@@ -25,14 +25,22 @@ import (
 	"github.com/plgd-dev/go-coap/v3/message/pool"
 	coapnet "github.com/plgd-dev/go-coap/v3/net"
 	"github.com/plgd-dev/go-coap/v3/options"
+	udpclient "github.com/plgd-dev/go-coap/v3/udp/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	thingID  = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
-	thingKey = "f6f7a7d4-5e44-4a4a-a1f5-2f4b5e1c6f88"
+	thingID      = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+	thingKey     = "f6f7a7d4-5e44-4a4a-a1f5-2f4b5e1c6f88"
+	messagesPath = "/things/" + thingID + "/messages"
+	commandsPath = "/things/" + thingID + "/commands/shadow"
 )
+
+// postMessage publishes a message as the thing of the DTLS session.
+func postMessage(ctx context.Context, conn *udpclient.Conn) (*pool.Message, error) {
+	return conn.Post(ctx, messagesPath, message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
+}
 
 // serviceMock records the key Publish receives; it implements no other methods.
 type serviceMock struct {
@@ -50,7 +58,8 @@ func startDTLSServer(t *testing.T, svc coap.Service) string {
 	thing := domain.Thing{ID: thingID, Key: thingKey}
 	things := mocks.NewThingsServiceClient(nil, map[string]domain.Thing{thingID: thing}, nil)
 
-	listener, err := coapnet.NewDTLSListener("udp", "127.0.0.1:0", coapnet.NewDTLSServerOptions(api.DTLSOptions(things, logger)...))
+	dtlsOptions := coapnet.NewDTLSServerOptions(api.DTLSOptions(things, logger)...)
+	listener, err := coapnet.NewDTLSListener("udp", "127.0.0.1:0", dtlsOptions)
 	require.NoError(t, err)
 
 	server := dtlsserver.New(
@@ -116,7 +125,7 @@ func TestDTLS(t *testing.T) {
 			continue
 		}
 
-		resp, err := conn.Post(ctx, "/things/"+thingID+"/messages", message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
+		resp, err := postMessage(ctx, conn)
 		cancel()
 		_ = conn.Close()
 
@@ -209,7 +218,7 @@ func TestDTLSConnectionID(t *testing.T) {
 	publish := func(desc string) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		resp, err := conn.Post(ctx, "/things/"+thingID+"/messages", message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
+		resp, err := postMessage(ctx, conn)
 		require.NoError(t, err, desc)
 		assert.Equal(t, codes.Changed, resp.Code(), desc)
 		assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, desc)
@@ -231,7 +240,8 @@ type observeServiceMock struct {
 	observers chan coap.Client
 }
 
-func (svc *observeServiceMock) Subscribe(_ context.Context, _ domain.ThingKey, _ string, c coap.Client) error {
+func (svc *observeServiceMock) Subscribe(_ context.Context, _ domain.ThingKey, _ string,
+	c coap.Client) error {
 	svc.observers <- c
 	return nil
 }
@@ -261,14 +271,15 @@ func TestDTLSCancelObservation(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	observation, err := conn.Observe(ctx, "/things/"+thingID+"/commands/shadow", func(*pool.Message) {})
+	observation, err := conn.Observe(ctx, commandsPath, func(*pool.Message) {})
 	require.NoError(t, err, "observe commands")
 	require.NoError(t, observation.Cancel(ctx), "cancel observation")
 
-	resp, err := conn.Post(ctx, "/things/"+thingID+"/messages", message.TextPlain, bytes.NewReader([]byte(`{"v":1}`)))
-	require.NoError(t, err, "publish on the same session after cancelling the observation")
-	assert.Equal(t, codes.Changed, resp.Code(), "publish on the same session after cancelling the observation")
-	assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, "publish on the same session after cancelling the observation")
+	desc := "publish on the same session after cancelling the observation"
+	resp, err := postMessage(ctx, conn)
+	require.NoError(t, err, desc)
+	assert.Equal(t, codes.Changed, resp.Code(), desc)
+	assert.Equal(t, domain.ThingKey{Value: thingKey}, <-svc.keys, desc)
 }
 
 // closeServiceMock counts the observers removed when their connection closes.
@@ -277,7 +288,8 @@ type closeServiceMock struct {
 	removed atomic.Int32
 }
 
-func (svc *closeServiceMock) Subscribe(context.Context, domain.ThingKey, string, coap.Client) error {
+func (svc *closeServiceMock) Subscribe(context.Context, domain.ThingKey, string,
+	coap.Client) error {
 	return nil
 }
 
@@ -303,17 +315,19 @@ func TestDTLSCloseRemovesObservers(t *testing.T) {
 	), options.WithContext(ctx))
 	require.NoError(t, err)
 
-	path := "/things/" + thingID + "/commands/shadow"
 	for range 5 {
-		observation, err := conn.Observe(ctx, path, func(*pool.Message) {})
+		observation, err := conn.Observe(ctx, commandsPath, func(*pool.Message) {})
 		require.NoError(t, err, "observe commands")
 		require.NoError(t, observation.Cancel(ctx), "cancel observation")
 	}
-	_, err = conn.Observe(ctx, path, func(*pool.Message) {})
+	_, err = conn.Observe(ctx, commandsPath, func(*pool.Message) {})
 	require.NoError(t, err, "observe commands")
 
 	require.NoError(t, conn.Close())
-	assert.Eventually(t, func() bool { return svc.removed.Load() > 0 }, 3*time.Second, 10*time.Millisecond, "expected the observation to end with the connection")
+	removed := func() bool { return svc.removed.Load() > 0 }
+	assert.Eventually(t, removed, 3*time.Second, 10*time.Millisecond,
+		"expected the observation to end with the connection")
 	time.Sleep(100 * time.Millisecond)
-	assert.Equal(t, int32(1), svc.removed.Load(), "expected only the remaining observation to be removed")
+	assert.Equal(t, int32(1), svc.removed.Load(),
+		"expected only the remaining observation to be removed")
 }
