@@ -288,6 +288,32 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func assignAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminRoleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		if err := svc.AssignAdminRole(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
+	}
+}
+
+func revokeAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminRoleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		if err := svc.RevokeAdminRole(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
+	}
+}
+
 func buildUsersResponse(up users.UsersPage, pm users.PageMetadata) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{

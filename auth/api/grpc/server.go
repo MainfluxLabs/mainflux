@@ -31,6 +31,7 @@ type grpcServer struct {
 	getOwnerIDByOrg                     kitgrpc.Handler
 	assignRole                          kitgrpc.Handler
 	retrieveRole                        kitgrpc.Handler
+	removeRole                          kitgrpc.Handler
 	createDormantOrgInvite              kitgrpc.Handler
 	activateOrgInvite                   kitgrpc.Handler
 	getDormantOrgInviteByPlatformInvite kitgrpc.Handler
@@ -87,6 +88,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "retrieve_role")(retrieveRoleEndpoint(svc)),
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
+		),
+		removeRole: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "remove_role")(removeRoleEndpoint(svc)),
+			decodeRemoveRoleRequest,
+			encodeEmptyResponse,
 		),
 		createDormantOrgInvite: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "create_dormant_org_invite")(createDormantOrgInviteEndpoint(svc)),
@@ -199,6 +205,14 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
+func (s *grpcServer) RemoveRole(ctx context.Context, req *protomfx.RemoveRoleReq) (*emptypb.Empty, error) {
+	_, res, err := s.removeRole.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*emptypb.Empty), nil
+}
+
 func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq) (*emptypb.Empty, error) {
 	_, res, err := s.createDormantOrgInvite.ServeGRPC(ctx, req)
 	if err != nil {
@@ -274,6 +288,11 @@ func decodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(retrieveRoleRes)
 	return &protomfx.RetrieveRoleRes{Role: res.role}, nil
+}
+
+func decodeRemoveRoleRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RemoveRoleReq)
+	return removeRoleReq{id: req.GetId()}, nil
 }
 
 func decodeIssueRequest(_ context.Context, grpcReq any) (any, error) {

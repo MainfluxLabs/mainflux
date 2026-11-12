@@ -167,6 +167,18 @@ func (req retrieveRoleReq) validate() error {
 	return nil
 }
 
+type removeRoleReq struct {
+	id string
+}
+
+func (req removeRoleReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
 type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string

@@ -186,6 +186,11 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, id string) (string, e
 	return svc.platformRoles[id], nil
 }
 
+func (svc authServiceMock) RemoveRole(_ context.Context, id string) error {
+	delete(svc.platformRoles, id)
+	return nil
+}
+
 func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domain.GroupInvite) error {
 	panic("not implemented")
 }

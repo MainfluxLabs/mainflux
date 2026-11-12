@@ -555,3 +555,47 @@ func TestCreateDormantOrgInvite(t *testing.T) {
 	msg := fmt.Sprintf("%s: expected %s got %s", desc, codes.InvalidArgument, e.Code())
 	assert.Equal(t, codes.InvalidArgument, e.Code(), msg)
 }
+
+func TestRemoveRole(t *testing.T) {
+	roleUserID := "roleUserID"
+	err := svc.AssignRole(context.Background(), roleUserID, auth.RoleAdmin)
+	require.Nil(t, err, fmt.Sprintf("Assigning role expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc string
+		id   string
+		code codes.Code
+	}{
+		{
+			desc: "remove role",
+			id:   roleUserID,
+			code: codes.OK,
+		},
+		{
+			desc: "remove non-existing role",
+			id:   roleUserID,
+			code: codes.NotFound,
+		},
+		{
+			desc: "remove role without user id",
+			id:   "",
+			code: codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		err := client.RemoveRole(context.Background(), tc.id)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+
+	role, err := svc.RetrieveRole(context.Background(), roleUserID)
+	require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
+	assert.Equal(t, "", role, fmt.Sprintf("expected empty role got %s", role))
+}

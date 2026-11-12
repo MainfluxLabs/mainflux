@@ -316,6 +316,44 @@ func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id s
 	return lm.svc.DisableUser(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) AssignAdminRole(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf(
+			"Method assign_admin_role by user %s, for user id %s took %s to complete",
+			email,
+			id,
+			time.Since(begin),
+		)
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.AssignAdminRole(ctx, token, id)
+}
+
+func (lm *loggingMiddleware) RevokeAdminRole(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf(
+			"Method revoke_admin_role by user %s, for user id %s took %s to complete",
+			email,
+			id,
+			time.Since(begin),
+		)
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokeAdminRole(ctx, token, id)
+}
+
 func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

@@ -75,6 +75,10 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string,
 	return "", errUnsupported
 }
 
+func (repo singleUserRepo) RemoveRole(ctx context.Context, id string) error {
+	return errUnsupported
+}
+
 func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {
 	panic("not implemented")
 }

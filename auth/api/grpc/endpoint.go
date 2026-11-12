@@ -230,6 +230,22 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func removeRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(removeRoleReq)
+
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		if err := svc.RemoveRole(ctx, req.id); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func createDormantOrgInviteEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(createDormantOrgInviteReq)

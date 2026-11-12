@@ -34,6 +34,7 @@ type grpcClient struct {
 	getOwnerIDByOrg                     endpoint.Endpoint
 	retrieveRole                        endpoint.Endpoint
 	assignRole                          endpoint.Endpoint
+	removeRole                          endpoint.Endpoint
 	createDormantOrgInvite              endpoint.Endpoint
 	activateOrgInvite                   endpoint.Endpoint
 	getDormantOrgInviteByPlatformInvite endpoint.Endpoint
@@ -116,6 +117,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"AssignRole",
 			encodeAssignRoleRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
+		removeRole: kitot.TraceClient(tracer, "remove_role")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RemoveRole",
+			encodeRemoveRoleRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
@@ -366,6 +375,27 @@ func encodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
+}
+
+func (client grpcClient) RemoveRole(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.removeRole(ctx, removeRoleReq{id: id})
+	if err != nil {
+		return err
+	}
+
+	er := res.(emptyRes)
+	return er.err
+}
+
+func encodeRemoveRoleRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(removeRoleReq)
+
+	return &protomfx.RemoveRoleReq{
+		Id: req.id,
+	}, nil
 }
 
 func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {

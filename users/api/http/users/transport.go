@@ -192,6 +192,26 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		opts...,
 	))
 
+	mux.Post("/users/:id/admin", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "assign_admin_role"),
+			withIdentity,
+		)(assignAdminRoleEndpoint(svc)),
+		decodeAdminRole,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/users/:id/admin", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "revoke_admin_role"),
+			withIdentity,
+		)(revokeAdminRoleEndpoint(svc)),
+		decodeAdminRole,
+		encodeResponse,
+		opts...,
+	))
+
 	return mux
 }
 
@@ -478,6 +498,15 @@ func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeAdminRole(_ context.Context, r *http.Request) (any, error) {
+	req := adminRoleReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -585,6 +614,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusInternalServerError)
 	case errors.Contains(err, users.ErrSelfRegisterDisabled):
 		w.WriteHeader(http.StatusForbidden)
+	case errors.Contains(err, users.ErrNotPlatformAdmin):
+		w.WriteHeader(http.StatusNotFound)
+	case errors.Contains(err, users.ErrPlatformRoleAssigned):
+		w.WriteHeader(http.StatusConflict)
 	default:
 		apiutil.EncodeError(err, w)
 	}
