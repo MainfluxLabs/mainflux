@@ -43,6 +43,8 @@ func TestCompare(t *testing.T) {
 	parts := strings.Split(hash, "$")
 	corruptedHash := strings.Join(append(parts[:5], "not-base64!"), "$")
 	longPassword := strings.Repeat("čć", 64)
+	longHash, err := hasher.Hash(longPassword)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
 		desc     string
@@ -50,24 +52,48 @@ func TestCompare(t *testing.T) {
 		hash     string
 		err      error
 	}{
-		{"compare matching password", password, hash, nil},
-		{"compare wrong password", "wrong horse battery staple", hash, errors.New("compare hash and password failed")},
-		{"compare long unicode password", longPassword, mustHash(t, hasher, longPassword), nil},
-		{"compare with bcrypt hash", password, legacyHash, users.ErrUnsupportedHash},
-		{"compare with empty hash", password, "", users.ErrUnsupportedHash},
-		{"compare with malformed hash", password, corruptedHash, errors.New("malformed Argon2id hash")},
+		{
+			desc:     "compare matching password",
+			password: password,
+			hash:     hash,
+			err:      nil,
+		},
+		{
+			desc:     "compare wrong password",
+			password: "wrong horse battery staple",
+			hash:     hash,
+			err:      errors.New("compare hash and password failed"),
+		},
+		{
+			desc:     "compare long unicode password",
+			password: longPassword,
+			hash:     longHash,
+			err:      nil,
+		},
+		{
+			desc:     "compare with bcrypt hash",
+			password: password,
+			hash:     legacyHash,
+			err:      users.ErrUnsupportedHash,
+		},
+		{
+			desc:     "compare with empty hash",
+			password: password,
+			hash:     "",
+			err:      users.ErrUnsupportedHash,
+		},
+		{
+			desc:     "compare with malformed hash",
+			password: password,
+			hash:     corruptedHash,
+			err:      errors.New("malformed Argon2id hash"),
+		},
 	}
 
 	for _, tc := range cases {
 		err := hasher.Compare(tc.password, tc.hash)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
-}
-
-func mustHash(t *testing.T, hasher users.Hasher, password string) string {
-	hash, err := hasher.Hash(password)
-	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	return hash
 }
 
 func BenchmarkArgon2Compare(b *testing.B) {

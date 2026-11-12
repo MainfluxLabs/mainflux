@@ -660,20 +660,67 @@ func TestChangePassword(t *testing.T) {
 		oldPassword string
 		err         error
 	}{
-		{"valid user change password", userToken, "", newPassword, registerUser.Password, nil},
-		{"valid user change password with wrong password", userToken, "", newPassword, "wrongpassword", errors.ErrInvalidPassword},
-		{"valid user change password invalid token", "", "", newPassword, registerUser.Password, errors.ErrAuthentication},
-
-		{"valid admin change user password", adminToken, registerUser.Email, newPassword, "", nil},
-		{"valid admin change password with wrong email", adminToken, "wrongemail@example.com", newPassword, "", dbutil.ErrNotFound},
-		{"valid admin change password invalid token", "", registerUser.Email, newPassword, "", errors.ErrAuthentication},
-		{"valid admin change user password to common password", adminToken, registerUser.Email, "1q2w3e4r5t6y7u8i", "", errors.ErrPasswordFormat},
+		{
+			desc:        "valid user change password",
+			token:       userToken,
+			email:       "",
+			password:    newPassword,
+			oldPassword: registerUser.Password,
+			err:         nil,
+		},
+		{
+			desc:        "valid user change password with wrong password",
+			token:       userToken,
+			email:       "",
+			password:    newPassword,
+			oldPassword: "wrongpassword",
+			err:         errors.ErrInvalidPassword,
+		},
+		{
+			desc:        "valid user change password invalid token",
+			token:       "",
+			email:       "",
+			password:    newPassword,
+			oldPassword: registerUser.Password,
+			err:         errors.ErrAuthentication,
+		},
+		{
+			desc:        "valid admin change user password",
+			token:       adminToken,
+			email:       registerUser.Email,
+			password:    newPassword,
+			oldPassword: "",
+			err:         nil,
+		},
+		{
+			desc:        "valid admin change password with wrong email",
+			token:       adminToken,
+			email:       "wrongemail@example.com",
+			password:    newPassword,
+			oldPassword: "",
+			err:         dbutil.ErrNotFound,
+		},
+		{
+			desc:        "valid admin change password invalid token",
+			token:       "",
+			email:       registerUser.Email,
+			password:    newPassword,
+			oldPassword: "",
+			err:         errors.ErrAuthentication,
+		},
+		{
+			desc:        "valid admin change user password to common password",
+			token:       adminToken,
+			email:       registerUser.Email,
+			password:    "1q2w3e4r5t6y7u8i",
+			oldPassword: "",
+			err:         errors.ErrPasswordFormat,
+		},
 	}
 
 	for _, tc := range cases {
 		err := svc.ChangePassword(context.Background(), tc.token, tc.email, tc.password, tc.oldPassword)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-
 	}
 }
 
@@ -695,11 +742,31 @@ func TestResetPassword(t *testing.T) {
 		password string
 		err      error
 	}{
-		"valid user reset password ":        {resetToken, newPassword, nil},
-		"reset password with weak password": {resetToken, "register-user-pass", errors.ErrPasswordFormat},
-		"invalid user reset password ":      {"", newPassword, errors.ErrAuthentication},
-		"reset password with login token":   {loginToken, newPassword, errors.ErrAuthentication},
-		"reset password with API token":     {apiToken, newPassword, errors.ErrAuthentication},
+		"valid user reset password ": {
+			token:    resetToken,
+			password: newPassword,
+			err:      nil,
+		},
+		"reset password with weak password": {
+			token:    resetToken,
+			password: "register-user-pass",
+			err:      errors.ErrPasswordFormat,
+		},
+		"invalid user reset password ": {
+			token:    "",
+			password: newPassword,
+			err:      errors.ErrAuthentication,
+		},
+		"reset password with login token": {
+			token:    loginToken,
+			password: newPassword,
+			err:      errors.ErrAuthentication,
+		},
+		"reset password with API token": {
+			token:    apiToken,
+			password: newPassword,
+			err:      errors.ErrAuthentication,
+		},
 	}
 
 	for desc, tc := range cases {
