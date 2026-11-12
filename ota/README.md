@@ -8,17 +8,17 @@ runs the new firmware or fails. Firmware files are stored by the filestore servi
 
 An update describes the firmware and who should install it.
 
-| Field         | Description                                                                 |
-| ------------- | --------------------------------------------------------------------------- |
-| `id`          | Update ID (UUID)                                                            |
-| `group_id`    | Group of the things being updated                                           |
-| `file_name`   | Name of the firmware group file in the filestore service                    |
-| `version`     | Version things must report on success                                       |
-| `file_size`   | Firmware size in bytes                                                      |
-| `checksum`    | Hex-encoded SHA-256 of the firmware, for the thing to verify the download   |
-| `description` | Free text                                                                   |
-| `timeout`     | Seconds without progress after which a thing is marked failed (default 24h, max 7 days)  |
-| `stats`       | Number of the update's things by status                                     |
+| Field         | Description                                                                             |
+| ------------- | --------------------------------------------------------------------------------------- |
+| `id`          | Update ID (UUID)                                                                        |
+| `group_id`    | Group of the things being updated                                                       |
+| `file_name`   | Name of the firmware group file in the filestore service                                |
+| `version`     | Version things must report on success                                                   |
+| `file_size`   | Firmware size in bytes                                                                  |
+| `checksum`    | Hex-encoded SHA-256 of the firmware, for the thing to verify the download               |
+| `description` | Free text                                                                               |
+| `timeout`     | Seconds without progress after which a thing is marked failed (default 24h, max 7 days) |
+| `stats`       | Number of the update's things by status                                                 |
 
 Each thing of an update has its own progress: `status`, `error`, `reported_version` and `updated_at`.
 
