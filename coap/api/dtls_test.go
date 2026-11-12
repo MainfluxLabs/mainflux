@@ -6,6 +6,7 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -330,4 +331,77 @@ func TestDTLSCloseRemovesObservers(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, int32(1), svc.removed.Load(),
 		"expected only the remaining observation to be removed")
+}
+
+// lifecycleServiceMock counts removed observers, and can fail deregistration
+// or finish an observe registration only after the connection has closed.
+type lifecycleServiceMock struct {
+	serviceMock
+	unsubscribeErr error
+	subscribing    chan struct{}
+	removed        atomic.Int32
+}
+
+func (svc *lifecycleServiceMock) Subscribe(_ context.Context, _ domain.ThingKey, _ string,
+	c coap.Client) error {
+	if svc.subscribing != nil {
+		close(svc.subscribing)
+		<-c.Done()
+	}
+	return nil
+}
+
+func (svc *lifecycleServiceMock) Unsubscribe(context.Context, domain.ThingKey, string,
+	string) error {
+	return svc.unsubscribeErr
+}
+
+func (svc *lifecycleServiceMock) RemoveObserver(string, coap.Client) error {
+	svc.removed.Add(1)
+	return nil
+}
+
+func dialDTLS(t *testing.T, ctx context.Context, addr string) *udpclient.Conn {
+	conn, err := dtls.Dial(addr, dtls.NewDTLSClientOptions(
+		piondtls.WithPSK(func([]byte) ([]byte, error) { return api.DerivePSK(thingKey), nil }),
+		piondtls.WithPSKIdentityHint([]byte(thingID)),
+		piondtls.WithCipherSuites(piondtls.TLS_PSK_WITH_AES_128_CCM_8),
+	), options.WithContext(ctx))
+	require.NoError(t, err)
+	return conn
+}
+
+func TestDTLSFailedCancelKeepsObservation(t *testing.T) {
+	svc := &lifecycleServiceMock{unsubscribeErr: errors.New("things service unavailable")}
+	addr := startDTLSServer(t, svc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn := dialDTLS(t, ctx, addr)
+
+	observation, err := conn.Observe(ctx, commandsPath, func(*pool.Message) {})
+	require.NoError(t, err, "observe commands")
+	_ = observation.Cancel(ctx)
+
+	require.NoError(t, conn.Close())
+	removed := func() bool { return svc.removed.Load() > 0 }
+	assert.Eventually(t, removed, 3*time.Second, 10*time.Millisecond,
+		"expected the observation to end with the connection after a failed cancel")
+}
+
+func TestDTLSCloseDuringObserve(t *testing.T) {
+	svc := &lifecycleServiceMock{subscribing: make(chan struct{})}
+	addr := startDTLSServer(t, svc)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn := dialDTLS(t, ctx, addr)
+
+	go func() { _, _ = conn.Observe(ctx, commandsPath, func(*pool.Message) {}) }()
+	<-svc.subscribing
+
+	require.NoError(t, conn.Close())
+	removed := func() bool { return svc.removed.Load() > 0 }
+	assert.Eventually(t, removed, 3*time.Second, 10*time.Millisecond,
+		"expected an observation registered during close to end")
 }

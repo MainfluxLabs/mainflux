@@ -200,11 +200,20 @@ func handleGet(m *mux.Message, c mux.Conn, key domain.ThingKey) (bool, error) {
 			return false, err
 		}
 		observersOf(c).add(subtopic, observer)
+		// The connection may have closed during Subscribe, after its close callbacks ran.
+		if c.Context().Err() != nil {
+			_ = service.RemoveObserver(subtopic, observer)
+			return false, nil
+		}
 		return true, nil
 	}
 
-	observersOf(c).remove(subtopic, m.Token().String())
-	return false, service.Unsubscribe(context.Background(), key, subtopic, m.Token().String())
+	token := m.Token().String()
+	if err := service.Unsubscribe(context.Background(), key, subtopic, token); err != nil {
+		return false, err
+	}
+	observersOf(c).remove(subtopic, token)
+	return false, nil
 }
 
 func buildMessage(subtopic string, payload []byte) protomfx.Message {
