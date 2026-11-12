@@ -46,7 +46,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "ota_1",
+				Id: "ota_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS updates (
 						id          UUID PRIMARY KEY,
