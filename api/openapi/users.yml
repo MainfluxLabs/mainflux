@@ -448,7 +448,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/UserId"
       responses:
-        '200':
+        '204':
           description: User enabled.
         '400':
           description: Failed due to malformed JSON.
@@ -458,6 +458,8 @@ paths:
           description: Missing or invalid access token provided.
         '403':
           description: Failed to perform authorization over the entity.
+        '409':
+          description: The user is already enabled.
         '500':
          $ref: "#/components/responses/ServiceError"
   /users/{userId}/disable:
@@ -470,7 +472,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/UserId"
       responses:
-        '200':
+        '204':
           description: User disabled.
         '400':
           description: Failed due to malformed JSON.
@@ -480,6 +482,8 @@ paths:
           description: Missing or invalid access token provided.
         '403':
           description: Failed to perform authorization over the entity.
+        '409':
+          description: The user is already disabled.
         '500':
          $ref: "#/components/responses/ServiceError"
   /users/{userId}/admin:
