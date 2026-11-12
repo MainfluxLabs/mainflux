@@ -29,27 +29,28 @@ import (
 )
 
 const (
-	wrong   = "wrong-value"
-	userNum = 101
+	wrong       = "wrong-value"
+	newPassword = "fresh-river-stone"
+	userNum     = 101
 
 	inviteDuration     = 7 * 24 * time.Hour
 	inviteRedirectPath = "/register/invite"
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "brave-ocean-lantern"}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: password}
 	noPasswordAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
-	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "brave-ocean-lantern"}
-	selfRegister    = users.User{Email: "self-register@example.com", Password: "brave-ocean-lantern"}
-	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "brave-ocean-lantern"}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "brave-ocean-lantern"}
+	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: password}
+	selfRegister    = users.User{Email: "self-register@example.com", Password: password}
+	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: password}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: password}
 	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "brave-ocean-lantern"}
+	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: password}
 	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "brave-ocean-lantern"},
+		User:      users.User{Email: "example@verify.com", Password: password},
 		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fb",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -166,7 +167,7 @@ func TestRegisterAdmin(t *testing.T) {
 		"create admin with valid credentials": {
 			user: users.User{
 				Email:    "new-admin@example.com",
-				Password: "brave-ocean-lantern",
+				Password: password,
 			},
 			err: nil,
 		},
@@ -193,13 +194,13 @@ func TestRegisterAdmin(t *testing.T) {
 		"create admin with invalid e-mail": {
 			user: users.User{
 				Email:    wrong,
-				Password: "brave-ocean-lantern",
+				Password: password,
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"create admin with empty e-mail": {
 			user: users.User{
-				Password: "brave-ocean-lantern",
+				Password: password,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -312,8 +313,9 @@ func TestLogin(t *testing.T) {
 
 func TestLoginPasswordForms(t *testing.T) {
 	composed := "pässwörd-ünïcödé"
+	legacyPassword := "12345678"
 	decomposed := norm.NFD.String(composed)
-	legacyUser := users.User{Email: "legacy@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: usmocks.LegacyHashPrefix + "12345678"}
+	legacyUser := users.User{Email: "legacy@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: usmocks.LegacyHashPrefix + legacyPassword}
 	legacyDecomposedUser := users.User{Email: "legacy-nfd@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: usmocks.LegacyHashPrefix + decomposed}
 	oauthUser := users.User{Email: "oauth-only@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f99"}
 	unicodeUser := users.User{Email: "unicode@example.com", Password: composed}
@@ -345,14 +347,14 @@ func TestLoginPasswordForms(t *testing.T) {
 		},
 		{
 			desc: "login with legacy hash of password that does not meet the policy",
-			user: users.User{Email: legacyUser.Email, Password: "12345678"},
-			hash: "12345678",
+			user: users.User{Email: legacyUser.Email, Password: legacyPassword},
+			hash: legacyPassword,
 			err:  nil,
 		},
 		{
 			desc: "login after legacy hash was replaced",
-			user: users.User{Email: legacyUser.Email, Password: "12345678"},
-			hash: "12345678",
+			user: users.User{Email: legacyUser.Email, Password: legacyPassword},
+			hash: legacyPassword,
 			err:  nil,
 		},
 		{
@@ -370,7 +372,7 @@ func TestLoginPasswordForms(t *testing.T) {
 		{
 			desc: "login with empty password",
 			user: users.User{Email: legacyUser.Email},
-			hash: "12345678",
+			hash: legacyPassword,
 			err:  errors.ErrAuthentication,
 		},
 		{
@@ -518,7 +520,7 @@ func TestListUsers(t *testing.T) {
 		email := fmt.Sprintf("TestListUsers%d@example.com", i)
 		user := users.User{
 			Email:    email,
-			Password: "brave-ocean-lantern",
+			Password: password,
 		}
 		_, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -658,13 +660,13 @@ func TestChangePassword(t *testing.T) {
 		oldPassword string
 		err         error
 	}{
-		{"valid user change password", userToken, "", "fresh-river-stone", registerUser.Password, nil},
-		{"valid user change password with wrong password", userToken, "", "fresh-river-stone", "wrongpassword", errors.ErrInvalidPassword},
-		{"valid user change password invalid token", "", "", "fresh-river-stone", registerUser.Password, errors.ErrAuthentication},
+		{"valid user change password", userToken, "", newPassword, registerUser.Password, nil},
+		{"valid user change password with wrong password", userToken, "", newPassword, "wrongpassword", errors.ErrInvalidPassword},
+		{"valid user change password invalid token", "", "", newPassword, registerUser.Password, errors.ErrAuthentication},
 
-		{"valid admin change user password", adminToken, registerUser.Email, "fresh-river-stone", "", nil},
-		{"valid admin change password with wrong email", adminToken, "wrongemail@example.com", "fresh-river-stone", "", dbutil.ErrNotFound},
-		{"valid admin change password invalid token", "", registerUser.Email, "fresh-river-stone", "", errors.ErrAuthentication},
+		{"valid admin change user password", adminToken, registerUser.Email, newPassword, "", nil},
+		{"valid admin change password with wrong email", adminToken, "wrongemail@example.com", newPassword, "", dbutil.ErrNotFound},
+		{"valid admin change password invalid token", "", registerUser.Email, newPassword, "", errors.ErrAuthentication},
 		{"valid admin change user password to common password", adminToken, registerUser.Email, "1q2w3e4r5t6y7u8i", "", errors.ErrPasswordFormat},
 	}
 
@@ -693,11 +695,11 @@ func TestResetPassword(t *testing.T) {
 		password string
 		err      error
 	}{
-		"valid user reset password ":        {resetToken, "fresh-river-stone", nil},
+		"valid user reset password ":        {resetToken, newPassword, nil},
 		"reset password with weak password": {resetToken, "register-user-pass", errors.ErrPasswordFormat},
-		"invalid user reset password ":      {"", "fresh-river-stone", errors.ErrAuthentication},
-		"reset password with login token":   {loginToken, "fresh-river-stone", errors.ErrAuthentication},
-		"reset password with API token":     {apiToken, "fresh-river-stone", errors.ErrAuthentication},
+		"invalid user reset password ":      {"", newPassword, errors.ErrAuthentication},
+		"reset password with login token":   {loginToken, newPassword, errors.ErrAuthentication},
+		"reset password with API token":     {apiToken, newPassword, errors.ErrAuthentication},
 	}
 
 	for desc, tc := range cases {

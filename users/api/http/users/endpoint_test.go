@@ -83,7 +83,7 @@ var (
 	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "brave-ocean-lantern"},
+		User:      users.User{Email: "example@verify.com", Password: validPass},
 		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -475,7 +475,7 @@ func TestListUsers(t *testing.T) {
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "brave-ocean-lantern",
+			Password: validPass,
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)
@@ -667,7 +667,7 @@ func TestSearchUsers(t *testing.T) {
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "brave-ocean-lantern",
+			Password: validPass,
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)

@@ -390,7 +390,7 @@ func TestArgon2idHashStorage(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewUserRepo(dbMiddleware)
 
-	hash, err := argon2.New().Hash("correct horse battery staple")
+	hash, err := argon2.New().Hash(password)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	updatedHash, err := argon2.New().Hash("another long passphrase")
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

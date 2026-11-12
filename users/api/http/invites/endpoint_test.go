@@ -45,7 +45,7 @@ var (
 	idProvider = uuid.New()
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "brave-ocean-lantern"},
+		User:      users.User{Email: "example@verify.com", Password: validPass},
 		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),

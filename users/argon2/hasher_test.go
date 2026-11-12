@@ -42,6 +42,7 @@ func TestCompare(t *testing.T) {
 
 	parts := strings.Split(hash, "$")
 	corruptedHash := strings.Join(append(parts[:5], "not-base64!"), "$")
+	longPassword := strings.Repeat("čć", 64)
 
 	cases := []struct {
 		desc     string
@@ -51,7 +52,7 @@ func TestCompare(t *testing.T) {
 	}{
 		{"compare matching password", password, hash, nil},
 		{"compare wrong password", "wrong horse battery staple", hash, errors.New("compare hash and password failed")},
-		{"compare long unicode password", strings.Repeat("čć", 64), mustHash(t, hasher, strings.Repeat("čć", 64)), nil},
+		{"compare long unicode password", longPassword, mustHash(t, hasher, longPassword), nil},
 		{"compare with bcrypt hash", password, legacyHash, users.ErrUnsupportedHash},
 		{"compare with empty hash", password, "", users.ErrUnsupportedHash},
 		{"compare with malformed hash", password, corruptedHash, errors.New("malformed Argon2id hash")},

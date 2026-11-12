@@ -160,7 +160,7 @@ func TestVerificationArgon2idHashStorage(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewEmailVerificationRepo(dbMiddleware)
 
-	hash, err := argon2.New().Hash("correct horse battery staple")
+	hash, err := argon2.New().Hash(password)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	token, err := idProvider.ID()

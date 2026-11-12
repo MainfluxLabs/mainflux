@@ -73,7 +73,7 @@ func newUserServer(svc users.Service) *httptest.Server {
 	return httptest.NewServer(mux)
 }
 
-/*func TestCreateUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	svc := newUserService()
 	ts := newUserServer(svc)
 	defer ts.Close()
@@ -109,13 +109,19 @@ func newUserServer(svc users.Service) *httptest.Server {
 		},
 		{
 			desc:  "create user with invalid email address",
-			user:  sdk.User{Email: invalidEmail, Password: "brave-ocean-lantern"},
+			user:  sdk.User{Email: invalidEmail, Password: validPass},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
 			desc:  "create user with empty password",
 			user:  sdk.User{Email: registerUser, Password: ""},
+			token: token,
+			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
+		},
+		{
+			desc:  "create user with password that is too short",
+			user:  sdk.User{Email: registerUser, Password: "short"},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
@@ -127,7 +133,7 @@ func newUserServer(svc users.Service) *httptest.Server {
 		},
 		{
 			desc:  "create user without email",
-			user:  sdk.User{Password: "brave-ocean-lantern"},
+			user:  sdk.User{Password: validPass},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
@@ -140,10 +146,10 @@ func newUserServer(svc users.Service) *httptest.Server {
 	}
 
 	for _, tc := range cases {
-		_, err := mainfluxSDK.CreateUser(tc.token, tc.user)
+		_, err := mainfluxSDK.CreateUser(tc.user, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 	}
-}*/
+}
 
 func TestRegisterUser(t *testing.T) {
 	svc := newUserService()
@@ -180,7 +186,7 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			desc: "register user with invalid email address",
-			user: sdk.User{Email: invalidEmail, Password: "brave-ocean-lantern"},
+			user: sdk.User{Email: invalidEmail, Password: validPass},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
@@ -195,7 +201,7 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			desc: "register user without email",
-			user: sdk.User{Password: "brave-ocean-lantern"},
+			user: sdk.User{Password: validPass},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
@@ -241,13 +247,13 @@ func TestCreateToken(t *testing.T) {
 		},
 		{
 			desc:  "create token for non existing user",
-			user:  sdk.User{Email: registerUser, Password: "brave-ocean-lantern"},
+			user:  sdk.User{Email: registerUser, Password: validPass},
 			token: "",
 			err:   createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 		},
 		{
 			desc:  "create user with empty email",
-			user:  sdk.User{Email: "", Password: "brave-ocean-lantern"},
+			user:  sdk.User{Email: "", Password: validPass},
 			token: "",
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
