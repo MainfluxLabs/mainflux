@@ -708,6 +708,9 @@ func TestImpersonate(t *testing.T) {
 	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
 
+	impersonatedToken, err := svc.Impersonate(context.Background(), tokenAdmin, user.ID)
+	require.Nil(t, err, fmt.Sprintf("Impersonating user expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		token string
@@ -720,6 +723,7 @@ func TestImpersonate(t *testing.T) {
 		{"impersonate self as root admin", tokenAdmin, admin.ID, errors.ErrAuthorization},
 		{"impersonate non-existing user as root admin", tokenAdmin, wrong, dbutil.ErrNotFound},
 		{"impersonate disabled user as root admin", tokenAdmin, registerUser.ID, errors.ErrAuthorization},
+		{"impersonate user from an impersonated session", impersonatedToken, unauthUser.ID, errors.ErrAuthorization},
 	}
 
 	for _, tc := range cases {

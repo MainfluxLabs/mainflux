@@ -223,6 +223,15 @@ func (svc service) LogoutAll(ctx context.Context, token string) error {
 		return errors.Wrap(errLogout, err)
 	}
 
+	// An impersonated session ends only itself, so the impersonated user stays signed in.
+	if session.ImpersonatorID != "" {
+		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
+			return errors.Wrap(errLogout, err)
+		}
+
+		return nil
+	}
+
 	if err := svc.sessions.RevokeByUser(ctx, session.UserID, getTimestamp()); err != nil {
 		return errors.Wrap(errLogout, err)
 	}

@@ -443,6 +443,21 @@ func TestLogoutAll(t *testing.T) {
 		_, err = svc.RefreshToken(context.Background(), token)
 		assert.NotNil(t, err, "expected every session to be unextendable")
 	}
+
+	_, own, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	impersonator := &domain.Identity{ID: ownerID, Email: ownerEmail}
+	_, impersonated, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	require.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
+	err = svc.LogoutAll(context.Background(), impersonated)
+	assert.Nil(t, err, fmt.Sprintf("LogoutAll from an impersonated session expected to succeed: %s", err))
+
+	_, err = svc.Identify(context.Background(), impersonated)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("the impersonated token expected to be rejected, got %s", err))
+
+	_, err = svc.Identify(context.Background(), own)
+	assert.Nil(t, err, fmt.Sprintf("the impersonated user's own session expected to stay alive: %s", err))
 }
 
 // RevokeSessions is the path another service takes after a credential
@@ -455,11 +470,14 @@ func TestRevokeSessions(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	impersonator := &domain.Identity{ID: id, Email: email}
+	_, impersonated, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail, Impersonator: impersonator})
+	require.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
 
 	err = svc.RevokeSessions(context.Background(), id)
 	assert.Nil(t, err, fmt.Sprintf("RevokeSessions expected to succeed: %s", err))
 
-	for _, token := range []string{first, second} {
+	for _, token := range []string{first, second, impersonated} {
 		_, err = svc.Identify(context.Background(), token)
 		assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("a revoked token expected to be rejected, got %s", err))
 

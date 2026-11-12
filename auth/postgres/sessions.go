@@ -112,7 +112,8 @@ func (sr sessionRepo) RevokeFamily(ctx context.Context, familyID string, at time
 }
 
 func (sr sessionRepo) RevokeByUser(ctx context.Context, userID string, at time.Time) error {
-	q := `UPDATE sessions SET revoked_at = :revoked_at WHERE user_id = :user_id AND revoked_at IS NULL`
+	q := `UPDATE sessions SET revoked_at = :revoked_at
+	      WHERE (user_id = :user_id OR impersonator_id = :user_id) AND revoked_at IS NULL`
 	return sr.revoke(ctx, q, dbSession{UserID: userID, RevokedAt: sql.NullTime{Time: at, Valid: true}})
 }
 

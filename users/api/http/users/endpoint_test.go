@@ -466,6 +466,14 @@ func TestImpersonate(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
+	disabledUserID, err := svc.Register(context.Background(), admin.Email, newUser)
+	require.Nil(t, err, fmt.Sprintf("registering user expected to succeed: %s", err))
+	err = svc.DisableUser(context.Background(), admin.Email, disabledUserID)
+	require.Nil(t, err, fmt.Sprintf("disabling user expected to succeed: %s", err))
+
+	impersonatedToken, err := svc.Impersonate(context.Background(), admin.Email, user.ID)
+	require.Nil(t, err, fmt.Sprintf("impersonating user expected to succeed: %s", err))
+
 	cases := []struct {
 		desc   string
 		token  string
@@ -476,6 +484,9 @@ func TestImpersonate(t *testing.T) {
 		{"impersonate user as non-root user", user.Email, admin.ID, http.StatusForbidden},
 		{"impersonate user without token", emptyValue, user.ID, http.StatusUnauthorized},
 		{"impersonate non-existing user as root admin", admin.Email, wrongValue, http.StatusNotFound},
+		{"impersonate self as root admin", admin.Email, admin.ID, http.StatusForbidden},
+		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusForbidden},
+		{"impersonate user from an impersonated session", impersonatedToken, user.ID, http.StatusForbidden},
 	}
 
 	for _, tc := range cases {

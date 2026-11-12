@@ -940,13 +940,8 @@ func (svc usersService) Impersonate(ctx context.Context, token, id string) (stri
 		return "", errors.ErrAuthorization
 	}
 
-	adminRole, err := svc.auth.RetrieveRole(ctx, admin.id)
-	if err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return "", err
-	}
-
-	if adminRole != domain.RoleRootAdmin {
-		return "", errors.ErrAuthorization
 	}
 
 	target, err := svc.users.RetrieveByID(ctx, id)

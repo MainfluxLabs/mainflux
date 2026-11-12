@@ -168,7 +168,8 @@ type AuthClient interface {
 	// RefreshToken issues a new token to the owner of the provided still-valid one.
 	RefreshToken(ctx context.Context, token string) (string, error)
 
-	// RevokeSessions ends every session belonging to the identified user.
+	// RevokeSessions ends every session belonging to the identified user,
+	// including the sessions they impersonate.
 	RevokeSessions(ctx context.Context, id string) error
 
 	// Identify validates the token and returns the identity.

@@ -252,19 +252,21 @@ func TestSessionRevokeByUser(t *testing.T) {
 	first := newSession(t)
 	second := newSession(t)
 	second.UserID = first.UserID
+	impersonated := newSession(t)
+	impersonated.ImpersonatorID = first.UserID
 	other := newSession(t)
 
-	for _, s := range []auth.Session{first, second, other} {
+	for _, s := range []auth.Session{first, second, impersonated, other} {
 		require.Nil(t, repo.Save(context.Background(), s), "saving session expected to succeed")
 	}
 
 	at := time.Now().UTC().Round(time.Millisecond)
 	require.Nil(t, repo.RevokeByUser(context.Background(), first.UserID, at), "revoking by user expected to succeed")
 
-	for _, jti := range []string{first.JTI, second.JTI} {
+	for _, jti := range []string{first.JTI, second.JTI, impersonated.JTI} {
 		retrieved, err := repo.Retrieve(context.Background(), jti)
 		require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
-		assert.True(t, retrieved.Revoked(), "expected every session of the user to be revoked")
+		assert.True(t, retrieved.Revoked(), "expected every session of the user and every session they impersonate to be revoked")
 	}
 
 	retrieved, err := repo.Retrieve(context.Background(), other.JTI)
