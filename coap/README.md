@@ -19,7 +19,6 @@ default values.
 | `MF_COAP_ADAPTER_LOG_LEVEL`         | Service log level                                                          | error                 |
 | `MF_COAP_ADAPTER_CLIENT_TLS`        | Flag that indicates if TLS should be turned on                             | false                 |
 | `MF_COAP_ADAPTER_CA_CERTS`          | Path to trusted CAs in PEM format                                          |                       |
-| `MF_COAP_ADAPTER_PING_PERIOD`       | Hours between 1 and 24 to ping client with ACK message                     | 12                    |
 | `MF_JAEGER_URL`                     | Jaeger server URL for distributed tracing. Leave empty to disable tracing. |                       |
 | `MF_THINGS_AUTH_GRPC_URL`           | Things service Auth gRPC URL                                               | localhost:8183        |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`       | Things service Auth gRPC request timeout in seconds                        | 1s                    |
@@ -52,7 +51,6 @@ MF_COAP_ADAPTER_DTLS_IDLE_TIMEOUT=[Time after which an idle DTLS session is clos
 MF_COAP_ADAPTER_LOG_LEVEL=[Service log level] \
 MF_COAP_ADAPTER_CLIENT_TLS=[Flag that indicates if TLS should be turned on] \
 MF_COAP_ADAPTER_CA_CERTS=[Path to trusted CAs in PEM format] \
-MF_COAP_ADAPTER_PING_PERIOD: [Hours between 1 and 24 to ping client with ACK message] \
 MF_JAEGER_URL=[Jaeger server URL] \
 MF_THINGS_AUTH_GRPC_URL=[Things service Auth gRPC URL] \
 MF_THINGS_AUTH_GRPC_TIMEOUT=[Things service Auth gRPC request timeout in seconds] \
