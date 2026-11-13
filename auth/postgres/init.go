@@ -179,8 +179,10 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "auth_08",
 				Up: []string{
 					`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS impersonator_id UUID`,
+					`CREATE INDEX IF NOT EXISTS sessions_impersonator_id_idx ON sessions (impersonator_id) WHERE impersonator_id IS NOT NULL`,
 				},
 				Down: []string{
+					`DROP INDEX IF EXISTS sessions_impersonator_id_idx`,
 					`ALTER TABLE sessions DROP COLUMN IF EXISTS impersonator_id`,
 				},
 			},
