@@ -114,6 +114,14 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE users ALTER COLUMN password SET NOT NULL`,
 				},
 			},
+			{
+				Id: "users_05",
+				Up: []string{
+					`ALTER TABLE users ALTER COLUMN password TYPE TEXT`,
+					`ALTER TABLE verifications ALTER COLUMN password TYPE TEXT`,
+				},
+				Down: []string{},
+			},
 		},
 	}
 

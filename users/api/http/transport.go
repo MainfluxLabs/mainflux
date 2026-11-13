@@ -5,7 +5,6 @@ package http
 
 import (
 	"net/http"
-	"regexp"
 
 	"github.com/MainfluxLabs/mainflux"
 	log "github.com/MainfluxLabs/mainflux/logger"
@@ -21,10 +20,10 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc svcusers.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger log.Logger, passwordRegex *regexp.Regexp) http.Handler {
+func MakeHandler(svc svcusers.Service, ac domain.AuthClient, tracer opentracing.Tracer, logger log.Logger) http.Handler {
 	mux := bone.New()
-	mux = users.MakeHandler(svc, ac, mux, tracer, logger, passwordRegex)
-	mux = invites.MakeHandler(svc, ac, mux, tracer, logger, passwordRegex)
+	mux = users.MakeHandler(svc, ac, mux, tracer, logger)
+	mux = invites.MakeHandler(svc, ac, mux, tracer, logger)
 	mux = backup.MakeHandler(svc, ac, mux, tracer, logger)
 	mux.GetFunc("/health", mainflux.Health("users"))
 	mux.Handle("/metrics", promhttp.Handler())

@@ -4,8 +4,6 @@
 package invites
 
 import (
-	"regexp"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -19,10 +17,9 @@ const (
 )
 
 type registerByInviteReq struct {
-	User          users.User `json:"user"`
-	RedirectPath  string     `json:"redirect_path"`
-	inviteID      string
-	passwordRegex *regexp.Regexp
+	User         users.User `json:"user"`
+	RedirectPath string     `json:"redirect_path"`
+	inviteID     string
 }
 
 func (req registerByInviteReq) validate() error {
@@ -30,8 +27,12 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	if err := req.User.Validate(req.passwordRegex); err != nil {
+	if err := req.User.Validate(); err != nil {
 		return err
+	}
+
+	if req.User.Password == "" {
+		return apiutil.ErrMissingPass
 	}
 
 	if req.RedirectPath == "" {
