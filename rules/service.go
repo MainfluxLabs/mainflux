@@ -153,6 +153,23 @@ func (rs *rulesService) CreateRules(ctx context.Context, token, groupID string, 
 		return []Rule{}, err
 	}
 
+	var thingIDs []string
+	for _, rule := range rules {
+		thingIDs = append(thingIDs, rule.Input.ThingIDs...)
+	}
+
+	if len(thingIDs) > 0 {
+		ar := domain.UserAccessThingsReq{
+			Token:   token,
+			IDs:     thingIDs,
+			GroupID: groupID,
+			Action:  domain.GroupEditor,
+		}
+		if err := rs.things.CanUserAccessThings(ctx, ar); err != nil {
+			return []Rule{}, err
+		}
+	}
+
 	for i := range rules {
 		rules[i].GroupID = groupID
 

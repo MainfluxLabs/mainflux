@@ -26,6 +26,7 @@ const (
 	token      = "admin@example.com"
 	wrongValue = "wrong-value"
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+	otherThing = "6384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
 	subject    = "things." + thingID + ".messages"
 )
@@ -40,8 +41,9 @@ func newServiceWithPub(pub rules.Publisher) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
-			token:   {ID: thingID, GroupID: groupID},
-			thingID: {ID: thingID, GroupID: groupID},
+			token:      {ID: thingID, GroupID: groupID},
+			thingID:    {ID: thingID, GroupID: groupID},
+			otherThing: {ID: otherThing, GroupID: wrongValue},
 		},
 		map[string]things.Group{
 			token: {ID: groupID},
@@ -296,6 +298,12 @@ func TestCreateRules(t *testing.T) {
 		Actions:  []rules.Action{{Type: rules.ActionTypeAlarm}},
 	}
 
+	thingRule := rule
+	thingRule.Input = rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}}
+
+	otherThingRule := rule
+	otherThingRule.Input = rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{otherThing}}
+
 	cases := []struct {
 		desc    string
 		token   string
@@ -303,6 +311,20 @@ func TestCreateRules(t *testing.T) {
 		rules   []rules.Rule
 		err     error
 	}{
+		{
+			desc:    "create rules with thing of the group",
+			token:   token,
+			groupID: groupID,
+			rules:   []rules.Rule{thingRule},
+			err:     nil,
+		},
+		{
+			desc:    "create rules with thing of another group",
+			token:   token,
+			groupID: groupID,
+			rules:   []rules.Rule{otherThingRule},
+			err:     errors.ErrAuthorization,
+		},
 		{
 			desc:    "create rules with valid token",
 			token:   token,
@@ -728,4 +750,41 @@ func TestUnassignRulesFromThing(t *testing.T) {
 		err := svc.UnassignRulesFromThing(context.Background(), tc.thingID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
+}
+
+func TestConsumeMessageScriptSandbox(t *testing.T) {
+	svc := newService()
+
+	script := rules.LuaScript{
+		Name:   "sandbox",
+		Script: "mfx.log(type(dofile)..' '..type(loadfile)..' '..type(load)) return true",
+	}
+	scripts, err := svc.CreateScripts(context.Background(), token, groupID, script)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	rule := rules.Rule{
+		Name:       "sandbox-rule",
+		Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
+		Conditions: []rules.Condition{{Type: rules.ConditionTypeScript, ScriptID: scripts[0].ID}},
+		Actions:    []rules.Action{{Type: rules.ActionTypeAlarm, Level: 1}},
+	}
+	_, err = svc.CreateRules(context.Background(), token, groupID, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	msg := protomfx.Message{
+		ThingId:     thingID,
+		Records:     toRecords(t, map[string]any{"temperature": float64(30)}),
+		ContentType: "application/json",
+	}
+	err = svc.ConsumeMessage(subject, msg)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	pm := rules.PageMetadata{Limit: 10}
+	page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	require.Len(t, page.Runs, 1)
+
+	logs := page.Runs[0].Logs
+	desc := fmt.Sprintf("expected file and chunk loaders to be unset got %v\n", logs)
+	assert.Equal(t, []string{"nil nil nil"}, logs, desc)
 }
