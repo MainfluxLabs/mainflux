@@ -466,7 +466,9 @@ paths:
     post:
       summary: Disables a user account
       description: |
-        Disables a user account for a given user ID. A user with a platform role cannot be disabled.
+        Disables a user account for a given user ID and revokes all sessions and API keys of
+        the user. The API keys are deleted and are not restored when the user is enabled again.
+        A user with a platform role cannot be disabled.
       tags:
         - users
       parameters:

@@ -28,6 +28,7 @@ type grpcClient struct {
 	issue                               endpoint.Endpoint
 	refresh                             endpoint.Endpoint
 	revokeSessions                      endpoint.Endpoint
+	revokeAPIKeys                       endpoint.Endpoint
 	identify                            endpoint.Endpoint
 	identifyRecovery                    endpoint.Endpoint
 	authorize                           endpoint.Endpoint
@@ -62,6 +63,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			svcName,
 			"RevokeSessions",
 			encodeRevokeSessionsRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
+		revokeAPIKeys: kitot.TraceClient(tracer, "revoke_api_keys")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RevokeAPIKeys",
+			encodeRevokeAPIKeysRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
@@ -258,6 +267,19 @@ func (client grpcClient) RevokeSessions(ctx context.Context, id string) error {
 	return er.err
 }
 
+func (client grpcClient) RevokeAPIKeys(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.revokeAPIKeys(ctx, revokeAPIKeysReq{id: id})
+	if err != nil {
+		return err
+	}
+
+	er := res.(emptyRes)
+	return er.err
+}
+
 func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(refreshReq)
 	return &protomfx.Token{Value: req.token}, nil
@@ -266,6 +288,11 @@ func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(revokeSessionsReq)
 	return &protomfx.RevokeSessionsReq{Id: req.id}, nil
+}
+
+func encodeRevokeAPIKeysRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(revokeAPIKeysReq)
+	return &protomfx.RevokeAPIKeysReq{Id: req.id}, nil
 }
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {

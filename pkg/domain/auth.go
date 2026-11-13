@@ -172,6 +172,9 @@ type AuthClient interface {
 	// including the sessions they impersonate.
 	RevokeSessions(ctx context.Context, id string) error
 
+	// RevokeAPIKeys removes every API key issued by the identified user.
+	RevokeAPIKeys(ctx context.Context, id string) error
+
 	// Identify validates the token and returns the identity.
 	Identify(ctx context.Context, token string) (Identity, error)
 

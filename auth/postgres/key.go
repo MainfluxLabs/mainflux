@@ -71,6 +71,19 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 	return nil
 }
 
+func (kr repo) RemoveAPIKeys(ctx context.Context, issuerID string) error {
+	q := `DELETE FROM keys WHERE issuer_id = :issuer_id AND type = :type`
+	key := dbKey{
+		IssuerID: issuerID,
+		Type:     auth.APIKey,
+	}
+	if _, err := kr.db.NamedExecContext(ctx, q, key); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
 func (kr repo) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order, auth.KeyOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)

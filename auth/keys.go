@@ -66,6 +66,9 @@ type Keys interface {
 	// ListAPIKeys retrieves API keys.
 	ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error)
 
+	// RevokeAPIKeys removes every API key issued by the identified user.
+	RevokeAPIKeys(ctx context.Context, userID string) error
+
 	// IdentifyRecovery validates a password recovery token and returns
 	// the identity it was issued for. Any other token type is rejected.
 	IdentifyRecovery(ctx context.Context, token string) (Identity, error)
@@ -85,6 +88,9 @@ type KeyRepository interface {
 
 	// RetrieveAPIKeys retrieves all API Keys with pagination.
 	RetrieveAPIKeys(ctx context.Context, issuerID string, pm PageMetadata) (KeysPage, error)
+
+	// RemoveAPIKeys removes all API Keys issued by the provided issuer.
+	RemoveAPIKeys(ctx context.Context, issuerID string) error
 }
 
 func (svc service) Issue(ctx context.Context, token string, key Key) (Key, string, error) {
@@ -320,6 +326,18 @@ func (svc service) Revoke(ctx context.Context, token, id string) error {
 	if err := svc.keys.Remove(ctx, issuerID, id); err != nil {
 		return errors.Wrap(errRevoke, err)
 	}
+	return nil
+}
+
+func (svc service) RevokeAPIKeys(ctx context.Context, userID string) error {
+	if userID == "" {
+		return errors.Wrap(errRevoke, apiutil.ErrMissingUserID)
+	}
+
+	if err := svc.keys.RemoveAPIKeys(ctx, userID); err != nil {
+		return errors.Wrap(errRevoke, err)
+	}
+
 	return nil
 }
 

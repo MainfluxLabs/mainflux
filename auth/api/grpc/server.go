@@ -25,6 +25,7 @@ type grpcServer struct {
 	issue                               kitgrpc.Handler
 	refresh                             kitgrpc.Handler
 	revokeSessions                      kitgrpc.Handler
+	revokeAPIKeys                       kitgrpc.Handler
 	identify                            kitgrpc.Handler
 	identifyRecovery                    kitgrpc.Handler
 	authorize                           kitgrpc.Handler
@@ -58,6 +59,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 		revokeSessions: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "revoke_sessions")(revokeSessionsEndpoint(svc)),
 			decodeRevokeSessionsRequest,
+			encodeEmptyResponse,
+		),
+		revokeAPIKeys: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "revoke_api_keys")(revokeAPIKeysEndpoint(svc)),
+			decodeRevokeAPIKeysRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -156,6 +162,14 @@ func (s *grpcServer) Refresh(ctx context.Context, token *protomfx.Token) (*proto
 
 func (s *grpcServer) RevokeSessions(ctx context.Context, req *protomfx.RevokeSessionsReq) (*emptypb.Empty, error) {
 	_, res, err := s.revokeSessions.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*emptypb.Empty), nil
+}
+
+func (s *grpcServer) RevokeAPIKeys(ctx context.Context, req *protomfx.RevokeAPIKeysReq) (*emptypb.Empty, error) {
+	_, res, err := s.revokeAPIKeys.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -352,6 +366,11 @@ func decodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.RevokeSessionsReq)
 	return revokeSessionsReq{id: req.GetId()}, nil
+}
+
+func decodeRevokeAPIKeysRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RevokeAPIKeysReq)
+	return revokeAPIKeysReq{id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {

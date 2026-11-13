@@ -19,6 +19,7 @@ import (
 const (
 	recoveryTokenPrefix     = "recovery-"
 	impersonatedTokenPrefix = "impersonated-"
+	apiKeyTokenPrefix       = "api-key-"
 )
 
 var _ domain.AuthClient = (*authServiceMock)(nil)
@@ -29,6 +30,7 @@ type authServiceMock struct {
 	usersByEmail  map[string]users.User
 	orgs          map[string]auth.Org
 	impersonators map[string]domain.Identity
+	apiKeys       map[string]users.User
 }
 
 // NewAuthService creates mock of auth service client.
@@ -64,11 +66,16 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 		usersByEmail:  usersByEmail,
 		orgs:          orgs,
 		impersonators: make(map[string]domain.Identity),
+		apiKeys:       make(map[string]users.User),
 	}
 }
 
 func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Identity, error) {
 	if u, ok := svc.usersByEmail[token]; ok {
+		return domain.Identity{ID: u.ID, Email: u.Email}, nil
+	}
+
+	if u, ok := svc.apiKeys[token]; ok {
 		return domain.Identity{ID: u.ID, Email: u.Email}, nil
 	}
 
@@ -102,6 +109,10 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 		switch keyType {
 		case domain.RecoveryKey:
 			return recoveryTokenPrefix + u.Email, nil
+		case domain.APIKey:
+			token := apiKeyTokenPrefix + u.Email
+			svc.apiKeys[token] = u
+			return token, nil
 		default:
 			return u.Email, nil
 		}
@@ -133,6 +144,16 @@ func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
 	for token, impersonator := range svc.impersonators {
 		if impersonator.ID == id {
 			delete(svc.impersonators, token)
+		}
+	}
+
+	return nil
+}
+
+func (svc authServiceMock) RevokeAPIKeys(_ context.Context, id string) error {
+	for token, u := range svc.apiKeys {
+		if u.ID == id {
+			delete(svc.apiKeys, token)
 		}
 	}
 

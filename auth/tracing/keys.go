@@ -18,6 +18,7 @@ const (
 	retrieveKeyByID = "retrieve_key_by_id"
 	removeKey       = "remove_key"
 	retrieveAPIKeys = "retrieve_api_keys"
+	removeAPIKeys   = "remove_api_keys"
 )
 
 var _ auth.KeyRepository = (*keyRepositoryMiddleware)(nil)
@@ -68,4 +69,12 @@ func (krm keyRepositoryMiddleware) RetrieveAPIKeys(ctx context.Context, issuerID
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return krm.repo.RetrieveAPIKeys(ctx, issuerID, pm)
+}
+
+func (krm keyRepositoryMiddleware) RemoveAPIKeys(ctx context.Context, issuerID string) error {
+	span := dbutil.CreateSpan(ctx, krm.tracer, removeAPIKeys)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return krm.repo.RemoveAPIKeys(ctx, issuerID)
 }
