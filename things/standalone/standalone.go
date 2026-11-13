@@ -51,6 +51,10 @@ func (repo singleUserRepo) RevokeSessions(ctx context.Context, id string) error 
 	return errUnsupported
 }
 
+func (repo singleUserRepo) RevokeAPIKeys(ctx context.Context, id string) error {
+	return errUnsupported
+}
+
 func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.Identity, error) {
 	if repo.token != token {
 		return domain.Identity{}, errors.ErrAuthentication

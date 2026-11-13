@@ -1041,11 +1041,7 @@ func (svc usersService) EnableUser(ctx context.Context, token, id string) error 
 }
 
 func (svc usersService) DisableUser(ctx context.Context, token, id string) error {
-	if err := svc.changeStatus(ctx, token, id, DisabledStatusKey); err != nil {
-		return err
-	}
-
-	return svc.auth.RevokeSessions(ctx, id)
+	return svc.changeStatus(ctx, token, id, DisabledStatusKey)
 }
 
 func (svc usersService) Impersonate(ctx context.Context, token, id string) (string, error) {
@@ -1113,8 +1109,8 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 		return err
 	}
 
-	// A platform role grants access through API keys, which disabling the user does not revoke.
 	if status == DisabledStatusKey {
+		// A disabled user never holds a platform role, as the role cannot be assigned to one.
 		role, err := svc.auth.RetrieveRole(ctx, id)
 		if err != nil {
 			return err
@@ -1122,6 +1118,16 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 
 		if role != "" {
 			return ErrPlatformRoleAssigned
+		}
+
+		// Credentials are revoked before the status check, so a retry after a failed revocation
+		// and a repeated disable of an already disabled user both revoke them.
+		if err := svc.auth.RevokeSessions(ctx, id); err != nil {
+			return err
+		}
+
+		if err := svc.auth.RevokeAPIKeys(ctx, id); err != nil {
+			return err
 		}
 	}
 

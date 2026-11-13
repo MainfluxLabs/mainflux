@@ -573,6 +573,57 @@ func TestRevoke(t *testing.T) {
 	}
 }
 
+func TestRevokeAPIKeys(t *testing.T) {
+	svc := newService()
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, otherSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, apiKey, err := svc.Issue(context.Background(), secret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now()})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+	_, otherAPIKey, err := svc.Issue(context.Background(), otherSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now()})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc   string
+		userID string
+		err    error
+	}{
+		{
+			desc:   "revoke API keys",
+			userID: id,
+			err:    nil,
+		},
+		{
+			desc:   "revoke API keys of user without API keys",
+			userID: id,
+			err:    nil,
+		},
+		{
+			desc:   "revoke API keys without user id",
+			userID: "",
+			err:    apiutil.ErrMissingUserID,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RevokeAPIKeys(context.Background(), tc.userID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+
+	_, err = svc.Identify(context.Background(), apiKey)
+	msg := fmt.Sprintf("revoked API key: expected %s got %s\n", errors.ErrAuthentication, err)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), msg)
+
+	_, err = svc.Identify(context.Background(), secret)
+	assert.Nil(t, err, fmt.Sprintf("login key of the user expected to survive: %s", err))
+
+	_, err = svc.Identify(context.Background(), otherAPIKey)
+	assert.Nil(t, err, fmt.Sprintf("API key of another user expected to survive: %s", err))
+}
+
 func TestRetrieve(t *testing.T) {
 	svc := newService()
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), Subject: email, IssuerID: id})

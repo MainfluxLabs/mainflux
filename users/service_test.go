@@ -917,7 +917,21 @@ func TestEnableUser(t *testing.T) {
 }
 
 func TestDisableUser(t *testing.T) {
-	svc := newService()
+	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	c := users.Config{PassMinLength: users.MinPasswordLength}
+	svc := users.New(
+		usmocks.NewUserRepository(usersList),
+		usmocks.NewEmailVerificationRepository(verificationsList),
+		usmocks.NewPlatformInvitesRepository(),
+		usmocks.NewIdentityRepository(),
+		usmocks.NewHasher(),
+		usmocks.NewLegacyHasher(),
+		authSvc,
+		usmocks.NewEmailer(),
+		idProvider,
+		logger.NewMock(),
+		c,
+	)
 
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -930,6 +944,14 @@ func TestDisableUser(t *testing.T) {
 
 	err = svc.AssignAdminRole(context.Background(), tokenAdmin, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
+
+	disabledUserKey, err := authSvc.Issue(
+		context.Background(),
+		unauthUser.ID,
+		unauthUser.Email,
+		domain.APIKey,
+	)
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
 	// Rejected cases run first, so disabling as admin proves they left the user enabled.
 	cases := []struct {
@@ -954,6 +976,28 @@ func TestDisableUser(t *testing.T) {
 	for _, tc := range cases {
 		err := svc.DisableUser(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+
+	// A disabled user who still has an API key loses it when disabled again.
+	remainingKey, err := authSvc.Issue(context.Background(), user.ID, user.Email, domain.APIKey)
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	err = svc.DisableUser(context.Background(), tokenAdmin, user.ID)
+	msg := fmt.Sprintf(
+		"disable already disabled user with API key: expected %s got %s\n",
+		users.ErrAlreadyDisabledUser,
+		err,
+	)
+	assert.True(t, errors.Contains(err, users.ErrAlreadyDisabledUser), msg)
+
+	for _, key := range []string{disabledUserKey, remainingKey} {
+		_, err = authSvc.Identify(context.Background(), key)
+		msg = fmt.Sprintf(
+			"identify with API key of disabled user: expected %s got %s\n",
+			errors.ErrAuthentication,
+			err,
+		)
+		assert.True(t, errors.Contains(err, errors.ErrAuthentication), msg)
 	}
 }
 

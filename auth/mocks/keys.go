@@ -57,6 +57,19 @@ func (krm *keyRepositoryMock) Remove(ctx context.Context, issuerID, id string) e
 	return nil
 }
 
+func (krm *keyRepositoryMock) RemoveAPIKeys(ctx context.Context, issuerID string) error {
+	krm.mu.Lock()
+	defer krm.mu.Unlock()
+
+	for id, key := range krm.keys {
+		if key.IssuerID == issuerID && key.Type == auth.APIKey {
+			delete(krm.keys, id)
+		}
+	}
+
+	return nil
+}
+
 func (krm *keyRepositoryMock) RetrieveAPIKeys(ctx context.Context, issuerID string, pm auth.PageMetadata) (auth.KeysPage, error) {
 	krm.mu.Lock()
 	defer krm.mu.Unlock()
