@@ -617,6 +617,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	case errors.Contains(err, users.ErrNotPlatformAdmin):
 		w.WriteHeader(http.StatusNotFound)
 	case errors.Contains(err, users.ErrPlatformRoleAssigned),
+		errors.Contains(err, users.ErrDisabledUser),
 		errors.Contains(err, users.ErrAlreadyEnabledUser),
 		errors.Contains(err, users.ErrAlreadyDisabledUser):
 		w.WriteHeader(http.StatusConflict)

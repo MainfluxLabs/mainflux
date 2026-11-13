@@ -490,7 +490,7 @@ paths:
     post:
       summary: Assigns the platform admin role
       description: |
-        Assigns the platform admin role to a user without a platform role. Only accessible by root admin.
+        Assigns the platform admin role to an enabled user without a platform role. Only accessible by root admin.
       tags:
         - users
       parameters:
@@ -505,7 +505,7 @@ paths:
         '404':
           description: Failed due to non existing user.
         '409':
-          description: The user already has a platform role.
+          description: The user already has a platform role or is disabled.
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:

@@ -1216,7 +1216,13 @@ func TestPasswordChange(t *testing.T) {
 func TestAssignAdminRole(t *testing.T) {
 	rootAdmin := admin
 	rootAdmin.Role = domain.RoleRootAdmin
-	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin})
+	disabledUser := users.User{
+		ID:       "574106f7-030e-4881-8ab0-151195c29f98",
+		Email:    "disabled-user@example.com",
+		Password: "password",
+		Status:   users.DisabledStatusKey,
+	}
+	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin, disabledUser})
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
@@ -1229,6 +1235,7 @@ func TestAssignAdminRole(t *testing.T) {
 
 	forbiddenRes := toJSON(apiutil.ErrorRes{Err: errors.ErrAuthorization.Error()})
 	conflictRes := toJSON(apiutil.ErrorRes{Err: users.ErrPlatformRoleAssigned.Error()})
+	disabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrDisabledUser.Error()})
 
 	cases := []struct {
 		desc   string
@@ -1264,6 +1271,13 @@ func TestAssignAdminRole(t *testing.T) {
 			token:  adminToken,
 			status: http.StatusNotFound,
 			res:    notFoundRes,
+		},
+		{
+			desc:   "assign admin role to disabled user",
+			id:     disabledUser.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    disabledRes,
 		},
 		{
 			desc:   "assign admin role to root admin",

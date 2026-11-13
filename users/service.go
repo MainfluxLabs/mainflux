@@ -54,6 +54,9 @@ var (
 
 	// ErrNotPlatformAdmin indicates that the user does not have the platform admin role.
 	ErrNotPlatformAdmin = errors.New("the user does not have the platform admin role")
+
+	// ErrDisabledUser indicates that the operation is not allowed for a disabled user.
+	ErrDisabledUser = errors.New("the user is disabled")
 )
 
 type (
@@ -995,8 +998,13 @@ func (svc usersService) AssignAdminRole(ctx context.Context, token, id string) e
 		return err
 	}
 
-	if _, err := svc.users.RetrieveByID(ctx, id); err != nil {
+	dbUser, err := svc.users.RetrieveByID(ctx, id)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrNotFound, err)
+	}
+
+	if dbUser.Status == DisabledStatusKey {
+		return ErrDisabledUser
 	}
 
 	role, err := svc.auth.RetrieveRole(ctx, id)

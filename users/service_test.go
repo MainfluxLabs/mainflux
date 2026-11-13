@@ -751,6 +751,9 @@ func TestAssignAdminRole(t *testing.T) {
 	tokenUser, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	err = svc.DisableUser(context.Background(), tokenAdmin, unauthUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		token string
@@ -780,6 +783,12 @@ func TestAssignAdminRole(t *testing.T) {
 			token: tokenAdmin,
 			id:    wrong,
 			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "assign admin role to disabled user",
+			token: tokenAdmin,
+			id:    unauthUser.ID,
+			err:   users.ErrDisabledUser,
 		},
 		{
 			desc:  "assign admin role to root admin",
