@@ -11,7 +11,7 @@ import (
 var luaLog = luaAPIFunc{
 	fun: func(env *luaEnv) lua.Function {
 		return func(ls *lua.State) int {
-			if len(env.logs) > maxLogLineCount {
+			if len(env.logs) >= maxLogLineCount {
 				ls.PushBoolean(false)
 				ls.PushString("log count exceeded")
 				return 2
