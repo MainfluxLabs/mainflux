@@ -120,10 +120,7 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE users ALTER COLUMN password TYPE TEXT`,
 					`ALTER TABLE verifications ALTER COLUMN password TYPE TEXT`,
 				},
-				Down: []string{
-					`ALTER TABLE verifications ALTER COLUMN password TYPE CHAR(60)`,
-					`ALTER TABLE users ALTER COLUMN password TYPE CHAR(60)`,
-				},
+				Down: []string{},
 			},
 		},
 	}
