@@ -407,7 +407,7 @@ func decodeOrgRemoved(e redisEvent) OrgRemoved {
 	return OrgRemoved{ID: e.field("id", "")}
 }
 
-// UserImpersonated signals that a root admin started an impersonated session of a user.
+// UserImpersonated signals that a platform admin started an impersonated session of a user.
 type UserImpersonated struct {
 	ID    string
 	Email string

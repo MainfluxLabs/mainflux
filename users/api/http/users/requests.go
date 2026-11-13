@@ -265,3 +265,18 @@ func (req changeUserStatusReq) validate() error {
 	}
 	return nil
 }
+
+type adminRoleReq struct {
+	token string
+	id    string
+}
+
+func (req adminRoleReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+	return nil
+}

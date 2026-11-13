@@ -6,6 +6,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var _ auth.RolesRepository = (*rolesRepository)(nil)
@@ -27,6 +29,10 @@ func (rr rolesRepository) SaveRole(ctx context.Context, userID, role string) err
 	dbur := toDBUsersRole(userID, role)
 
 	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
+			return errors.Wrap(dbutil.ErrConflict, err)
+		}
+
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
@@ -54,6 +60,22 @@ func (rr rolesRepository) RetrieveRole(ctx context.Context, userID string) (stri
 	return role, nil
 }
 
+func (rr rolesRepository) RetrieveRoles(ctx context.Context, userIDs []string) (map[string]string, error) {
+	q := `SELECT user_id, role FROM users_roles WHERE user_id = ANY($1::uuid[]);`
+
+	var dburs []dbUserRole
+	if err := rr.db.SelectContext(ctx, &dburs, q, userIDs); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	roles := make(map[string]string, len(dburs))
+	for _, dbur := range dburs {
+		roles[dbur.UserID] = dbur.Role
+	}
+
+	return roles, nil
+}
+
 func (rr rolesRepository) UpdateRole(ctx context.Context, userID, role string) error {
 	q := `UPDATE users_roles SET role = :role WHERE user_id = :user_id;`
 
@@ -71,8 +93,18 @@ func (rr rolesRepository) RemoveRole(ctx context.Context, userID string) error {
 
 	dbur := dbUserRole{UserID: userID}
 
-	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
+	res, err := rr.db.NamedExecContext(ctx, q, dbur)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if cnt != 1 {
+		return dbutil.ErrNotFound
 	}
 
 	return nil

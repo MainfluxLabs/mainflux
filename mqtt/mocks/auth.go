@@ -82,6 +82,14 @@ func (svc authServiceMock) RetrieveRole(context.Context, string) (string, error)
 	panic("not implemented")
 }
 
+func (svc authServiceMock) RetrieveRoles(context.Context, []string) (map[string]string, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) UnassignRole(context.Context, string) error {
+	panic("not implemented")
+}
+
 func (svc authServiceMock) CreateDormantOrgInvite(context.Context, string, string, string, string, []domain.GroupInvite) error {
 	panic("not implemented")
 }

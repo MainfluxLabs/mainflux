@@ -41,7 +41,7 @@ func TestSaveRole(t *testing.T) {
 			desc: "save already existing role",
 			id:   userID,
 			role: auth.RoleRootAdmin,
-			err:  dbutil.ErrCreateEntity,
+			err:  dbutil.ErrConflict,
 		},
 		{
 			desc: "save invalid role",
@@ -189,6 +189,11 @@ func TestDeleteRole(t *testing.T) {
 			err:  nil,
 		},
 		{
+			desc: "delete non-existing role",
+			id:   userID,
+			err:  dbutil.ErrNotFound,
+		},
+		{
 			desc: "delete role for invalid user id",
 			id:   invalid,
 			err:  dbutil.ErrRemoveEntity,
@@ -203,5 +208,59 @@ func TestDeleteRole(t *testing.T) {
 	for _, tc := range cases {
 		err := repo.RemoveRole(context.Background(), tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRetrieveRoles(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repo := postgres.NewRolesRepo(dbMiddleware)
+
+	rootID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	adminID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	userID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = repo.SaveRole(context.Background(), rootID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	err = repo.SaveRole(context.Background(), adminID, auth.RoleAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	cases := []struct {
+		desc  string
+		ids   []string
+		roles map[string]string
+		err   error
+	}{
+		{
+			desc: "retrieve roles",
+			ids:  []string{rootID, adminID, userID},
+			roles: map[string]string{
+				rootID:  auth.RoleRootAdmin,
+				adminID: auth.RoleAdmin,
+			},
+			err: nil,
+		},
+		{
+			desc:  "retrieve roles for users without roles",
+			ids:   []string{userID},
+			roles: map[string]string{},
+			err:   nil,
+		},
+		{
+			desc:  "retrieve roles for invalid user id",
+			ids:   []string{invalid},
+			roles: nil,
+			err:   dbutil.ErrRetrieveEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		roles, err := repo.RetrieveRoles(context.Background(), tc.ids)
+		msg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.roles, roles)
+		assert.Equal(t, tc.roles, roles, msg)
+		msg = fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 }

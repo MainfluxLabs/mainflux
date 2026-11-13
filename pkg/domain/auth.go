@@ -37,7 +37,7 @@ const (
 	APIKey
 )
 
-// Identity contains ID and Email. Impersonator is set when a root admin
+// Identity contains ID and Email. Impersonator is set when a platform admin
 // acts on behalf of the user through an impersonated session.
 type Identity struct {
 	ID           string    `json:"id,omitempty"`
@@ -189,6 +189,12 @@ type AuthClient interface {
 
 	// RetrieveRole retrieves the role for a user.
 	RetrieveRole(ctx context.Context, id string) (string, error)
+
+	// RetrieveRoles retrieves the roles of the users with the provided IDs, keyed by user ID.
+	RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error)
+
+	// UnassignRole unassigns the role from a user.
+	UnassignRole(ctx context.Context, id string) error
 
 	// CreateDormantOrgInvite creates a dormant org invite.
 	CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []GroupInvite) error

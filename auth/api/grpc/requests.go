@@ -174,6 +174,30 @@ func (req retrieveRoleReq) validate() error {
 	return nil
 }
 
+type retrieveRolesReq struct {
+	ids []string
+}
+
+func (req retrieveRolesReq) validate() error {
+	if len(req.ids) == 0 {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
+type unassignRoleReq struct {
+	id string
+}
+
+func (req unassignRoleReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
 type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string

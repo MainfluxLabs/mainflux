@@ -11,7 +11,7 @@ paths:
       description: >-
         Retrieves a list of audit events across all organizations, including
         events that are not tied to any organization. Restricted to platform
-        (root) administrators.
+        administrators.
       tags:
         - audit
       parameters:
@@ -126,16 +126,16 @@ components:
           description: Email address of the acting user.
         impersonator:
           type: object
-          description: Root admin who acted as the user. Absent for events not raised in an impersonated session.
+          description: Platform admin who acted as the user. Absent for events not raised in an impersonated session.
           properties:
             id:
               type: string
               format: uuid
-              description: Unique identifier of the root admin.
+              description: Unique identifier of the platform admin.
             email:
               type: string
               format: email
-              description: Email address of the root admin.
+              description: Email address of the platform admin.
 
     Event:
       type: object

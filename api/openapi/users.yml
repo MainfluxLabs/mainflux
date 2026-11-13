@@ -466,7 +466,7 @@ paths:
     post:
       summary: Disables a user account
       description: |
-        Disables a user account for a given user ID.
+        Disables a user account for a given user ID. A user with a platform role cannot be disabled.
       tags:
         - users
       parameters:
@@ -483,18 +483,61 @@ paths:
         '403':
           description: Failed to perform authorization over the entity.
         '409':
-          description: The user is already disabled.
+          description: The user is already disabled or has a platform role.
         '500':
          $ref: "#/components/responses/ServiceError"
+  /users/{userId}/admin:
+    post:
+      summary: Assigns the platform admin role
+      description: |
+        Assigns the platform admin role to an enabled user without a platform role. Only accessible by root admin.
+      tags:
+        - users
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        '204':
+          description: Platform admin role assigned.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: This endpoint is available only for the root administrator.
+        '404':
+          description: Failed due to non existing user.
+        '409':
+          description: The user already has a platform role or is disabled.
+        '500':
+          $ref: "#/components/responses/ServiceError"
+    delete:
+      summary: Unassigns the platform admin role
+      description: |
+        Unassigns the platform admin role from a user and revokes all sessions of the user,
+        including the sessions impersonated by the user. Only accessible by root admin.
+      tags:
+        - users
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        '204':
+          description: Platform admin role unassigned.
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: The caller is not the root administrator, or the user is the root administrator.
+        '404':
+          description: The user does not have the platform admin role.
+        '500':
+          $ref: "#/components/responses/ServiceError"
   /users/{userId}/impersonate:
     post:
       summary: Impersonates a user
       description: |
-        Issues a login token for the given user on behalf of the root admin.
-        The token carries the root admin as impersonator, and audit events
+        Issues a login token for the given user on behalf of the platform admin.
+        The token carries the platform admin as impersonator, and audit events
         raised with it record both users. Root admins, disabled users and
-        the caller cannot be impersonated, and an impersonated session
-        cannot start another impersonation or issue API keys.
+        the caller cannot be impersonated, only the root admin can impersonate
+        a platform admin, and an impersonated session cannot start another
+        impersonation or issue API keys.
       tags:
         - users
       parameters:
@@ -509,7 +552,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Caller is not root admin, or the user cannot be impersonated.
+          description: Caller is not a platform admin, or the user cannot be impersonated.
         '404':
           description: Failed due to non existing user.
         '409':
@@ -520,7 +563,7 @@ paths:
     get:
       summary: Retrieves all users
       description: |
-        Retrieves all users. Only accessible by admin.
+        Retrieves all users. Only accessible by root admin.
       tags:
         - users
       responses:
@@ -529,14 +572,14 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: This endpoint is available only for administrators.
+          description: This endpoint is available only for the root administrator.
         '500':
           $ref: "#/components/responses/ServiceError"
   /restore:
     post:
       summary: Restore users
       description: |
-        Restores all users. Only accessible by admin.
+        Restores all users. Only accessible by root admin.
       tags:
         - users
       requestBody:
@@ -549,7 +592,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: This endpoint is available only for administrators.
+          description: This endpoint is available only for the root administrator.
         '415':
           description: Missing or invalid content type.
         '500':
@@ -655,7 +698,8 @@ components:
           description: Arbitrary, object-encoded user's data.
         role:
           type: string
-          description: Platform-level role. Set to `root` for the root administrator; omitted for regular users.
+          description: Platform-level role. Set to `root` for the root administrator and `admin` for a platform administrator; omitted for regular users.
+          enum: [root, admin]
           example: "root"
         status:
           type: string

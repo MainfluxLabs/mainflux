@@ -23,6 +23,11 @@ func (rrm *rolesRepositoryMock) SaveRole(ctx context.Context, id, role string) e
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
+	// The roles table allows a single role per user.
+	if _, ok := rrm.roles[id]; ok {
+		return dbutil.ErrConflict
+	}
+
 	rrm.roles[id] = role
 
 	return nil
@@ -37,6 +42,20 @@ func (rrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, id string) (st
 	}
 
 	return "", nil
+}
+
+func (rrm *rolesRepositoryMock) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	roles := make(map[string]string)
+	for _, id := range ids {
+		if role, ok := rrm.roles[id]; ok {
+			roles[id] = role
+		}
+	}
+
+	return roles, nil
 }
 
 func (rrm *rolesRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {

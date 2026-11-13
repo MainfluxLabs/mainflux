@@ -555,3 +555,125 @@ func TestCreateDormantOrgInvite(t *testing.T) {
 	msg := fmt.Sprintf("%s: expected %s got %s", desc, codes.InvalidArgument, e.Code())
 	assert.Equal(t, codes.InvalidArgument, e.Code(), msg)
 }
+
+func TestAssignRole(t *testing.T) {
+	roleUserID := "assignRoleUserID"
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc string
+		id   string
+		role string
+		code codes.Code
+	}{
+		{
+			desc: "assign role",
+			id:   roleUserID,
+			role: auth.RoleAdmin,
+			code: codes.OK,
+		},
+		{
+			desc: "assign role to user with role",
+			id:   roleUserID,
+			role: auth.RoleAdmin,
+			code: codes.AlreadyExists,
+		},
+	}
+
+	for _, tc := range cases {
+		err := client.AssignRole(context.Background(), tc.id, tc.role)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
+func TestRetrieveRoles(t *testing.T) {
+	adminUserID := "retrieveRolesAdminID"
+	err := svc.AssignRole(context.Background(), adminUserID, auth.RoleAdmin)
+	require.Nil(t, err, fmt.Sprintf("Assigning role expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc  string
+		ids   []string
+		roles map[string]string
+		code  codes.Code
+	}{
+		{
+			desc: "retrieve roles",
+			ids:  []string{adminUserID, "retrieveRolesUserID"},
+			roles: map[string]string{
+				adminUserID: auth.RoleAdmin,
+			},
+			code: codes.OK,
+		},
+		{
+			desc:  "retrieve roles without user ids",
+			ids:   []string{},
+			roles: nil,
+			code:  codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		roles, err := client.RetrieveRoles(context.Background(), tc.ids)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+		msg = fmt.Sprintf("%s: expected %v got %v", tc.desc, tc.roles, roles)
+		assert.Equal(t, tc.roles, roles, msg)
+	}
+}
+
+func TestUnassignRole(t *testing.T) {
+	roleUserID := "roleUserID"
+	err := svc.AssignRole(context.Background(), roleUserID, auth.RoleAdmin)
+	require.Nil(t, err, fmt.Sprintf("Assigning role expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc string
+		id   string
+		code codes.Code
+	}{
+		{
+			desc: "unassign role",
+			id:   roleUserID,
+			code: codes.OK,
+		},
+		{
+			desc: "unassign non-existing role",
+			id:   roleUserID,
+			code: codes.NotFound,
+		},
+		{
+			desc: "unassign role without user id",
+			id:   "",
+			code: codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		err := client.UnassignRole(context.Background(), tc.id)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+
+	role, err := svc.RetrieveRole(context.Background(), roleUserID)
+	require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
+	assert.Equal(t, "", role, fmt.Sprintf("expected empty role got %s", role))
+}
