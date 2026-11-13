@@ -29,6 +29,7 @@ const (
 	rootAdminRole     = "root"
 	GoogleProvider    = "google"
 	GitHubProvider    = "github"
+	OIDCProvider      = "oidc"
 )
 
 var (
@@ -49,6 +50,9 @@ var (
 
 	// ErrInvalidAdminCredentials indicates that the configured root admin e-mail or password is invalid.
 	ErrInvalidAdminCredentials = errors.New("invalid root admin e-mail or password")
+
+	// ErrEmailNotVerified indicates that the identity provider did not verify the user e-mail.
+	ErrEmailNotVerified = errors.New("e-mail not verified by identity provider")
 
 	// ErrDisabledUser indicates that the operation is not allowed for a disabled user.
 	ErrDisabledUser = errors.New("the user is disabled")
@@ -177,6 +181,7 @@ type usersService struct {
 	idProvider          uuid.IDProvider
 	googleOAuth         oauth2.Config
 	githubOAuth         oauth2.Config
+	oidc                *oidcClient
 	urls                ConfigURLs
 	passMinLength       int
 	logger              logger.Logger
@@ -189,6 +194,7 @@ type Config struct {
 	SelfRegisterEnabled bool
 	GoogleOAuth         oauth2.Config
 	GitHubOAuth         oauth2.Config
+	OIDC                OIDCConfig
 	URLs                ConfigURLs
 	PassMinLength       int
 }
@@ -210,6 +216,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		idProvider:          idp,
 		googleOAuth:         c.GoogleOAuth,
 		githubOAuth:         c.GitHubOAuth,
+		oidc:                newOIDCClient(c.OIDC),
 		urls:                c.URLs,
 		passMinLength:       c.PassMinLength,
 		logger:              logger,
@@ -488,6 +495,14 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 		oauthCfg = svc.googleOAuth
 	case GitHubProvider:
 		oauthCfg = svc.githubOAuth
+	case OIDCProvider:
+		if !svc.oidc.enabled() {
+			return OAuthLoginData{}, apiutil.ErrInvalidProvider
+		}
+		oauthCfg, err = svc.oidc.oauthConfig()
+		if err != nil {
+			return OAuthLoginData{}, err
+		}
 	default:
 		return OAuthLoginData{}, apiutil.ErrInvalidProvider
 	}
@@ -502,14 +517,16 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 }
 
 func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
-	var email, providerUserID string
+	var providerUser oauthUser
 	var err error
 
 	switch data.Provider {
 	case GoogleProvider:
-		email, providerUserID, err = svc.fetchGoogleUser(ctx, data.Code, data.Verifier)
+		providerUser, err = svc.fetchGoogleUser(ctx, data.Code, data.Verifier)
 	case GitHubProvider:
-		email, providerUserID, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
+		providerUser, err = svc.fetchGitHubUser(ctx, data.Code, data.Verifier)
+	case OIDCProvider:
+		providerUser, err = svc.fetchOIDCUser(ctx, data.Code, data.Verifier)
 	default:
 		return "", apiutil.ErrInvalidProvider
 	}
@@ -518,7 +535,7 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 		return "", err
 	}
 
-	user, err := svc.handleIdentity(ctx, data.Provider, email, providerUserID, data.InviteID, data.RedirectPath)
+	user, err := svc.handleIdentity(ctx, providerUser, data.InviteID, data.RedirectPath)
 	if err != nil {
 		return "", err
 	}
@@ -532,39 +549,54 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 	return redirectURL, nil
 }
 
-func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier string) (string, string, error) {
+// oauthUser holds the user identity returned by an OAuth provider.
+type oauthUser struct {
+	provider       string
+	providerUserID string
+	email          string
+	emailVerified  bool
+}
+
+func (svc usersService) fetchGoogleUser(ctx context.Context, code, verifier string) (oauthUser, error) {
 	oauthToken, err := svc.googleOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	client := svc.googleOAuth.Client(ctx, oauthToken)
 	resp, err := client.Get(svc.urls.GoogleUserInfoURL)
 	if err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", "", errors.ErrAuthentication
+		return oauthUser{}, errors.ErrAuthentication
 	}
 
 	var gUser struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
+		ID            string `json:"id"`
+		Email         string `json:"email"`
+		VerifiedEmail bool   `json:"verified_email"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	if gUser.Email == "" || gUser.ID == "" {
-		return "", "", errors.ErrAuthentication
+		return oauthUser{}, errors.ErrAuthentication
 	}
 
-	return gUser.Email, gUser.ID, nil
+	googleUser := oauthUser{
+		provider:       GoogleProvider,
+		providerUserID: gUser.ID,
+		email:          gUser.Email,
+		emailVerified:  gUser.VerifiedEmail,
+	}
+	return googleUser, nil
 }
 
-func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier string) (string, string, error) {
+func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier string) (oauthUser, error) {
 	oauthToken, err := svc.githubOAuth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	client := svc.githubOAuth.Client(ctx, oauthToken)
 
@@ -573,28 +605,28 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 	}
 	resp, err := client.Get(svc.urls.GitHubUserInfoURL)
 	if err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", "", errors.ErrAuthentication
+		return oauthUser{}, errors.ErrAuthentication
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&gUser); err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	if gUser.ID == 0 {
-		return "", "", errors.ErrAuthentication
+		return oauthUser{}, errors.ErrAuthentication
 	}
 	providerUserID := strconv.FormatInt(gUser.ID, 10)
 
 	resp2, err := client.Get(svc.urls.GitHubUserEmailsURL)
 	if err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 	defer resp2.Body.Close()
 	if resp2.StatusCode != http.StatusOK {
-		return "", "", errors.ErrAuthentication
+		return oauthUser{}, errors.ErrAuthentication
 	}
 
 	var emails []struct {
@@ -603,7 +635,7 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		Verified bool   `json:"verified"`
 	}
 	if err := json.NewDecoder(resp2.Body).Decode(&emails); err != nil {
-		return "", "", err
+		return oauthUser{}, err
 	}
 
 	email := ""
@@ -614,19 +646,77 @@ func (svc usersService) fetchGitHubUser(ctx context.Context, code, verifier stri
 		}
 	}
 	if email == "" {
-		return "", "", errors.ErrAuthentication
+		return oauthUser{}, errors.ErrAuthentication
 	}
 
-	return email, providerUserID, nil
+	// Only a verified primary e-mail is selected above.
+	githubUser := oauthUser{
+		provider:       GitHubProvider,
+		providerUserID: providerUserID,
+		email:          email,
+		emailVerified:  true,
+	}
+	return githubUser, nil
 }
 
-// handleIdentity resolves or creates a User for an OAuth login flow.
-// It first checks for an existing provider identity. If found, it returns the
-// linked user (syncing their e-mail if it changed). Otherwise, it looks up or
-// creates a user by e-mail, handling invite validation if needed, and saves a
-// new identity record linking the provider to that user.
-func (svc usersService) handleIdentity(ctx context.Context, provider, email, providerUserID, inviteID, redirectPath string) (User, error) {
-	identity, err := svc.identity.Retrieve(ctx, provider, providerUserID)
+func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string) (oauthUser, error) {
+	if !svc.oidc.enabled() {
+		return oauthUser{}, apiutil.ErrInvalidProvider
+	}
+
+	oauthCfg, err := svc.oidc.oauthConfig()
+	if err != nil {
+		return oauthUser{}, err
+	}
+
+	idTokenVerifier, err := svc.oidc.verifier()
+	if err != nil {
+		return oauthUser{}, err
+	}
+
+	ctx = svc.oidc.httpContext(ctx)
+
+	oauthToken, err := oauthCfg.Exchange(ctx, code, oauth2.VerifierOption(verifier))
+	if err != nil {
+		return oauthUser{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	rawIDToken, ok := oauthToken.Extra("id_token").(string)
+	if !ok || rawIDToken == "" {
+		return oauthUser{}, errors.ErrAuthentication
+	}
+
+	idToken, err := idTokenVerifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return oauthUser{}, errors.Wrap(errors.ErrAuthentication, err)
+	}
+
+	claims, err := svc.oidc.emailClaims(ctx, idToken, oauthToken)
+	if err != nil {
+		return oauthUser{}, err
+	}
+
+	// An explicit email_verified=false is rejected. A missing claim leaves the e-mail unverified.
+	if claims.EmailVerified != nil && !claims.verified() {
+		return oauthUser{}, errors.ErrAuthentication
+	}
+	if claims.Email == "" || idToken.Subject == "" {
+		return oauthUser{}, errors.ErrAuthentication
+	}
+
+	oidcUser := oauthUser{
+		provider:       OIDCProvider,
+		providerUserID: oidcIdentityID(idToken.Issuer, idToken.Subject),
+		email:          claims.Email,
+		emailVerified:  claims.verified(),
+	}
+	return oidcUser, nil
+}
+
+// handleIdentity returns the user linked to the provider identity,
+// or links or creates one by e-mail.
+func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUser, inviteID, redirectPath string) (User, error) {
+	identity, err := svc.identity.Retrieve(ctx, providerUser.provider, providerUser.providerUserID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
 		return User{}, err
 	}
@@ -639,8 +729,8 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		if user.Status != EnabledStatusKey {
 			return User{}, errors.ErrAuthentication
 		}
-		if user.Email != email {
-			user.Email = email
+		if user.Email != providerUser.email && providerUser.emailVerified {
+			user.Email = providerUser.email
 			if err := svc.users.Update(ctx, user); err != nil {
 				return User{}, err
 			}
@@ -648,7 +738,11 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		return user, nil
 	}
 
-	user, err := svc.users.RetrieveByEmail(ctx, email)
+	user, err := svc.users.RetrieveByEmail(ctx, providerUser.email)
+	if err == nil && !providerUser.emailVerified {
+		// An unverified e-mail does not prove ownership of an existing account.
+		return User{}, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
+	}
 	if err != nil {
 		if !errors.Contains(err, dbutil.ErrNotFound) {
 			return User{}, err
@@ -656,8 +750,12 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		if !svc.selfRegisterEnabled && inviteID == "" {
 			return User{}, ErrSelfRegisterDisabled
 		}
+		// Account creation requires a verified e-mail when e-mail verification is enabled.
+		if svc.emailVerifyEnabled && !providerUser.emailVerified {
+			return User{}, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
+		}
 		if inviteID != "" {
-			if err := svc.ValidatePlatformInvite(ctx, inviteID, email); err != nil {
+			if err := svc.ValidatePlatformInvite(ctx, inviteID, providerUser.email); err != nil {
 				return User{}, err
 			}
 		}
@@ -667,7 +765,7 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 		}
 		user = User{
 			ID:     uid,
-			Email:  email,
+			Email:  providerUser.email,
 			Status: EnabledStatusKey,
 		}
 		if _, err := svc.users.Save(ctx, user); err != nil {
@@ -682,8 +780,8 @@ func (svc usersService) handleIdentity(ctx context.Context, provider, email, pro
 
 	newIdentity := Identity{
 		UserID:         user.ID,
-		Provider:       provider,
-		ProviderUserID: providerUserID,
+		Provider:       providerUser.provider,
+		ProviderUserID: providerUser.providerUserID,
 	}
 	if err := svc.identity.Save(ctx, newIdentity); err != nil {
 		if !errors.Contains(err, dbutil.ErrConflict) {

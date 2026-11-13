@@ -180,15 +180,25 @@ paths:
     get:
       summary: Initiate OAuth login
       description: |
-        Redirects the user to the OAuth provider's authorization page to begin
-        the OAuth login flow. Supported providers: google, github.
+        Returns the URL of the OAuth provider's authorization page to begin
+        the OAuth login flow. Sets the state and PKCE verifier as cookies.
+        Supported providers: google, github, oidc.
       tags:
         - users
       parameters:
         - $ref: "#/components/parameters/OAuthProvider"
       responses:
-        '302':
-          description: Redirect to OAuth provider authorization page.
+        '200':
+          description: OAuth provider authorization URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: URL of the OAuth provider's authorization page.
         '400':
           description: Unsupported or missing OAuth provider.
         '500':
@@ -218,7 +228,7 @@ paths:
           description: State parameter for CSRF protection.
       responses:
         '302':
-          description: Redirect to frontend login URL with access token.
+          description: Redirect to frontend login URL with the access token in the URL fragment (#token=<token>).
         '400':
           description: Missing or invalid authorization code.
         '401':
@@ -923,11 +933,11 @@ components:
       required: true
     OAuthProvider:
       name: provider
-      description: OAuth provider name (e.g. google, github).
+      description: OAuth provider name.
       in: path
       schema:
         type: string
-        enum: [google, github]
+        enum: [google, github, oidc]
       required: true
   requestBodies:
     LoginReq:

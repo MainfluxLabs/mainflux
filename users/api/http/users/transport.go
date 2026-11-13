@@ -41,7 +41,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 	callbackOpts := append([]kithttp.ServerOption{}, opts...)
-	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(encodeOAuthCallbackError))
+	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeOAuthCallbackError)))
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
@@ -548,16 +548,7 @@ func encodeOAuthLoginResponse(_ context.Context, w http.ResponseWriter, response
 }
 
 func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, response any) error {
-	for _, name := range []string{stateKey, verifierKey, inviteIDKey, redirectPathKey} {
-		http.SetCookie(w, &http.Cookie{
-			Name:     name,
-			Path:     "/users/oauth/",
-			MaxAge:   -1,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
-		})
-	}
+	clearOAuthCookies(w)
 
 	res := response.(redirectURLRes)
 	w.Header().Set("Location", res.RedirectURL)
@@ -566,6 +557,11 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 }
 
 func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWriter) {
+	clearOAuthCookies(w)
+	encodeError(ctx, err, w)
+}
+
+func clearOAuthCookies(w http.ResponseWriter) {
 	for _, name := range []string{stateKey, verifierKey, inviteIDKey, redirectPathKey} {
 		http.SetCookie(w, &http.Cookie{
 			Name:     name,
@@ -576,8 +572,6 @@ func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWri
 			SameSite: http.SameSiteLaxMode,
 		})
 	}
-
-	encodeError(ctx, err, w)
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {

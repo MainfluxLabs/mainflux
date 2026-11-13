@@ -5,6 +5,8 @@ package users_test
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
 	usmocks "github.com/MainfluxLabs/mainflux/users/mocks"
+	jose "github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -1112,6 +1115,12 @@ func TestOAuthLogin(t *testing.T) {
 			err:           nil,
 		},
 		{
+			desc:          "oauth login with unconfigured oidc provider",
+			provider:      users.OIDCProvider,
+			stateNotEmpty: false,
+			err:           apiutil.ErrInvalidProvider,
+		},
+		{
 			desc:          "oauth login with unknown provider",
 			provider:      "unknown",
 			stateNotEmpty: false,
@@ -1140,7 +1149,7 @@ func TestOAuthCallback(t *testing.T) {
 	})
 	mux.HandleFunc("/google/userinfo", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"id": "new-google-provider-id", "email": "new-google-user@example.com"})
+		json.NewEncoder(w).Encode(map[string]any{"id": "new-google-provider-id", "email": "new-google-user@example.com", "verified_email": true})
 	})
 	mux.HandleFunc("/github/user", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -1205,4 +1214,246 @@ func TestOAuthCallback(t *testing.T) {
 			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
 		}
 	}
+}
+
+func TestOIDCCallback(t *testing.T) {
+	const (
+		oidcClientID = "mfx-client"
+		oidcKeyID    = "test-key"
+	)
+
+	signingKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.Nil(t, err)
+	otherKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.Nil(t, err)
+
+	var srv *httptest.Server
+	var idToken string
+	var userInfoClaims map[string]any
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"issuer":                                srv.URL,
+			"authorization_endpoint":                srv.URL + "/oidc/auth",
+			"token_endpoint":                        srv.URL + "/oidc/token",
+			"jwks_uri":                              srv.URL + "/oidc/jwks",
+			"userinfo_endpoint":                     srv.URL + "/oidc/userinfo",
+			"id_token_signing_alg_values_supported": []string{"RS256"},
+		})
+	})
+	mux.HandleFunc("/oidc/jwks", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(jose.JSONWebKeySet{
+			Keys: []jose.JSONWebKey{
+				{
+					Key:       &signingKey.PublicKey,
+					KeyID:     oidcKeyID,
+					Algorithm: string(jose.RS256),
+					Use:       "sig",
+				},
+			},
+		})
+	})
+	mux.HandleFunc("/oidc/token", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"access_token": "valid-access-token",
+			"token_type":   "Bearer",
+			"expires_in":   3600,
+			"id_token":     idToken,
+		})
+	})
+	mux.HandleFunc("/oidc/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(userInfoClaims)
+	})
+	srv = httptest.NewServer(mux)
+	defer srv.Close()
+
+	signIDToken := func(key *rsa.PrivateKey, claims map[string]any) string {
+		signerOpts := (&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", oidcKeyID)
+		signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: key}, signerOpts)
+		require.Nil(t, err)
+
+		payload, err := json.Marshal(claims)
+		require.Nil(t, err)
+
+		signed, err := signer.Sign(payload)
+		require.Nil(t, err)
+
+		serialized, err := signed.CompactSerialize()
+		require.Nil(t, err)
+		return serialized
+	}
+
+	tokenClaims := func(sub, audience string, extra map[string]any) map[string]any {
+		claims := map[string]any{
+			"iss": srv.URL,
+			"aud": audience,
+			"sub": sub,
+			"iat": time.Now().Unix(),
+			"exp": time.Now().Add(time.Hour).Unix(),
+		}
+		for key, value := range extra {
+			claims[key] = value
+		}
+		return claims
+	}
+
+	newOIDCUser := users.User{Email: "new-oidc-user@example.com", ID: "oidc-user-id-001", Status: users.EnabledStatusKey}
+	newUnverifiedOIDCUser := users.User{Email: "new-unverified-oidc-user@example.com", ID: "oidc-user-id-002", Status: users.EnabledStatusKey}
+	userRepo := usmocks.NewUserRepository(usersList)
+	authSvc := mocks.NewAuthService(admin.ID, append(usersList, newOIDCUser, newUnverifiedOIDCUser), nil)
+	identityRepo := usmocks.NewIdentityRepository()
+	c := users.Config{
+		InviteDuration:      inviteDuration,
+		SelfRegisterEnabled: true,
+		OIDC: users.OIDCConfig{
+			IssuerURL: srv.URL,
+			OAuth: oauth2.Config{
+				ClientID: oidcClientID,
+			},
+		},
+		URLs: users.ConfigURLs{
+			RedirectLoginURL: "https://example.com/login",
+		},
+	}
+	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), c)
+
+	loginData, err := svc.OAuthLogin(users.OIDCProvider)
+	require.Nil(t, err)
+	assert.Contains(t, loginData.RedirectURL, srv.URL+"/oidc/auth", "oidc login should redirect to the discovered authorization endpoint")
+
+	verifier := oauth2.GenerateVerifier()
+
+	cases := []struct {
+		desc           string
+		idToken        string
+		userInfoClaims map[string]any
+		err            error
+	}{
+		{
+			desc:    "callback creates new oidc user",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-001", oidcClientID, map[string]any{"email": newOIDCUser.Email, "email_verified": true})),
+			err:     nil,
+		},
+		{
+			desc:    "callback authenticates already-linked oidc user",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-001", oidcClientID, map[string]any{"email": newOIDCUser.Email})),
+			err:     nil,
+		},
+		{
+			desc:    "callback does not apply unverified e-mail change to linked user",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-001", oidcClientID, map[string]any{"email": "changed-oidc-user@example.com"})),
+			err:     nil,
+		},
+		{
+			desc:    "callback links existing user using e-mail from userinfo endpoint",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-002", oidcClientID, nil)),
+			userInfoClaims: map[string]any{
+				"sub":            "oidc-sub-002",
+				"email":          user.Email,
+				"email_verified": true,
+			},
+			err: nil,
+		},
+		{
+			desc:    "callback creates new user without email_verified claim",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-011", oidcClientID, map[string]any{"email": newUnverifiedOIDCUser.Email})),
+			err:     nil,
+		},
+		{
+			desc:    "callback without email_verified claim does not link existing user",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-012", oidcClientID, map[string]any{"email": user.Email})),
+			err:     users.ErrEmailNotVerified,
+		},
+		{
+			desc:    "callback does not apply id token email_verified to userinfo e-mail",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-013", oidcClientID, map[string]any{"email_verified": true})),
+			userInfoClaims: map[string]any{
+				"sub":   "oidc-sub-013",
+				"email": user.Email,
+			},
+			err: users.ErrEmailNotVerified,
+		},
+		{
+			desc:    "callback with userinfo for another subject returns error",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-007", oidcClientID, nil)),
+			userInfoClaims: map[string]any{
+				"sub":   "another-sub",
+				"email": user.Email,
+			},
+			err: errors.ErrAuthentication,
+		},
+		{
+			desc:    "callback accepts email_verified sent as a string",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-008", oidcClientID, map[string]any{"email": user.Email, "email_verified": "true"})),
+			err:     nil,
+		},
+		{
+			desc:    "callback with invalid email_verified value returns error",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-010", oidcClientID, map[string]any{"email": user.Email, "email_verified": "yes"})),
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "callback with unverified e-mail returns error",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-003", oidcClientID, map[string]any{"email": user.Email, "email_verified": false})),
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "callback with id token for another audience returns error",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-004", wrong, map[string]any{"email": user.Email})),
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "callback with id token signed by unknown key returns error",
+			idToken: signIDToken(otherKey, tokenClaims("oidc-sub-005", oidcClientID, map[string]any{"email": user.Email})),
+			err:     errors.ErrAuthentication,
+		},
+		{
+			desc:    "callback without e-mail claim returns error",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-006", oidcClientID, nil)),
+			userInfoClaims: map[string]any{
+				"sub": "oidc-sub-006",
+			},
+			err: errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		idToken = tc.idToken
+		userInfoClaims = tc.userInfoClaims
+
+		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+			Provider: users.OIDCProvider,
+			Code:     "valid-code",
+			Verifier: verifier,
+		})
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
+		if tc.err == nil {
+			assert.Contains(t, redirectURL, "token=", fmt.Sprintf("%s: redirect URL should contain token\n", tc.desc))
+		}
+	}
+
+	identity, err := identityRepo.Retrieve(context.Background(), users.OIDCProvider, srv.URL+"#oidc-sub-001")
+	require.Nil(t, err, "oidc identity should be stored with its issuer")
+	assert.NotEmpty(t, identity.UserID, "oidc identity should be linked to a user")
+
+	linkedUser, err := userRepo.RetrieveByID(context.Background(), identity.UserID)
+	require.Nil(t, err, "linked oidc user should exist")
+	assert.Equal(t, newOIDCUser.Email, linkedUser.Email, "unverified e-mail change should not be applied to linked user")
+
+	c.EmailVerifyEnabled = true
+	verifyingSvc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), c)
+	idToken = signIDToken(signingKey, tokenClaims("oidc-sub-014", oidcClientID, map[string]any{"email": "another-new-oidc-user@example.com"}))
+	userInfoClaims = nil
+
+	_, err = verifyingSvc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+		Provider: users.OIDCProvider,
+		Code:     "valid-code",
+		Verifier: verifier,
+	})
+	assert.True(t, errors.Contains(err, users.ErrEmailNotVerified), fmt.Sprintf("unverified e-mail should not create a user when verification is enabled: got %s", err))
 }
