@@ -1085,14 +1085,14 @@ func (svc usersService) canAccessAsRoot(ctx context.Context, userID string) erro
 	return nil
 }
 
-// canModifyUser prevents platform admins from modifying the root admin account.
+// canModifyUser restricts the modification of users with a platform role to the root admin.
 func (svc usersService) canModifyUser(ctx context.Context, callerID, userID string) error {
 	role, err := svc.auth.RetrieveRole(ctx, userID)
 	if err != nil {
 		return err
 	}
 
-	if role != domain.RoleRootAdmin {
+	if role == "" {
 		return nil
 	}
 

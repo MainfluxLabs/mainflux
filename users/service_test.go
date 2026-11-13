@@ -582,6 +582,9 @@ func TestChangePassword(t *testing.T) {
 	adminToken, _ := svc.Login(context.Background(), admin)
 	platformAdminToken, _ := svc.Login(context.Background(), platformAdmin)
 
+	err := svc.AssignAdminRole(context.Background(), adminToken, registerUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
+
 	cases := map[string]struct {
 		token       string
 		email       string
@@ -592,6 +595,13 @@ func TestChangePassword(t *testing.T) {
 		"platform admin change root admin password": {
 			platformAdminToken,
 			admin.Email,
+			"newpassword",
+			"",
+			errors.ErrAuthorization,
+		},
+		"platform admin change platform admin password": {
+			platformAdminToken,
+			registerUser.Email,
 			"newpassword",
 			"",
 			errors.ErrAuthorization,
@@ -680,6 +690,9 @@ func TestEnableUser(t *testing.T) {
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	err = svc.AssignAdminRole(context.Background(), tokenAdmin, registerUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
+
 	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
 
@@ -692,6 +705,7 @@ func TestEnableUser(t *testing.T) {
 	}{
 		{"enable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
 		{"enable root as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
+		{"enable platform admin as platform admin", tokenPlatformAdmin, registerUser.ID, errors.ErrAuthorization},
 		{"enable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
 		{"enable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
 		{"enable user as admin", tokenAdmin, registerUser.ID, nil},
@@ -716,6 +730,9 @@ func TestDisableUser(t *testing.T) {
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	err = svc.AssignAdminRole(context.Background(), tokenAdmin, registerUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
+
 	// Rejected cases run first, so disabling as admin proves they left the user enabled.
 	cases := []struct {
 		desc  string
@@ -725,6 +742,7 @@ func TestDisableUser(t *testing.T) {
 	}{
 		{"disable admin as non-admin user", tokenUser, admin.ID, errors.ErrAuthorization},
 		{"disable root as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
+		{"disable platform admin as platform admin", tokenPlatformAdmin, registerUser.ID, errors.ErrAuthorization},
 		{"disable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
 		{"disable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
 		{"disable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
