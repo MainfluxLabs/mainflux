@@ -37,7 +37,7 @@ const (
 	APIKey
 )
 
-// Identity contains ID and Email. Impersonator is set when a root admin
+// Identity contains ID and Email. Impersonator is set when a platform admin
 // acts on behalf of the user through an impersonated session.
 type Identity struct {
 	ID           string    `json:"id,omitempty"`
