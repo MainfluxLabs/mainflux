@@ -6,7 +6,6 @@ package users
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -43,7 +42,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
 	}
 	callbackOpts := append([]kithttp.ServerOption{}, opts...)
-	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(encodeOAuthCallbackError(logger)))
+	callbackOpts = append(callbackOpts, kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeOAuthCallbackError)))
 
 	withIdentity := authn.IdentityMiddleware(ac, logger)
 
@@ -551,12 +550,9 @@ func encodeOAuthCallbackResponse(_ context.Context, w http.ResponseWriter, respo
 	return nil
 }
 
-func encodeOAuthCallbackError(logger logger.Logger) kithttp.ErrorEncoder {
-	return func(ctx context.Context, err error, w http.ResponseWriter) {
-		logger.Warn(fmt.Sprintf("Failed OAuth callback: %s", err))
-		clearOAuthCookies(w)
-		encodeError(ctx, err, w)
-	}
+func encodeOAuthCallbackError(ctx context.Context, err error, w http.ResponseWriter) {
+	clearOAuthCookies(w)
+	encodeError(ctx, err, w)
 }
 
 func clearOAuthCookies(w http.ResponseWriter) {

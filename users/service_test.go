@@ -1203,4 +1203,16 @@ func TestOIDCCallback(t *testing.T) {
 	linkedUser, err := userRepo.RetrieveByID(context.Background(), identity.UserID)
 	require.Nil(t, err, "linked oidc user should exist")
 	assert.Equal(t, newOIDCUser.Email, linkedUser.Email, "unverified e-mail change should not be applied to linked user")
+
+	c.EmailVerifyEnabled = true
+	verifyingSvc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, c)
+	idToken = signIDToken(signingKey, tokenClaims("oidc-sub-014", oidcClientID, map[string]any{"email": "another-new-oidc-user@example.com"}))
+	userInfoClaims = nil
+
+	_, err = verifyingSvc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+		Provider: users.OIDCProvider,
+		Code:     "valid-code",
+		Verifier: verifier,
+	})
+	assert.True(t, errors.Contains(err, users.ErrEmailNotVerified), fmt.Sprintf("unverified e-mail should not create a user when verification is enabled: got %s", err))
 }

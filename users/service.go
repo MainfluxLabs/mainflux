@@ -51,7 +51,7 @@ var (
 	// ErrInvalidAdminCredentials indicates that the configured root admin e-mail or password is invalid.
 	ErrInvalidAdminCredentials = errors.New("invalid root admin e-mail or password")
 
-	// ErrEmailNotVerified indicates that the identity provider did not verify the e-mail of an existing account.
+	// ErrEmailNotVerified indicates that the identity provider did not verify the user e-mail.
 	ErrEmailNotVerified = errors.New("e-mail not verified by identity provider")
 )
 
@@ -686,7 +686,8 @@ func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string
 	return oidcUser, nil
 }
 
-// handleIdentity returns the user linked to the provider identity, or links or creates one by e-mail.
+// handleIdentity returns the user linked to the provider identity,
+// or links or creates one by e-mail.
 func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUser, inviteID, redirectPath string) (User, error) {
 	identity, err := svc.identity.Retrieve(ctx, providerUser.provider, providerUser.providerUserID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
@@ -721,6 +722,10 @@ func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUs
 		}
 		if !svc.selfRegisterEnabled && inviteID == "" {
 			return User{}, ErrSelfRegisterDisabled
+		}
+		// Account creation requires a verified e-mail when e-mail verification is enabled.
+		if svc.emailVerifyEnabled && !providerUser.emailVerified {
+			return User{}, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
 		}
 		if inviteID != "" {
 			if err := svc.ValidatePlatformInvite(ctx, inviteID, providerUser.email); err != nil {

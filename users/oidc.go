@@ -120,7 +120,8 @@ func (c *oidcClient) oauthConfig() (oauth2.Config, error) {
 	return cfg, nil
 }
 
-// emailClaims returns the e-mail claims of the ID token, or of UserInfo when the ID token has no e-mail.
+// emailClaims returns the e-mail claims of the ID token,
+// or of UserInfo when the ID token has no e-mail.
 func (c *oidcClient) emailClaims(ctx context.Context, idToken *oidc.IDToken, oauthToken *oauth2.Token) (oidcEmailClaims, error) {
 	var claims oidcEmailClaims
 	if err := idToken.Claims(&claims); err != nil {

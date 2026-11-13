@@ -48,7 +48,7 @@ services:
       MF_UI_PORT: ${MF_UI_PORT}
       MF_USERS_SELF_REGISTER_ENABLED: ${MF_USERS_SELF_REGISTER_ENABLED}
       MF_OIDC_ENABLED: ${MF_OIDC_ISSUER_URL:+true}
-      MF_OIDC_LABEL: ${MF_OIDC_LABEL:-SSO}
+      MF_OIDC_LABEL: ${MF_OIDC_LABEL}
 
   nginx:
     image: nginx:1.20.0-alpine
