@@ -365,9 +365,5 @@ func (svc *configService) canAccessOrg(ctx context.Context, token, orgID, subjec
 }
 
 func (svc *configService) canAccessPlatform(ctx context.Context, token string) error {
-	if err := svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	return nil
+	return svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub})
 }

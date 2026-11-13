@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	"golang.org/x/text/unicode/norm"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -530,6 +532,40 @@ func TestViewProfile(t *testing.T) {
 		assert.Equal(t, tc.user, u, fmt.Sprintf("%s: expected %s got %s\n", desc, tc.user, u))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
+}
+
+// unauthenticatedAuth returns the gRPC status the auth client returns for an invalid token.
+type unauthenticatedAuth struct {
+	domain.AuthClient
+}
+
+func (unauthenticatedAuth) Authorize(context.Context, domain.AuthzReq) error {
+	return status.Error(codes.Unauthenticated, "invalid token")
+}
+
+func TestListUsersWithUnauthenticatedToken(t *testing.T) {
+	authSvc := unauthenticatedAuth{mocks.NewAuthService(admin.ID, usersList, nil)}
+	c := users.Config{PassMinLength: users.MinPasswordLength}
+	svc := users.New(
+		usmocks.NewUserRepository(usersList),
+		usmocks.NewEmailVerificationRepository(verificationsList),
+		usmocks.NewPlatformInvitesRepository(),
+		usmocks.NewIdentityRepository(),
+		usmocks.NewHasher(),
+		usmocks.NewLegacyHasher(),
+		authSvc,
+		usmocks.NewEmailer(),
+		idProvider,
+		logger.NewMock(),
+		c,
+	)
+
+	_, err := svc.ListUsers(context.Background(), wrong, users.PageMetadata{Limit: 10})
+	st, _ := status.FromError(err)
+	msg := fmt.Sprintf("expected %s got %s\n", codes.Unauthenticated, st.Code())
+	assert.Equal(t, codes.Unauthenticated, st.Code(), msg)
+	msg = fmt.Sprintf("expected no %s in %s\n", errors.ErrAuthorization, err)
+	assert.False(t, errors.Contains(err, errors.ErrAuthorization), msg)
 }
 
 func TestListUsers(t *testing.T) {

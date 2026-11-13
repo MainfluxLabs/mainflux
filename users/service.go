@@ -1228,11 +1228,7 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 }
 
 func (svc usersService) canAccessPlatform(ctx context.Context, token string) error {
-	if err := svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	return nil
+	return svc.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub})
 }
 
 func (svc usersService) canAccessAsRoot(ctx context.Context, userID string) error {
