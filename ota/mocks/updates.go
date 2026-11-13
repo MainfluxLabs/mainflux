@@ -200,7 +200,8 @@ func (urm *updateRepositoryMock) UpdateThingUpdate(_ context.Context, tu ota.Thi
 	defer urm.mu.Unlock()
 
 	k := thingUpdateKey(tu.UpdateID, tu.ThingID)
-	if _, ok := urm.thingUpdates[k]; !ok {
+	current, ok := urm.thingUpdates[k]
+	if !ok || !slices.Contains(ota.ActiveStatuses, current.Status) {
 		return dbutil.ErrNotFound
 	}
 	urm.thingUpdates[k] = tu

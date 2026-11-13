@@ -13,6 +13,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -323,7 +324,15 @@ func (ots *otaService) reportStatus(ctx context.Context, thingID string, report 
 		}
 	}
 
-	return ots.updates.UpdateThingUpdate(ctx, tu)
+	// The thing update was read above, so a missing active row means it finished meanwhile.
+	if err := ots.updates.UpdateThingUpdate(ctx, tu); err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return ErrUpdateFinished
+		}
+		return err
+	}
+
+	return nil
 }
 
 // notify sends the ota command to the given things; offline things pick the update up through ViewPending.

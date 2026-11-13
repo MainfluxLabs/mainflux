@@ -82,7 +82,9 @@ pending ─► downloading ─► installing ─► succeeded
    must include `version`; without it the report is rejected and the status is unchanged. If
    `version` differs from the update's version, the thing is marked `failed`.
 5. **Timeout.** Things without progress for the update's `timeout` are marked `failed` with
-   `timed out`. The service checks this every `MF_OTA_TIMEOUT_CHECK_INTERVAL`.
+   `timed out`. The service checks this every `MF_OTA_TIMEOUT_CHECK_INTERVAL`. A `failed` thing
+   stays failed even if it reports later, e.g. `succeeded` after a timeout; retry the update to
+   track it again.
 6. **Retry.** A user can move the failed things of an update back to `pending`
    (`POST /updates/{id}/retry`); they are notified again. Things that got a newer update since are
    skipped, so a retry never rolls a thing back to older firmware. The service never retries on its own.
