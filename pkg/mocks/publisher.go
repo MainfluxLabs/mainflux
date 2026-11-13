@@ -12,6 +12,7 @@ import (
 // Publisher covers the methods this mock's callers (http/mqtt/modbus/downlinks,
 // pkg/sdk tests) use.
 type Publisher interface {
+	messaging.Publisher
 	messaging.CommandPublisher
 	messaging.MessageDispatcher
 }
@@ -21,6 +22,14 @@ type mockPublisher struct{}
 // NewPublisher returns mock message publisher.
 func NewPublisher() Publisher {
 	return mockPublisher{}
+}
+
+func (pub mockPublisher) Publish(_ string, _ protomfx.Message) error {
+	return nil
+}
+
+func (pub mockPublisher) Close() error {
+	return nil
 }
 
 func (pub mockPublisher) PublishCommand(_ string, cmd protomfx.Command) error {
