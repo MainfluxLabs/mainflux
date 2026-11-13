@@ -26,6 +26,7 @@ const (
 	token      = "admin@example.com"
 	wrongValue = "wrong-value"
 	thingID    = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
+	otherThing = "6384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
 	subject    = "things." + thingID + ".messages"
 )
@@ -40,8 +41,9 @@ func newServiceWithPub(pub rules.Publisher) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
-			token:   {ID: thingID, GroupID: groupID},
-			thingID: {ID: thingID, GroupID: groupID},
+			token:      {ID: thingID, GroupID: groupID},
+			thingID:    {ID: thingID, GroupID: groupID},
+			otherThing: {ID: otherThing, GroupID: wrongValue},
 		},
 		map[string]things.Group{
 			token: {ID: groupID},
@@ -296,6 +298,12 @@ func TestCreateRules(t *testing.T) {
 		Actions:  []rules.Action{{Type: rules.ActionTypeAlarm}},
 	}
 
+	thingRule := rule
+	thingRule.Input = rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}}
+
+	otherThingRule := rule
+	otherThingRule.Input = rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{otherThing}}
+
 	cases := []struct {
 		desc    string
 		token   string
@@ -303,6 +311,20 @@ func TestCreateRules(t *testing.T) {
 		rules   []rules.Rule
 		err     error
 	}{
+		{
+			desc:    "create rules with thing of the group",
+			token:   token,
+			groupID: groupID,
+			rules:   []rules.Rule{thingRule},
+			err:     nil,
+		},
+		{
+			desc:    "create rules with thing of another group",
+			token:   token,
+			groupID: groupID,
+			rules:   []rules.Rule{otherThingRule},
+			err:     errors.ErrAuthorization,
+		},
 		{
 			desc:    "create rules with valid token",
 			token:   token,
