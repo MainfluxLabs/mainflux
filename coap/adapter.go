@@ -31,6 +31,10 @@ type Service interface {
 	// Unsubscribe method is used to stop observing resource.
 	Unsubscribe(ctx context.Context, key domain.ThingKey, subtopic, token string) error
 
+	// RemoveObserver ends the observation of the given client, unless another client
+	// has since observed the subtopic with the same token.
+	RemoveObserver(subtopic string, c Client) error
+
 	// SendCommandToThing publishes a command to the specified thing, authorized by thing key (M2M).
 	SendCommandToThing(ctx context.Context, key domain.ThingKey, recipientID string, cmd protomfx.Command) error
 
@@ -53,18 +57,25 @@ const (
 
 var _ Service = (*adapterService)(nil)
 
+// observation identifies an observation the way the broker subscription does.
+type observation struct {
+	token    string
+	subtopic string
+}
+
 type adapterService struct {
-	things  domain.ThingsClient
-	pubsub  PubSub
-	obsLock sync.Mutex
+	things    domain.ThingsClient
+	pubsub    PubSub
+	obsLock   sync.Mutex
+	observers map[observation]Client
 }
 
 // New instantiates the CoAP adapter implementation.
 func New(things domain.ThingsClient, pubsub PubSub) Service {
 	as := &adapterService{
-		things:  things,
-		pubsub:  pubsub,
-		obsLock: sync.Mutex{},
+		things:    things,
+		pubsub:    pubsub,
+		observers: make(map[observation]Client),
 	}
 
 	return as
@@ -93,11 +104,20 @@ func (svc *adapterService) Subscribe(ctx context.Context, key domain.ThingKey, s
 		return err
 	}
 
+	svc.obsLock.Lock()
+	defer svc.obsLock.Unlock()
+
 	if nats.IsCommandsSubject(subtopic) {
-		return svc.pubsub.SubscribeCommands(c.Token(), subtopic, c)
+		err = svc.pubsub.SubscribeCommands(c.Token(), subtopic, c)
+	} else {
+		err = svc.pubsub.Subscribe(c.Token(), subtopic, c)
+	}
+	if err != nil {
+		return err
 	}
 
-	return svc.pubsub.Subscribe(c.Token(), subtopic, c)
+	svc.observers[observation{token: c.Token(), subtopic: subtopic}] = c
+	return nil
 }
 
 func isWildcard(elem string) bool {
@@ -181,5 +201,22 @@ func (svc *adapterService) Unsubscribe(ctx context.Context, key domain.ThingKey,
 		return errors.Wrap(errors.ErrAuthorization, err)
 	}
 
+	svc.obsLock.Lock()
+	defer svc.obsLock.Unlock()
+
+	delete(svc.observers, observation{token: token, subtopic: subtopic})
 	return svc.pubsub.Unsubscribe(token, subtopic)
+}
+
+func (svc *adapterService) RemoveObserver(subtopic string, c Client) error {
+	svc.obsLock.Lock()
+	defer svc.obsLock.Unlock()
+
+	obs := observation{token: c.Token(), subtopic: subtopic}
+	if svc.observers[obs] != c {
+		return nil
+	}
+
+	delete(svc.observers, obs)
+	return svc.pubsub.Unsubscribe(obs.token, subtopic)
 }

@@ -43,7 +43,9 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 
 	for _, user := range userList {
 		usersByEmail[user.Email] = user
-		platformRoles[user.ID] = user.Role
+		if user.Role != "" {
+			platformRoles[user.ID] = user.Role
+		}
 		if user.Role == auth.RoleRootAdmin || user.Role == auth.RoleAdmin {
 			adminIDs = append(adminIDs, user.ID)
 		}
@@ -208,6 +210,11 @@ func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, orgID string) (str
 }
 
 func (svc authServiceMock) AssignRole(_ context.Context, id, role string) error {
+	// The roles table allows a single role per user.
+	if svc.platformRoles[id] != "" {
+		return dbutil.ErrCreateEntity
+	}
+
 	svc.platformRoles[id] = role
 	return nil
 }

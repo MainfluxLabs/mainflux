@@ -913,6 +913,147 @@ func TestUpdateUser(t *testing.T) {
 
 }
 
+func TestEnableUser(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.DisableUser(context.Background(), adminToken, user.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	alreadyEnabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyEnabledUser.Error()})
+
+	cases := []struct {
+		desc   string
+		id     string
+		token  string
+		status int
+		res    string
+	}{
+		{
+			desc:   "enable user with invalid token",
+			id:     user.ID,
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    unauthRes,
+		},
+		{
+			desc:   "enable non-existing user",
+			id:     wrongValue,
+			token:  adminToken,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
+		},
+		{
+			desc:   "enable disabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusNoContent,
+			res:    emptyValue,
+		},
+		{
+			desc:   "enable already enabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    alreadyEnabledRes,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/enable", ts.URL, tc.id),
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		msg := fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode)
+		assert.Equal(t, tc.status, res.StatusCode, msg)
+		msg = fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data)
+		assert.Equal(t, tc.res, data, msg)
+	}
+}
+
+func TestDisableUser(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	alreadyDisabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyDisabledUser.Error()})
+
+	cases := []struct {
+		desc   string
+		id     string
+		token  string
+		status int
+		res    string
+	}{
+		{
+			desc:   "disable user with invalid token",
+			id:     user.ID,
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    unauthRes,
+		},
+		{
+			desc:   "disable non-existing user",
+			id:     wrongValue,
+			token:  adminToken,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
+		},
+		{
+			desc:   "disable enabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusNoContent,
+			res:    emptyValue,
+		},
+		{
+			desc:   "disable already disabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    alreadyDisabledRes,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/disable", ts.URL, tc.id),
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		msg := fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode)
+		assert.Equal(t, tc.status, res.StatusCode, msg)
+		msg = fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data)
+		assert.Equal(t, tc.res, data, msg)
+	}
+}
+
 func TestPasswordResetRequest(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
