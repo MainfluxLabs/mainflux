@@ -16,7 +16,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const recoveryTokenPrefix = "recovery-"
+const (
+	recoveryTokenPrefix     = "recovery-"
+	impersonatedTokenPrefix = "impersonated-"
+)
 
 var _ domain.AuthClient = (*authServiceMock)(nil)
 
@@ -26,6 +29,7 @@ type authServiceMock struct {
 	orgRoles      map[string]map[string]string
 	usersByEmail  map[string]users.User
 	orgs          map[string]auth.Org
+	impersonators map[string]domain.Identity
 }
 
 // NewAuthService creates mock of auth service client.
@@ -65,6 +69,7 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 		orgRoles:      orgRoles,
 		usersByEmail:  usersByEmail,
 		orgs:          orgs,
+		impersonators: make(map[string]domain.Identity),
 	}
 }
 
@@ -72,7 +77,21 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 	if u, ok := svc.usersByEmail[token]; ok {
 		return domain.Identity{ID: u.ID, Email: u.Email}, nil
 	}
-	return domain.Identity{}, errors.ErrAuthentication
+
+	impersonator, ok := svc.impersonators[token]
+	if !ok {
+		return domain.Identity{}, errors.ErrAuthentication
+	}
+
+	email := strings.TrimPrefix(token, impersonatedTokenPrefix)
+	u := svc.usersByEmail[email]
+	identity := domain.Identity{
+		ID:           u.ID,
+		Email:        u.Email,
+		Impersonator: &impersonator,
+	}
+
+	return identity, nil
 }
 
 func (svc authServiceMock) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
@@ -94,6 +113,17 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 		}
 	}
 	return "", errors.ErrAuthentication
+}
+
+func (svc authServiceMock) IssueImpersonated(_ context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	if _, ok := svc.usersByEmail[email]; !ok {
+		return "", errors.ErrAuthentication
+	}
+
+	token := impersonatedTokenPrefix + email
+	svc.impersonators[token] = impersonator
+
+	return token, nil
 }
 
 func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string, error) {

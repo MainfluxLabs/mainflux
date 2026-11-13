@@ -288,6 +288,22 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func impersonateEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(impersonateReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+
+		token, err := svc.Impersonate(ctx, req.token, req.id)
+		if err != nil {
+			return nil, err
+		}
+
+		return tokenRes{token}, nil
+	}
+}
+
 func buildUsersResponse(up users.UsersPage, pm users.PageMetadata) userPageRes {
 	res := userPageRes{
 		pageRes: pageRes{

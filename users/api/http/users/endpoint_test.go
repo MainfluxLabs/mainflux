@@ -66,7 +66,7 @@ const (
 
 var (
 	user                  = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled", Role: "root"}
 	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
 	usersList             = []users.User{admin, user}
 	metadata              = map[string]any{"key": "value"}
@@ -457,6 +457,48 @@ func TestUser(t *testing.T) {
 
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 		assert.Equal(t, tc.res, "", fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, token))
+	}
+}
+
+func TestImpersonate(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	disabledUserID, err := svc.Register(context.Background(), admin.Email, newUser)
+	require.Nil(t, err, fmt.Sprintf("registering user expected to succeed: %s", err))
+	err = svc.DisableUser(context.Background(), admin.Email, disabledUserID)
+	require.Nil(t, err, fmt.Sprintf("disabling user expected to succeed: %s", err))
+
+	impersonatedToken, err := svc.Impersonate(context.Background(), admin.Email, user.ID)
+	require.Nil(t, err, fmt.Sprintf("impersonating user expected to succeed: %s", err))
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status int
+	}{
+		{"impersonate user as root admin", admin.Email, user.ID, http.StatusCreated},
+		{"impersonate user as non-root user", user.Email, admin.ID, http.StatusForbidden},
+		{"impersonate user without token", emptyValue, user.ID, http.StatusUnauthorized},
+		{"impersonate non-existing user as root admin", admin.Email, wrongValue, http.StatusNotFound},
+		{"impersonate self as root admin", admin.Email, admin.ID, http.StatusForbidden},
+		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusConflict},
+		{"impersonate user from an impersonated session", impersonatedToken, user.ID, http.StatusForbidden},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/impersonate", ts.URL, tc.id),
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
 }
 

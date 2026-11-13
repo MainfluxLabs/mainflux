@@ -22,6 +22,25 @@ func NewEventStoreMiddleware(svc auth.Service, pub events.Publisher) auth.Servic
 	}
 }
 
+func (es eventStore) Issue(ctx context.Context, token string, key auth.Key) (auth.Key, string, error) {
+	issuedKey, secret, err := es.Service.Issue(ctx, token, key)
+	if err != nil {
+		return issuedKey, secret, err
+	}
+
+	if key.Impersonator != nil {
+		es.pub.Publish(ctx, events.Event{
+			Action: events.UserImpersonated{
+				ID:    key.IssuerID,
+				Email: key.Subject,
+			},
+			JWTUserIdentity: *key.Impersonator,
+		})
+	}
+
+	return issuedKey, secret, nil
+}
+
 func (es eventStore) CreateOrg(ctx context.Context, token string, org auth.Org) (auth.Org, error) {
 	sorg, err := es.Service.CreateOrg(ctx, token, org)
 	if err != nil {

@@ -49,6 +49,9 @@ var (
 
 	// ErrInvalidAdminCredentials indicates that the configured root admin e-mail or password is invalid.
 	ErrInvalidAdminCredentials = errors.New("invalid root admin e-mail or password")
+
+	// ErrDisabledUser indicates that the operation is not allowed for a disabled user.
+	ErrDisabledUser = errors.New("the user is disabled")
 )
 
 type (
@@ -136,6 +139,10 @@ type Service interface {
 
 	// DisableUser logically disables the user identified with the provided ID
 	DisableUser(ctx context.Context, token, id string) error
+
+	// Impersonate issues a login token for the user identified with the provided ID,
+	// on behalf of the root admin identified by the provided token.
+	Impersonate(ctx context.Context, token, id string) (string, error)
 
 	// Backup returns admin, all users, and all OAuth identities. Only accessible by admin.
 	Backup(ctx context.Context, token string) (User, []User, []Identity, error)
@@ -933,6 +940,46 @@ func (svc usersService) DisableUser(ctx context.Context, token, id string) error
 	return svc.auth.RevokeSessions(ctx, id)
 }
 
+func (svc usersService) Impersonate(ctx context.Context, token, id string) (string, error) {
+	admin, err := svc.identify(ctx, token)
+	if err != nil {
+		return "", err
+	}
+
+	if admin.impersonator != nil || admin.id == id {
+		return "", errors.ErrAuthorization
+	}
+
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
+		return "", err
+	}
+
+	target, err := svc.users.RetrieveByID(ctx, id)
+	if err != nil {
+		return "", errors.Wrap(dbutil.ErrNotFound, err)
+	}
+
+	if target.Status == DisabledStatusKey {
+		return "", ErrDisabledUser
+	}
+
+	targetRole, err := svc.auth.RetrieveRole(ctx, target.ID)
+	if err != nil {
+		return "", err
+	}
+
+	if targetRole == domain.RoleRootAdmin {
+		return "", errors.ErrAuthorization
+	}
+
+	impersonator := domain.Identity{
+		ID:    admin.id,
+		Email: admin.email,
+	}
+
+	return svc.auth.IssueImpersonated(ctx, target.ID, target.Email, impersonator)
+}
+
 func (svc usersService) changeStatus(ctx context.Context, token, id, status string) error {
 	if _, err := svc.identify(ctx, token); err != nil {
 		return err
@@ -966,8 +1013,9 @@ func (svc usersService) issue(ctx context.Context, id, email string, keyType uin
 }
 
 type userIdentity struct {
-	id    string
-	email string
+	id           string
+	email        string
+	impersonator *domain.Identity
 }
 
 func (svc usersService) identify(ctx context.Context, token string) (userIdentity, error) {
@@ -976,7 +1024,13 @@ func (svc usersService) identify(ctx context.Context, token string) (userIdentit
 		return userIdentity{}, err
 	}
 
-	return userIdentity{identity.ID, identity.Email}, nil
+	user := userIdentity{
+		id:           identity.ID,
+		email:        identity.Email,
+		impersonator: identity.Impersonator,
+	}
+
+	return user, nil
 }
 
 func (svc usersService) canAccessPlatform(ctx context.Context, token string) error {

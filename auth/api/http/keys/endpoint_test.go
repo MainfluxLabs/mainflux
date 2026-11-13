@@ -20,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -90,6 +91,10 @@ func TestIssue(t *testing.T) {
 	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	impersonator := &domain.Identity{ID: "123e4567-e89b-12d3-a456-000000000002", Email: "root@example.com"}
+	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
@@ -118,6 +123,13 @@ func TestIssue(t *testing.T) {
 			ct:     contentType,
 			token:  loginSecret,
 			status: http.StatusCreated,
+		},
+		{
+			desc:   "issue API key from an impersonated session",
+			req:    toJSON(ak),
+			ct:     contentType,
+			token:  impersonatedSecret,
+			status: http.StatusForbidden,
 		},
 		{
 			desc:   "issue recovery key",

@@ -192,6 +192,16 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		opts...,
 	))
 
+	mux.Post("/users/:id/impersonate", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "impersonate"),
+			withIdentity,
+		)(impersonateEndpoint(svc)),
+		decodeImpersonate,
+		encodeResponse,
+		opts...,
+	))
+
 	return mux
 }
 
@@ -478,6 +488,15 @@ func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
+func decodeImpersonate(_ context.Context, r *http.Request) (any, error) {
+	req := impersonateReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
 func encodeResponse(_ context.Context, w http.ResponseWriter, response any) error {
 	if ar, ok := response.(apiutil.Response); ok {
 		for k, v := range ar.Headers() {
@@ -585,7 +604,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusInternalServerError)
 	case errors.Contains(err, users.ErrSelfRegisterDisabled):
 		w.WriteHeader(http.StatusForbidden)
-	case errors.Contains(err, users.ErrAlreadyEnabledUser),
+	case errors.Contains(err, users.ErrDisabledUser),
+		errors.Contains(err, users.ErrAlreadyEnabledUser),
 		errors.Contains(err, users.ErrAlreadyDisabledUser):
 		w.WriteHeader(http.StatusConflict)
 	default:
