@@ -229,11 +229,12 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response any) erro
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch {
 	case errors.Contains(err, ErrMissingUpdateID),
-		errors.Contains(err, ErrMissingFileName),
-		errors.Contains(err, ErrMissingVersion),
+		errors.Contains(err, ErrInvalidFileName),
+		errors.Contains(err, ErrInvalidVersion),
 		errors.Contains(err, ErrInvalidChecksum),
 		errors.Contains(err, ErrInvalidFileSize),
 		errors.Contains(err, ErrInvalidTimeout),
+		errors.Contains(err, ErrDuplicateThingIDs),
 		errors.Contains(err, ota.ErrInvalidStatus),
 		errors.Contains(err, ota.ErrMissingReportedVersion):
 		w.WriteHeader(http.StatusBadRequest)

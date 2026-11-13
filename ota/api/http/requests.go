@@ -4,6 +4,8 @@
 package http
 
 import (
+	"encoding/hex"
+
 	"github.com/MainfluxLabs/mainflux/ota"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -23,20 +25,23 @@ var (
 	// ErrMissingUpdateID indicates a missing update ID.
 	ErrMissingUpdateID = errors.New("missing update id")
 
-	// ErrMissingFileName indicates a missing or too long firmware file name.
-	ErrMissingFileName = errors.New("missing or invalid file name")
+	// ErrInvalidFileName indicates a missing or too long firmware file name.
+	ErrInvalidFileName = errors.New("missing or invalid file name")
 
-	// ErrMissingVersion indicates a missing or too long firmware version.
-	ErrMissingVersion = errors.New("missing or invalid version")
+	// ErrInvalidVersion indicates a missing or too long firmware version.
+	ErrInvalidVersion = errors.New("missing or invalid version")
 
 	// ErrInvalidChecksum indicates a firmware checksum that is not a SHA-256 hex digest.
-	ErrInvalidChecksum = errors.New("invalid checksum")
+	ErrInvalidChecksum = errors.New("missing or invalid checksum")
 
 	// ErrInvalidFileSize indicates a negative firmware file size.
 	ErrInvalidFileSize = errors.New("invalid file size")
 
 	// ErrInvalidTimeout indicates a negative or too long timeout.
 	ErrInvalidTimeout = errors.New("invalid timeout")
+
+	// ErrDuplicateThingIDs indicates a thing ID listed more than once.
+	ErrDuplicateThingIDs = errors.New("duplicate thing ids")
 )
 
 func validatePageMetadata(pm ota.PageMetadata, orderFields map[string]string) error {
@@ -67,14 +72,14 @@ func (req createUpdateReq) validate() error {
 	}
 
 	if req.FileName == "" || len(req.FileName) > maxFileNameSize {
-		return ErrMissingFileName
+		return ErrInvalidFileName
 	}
 
 	if req.Version == "" || len(req.Version) > maxVersionSize {
-		return ErrMissingVersion
+		return ErrInvalidVersion
 	}
 
-	if req.Checksum != "" && len(req.Checksum) != checksumSize {
+	if !isSHA256Hex(req.Checksum) {
 		return ErrInvalidChecksum
 	}
 
@@ -90,13 +95,26 @@ func (req createUpdateReq) validate() error {
 		return apiutil.ErrThingIDsSize
 	}
 
+	ids := make(map[string]struct{}, len(req.ThingIDs))
 	for _, thingID := range req.ThingIDs {
 		if thingID == "" {
 			return apiutil.ErrMissingThingID
 		}
+		if _, ok := ids[thingID]; ok {
+			return ErrDuplicateThingIDs
+		}
+		ids[thingID] = struct{}{}
 	}
 
 	return nil
+}
+
+func isSHA256Hex(checksum string) bool {
+	if len(checksum) != checksumSize {
+		return false
+	}
+	_, err := hex.DecodeString(checksum)
+	return err == nil
 }
 
 type updateReq struct {
