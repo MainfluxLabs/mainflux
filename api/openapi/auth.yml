@@ -80,7 +80,7 @@ paths:
         '201':
           description: Issued new key.
         '400':
-          description: Failed due to malformed JSON.
+          description: Failed due to malformed JSON, a key type other than API key, or a missing duration.
         '403':
           description: API keys cannot be issued from an impersonated session.
         '409':
