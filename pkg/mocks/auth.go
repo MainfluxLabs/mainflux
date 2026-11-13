@@ -130,6 +130,12 @@ func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string
 }
 
 func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
+	for token, impersonator := range svc.impersonators {
+		if impersonator.ID == id {
+			delete(svc.impersonators, token)
+		}
+	}
+
 	return nil
 }
 

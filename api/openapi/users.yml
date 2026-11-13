@@ -511,7 +511,8 @@ paths:
     delete:
       summary: Unassigns the platform admin role
       description: |
-        Unassigns the platform admin role from a user. Only accessible by root admin.
+        Unassigns the platform admin role from a user and revokes all sessions of the user,
+        including the sessions impersonated by the user. Only accessible by root admin.
       tags:
         - users
       parameters:

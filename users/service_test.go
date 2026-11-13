@@ -1100,6 +1100,9 @@ func TestUnassignAdminRole(t *testing.T) {
 	tokenUser, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	impersonatedToken, err := svc.Impersonate(context.Background(), tokenPlatformAdmin, user.ID)
+	require.Nil(t, err, fmt.Sprintf("Impersonating user expected to succeed: %s", err))
+
 	cases := []struct {
 		desc  string
 		token string
@@ -1163,6 +1166,14 @@ func TestUnassignAdminRole(t *testing.T) {
 		err,
 	)
 	assert.True(t, errors.Contains(err, errors.ErrAuthorization), msg)
+
+	_, err = svc.ViewProfile(context.Background(), impersonatedToken)
+	msg = fmt.Sprintf(
+		"view profile in session impersonated by unassigned platform admin: expected %s got %s\n",
+		errors.ErrAuthentication,
+		err,
+	)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), msg)
 }
 
 func TestBackup(t *testing.T) {
