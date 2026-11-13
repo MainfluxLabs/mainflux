@@ -1419,8 +1419,8 @@ func TestUnassignAdminRole(t *testing.T) {
 			desc:   "unassign admin role from root admin",
 			id:     admin.ID,
 			token:  adminToken,
-			status: http.StatusNotFound,
-			res:    notAdminRes,
+			status: http.StatusForbidden,
+			res:    forbiddenRes,
 		},
 		{
 			desc:   "unassign admin role from regular user",

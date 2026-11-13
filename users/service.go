@@ -1181,6 +1181,10 @@ func (svc usersService) UnassignAdminRole(ctx context.Context, token, id string)
 		return err
 	}
 
+	if role == domain.RoleRootAdmin {
+		return errors.ErrAuthorization
+	}
+
 	if role != domain.RoleAdmin {
 		return ErrNotPlatformAdmin
 	}

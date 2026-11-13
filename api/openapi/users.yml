@@ -523,7 +523,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: This endpoint is available only for the root administrator.
+          description: The caller is not the root administrator, or the user is the root administrator.
         '404':
           description: The user does not have the platform admin role.
         '500':
