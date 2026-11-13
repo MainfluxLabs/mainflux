@@ -45,6 +45,8 @@ const (
 	SubjectAlarms = "alarms.*"
 	// SubjectWebhooks represents subject used to subscribe to webhook forwarding — both rule-triggered and integration-based.
 	SubjectWebhooks = "webhooks"
+	// SubjectWebRTC represents the wildcard subject covering all WebRTC signaling messages.
+	SubjectWebRTC = "webrtc.>"
 	// SubjectRules represents subject used to route messages to the rules service.
 	SubjectRules = "rules"
 )

@@ -52,6 +52,7 @@ var (
 type Publisher interface {
 	messaging.CommandPublisher
 	messaging.MessageDispatcher
+	Publish(subject string, msg protomfx.Message) error
 }
 
 // handler implements session.Handler interface
@@ -241,6 +242,12 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 		Protocol: protocol,
 		Subtopic: subtopic,
 		Records:  []*protomfx.Record{{Payload: payload}},
+	}
+
+	if !nats.IsCommandsSubject(subject) && nats.IsWebRTCSubtopic(subtopic) {
+		msg.ThingId = pc.ThingID
+		msg.Created = time.Now().UnixNano()
+		return h.publisher.Publish(nats.GetWebRTCSubject(pc.ThingID, subtopic), msg)
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {

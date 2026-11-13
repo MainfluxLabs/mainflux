@@ -23,6 +23,7 @@ const (
 
 	thingsPrefix   = "things"
 	groupsPrefix   = "groups"
+	webrtcPrefix   = "webrtc"
 	messagesSuffix = "messages"
 	commandsSuffix = "commands"
 )
@@ -107,6 +108,21 @@ func GetThingCommandsSubject(thingID, subtopic string) string {
 
 func GetGroupCommandsSubject(groupID, subtopic string) string {
 	return createSubject(groupsPrefix, groupID, commandsSuffix, subtopic)
+}
+
+// GetWebRTCSubject returns the subject carrying WebRTC signaling of a thing.
+// The subtopic is the part after the reserved "webrtc" prefix, e.g. "offer".
+func GetWebRTCSubject(thingID, subtopic string) string {
+	subject := fmt.Sprintf("%s.%s", webrtcPrefix, thingID)
+	if subtopic = strings.TrimPrefix(strings.TrimPrefix(subtopic, webrtcPrefix), "."); subtopic != "" {
+		subject = fmt.Sprintf("%s.%s", subject, subtopic)
+	}
+	return subject
+}
+
+// IsWebRTCSubtopic reports whether subtopic is the reserved "webrtc" subtopic or lies below it.
+func IsWebRTCSubtopic(subtopic string) bool {
+	return subtopic == webrtcPrefix || strings.HasPrefix(subtopic, webrtcPrefix+".")
 }
 
 // IsCommandsSubject reports whether subject is a thing or group commands subject.

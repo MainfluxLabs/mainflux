@@ -12,6 +12,8 @@ messages/<subtopic>
 
 `<subtopic>` is optional and can be any path-like string (e.g. `messages/sensors/temperature`).
 
+The subtopic `webrtc` and every subtopic starting with `webrtc.` (for example `messages/webrtc/offer`) are reserved for WebRTC signaling. Such messages are delivered unmodified only to the WebRTC service. They are not stored, and they are not passed to rules or webhooks. Commands with a `webrtc` subtopic are not affected. See the WebRTC service README.
+
 ## Authentication
 
 Things authenticate over MQTT using:

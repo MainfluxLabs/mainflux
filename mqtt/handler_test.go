@@ -329,6 +329,55 @@ func TestPublish(t *testing.T) {
 	}
 }
 
+func TestPublishWebRTC(t *testing.T) {
+	sdpPayload := []byte(`{"session_id":"","sdp":"v=0"}`)
+
+	cases := []struct {
+		desc     string
+		topic    string
+		subject  string
+		command  string
+		dispatch bool
+	}{
+		{desc: "publish webrtc offer to default topic", topic: "webrtc/offer", subject: "webrtc." + thingID + ".offer"},
+		{desc: "publish webrtc offer to own messages topic", topic: "things/" + thingID + "/messages/webrtc/offer", subject: "webrtc." + thingID + ".offer"},
+		{desc: "publish webrtc config to default topic", topic: "webrtc/config", subject: "webrtc." + thingID + ".config"},
+		{desc: "publish command with webrtc subtopic is still a command", topic: "things/" + recipientID + "/commands/webrtc/answer", command: "things." + recipientID + ".commands.webrtc.answer"},
+		{desc: "publish subtopic merely starting with webrtc", topic: "webrtcam/offer", dispatch: true},
+	}
+
+	for _, tc := range cases {
+		pub := pkgmocks.NewRecordingPublisher()
+		handler := newHandlerWithPublisher(pub)
+		logBuffer.Reset()
+
+		handler.Publish(&sessionClient, &tc.topic, &sdpPayload)
+
+		switch {
+		case tc.subject != "":
+			published := pub.Published()
+			if assert.Len(t, published, 1, tc.desc) {
+				assert.Equal(t, tc.subject, published[0].Subject, tc.desc)
+				assert.Equal(t, thingID, published[0].Message.ThingId, tc.desc)
+				assert.NotZero(t, published[0].Message.Created, tc.desc)
+				assert.Equal(t, sdpPayload, published[0].Message.Records[0].Payload, tc.desc)
+			}
+			assert.Empty(t, pub.Dispatched(), tc.desc)
+			assert.Empty(t, pub.Commands(), tc.desc)
+		case tc.command != "":
+			commands := pub.Commands()
+			if assert.Len(t, commands, 1, tc.desc) {
+				assert.Equal(t, tc.command, commands[0].Subject, tc.desc)
+			}
+			assert.Empty(t, pub.Published(), tc.desc)
+			assert.Empty(t, pub.Dispatched(), tc.desc)
+		case tc.dispatch:
+			assert.Len(t, pub.Dispatched(), 1, tc.desc)
+			assert.Empty(t, pub.Published(), tc.desc)
+		}
+	}
+}
+
 func TestSubscribe(t *testing.T) {
 	handler := newHandler()
 	logBuffer.Reset()
@@ -472,6 +521,10 @@ func TestDisconnectPublishesWill(t *testing.T) {
 }
 
 func newHandler() session.Handler {
+	return newHandlerWithPublisher(pkgmocks.NewPublisher())
+}
+
+func newHandlerWithPublisher(pub pkgmocks.Publisher) session.Handler {
 	logger, err := logger.New(&logBuffer, "debug")
 	if err != nil {
 		log.Fatalf("failed to create logger: %s", err)
@@ -490,5 +543,5 @@ func newHandler() session.Handler {
 		},
 	)
 
-	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), mocks.NewCache(), logger)
+	return mqtt.NewHandler(pub, thingsClient, newService(), mocks.NewCache(), logger)
 }

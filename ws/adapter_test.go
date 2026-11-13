@@ -105,6 +105,131 @@ func TestPublish(t *testing.T) {
 	}
 }
 
+func TestPublishWebRTC(t *testing.T) {
+	tc := pkgmock.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: thingID}}, nil)
+	sdpPayload := []byte(`{"session_id":"","sdp":"v=0\r\n"}`)
+
+	cases := []struct {
+		desc     string
+		thingKey things.ThingKey
+		subtopic string
+		payload  []byte
+		subject  string
+		err      error
+	}{
+		{
+			desc:     "publish webrtc offer",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
+			subtopic: "webrtc.offer",
+			payload:  sdpPayload,
+			subject:  "webrtc." + thingID + ".offer",
+		},
+		{
+			desc:     "publish webrtc candidate",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
+			subtopic: "webrtc.candidate",
+			payload:  []byte(`{"session_id":"s","candidate":{"candidate":"c"}}`),
+			subject:  "webrtc." + thingID + ".candidate",
+		},
+		{
+			desc:     "publish webrtc offer with invalid key",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: invalidValue},
+			subtopic: "webrtc.offer",
+			payload:  sdpPayload,
+			err:      errors.ErrAuthentication,
+		},
+		{
+			desc:     "publish webrtc offer with empty payload",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
+			subtopic: "webrtc.offer",
+			err:      messaging.ErrPublishMessage,
+		},
+		{
+			desc:     "publish subtopic merely starting with webrtc",
+			thingKey: things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey},
+			subtopic: "webrtcam",
+			payload:  sdpPayload,
+		},
+	}
+
+	for _, tc2 := range cases {
+		svc, pubsub := newService(tc)
+		m := protomfx.Message{
+			Protocol: protocol,
+			Subtopic: tc2.subtopic,
+			Records:  []*protomfx.Record{{Payload: tc2.payload}},
+		}
+
+		err := svc.Publish(context.Background(), tc2.thingKey, m)
+		assert.True(t, errors.Contains(err, tc2.err), fmt.Sprintf("%s: expected %s got %s\n", tc2.desc, tc2.err, err))
+
+		published := pubsub.Published()
+		if tc2.subject == "" {
+			assert.Empty(t, published, fmt.Sprintf("%s: expected nothing published\n", tc2.desc))
+			continue
+		}
+
+		assert.Empty(t, pubsub.Dispatched(), fmt.Sprintf("%s: expected no dispatch\n", tc2.desc))
+		if assert.Len(t, published, 1, tc2.desc) {
+			got := published[0]
+			assert.Equal(t, tc2.subject, got.Subject, tc2.desc)
+			assert.Equal(t, thingID, got.Message.ThingId, tc2.desc)
+			assert.NotZero(t, got.Message.Created, tc2.desc)
+			assert.Equal(t, tc2.payload, got.Message.Records[0].Payload, tc2.desc)
+		}
+	}
+
+	svc, pubsub := newService(tc)
+	err := svc.Publish(context.Background(), things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey}, protomfx.Message{
+		Protocol: protocol,
+		Subtopic: "webrtcam",
+		Records:  []*protomfx.Record{{Payload: sdpPayload}},
+	})
+	assert.Nil(t, err, "publish subtopic merely starting with webrtc: unexpected error\n")
+	assert.Len(t, pubsub.Dispatched(), 1, "publish subtopic merely starting with webrtc: expected dispatch\n")
+}
+
+type senmlThingsClient struct {
+	domain.ThingsClient
+}
+
+func (c senmlThingsClient) GetPubConfigByKey(ctx context.Context, key domain.ThingKey) (domain.PubConfigInfo, error) {
+	pc, err := c.ThingsClient.GetPubConfigByKey(ctx, key)
+	if err != nil {
+		return pc, err
+	}
+	pc.ProfileConfig = &domain.ProfileConfig{ContentType: messaging.SenMLContentType}
+	return pc, nil
+}
+
+func TestPublishWebRTCWithSenMLProfile(t *testing.T) {
+	tc := senmlThingsClient{pkgmock.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: thingID}}, nil)}
+	svc, pubsub := newService(tc)
+	key := things.ThingKey{Type: things.KeyTypeInternal, Value: thingKey}
+	payload := []byte(`{"session_id":"","sdp":"v=0\r\n"}`)
+
+	err := svc.Publish(context.Background(), key, protomfx.Message{
+		Protocol: protocol,
+		Subtopic: "webrtc.offer",
+		Records:  []*protomfx.Record{{Payload: payload}},
+	})
+	assert.Nil(t, err, "publish webrtc offer with senml profile: unexpected error\n")
+	assert.Empty(t, pubsub.Dispatched(), "publish webrtc offer with senml profile: expected no dispatch\n")
+
+	published := pubsub.Published()
+	if assert.Len(t, published, 1, "publish webrtc offer with senml profile") {
+		assert.Equal(t, "webrtc."+thingID+".offer", published[0].Subject)
+		assert.Equal(t, payload, published[0].Message.Records[0].Payload)
+	}
+
+	err = svc.Publish(context.Background(), key, protomfx.Message{
+		Protocol: protocol,
+		Subtopic: subtopic,
+		Records:  []*protomfx.Record{{Payload: payload}},
+	})
+	assert.NotNil(t, err, "publish regular message with senml profile and non-senml payload: expected error\n")
+}
+
 func TestSubscribe(t *testing.T) {
 	tc := pkgmock.NewThingsServiceClient(nil, map[string]things.Thing{thingKey: {ID: thingID}}, nil)
 	svc, pubsub := newService(tc)

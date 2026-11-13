@@ -67,6 +67,8 @@ ws://localhost:8190/messages/sensors/temperature?key=<thing_key>&keyType=<key_ty
 
 Once connected, each message sent over the socket is published to the platform.
 
+The subtopic `webrtc` and every subtopic starting with `webrtc.` (`webrtc.offer`, `webrtc.candidate`, `webrtc.config`) are reserved for WebRTC signaling. Such messages are delivered unmodified only to the WebRTC service. They are not stored, and they are not passed to rules or webhooks. See the WebRTC service README.
+
 ### Sending commands
 
 Connect to `/things/<thing_id>/commands` or `/groups/<group_id>/commands` using a thing key or user bearer token:

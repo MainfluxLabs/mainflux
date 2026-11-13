@@ -700,6 +700,39 @@ services:
     networks:
       - mainfluxlabs-base-net
 
+  webrtc:
+    image: ${MF_RELEASE_PREFIX}/webrtc:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-webrtc
+    depends_on:
+      - auth
+      - things
+      - broker
+    restart: unless-stopped
+    environment:
+      MF_WEBRTC_LOG_LEVEL: ${MF_WEBRTC_LOG_LEVEL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+      MF_WEBRTC_HTTP_PORT: ${MF_WEBRTC_HTTP_PORT}
+      MF_WEBRTC_UDP_PORT: ${MF_WEBRTC_UDP_PORT}
+      MF_WEBRTC_SERVER_CERT: ${MF_WEBRTC_SERVER_CERT}
+      MF_WEBRTC_SERVER_KEY: ${MF_WEBRTC_SERVER_KEY}
+      MF_WEBRTC_CLIENT_TLS: ${MF_WEBRTC_CLIENT_TLS}
+      MF_WEBRTC_CA_CERTS: ${MF_WEBRTC_CA_CERTS}
+      MF_WEBRTC_PUBLIC_IPS: ${MF_WEBRTC_PUBLIC_IPS}
+      MF_WEBRTC_STUN_URLS: ${MF_WEBRTC_STUN_URLS}
+      MF_WEBRTC_TURN_URLS: ${MF_WEBRTC_TURN_URLS}
+      MF_WEBRTC_TURN_SECRET: ${MF_WEBRTC_TURN_SECRET}
+      MF_WEBRTC_TURN_TTL: ${MF_WEBRTC_TURN_TTL}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+    ports:
+      - ${MF_WEBRTC_HTTP_PORT}:${MF_WEBRTC_HTTP_PORT}
+      - ${MF_WEBRTC_UDP_PORT}:${MF_WEBRTC_UDP_PORT}/udp
+    networks:
+      - mainfluxlabs-base-net
+
   smtp-notifier-db:
     image: postgres:13.3-alpine
     container_name: mainfluxlabs-smtp-notifier-db

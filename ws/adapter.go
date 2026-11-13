@@ -8,6 +8,7 @@ package ws
 
 import (
 	"context"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
@@ -43,6 +44,7 @@ type Service interface {
 type PubSub interface {
 	messaging.CommandPublisher
 	messaging.MessageDispatcher
+	messaging.Publisher
 	messaging.Subscriber
 }
 
@@ -69,6 +71,12 @@ func (svc *adapterService) Publish(ctx context.Context, key domain.ThingKey, msg
 
 	if len(msg.Records) == 0 || len(msg.Records[0].Payload) == 0 {
 		return messaging.ErrPublishMessage
+	}
+
+	if nats.IsWebRTCSubtopic(msg.Subtopic) {
+		msg.ThingId = pc.ThingID
+		msg.Created = time.Now().UnixNano()
+		return svc.pubsub.Publish(nats.GetWebRTCSubject(pc.ThingID, msg.Subtopic), msg)
 	}
 
 	if err := messaging.FormatMessage(pc, &msg); err != nil {
