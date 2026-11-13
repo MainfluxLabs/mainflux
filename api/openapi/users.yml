@@ -508,6 +508,8 @@ paths:
           description: Caller is not root admin, or the user cannot be impersonated.
         '404':
           description: Failed due to non existing user.
+        '409':
+          description: The user is disabled.
         '500':
          $ref: "#/components/responses/ServiceError"
   /backup:

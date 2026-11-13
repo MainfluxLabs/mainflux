@@ -485,7 +485,7 @@ func TestImpersonate(t *testing.T) {
 		{"impersonate user without token", emptyValue, user.ID, http.StatusUnauthorized},
 		{"impersonate non-existing user as root admin", admin.Email, wrongValue, http.StatusNotFound},
 		{"impersonate self as root admin", admin.Email, admin.ID, http.StatusForbidden},
-		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusForbidden},
+		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusConflict},
 		{"impersonate user from an impersonated session", impersonatedToken, user.ID, http.StatusForbidden},
 	}
 

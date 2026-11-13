@@ -722,7 +722,7 @@ func TestImpersonate(t *testing.T) {
 		{"impersonate user with invalid token", wrong, user.ID, errors.ErrAuthentication},
 		{"impersonate self as root admin", tokenAdmin, admin.ID, errors.ErrAuthorization},
 		{"impersonate non-existing user as root admin", tokenAdmin, wrong, dbutil.ErrNotFound},
-		{"impersonate disabled user as root admin", tokenAdmin, registerUser.ID, errors.ErrAuthorization},
+		{"impersonate disabled user as root admin", tokenAdmin, registerUser.ID, users.ErrDisabledUser},
 		{"impersonate user from an impersonated session", impersonatedToken, unauthUser.ID, errors.ErrAuthorization},
 	}
 

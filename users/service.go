@@ -49,6 +49,9 @@ var (
 
 	// ErrInvalidAdminCredentials indicates that the configured root admin e-mail or password is invalid.
 	ErrInvalidAdminCredentials = errors.New("invalid root admin e-mail or password")
+
+	// ErrDisabledUser indicates that the operation is not allowed for a disabled user.
+	ErrDisabledUser = errors.New("the user is disabled")
 )
 
 type (
@@ -950,7 +953,7 @@ func (svc usersService) Impersonate(ctx context.Context, token, id string) (stri
 	}
 
 	if target.Status == DisabledStatusKey {
-		return "", errors.ErrAuthorization
+		return "", ErrDisabledUser
 	}
 
 	targetRole, err := svc.auth.RetrieveRole(ctx, target.ID)
