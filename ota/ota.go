@@ -120,7 +120,7 @@ type UpdateRepository interface {
 	// RetrieveActiveThingUpdate retrieves the newest active thing update of the given thing.
 	RetrieveActiveThingUpdate(ctx context.Context, thingID string) (ThingUpdate, error)
 
-	// UpdateThingUpdate updates the status, error, reported version and timestamps of a thing update.
+	// UpdateThingUpdate updates the progress of an active thing update.
 	UpdateThingUpdate(ctx context.Context, tu ThingUpdate) error
 
 	// RetryFailed moves the failed thing updates of the given update back to pending

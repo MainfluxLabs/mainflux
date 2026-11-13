@@ -244,9 +244,20 @@ func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUp
 	q := `UPDATE thing_updates
 		SET status = :status, error = :error, reported_version = :reported_version, updated_at = :updated_at
 		WHERE update_id = :update_id
-		AND thing_id = :thing_id;`
+		AND thing_id = :thing_id
+		AND status = ANY(:active);`
 
-	res, err := ur.db.NamedExecContext(ctx, q, toDBThingUpdate(tu))
+	params := map[string]any{
+		"status":           tu.Status,
+		"error":            tu.Error,
+		"reported_version": tu.ReportedVersion,
+		"updated_at":       tu.UpdatedAt,
+		"update_id":        tu.UpdateID,
+		"thing_id":         tu.ThingID,
+		"active":           ota.ActiveStatuses,
+	}
+
+	res, err := ur.db.NamedExecContext(ctx, q, params)
 	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok && pgErr.Code == pgerrcode.StringDataRightTruncationDataException {
@@ -466,17 +477,6 @@ type dbThingUpdate struct {
 	Error           string    `db:"error"`
 	ReportedVersion string    `db:"reported_version"`
 	UpdatedAt       time.Time `db:"updated_at"`
-}
-
-func toDBThingUpdate(tu ota.ThingUpdate) dbThingUpdate {
-	return dbThingUpdate{
-		UpdateID:        tu.UpdateID,
-		ThingID:         tu.ThingID,
-		Status:          tu.Status,
-		Error:           tu.Error,
-		ReportedVersion: tu.ReportedVersion,
-		UpdatedAt:       tu.UpdatedAt,
-	}
 }
 
 func toThingUpdate(dbtu dbThingUpdate) ota.ThingUpdate {

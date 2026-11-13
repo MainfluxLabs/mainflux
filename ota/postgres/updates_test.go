@@ -14,6 +14,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -208,11 +210,71 @@ func TestRetrieveThingUpdates(t *testing.T) {
 	}
 }
 
-func TestUpdateThingUpdateNotFound(t *testing.T) {
+func TestUpdateThingUpdate(t *testing.T) {
 	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
 
-	err := repo.UpdateThingUpdate(context.Background(), ota.ThingUpdate{UpdateID: newID(t), ThingID: newID(t), Status: ota.StatusFailed, UpdatedAt: time.Now().UTC()})
-	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected %s got %s", dbutil.ErrNotFound, err))
+	cases := []struct {
+		desc   string
+		setup  func(t *testing.T) (updateID, thingID string)
+		status string
+		err    error
+	}{
+		{
+			desc: "update non-existing thing update",
+			setup: func(t *testing.T) (string, string) {
+				return newID(t), newID(t)
+			},
+			err: dbutil.ErrNotFound,
+		},
+		{
+			desc: "update active thing update",
+			setup: func(t *testing.T) (string, string) {
+				thingID := newID(t)
+				u := saveUpdate(t, repo, newID(t), time.Now().UTC(), thingID)
+				return u.ID, thingID
+			},
+			status: ota.StatusDownloading,
+		},
+		{
+			desc: "update timed out thing update",
+			setup: func(t *testing.T) (string, string) {
+				thingID := newID(t)
+				u := saveUpdate(t, repo, newID(t), time.Now().UTC(), thingID)
+				err := repo.FailTimedOut(context.Background(), time.Now().UTC().Add(48*time.Hour))
+				require.Nil(t, err, fmt.Sprintf("failing timed out thing updates failed: %s", err))
+				return u.ID, thingID
+			},
+			status: ota.StatusFailed,
+			err:    dbutil.ErrNotFound,
+		},
+		{
+			desc: "update superseded thing update",
+			setup: func(t *testing.T) (string, string) {
+				groupID, thingID := newID(t), newID(t)
+				now := time.Now().UTC()
+				u := saveUpdate(t, repo, groupID, now, thingID)
+				saveUpdate(t, repo, groupID, now.Add(time.Second), thingID)
+				return u.ID, thingID
+			},
+			status: ota.StatusFailed,
+			err:    dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		updateID, thingID := tc.setup(t)
+
+		err := repo.UpdateThingUpdate(context.Background(), ota.ThingUpdate{UpdateID: updateID, ThingID: thingID, Status: ota.StatusDownloading, UpdatedAt: time.Now().UTC()})
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+
+		if tc.status == "" {
+			continue
+		}
+
+		tu, err := repo.RetrieveThingUpdate(context.Background(), updateID, thingID)
+		require.Nil(t, err, fmt.Sprintf("%s: retrieving thing update failed: %s", tc.desc, err))
+		assert.Equal(t, tc.status, tu.Status, fmt.Sprintf("%s: status mismatch", tc.desc))
+	}
 }
 
 func TestRetryFailed(t *testing.T) {
@@ -278,8 +340,11 @@ func TestOneActiveUpdate(t *testing.T) {
 	first := saveUpdate(t, repo, groupID, now, thingID)
 	saveUpdate(t, repo, groupID, now.Add(time.Second), thingID)
 
-	err := repo.UpdateThingUpdate(context.Background(), ota.ThingUpdate{UpdateID: first.ID, ThingID: thingID, Status: ota.StatusPending, UpdatedAt: time.Now().UTC()})
-	assert.True(t, errors.Contains(err, dbutil.ErrUpdateEntity), fmt.Sprintf("a second active update for a thing must be rejected: got %s", err))
+	// Written directly, since UpdateThingUpdate never reopens a finished thing update.
+	_, err := db.Exec(`UPDATE thing_updates SET status = $1 WHERE update_id = $2 AND thing_id = $3`, ota.StatusPending, first.ID, thingID)
+	pgErr, ok := err.(*pgconn.PgError)
+	require.True(t, ok, fmt.Sprintf("expected a postgres error, got %v", err))
+	assert.Equal(t, pgerrcode.UniqueViolation, pgErr.Code, "a second active update for a thing must be rejected")
 }
 
 func TestFailTimedOut(t *testing.T) {
