@@ -938,35 +938,51 @@ func TestRestore(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
+		admin users.User
 		err   error
 	}{
 		{
 			desc:  "restore as non-admin user",
 			token: tokenUser,
+			admin: noPasswordAdmin,
 			err:   errors.ErrAuthorization,
 		},
 		{
 			desc:  "restore as platform admin",
 			token: tokenPlatformAdmin,
+			admin: noPasswordAdmin,
 			err:   errors.ErrAuthorization,
 		},
 		{
 			desc:  "restore with invalid token",
 			token: wrong,
+			admin: noPasswordAdmin,
 			err:   errors.ErrAuthentication,
 		},
 		{
 			desc:  "restore backup of existing root admin",
 			token: tokenAdmin,
+			admin: noPasswordAdmin,
+			err:   nil,
+		},
+		{
+			desc:  "restore backup of root admin with platform admin role",
+			token: tokenAdmin,
+			admin: platformAdmin,
 			err:   nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Restore(context.Background(), tc.token, noPasswordAdmin, nil, nil)
+		err := svc.Restore(context.Background(), tc.token, tc.admin, nil, nil)
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
+
+	u, err := svc.ViewProfile(context.Background(), tokenPlatformAdmin)
+	require.Nil(t, err, fmt.Sprintf("Viewing profile expected to succeed: %s", err))
+	msg := fmt.Sprintf("expected role %s got %s\n", domain.RoleRootAdmin, u.Role)
+	assert.Equal(t, domain.RoleRootAdmin, u.Role, msg)
 }
 
 func TestCreatePlatformInvite(t *testing.T) {
