@@ -496,6 +496,36 @@ paths:
           description: The user is already disabled.
         '500':
          $ref: "#/components/responses/ServiceError"
+  /users/{userId}/impersonate:
+    post:
+      summary: Impersonates a user
+      description: |
+        Issues a login token for the given user on behalf of the root admin.
+        The token carries the root admin as impersonator, and audit events
+        raised with it record both users. Root admins, disabled users and
+        the caller cannot be impersonated, and an impersonated session
+        cannot start another impersonation or issue API keys.
+      tags:
+        - users
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        '201':
+          description: Impersonated session started.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        '401':
+          description: Missing or invalid access token provided.
+        '403':
+          description: Caller is not root admin, or the user cannot be impersonated.
+        '404':
+          description: Failed due to non existing user.
+        '409':
+          description: The user is disabled.
+        '500':
+         $ref: "#/components/responses/ServiceError"
   /backup:
     get:
       summary: Retrieves all users

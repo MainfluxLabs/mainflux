@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -23,6 +24,13 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 			Subject:  req.email,
 			IssuerID: req.id,
 			IssuedAt: time.Now().UTC(),
+		}
+
+		if req.impersonatorID != "" {
+			key.Impersonator = &domain.Identity{
+				ID:    req.impersonatorID,
+				Email: req.impersonatorEmail,
+			}
 		}
 
 		_, secret, err := svc.Issue(ctx, "", key)
@@ -80,6 +88,11 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 		ret := identityRes{
 			id:    id.ID,
 			email: id.Email,
+		}
+
+		if id.Impersonator != nil {
+			ret.impersonatorID = id.Impersonator.ID
+			ret.impersonatorEmail = id.Impersonator.Email
 		}
 
 		return ret, nil

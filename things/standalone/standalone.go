@@ -35,6 +35,10 @@ func (repo singleUserRepo) Issue(ctx context.Context, id, email string, keyType 
 	return repo.token, nil
 }
 
+func (repo singleUserRepo) IssueImpersonated(ctx context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	return "", errors.ErrAuthorization
+}
+
 func (repo singleUserRepo) RefreshToken(ctx context.Context, token string) (string, error) {
 	if repo.token != token {
 		return "", errors.ErrAuthentication

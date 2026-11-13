@@ -278,7 +278,13 @@ func encodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 
 func decodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.IssueReq)
-	return issueReq{id: req.GetId(), email: req.GetEmail(), keyType: req.GetType()}, nil
+	return issueReq{
+		id:                req.GetId(),
+		email:             req.GetEmail(),
+		keyType:           req.GetType(),
+		impersonatorID:    req.GetImpersonatorId(),
+		impersonatorEmail: req.GetImpersonatorEmail(),
+	}, nil
 }
 
 func encodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
@@ -303,7 +309,12 @@ func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 
 func encodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(identityRes)
-	return &protomfx.UserIdentity{Id: res.id, Email: res.email}, nil
+	return &protomfx.UserIdentity{
+		Id:                res.id,
+		Email:             res.email,
+		ImpersonatorId:    res.impersonatorID,
+		ImpersonatorEmail: res.impersonatorEmail,
+	}, nil
 }
 
 func decodeAuthorizeRequest(_ context.Context, grpcReq any) (any, error) {

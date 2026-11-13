@@ -44,6 +44,11 @@ func (e Event) Encode() redisEvent {
 		re[jwtIdentityUserEmail] = e.JWTUserIdentity.Email
 	}
 
+	if e.JWTUserIdentity.Impersonator != nil {
+		re[jwtIdentityImpersonatorID] = e.JWTUserIdentity.Impersonator.ID
+		re[jwtIdentityImpersonatorEmail] = e.JWTUserIdentity.Impersonator.Email
+	}
+
 	if !e.OccurredAt.IsZero() {
 		re[occurredAt] = e.OccurredAt.UTC().Format(time.RFC3339Nano)
 	}
@@ -81,6 +86,8 @@ func decodeEvent(re redisEvent) (Event, error) {
 		action = decodeOrgCreated(re)
 	case OrgRemove:
 		action = decodeOrgRemoved(re)
+	case UserImpersonate:
+		action = decodeUserImpersonated(re)
 	default:
 		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}
@@ -398,4 +405,28 @@ func (e OrgRemoved) Encode() map[string]any {
 
 func decodeOrgRemoved(e redisEvent) OrgRemoved {
 	return OrgRemoved{ID: e.field("id", "")}
+}
+
+// UserImpersonated signals that a root admin started an impersonated session of a user.
+type UserImpersonated struct {
+	ID    string
+	Email string
+}
+
+func (e UserImpersonated) Operation() string {
+	return UserImpersonate
+}
+
+func (e UserImpersonated) Encode() map[string]any {
+	return redisEvent{
+		"id":    e.ID,
+		"email": e.Email,
+	}
+}
+
+func decodeUserImpersonated(e redisEvent) UserImpersonated {
+	return UserImpersonated{
+		ID:    e.field("id", ""),
+		Email: e.field("email", ""),
+	}
 }

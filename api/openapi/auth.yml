@@ -31,7 +31,8 @@ paths:
       summary: End every session for the user
       description: |
         Revokes every session belonging to the owner of the presented token,
-        across all of their browsers and devices.
+        across all of their browsers and devices, and every session they
+        impersonate. From an impersonated session it revokes only that session.
       tags:
         - auth
       security:
@@ -80,6 +81,8 @@ paths:
           description: Issued new key.
         '400':
           description: Failed due to malformed JSON.
+        '403':
+          description: API keys cannot be issued from an impersonated session.
         '409':
           description: Failed due to using already existing ID.
         '415':

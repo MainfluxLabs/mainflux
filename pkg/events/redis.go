@@ -17,6 +17,7 @@ const (
 	profilePrefix  = "profile."
 	groupPrefix    = "group."
 	orgPrefix      = "org."
+	userPrefix     = "user."
 	mainfluxPrefix = "mainflux."
 
 	// Event operation strings
@@ -34,9 +35,14 @@ const (
 	OrgCreate = orgPrefix + "create"
 	OrgRemove = orgPrefix + "remove"
 
+	UserImpersonate = userPrefix + "impersonate"
+
 	// General redis event map fields
 	jwtIdentityUserID    = "jwt_identity_user_id"
 	jwtIdentityUserEmail = "jwt_identity_user_email"
+
+	jwtIdentityImpersonatorID    = "jwt_identity_impersonator_id"
+	jwtIdentityImpersonatorEmail = "jwt_identity_impersonator_email"
 
 	occurredAt = "occurred_at"
 
@@ -62,6 +68,15 @@ func (e redisEvent) jwtUserIdentity() domain.Identity {
 
 	identity.ID, _ = e[jwtIdentityUserID].(string)
 	identity.Email, _ = e[jwtIdentityUserEmail].(string)
+
+	impersonatorID, _ := e[jwtIdentityImpersonatorID].(string)
+	if impersonatorID != "" {
+		impersonatorEmail, _ := e[jwtIdentityImpersonatorEmail].(string)
+		identity.Impersonator = &domain.Identity{
+			ID:    impersonatorID,
+			Email: impersonatorEmail,
+		}
+	}
 
 	return identity
 }

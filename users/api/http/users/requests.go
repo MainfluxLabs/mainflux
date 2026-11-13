@@ -246,6 +246,21 @@ func (req passwChangeReq) validate() error {
 	return nil
 }
 
+type impersonateReq struct {
+	token string
+	id    string
+}
+
+func (req impersonateReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+	return nil
+}
+
 type changeUserStatusReq struct {
 	token string
 	id    string

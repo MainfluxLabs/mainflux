@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 	r "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
@@ -179,6 +180,48 @@ func TestCursorPersistsAcrossRestart(t *testing.T) {
 
 	require.True(t, waitForCount(t, h2, 1, 2000), "expected event published while subscriber was down to be delivered on restart")
 	assert.Equal(t, "b", h2.received[0].Action.(events.ThingRemoved).ID)
+}
+
+func TestImpersonatedEventIsDecoded(t *testing.T) {
+	flushRedis(t)
+
+	h := &recordingHandler{}
+	sub := newSub(t, "impersonated", events.AuthStream)
+	cancel, done := runSubscriber(t, sub, h)
+	defer func() {
+		cancel()
+		<-done
+		_ = sub.Close()
+	}()
+
+	// Give the subscriber time to enter its blocking read.
+	time.Sleep(300 * time.Millisecond)
+
+	actor := domain.Identity{
+		ID:    "user-id",
+		Email: "user@example.com",
+		Impersonator: &domain.Identity{
+			ID:    "root-id",
+			Email: "root@example.com",
+		},
+	}
+	event := events.Event{
+		Action: events.UserImpersonated{
+			ID:    actor.ID,
+			Email: actor.Email,
+		},
+		JWTUserIdentity: actor,
+	}
+
+	err := redisClient.XAdd(context.Background(), &r.XAddArgs{
+		Stream: events.AuthStream,
+		Values: map[string]any(event.Encode()),
+	}).Err()
+	require.NoError(t, err, "publishing event")
+
+	require.True(t, waitForCount(t, h, 1, 2000), "expected impersonated event to be delivered")
+	assert.Equal(t, event.Action, h.received[0].Action)
+	assert.Equal(t, actor, h.received[0].JWTUserIdentity)
 }
 
 func TestUnknownOperationIsSkipped(t *testing.T) {

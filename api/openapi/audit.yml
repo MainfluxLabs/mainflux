@@ -124,6 +124,18 @@ components:
           type: string
           format: email
           description: Email address of the acting user.
+        impersonator:
+          type: object
+          description: Root admin who acted as the user. Absent for events not raised in an impersonated session.
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique identifier of the root admin.
+            email:
+              type: string
+              format: email
+              description: Email address of the root admin.
 
     Event:
       type: object
