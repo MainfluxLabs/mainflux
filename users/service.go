@@ -884,8 +884,15 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin); err != nil {
+	role, err := svc.auth.RetrieveRole(ctx, admin.ID)
+	if err != nil {
 		return err
+	}
+
+	if role != domain.RoleRootAdmin {
+		if err := svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin); err != nil {
+			return err
+		}
 	}
 
 	for _, user := range users {

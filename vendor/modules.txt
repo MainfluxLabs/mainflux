@@ -39,9 +39,6 @@ github.com/containerd/continuity/pathdriver
 # github.com/coreos/go-oidc/v3 v3.21.0
 ## explicit; go 1.25.0
 github.com/coreos/go-oidc/v3/oidc
-# github.com/davecgh/go-spew v1.1.1
-## explicit
-github.com/davecgh/go-spew/spew
 # github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f
 ## explicit
 github.com/dgryski/go-rendezvous
@@ -309,70 +306,75 @@ github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/ast
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
-# github.com/pion/dtls/v2 v2.1.5
-## explicit; go 1.13
-github.com/pion/dtls/v2
-github.com/pion/dtls/v2/internal/ciphersuite
-github.com/pion/dtls/v2/internal/ciphersuite/types
-github.com/pion/dtls/v2/internal/closer
-github.com/pion/dtls/v2/internal/util
-github.com/pion/dtls/v2/pkg/crypto/ccm
-github.com/pion/dtls/v2/pkg/crypto/ciphersuite
-github.com/pion/dtls/v2/pkg/crypto/clientcertificate
-github.com/pion/dtls/v2/pkg/crypto/elliptic
-github.com/pion/dtls/v2/pkg/crypto/hash
-github.com/pion/dtls/v2/pkg/crypto/prf
-github.com/pion/dtls/v2/pkg/crypto/signature
-github.com/pion/dtls/v2/pkg/crypto/signaturehash
-github.com/pion/dtls/v2/pkg/protocol
-github.com/pion/dtls/v2/pkg/protocol/alert
-github.com/pion/dtls/v2/pkg/protocol/extension
-github.com/pion/dtls/v2/pkg/protocol/handshake
-github.com/pion/dtls/v2/pkg/protocol/recordlayer
-# github.com/pion/logging v0.2.2
-## explicit; go 1.12
+# github.com/pion/dtls/v3 v3.1.15
+## explicit; go 1.24.0
+github.com/pion/dtls/v3
+github.com/pion/dtls/v3/internal/ciphersuite
+github.com/pion/dtls/v3/internal/ciphersuite/types
+github.com/pion/dtls/v3/internal/closer
+github.com/pion/dtls/v3/internal/net
+github.com/pion/dtls/v3/internal/net/udp
+github.com/pion/dtls/v3/internal/util
+github.com/pion/dtls/v3/pkg/crypto/ccm
+github.com/pion/dtls/v3/pkg/crypto/ciphersuite
+github.com/pion/dtls/v3/pkg/crypto/clientcertificate
+github.com/pion/dtls/v3/pkg/crypto/elliptic
+github.com/pion/dtls/v3/pkg/crypto/hash
+github.com/pion/dtls/v3/pkg/crypto/prf
+github.com/pion/dtls/v3/pkg/crypto/signature
+github.com/pion/dtls/v3/pkg/crypto/signaturehash
+github.com/pion/dtls/v3/pkg/net
+github.com/pion/dtls/v3/pkg/protocol
+github.com/pion/dtls/v3/pkg/protocol/alert
+github.com/pion/dtls/v3/pkg/protocol/extension
+github.com/pion/dtls/v3/pkg/protocol/handshake
+github.com/pion/dtls/v3/pkg/protocol/recordlayer
+# github.com/pion/logging v0.2.4
+## explicit; go 1.20
 github.com/pion/logging
-# github.com/pion/transport v0.13.0
-## explicit; go 1.12
-github.com/pion/transport/connctx
-github.com/pion/transport/deadline
-github.com/pion/transport/packetio
-github.com/pion/transport/replaydetector
-# github.com/pion/udp v0.1.1
-## explicit; go 1.14
-github.com/pion/udp
+# github.com/pion/transport/v5 v5.1.4
+## explicit; go 1.24.0
+github.com/pion/transport/v5/deadline
+github.com/pion/transport/v5/netctx
+github.com/pion/transport/v5/replaydetector
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/plgd-dev/go-coap/v2 v2.6.0
-## explicit; go 1.18
-github.com/plgd-dev/go-coap/v2
-github.com/plgd-dev/go-coap/v2/dtls
-github.com/plgd-dev/go-coap/v2/message
-github.com/plgd-dev/go-coap/v2/message/codes
-github.com/plgd-dev/go-coap/v2/message/noresponse
-github.com/plgd-dev/go-coap/v2/message/pool
-github.com/plgd-dev/go-coap/v2/mux
-github.com/plgd-dev/go-coap/v2/net
-github.com/plgd-dev/go-coap/v2/net/blockwise
-github.com/plgd-dev/go-coap/v2/net/monitor/inactivity
-github.com/plgd-dev/go-coap/v2/net/observation
-github.com/plgd-dev/go-coap/v2/pkg/cache
-github.com/plgd-dev/go-coap/v2/pkg/connections
-github.com/plgd-dev/go-coap/v2/pkg/runner/periodic
-github.com/plgd-dev/go-coap/v2/tcp
-github.com/plgd-dev/go-coap/v2/tcp/message
-github.com/plgd-dev/go-coap/v2/tcp/message/pool
-github.com/plgd-dev/go-coap/v2/udp
-github.com/plgd-dev/go-coap/v2/udp/client
-github.com/plgd-dev/go-coap/v2/udp/message
-github.com/plgd-dev/go-coap/v2/udp/message/pool
-# github.com/plgd-dev/kit/v2 v2.0.0-20211006190727-057b33161b90
-## explicit; go 1.13
-github.com/plgd-dev/kit/v2/sync
-# github.com/pmezard/go-difflib v1.0.0
-## explicit
-github.com/pmezard/go-difflib/difflib
+# github.com/plgd-dev/go-coap/v3 v3.6.0
+## explicit; go 1.26.0
+github.com/plgd-dev/go-coap/v3
+github.com/plgd-dev/go-coap/v3/dtls
+github.com/plgd-dev/go-coap/v3/dtls/server
+github.com/plgd-dev/go-coap/v3/message
+github.com/plgd-dev/go-coap/v3/message/codes
+github.com/plgd-dev/go-coap/v3/message/noresponse
+github.com/plgd-dev/go-coap/v3/message/pool
+github.com/plgd-dev/go-coap/v3/mux
+github.com/plgd-dev/go-coap/v3/net
+github.com/plgd-dev/go-coap/v3/net/blockwise
+github.com/plgd-dev/go-coap/v3/net/client
+github.com/plgd-dev/go-coap/v3/net/client/limitParallelRequests
+github.com/plgd-dev/go-coap/v3/net/monitor/inactivity
+github.com/plgd-dev/go-coap/v3/net/observation
+github.com/plgd-dev/go-coap/v3/net/responsewriter
+github.com/plgd-dev/go-coap/v3/options
+github.com/plgd-dev/go-coap/v3/options/config
+github.com/plgd-dev/go-coap/v3/pkg/cache
+github.com/plgd-dev/go-coap/v3/pkg/connections
+github.com/plgd-dev/go-coap/v3/pkg/errors
+github.com/plgd-dev/go-coap/v3/pkg/fn
+github.com/plgd-dev/go-coap/v3/pkg/math
+github.com/plgd-dev/go-coap/v3/pkg/rand
+github.com/plgd-dev/go-coap/v3/pkg/runner/periodic
+github.com/plgd-dev/go-coap/v3/pkg/sync
+github.com/plgd-dev/go-coap/v3/tcp
+github.com/plgd-dev/go-coap/v3/tcp/client
+github.com/plgd-dev/go-coap/v3/tcp/coder
+github.com/plgd-dev/go-coap/v3/tcp/server
+github.com/plgd-dev/go-coap/v3/udp
+github.com/plgd-dev/go-coap/v3/udp/client
+github.com/plgd-dev/go-coap/v3/udp/coder
+github.com/plgd-dev/go-coap/v3/udp/server
 # github.com/prometheus/client_golang v1.11.1
 ## explicit; go 1.13
 github.com/prometheus/client_golang/prometheus
@@ -428,10 +430,12 @@ github.com/spf13/viper/internal/encoding/javaproperties
 github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
-# github.com/stretchr/testify v1.11.1
+# github.com/stretchr/testify v1.12.1
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
+github.com/stretchr/testify/internal/difflib
+github.com/stretchr/testify/internal/spew
 github.com/stretchr/testify/require
 # github.com/subosito/gotenv v1.4.0
 ## explicit; go 1.18
@@ -471,18 +475,27 @@ github.com/xeipuuv/gojsonreference
 # github.com/xeipuuv/gojsonschema v1.2.0
 ## explicit
 github.com/xeipuuv/gojsonschema
-# go.uber.org/atomic v1.10.0
+# go.uber.org/atomic v1.12.0
 ## explicit; go 1.18
 go.uber.org/atomic
-# golang.org/x/crypto v0.57.0
+# go.yaml.in/yaml/v3 v3.0.5
+## explicit; go 1.16
+go.yaml.in/yaml/v3
+# golang.org/x/crypto v0.58.0
 ## explicit; go 1.26.0
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/chacha20poly1305
 golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
-golang.org/x/crypto/curve25519
 golang.org/x/crypto/ed25519
-# golang.org/x/net v0.60.0
+golang.org/x/crypto/internal/alias
+golang.org/x/crypto/internal/poly1305
+# golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e
+## explicit; go 1.26.0
+golang.org/x/exp/constraints
+# golang.org/x/net v0.62.0
 ## explicit; go 1.26.0
 golang.org/x/net/bpf
 golang.org/x/net/context
@@ -514,15 +527,16 @@ golang.org/x/oauth2/google/internal/stsexchange
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.23.0
+# golang.org/x/sync v0.24.0
 ## explicit; go 1.26.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.48.0
+# golang.org/x/sys v0.49.0
 ## explicit; go 1.26.0
+golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.42.0
+# golang.org/x/text v0.43.0
 ## explicit; go 1.26.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -543,8 +557,8 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
-## explicit
+# golang.org/x/time v0.14.0
+## explicit; go 1.24.0
 golang.org/x/time/rate
 # gonum.org/v1/gonum v0.11.0
 ## explicit; go 1.17

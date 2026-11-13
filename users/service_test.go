@@ -699,6 +699,44 @@ func TestDisableUser(t *testing.T) {
 	}
 }
 
+func TestRestore(t *testing.T) {
+	svc := newService()
+
+	tokenAdmin, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	tokenUser, err := svc.Login(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+	}{
+		{
+			desc:  "restore as non-admin user",
+			token: tokenUser,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "restore with invalid token",
+			token: wrong,
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "restore backup of existing root admin",
+			token: tokenAdmin,
+			err:   nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.Restore(context.Background(), tc.token, noPasswordAdmin, nil, nil)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+}
+
 func TestCreatePlatformInvite(t *testing.T) {
 	svc := newService()
 	tokenAdmin, err := svc.Login(context.Background(), admin)

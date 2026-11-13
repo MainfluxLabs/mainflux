@@ -579,6 +579,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusInternalServerError)
 	case errors.Contains(err, users.ErrSelfRegisterDisabled):
 		w.WriteHeader(http.StatusForbidden)
+	case errors.Contains(err, users.ErrAlreadyEnabledUser),
+		errors.Contains(err, users.ErrAlreadyDisabledUser):
+		w.WriteHeader(http.StatusConflict)
 	default:
 		apiutil.EncodeError(err, w)
 	}
