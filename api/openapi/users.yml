@@ -581,7 +581,9 @@ paths:
       description: |
         Restores all users. The backed up admin keeps the root role only when its e-mail
         matches the configured root admin; otherwise it is restored as a regular user.
-        Only accessible by root admin.
+        When the backed up admin has another ID, the root admin takes that ID and the
+        caller's current tokens lose the root role, so restore users last or log in again
+        afterwards. Only accessible by root admin.
       tags:
         - users
       requestBody:
