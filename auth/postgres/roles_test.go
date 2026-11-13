@@ -189,6 +189,11 @@ func TestDeleteRole(t *testing.T) {
 			err:  nil,
 		},
 		{
+			desc: "delete non-existing role",
+			id:   userID,
+			err:  dbutil.ErrNotFound,
+		},
+		{
 			desc: "delete role for invalid user id",
 			id:   invalid,
 			err:  dbutil.ErrRemoveEntity,

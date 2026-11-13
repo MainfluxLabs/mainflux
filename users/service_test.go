@@ -814,6 +814,10 @@ func TestAssignAdminRole(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Viewing profile expected to succeed: %s", err))
 	msg := fmt.Sprintf("expected role %s got %s\n", domain.RoleAdmin, u.Role)
 	assert.Equal(t, domain.RoleAdmin, u.Role, msg)
+
+	err = svc.DisableUser(context.Background(), tokenRegisterUser, user.ID)
+	msg = fmt.Sprintf("disable user as assigned platform admin: unexpected error %s\n", err)
+	assert.Nil(t, err, msg)
 }
 
 func TestRevokeAdminRole(t *testing.T) {
@@ -883,6 +887,14 @@ func TestRevokeAdminRole(t *testing.T) {
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
+
+	err = svc.DisableUser(context.Background(), tokenPlatformAdmin, user.ID)
+	msg := fmt.Sprintf(
+		"disable user as revoked platform admin: expected %s got %s\n",
+		errors.ErrAuthorization,
+		err,
+	)
+	assert.True(t, errors.Contains(err, errors.ErrAuthorization), msg)
 }
 
 func TestBackup(t *testing.T) {

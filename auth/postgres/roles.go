@@ -71,8 +71,18 @@ func (rr rolesRepository) RemoveRole(ctx context.Context, userID string) error {
 
 	dbur := dbUserRole{UserID: userID}
 
-	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
+	res, err := rr.db.NamedExecContext(ctx, q, dbur)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if cnt != 1 {
+		return dbutil.ErrNotFound
 	}
 
 	return nil

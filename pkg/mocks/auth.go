@@ -21,7 +21,6 @@ const recoveryTokenPrefix = "recovery-"
 var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
-	adminIDs      []string
 	platformRoles map[string]string
 	orgRoles      map[string]map[string]string
 	usersByEmail  map[string]users.User
@@ -32,7 +31,6 @@ type authServiceMock struct {
 // Org owners come from orgList, other org roles come from orgMemberships.
 func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, orgMemberships ...auth.OrgMembership) domain.AuthClient {
 	usersByEmail := make(map[string]users.User)
-	adminIDs := []string{adminID}
 	platformRoles := map[string]string{adminID: auth.RoleRootAdmin}
 	orgRoles := make(map[string]map[string]string)
 	orgs := make(map[string]auth.Org)
@@ -41,9 +39,6 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 		usersByEmail[user.Email] = user
 		if user.Role != "" {
 			platformRoles[user.ID] = user.Role
-		}
-		if user.Role == auth.RoleRootAdmin || user.Role == auth.RoleAdmin {
-			adminIDs = append(adminIDs, user.ID)
 		}
 	}
 
@@ -60,7 +55,6 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 	}
 
 	return &authServiceMock{
-		adminIDs:      adminIDs,
 		platformRoles: platformRoles,
 		orgRoles:      orgRoles,
 		usersByEmail:  usersByEmail,
@@ -117,7 +111,7 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 
 	switch ar.Subject {
 	case auth.RootSub:
-		if !contains(svc.adminIDs, u.ID) {
+		if !svc.isPlatformAdmin(u.ID) {
 			return errors.ErrAuthorization
 		}
 	case auth.OrgSub:
@@ -131,17 +125,13 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 	return nil
 }
 
-func contains(ids []string, id string) bool {
-	for _, existingID := range ids {
-		if existingID == id {
-			return true
-		}
-	}
-	return false
+func (svc authServiceMock) isPlatformAdmin(userID string) bool {
+	role := svc.platformRoles[userID]
+	return role == auth.RoleRootAdmin || role == auth.RoleAdmin
 }
 
 func (svc authServiceMock) canAccessOrg(userID, orgID, action string) error {
-	if contains(svc.adminIDs, userID) {
+	if svc.isPlatformAdmin(userID) {
 		return nil
 	}
 
@@ -194,6 +184,10 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, id string) (string, e
 }
 
 func (svc authServiceMock) RemoveRole(_ context.Context, id string) error {
+	if _, ok := svc.platformRoles[id]; !ok {
+		return dbutil.ErrNotFound
+	}
+
 	delete(svc.platformRoles, id)
 	return nil
 }
