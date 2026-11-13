@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -39,7 +38,7 @@ const (
 	validEmail       = "user@example.com"
 	adminEmail       = "admin@example.com"
 	invalidEmail     = "userexample.com"
-	validPass        = "password"
+	validPass        = "brave-ocean-lantern"
 	invalidToken     = "invalid"
 	invalidPass      = "wrong"
 	prefix           = "fe6b4e92-cc98-425e-b0aa-"
@@ -66,14 +65,14 @@ const (
 
 var (
 	user                  = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled", Role: "root"}
 	platformAdmin         = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: validPass, Status: "enabled", Role: domain.RoleAdmin}
 	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
 	usersList             = []users.User{admin, user}
 	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword          = toJSON(apiutil.ErrorRes{Err: errors.ErrPasswordFormat.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordTooShort.Error()})
 	malformedRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
 	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
 	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
@@ -82,11 +81,10 @@ var (
 	invalidRestPassRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
 	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
 	idProvider            = uuid.New()
-	passRegex             = regexp.MustCompile(`^\S{8,}$`)
 	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		User:      users.User{Email: "example@verify.com", Password: validPass},
 		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -167,12 +165,12 @@ func newServiceWithUsers(userList []users.User) users.Service {
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
 	}
-	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, auth, email, idProvider, c)
+	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), auth, email, idProvider, logger.NewMock(), c)
 }
 
 func newServer(svc users.Service) *httptest.Server {
 	ac := mocks.NewAuthService(admin.ID, usersList, nil)
-	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock(), passRegex)
+	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
 
@@ -465,6 +463,48 @@ func TestUser(t *testing.T) {
 	}
 }
 
+func TestImpersonate(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	disabledUserID, err := svc.Register(context.Background(), admin.Email, newUser)
+	require.Nil(t, err, fmt.Sprintf("registering user expected to succeed: %s", err))
+	err = svc.DisableUser(context.Background(), admin.Email, disabledUserID)
+	require.Nil(t, err, fmt.Sprintf("disabling user expected to succeed: %s", err))
+
+	impersonatedToken, err := svc.Impersonate(context.Background(), admin.Email, user.ID)
+	require.Nil(t, err, fmt.Sprintf("impersonating user expected to succeed: %s", err))
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status int
+	}{
+		{"impersonate user as root admin", admin.Email, user.ID, http.StatusCreated},
+		{"impersonate user as non-root user", user.Email, admin.ID, http.StatusForbidden},
+		{"impersonate user without token", emptyValue, user.ID, http.StatusUnauthorized},
+		{"impersonate non-existing user as root admin", admin.Email, wrongValue, http.StatusNotFound},
+		{"impersonate self as root admin", admin.Email, admin.ID, http.StatusForbidden},
+		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusConflict},
+		{"impersonate user from an impersonated session", impersonatedToken, user.ID, http.StatusForbidden},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/impersonate", ts.URL, tc.id),
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestListUsers(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -485,7 +525,7 @@ func TestListUsers(t *testing.T) {
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "password",
+			Password: validPass,
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)
@@ -680,7 +720,7 @@ func TestSearchUsers(t *testing.T) {
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "password",
+			Password: validPass,
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)

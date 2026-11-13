@@ -67,6 +67,17 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS events`,
 				},
 			},
+			{
+				Id: "audit_02",
+				Up: []string{
+					`ALTER TABLE events ADD COLUMN IF NOT EXISTS impersonator_id UUID`,
+					`ALTER TABLE events ADD COLUMN IF NOT EXISTS impersonator_email VARCHAR(254)`,
+				},
+				Down: []string{
+					`ALTER TABLE events DROP COLUMN IF EXISTS impersonator_email`,
+					`ALTER TABLE events DROP COLUMN IF EXISTS impersonator_id`,
+				},
+			},
 		},
 	}
 

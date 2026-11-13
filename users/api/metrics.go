@@ -211,6 +211,15 @@ func (ms *metricsMiddleware) EnableUser(ctx context.Context, token string, id st
 	return ms.svc.EnableUser(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) Impersonate(ctx context.Context, token string, id string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "impersonate").Add(1)
+		ms.latency.With("method", "impersonate").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Impersonate(ctx, token, id)
+}
+
 func (ms *metricsMiddleware) DisableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "disable_user").Add(1)

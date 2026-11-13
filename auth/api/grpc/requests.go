@@ -23,9 +23,11 @@ func (req identityReq) validate() error {
 }
 
 type issueReq struct {
-	id      string
-	email   string
-	keyType uint32
+	id                string
+	email             string
+	keyType           uint32
+	impersonatorID    string
+	impersonatorEmail string
 }
 
 func (req issueReq) validate() error {
@@ -35,6 +37,11 @@ func (req issueReq) validate() error {
 	if req.keyType != auth.LoginKey &&
 		req.keyType != auth.APIKey &&
 		req.keyType != auth.RecoveryKey {
+		return apiutil.ErrInvalidAuthKey
+	}
+
+	// Only login sessions can be impersonated.
+	if req.impersonatorID != "" && req.keyType != auth.LoginKey {
 		return apiutil.ErrInvalidAuthKey
 	}
 

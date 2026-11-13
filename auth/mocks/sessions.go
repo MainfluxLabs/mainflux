@@ -64,10 +64,11 @@ func (srm *sessionRepositoryMock) Rotate(ctx context.Context, jti, nextJTI strin
 	session.RevokedAt = at
 	srm.sessions[jti] = session
 	srm.sessions[nextJTI] = auth.Session{
-		JTI:       nextJTI,
-		UserID:    session.UserID,
-		FamilyID:  session.FamilyID,
-		StartedAt: session.StartedAt,
+		JTI:            nextJTI,
+		UserID:         session.UserID,
+		FamilyID:       session.FamilyID,
+		ImpersonatorID: session.ImpersonatorID,
+		StartedAt:      session.StartedAt,
 	}
 
 	return session, true, nil
@@ -78,7 +79,7 @@ func (srm *sessionRepositoryMock) RevokeFamily(ctx context.Context, familyID str
 }
 
 func (srm *sessionRepositoryMock) RevokeByUser(ctx context.Context, userID string, at time.Time) error {
-	return srm.revokeMatching(func(s auth.Session) bool { return s.UserID == userID }, at)
+	return srm.revokeMatching(func(s auth.Session) bool { return s.UserID == userID || s.ImpersonatorID == userID }, at)
 }
 
 func (srm *sessionRepositoryMock) revokeMatching(match func(auth.Session) bool, at time.Time) error {

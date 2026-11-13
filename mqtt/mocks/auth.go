@@ -48,6 +48,10 @@ func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
 	return nil
 }
 
+func (svc authServiceMock) IssueImpersonated(_ context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	return "", errors.ErrAuthorization
+}
+
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
 	if id, ok := svc.users[email]; ok {
 		switch keyType {

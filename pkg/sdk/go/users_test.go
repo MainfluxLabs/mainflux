@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
 
@@ -29,14 +28,13 @@ import (
 const (
 	invalidEmail = "userexample.com"
 	userEmail    = "user@example.com"
-	validPass    = "validPass"
+	validPass    = "brave-ocean-lantern"
 	registerUser = "register@example.com"
 
 	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
-	passRegex = regexp.MustCompile(`^\S{8,}$`)
 	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass}
 	otherUser = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass}
 	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Role: auth.RootSub}
@@ -66,16 +64,16 @@ func newUserService() users.Service {
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
 	}
-	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, identityRepo, hasher, auth, emailer, idProvider, c)
+	return users.New(usersRepo, verificationsRepo, platformInvitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), auth, emailer, idProvider, logger.NewMock(), c)
 }
 
 func newUserServer(svc users.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger, passRegex)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
-/*func TestCreateUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
 	svc := newUserService()
 	ts := newUserServer(svc)
 	defer ts.Close()
@@ -111,13 +109,19 @@ func newUserServer(svc users.Service) *httptest.Server {
 		},
 		{
 			desc:  "create user with invalid email address",
-			user:  sdk.User{Email: invalidEmail, Password: "password"},
+			user:  sdk.User{Email: invalidEmail, Password: validPass},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
 			desc:  "create user with empty password",
 			user:  sdk.User{Email: registerUser, Password: ""},
+			token: token,
+			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
+		},
+		{
+			desc:  "create user with password that is too short",
+			user:  sdk.User{Email: registerUser, Password: "short"},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
@@ -129,7 +133,7 @@ func newUserServer(svc users.Service) *httptest.Server {
 		},
 		{
 			desc:  "create user without email",
-			user:  sdk.User{Password: "password"},
+			user:  sdk.User{Password: validPass},
 			token: token,
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
@@ -142,10 +146,10 @@ func newUserServer(svc users.Service) *httptest.Server {
 	}
 
 	for _, tc := range cases {
-		_, err := mainfluxSDK.CreateUser(tc.token, tc.user)
+		_, err := mainfluxSDK.CreateUser(tc.user, tc.token)
 		assert.Equal(t, tc.err, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 	}
-}*/
+}
 
 func TestRegisterUser(t *testing.T) {
 	svc := newUserService()
@@ -182,7 +186,7 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			desc: "register user with invalid email address",
-			user: sdk.User{Email: invalidEmail, Password: "password"},
+			user: sdk.User{Email: invalidEmail, Password: validPass},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
@@ -197,7 +201,7 @@ func TestRegisterUser(t *testing.T) {
 		},
 		{
 			desc: "register user without email",
-			user: sdk.User{Password: "password"},
+			user: sdk.User{Password: validPass},
 			err:  createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},
 		{
@@ -243,13 +247,13 @@ func TestCreateToken(t *testing.T) {
 		},
 		{
 			desc:  "create token for non existing user",
-			user:  sdk.User{Email: registerUser, Password: "password"},
+			user:  sdk.User{Email: registerUser, Password: validPass},
 			token: "",
 			err:   createError(sdk.ErrFailedCreation, http.StatusUnauthorized),
 		},
 		{
 			desc:  "create user with empty email",
-			user:  sdk.User{Email: "", Password: "password"},
+			user:  sdk.User{Email: "", Password: validPass},
 			token: "",
 			err:   createError(sdk.ErrFailedCreation, http.StatusBadRequest),
 		},

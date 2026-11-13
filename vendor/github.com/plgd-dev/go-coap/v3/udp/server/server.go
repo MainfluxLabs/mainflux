@@ -1,0 +1,604 @@
+package server
+
+import (
+	"context"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"net"
+	"sync"
+	"time"
+
+	"github.com/plgd-dev/go-coap/v3/message"
+	"github.com/plgd-dev/go-coap/v3/message/pool"
+	coapNet "github.com/plgd-dev/go-coap/v3/net"
+	"github.com/plgd-dev/go-coap/v3/net/blockwise"
+	"github.com/plgd-dev/go-coap/v3/net/monitor/inactivity"
+	"github.com/plgd-dev/go-coap/v3/net/responsewriter"
+	pkgMath "github.com/plgd-dev/go-coap/v3/pkg/math"
+	coapSync "github.com/plgd-dev/go-coap/v3/pkg/sync"
+	"github.com/plgd-dev/go-coap/v3/udp/client"
+	"github.com/plgd-dev/go-coap/v3/udp/coder"
+)
+
+type Server struct {
+	doneCtx           context.Context
+	ctx               context.Context
+	multicastRequests *client.RequestsMap
+	multicastHandler  *coapSync.Map[uint64, HandlerFunc]
+	serverStartedChan chan struct{}
+	doneCancel        context.CancelFunc
+	cancel            context.CancelFunc
+
+	connsMutex sync.Mutex
+	conns      map[string]*client.Conn
+
+	listenMutex sync.Mutex
+	listen      *coapNet.UDPConn
+
+	cfg *Config
+}
+
+// A Option sets options such as credentials, codec and keepalive parameters, etc.
+type Option interface {
+	UDPServerApply(cfg *Config)
+}
+
+func New(opt ...Option) *Server {
+	cfg := DefaultConfig
+	for _, o := range opt {
+		o.UDPServerApply(&cfg)
+	}
+
+	if cfg.Errors == nil {
+		cfg.Errors = func(error) {
+			// default no-op
+		}
+	}
+
+	if cfg.GetMID == nil {
+		cfg.GetMID = message.GetMID
+	}
+
+	if cfg.GetToken == nil {
+		cfg.GetToken = message.GetToken
+	}
+
+	if cfg.CreateInactivityMonitor == nil {
+		cfg.CreateInactivityMonitor = func() client.InactivityMonitor {
+			return inactivity.NewNilMonitor[*client.Conn]()
+		}
+	}
+	if cfg.MessagePool == nil {
+		cfg.MessagePool = pool.New(0, 0)
+	}
+
+	ctx, cancel := context.WithCancel(cfg.Ctx)
+	serverStartedChan := make(chan struct{})
+
+	doneCtx, doneCancel := context.WithCancel(context.Background())
+	errorsFunc := cfg.Errors
+	cfg.Errors = func(err error) {
+		if coapNet.IsCancelOrCloseError(err) {
+			// this error was produced by cancellation context or closing connection.
+			return
+		}
+		errorsFunc(fmt.Errorf("udp: %w", err))
+	}
+	return &Server{
+		ctx:               ctx,
+		cancel:            cancel,
+		multicastHandler:  coapSync.NewMap[uint64, HandlerFunc](),
+		multicastRequests: coapSync.NewMap[uint64, *pool.Message](),
+		serverStartedChan: serverStartedChan,
+		doneCtx:           doneCtx,
+		doneCancel:        doneCancel,
+		conns:             make(map[string]*client.Conn),
+
+		cfg: &cfg,
+	}
+}
+
+func (s *Server) checkAndSetListener(l *coapNet.UDPConn) error {
+	s.listenMutex.Lock()
+	defer s.listenMutex.Unlock()
+	if s.listen != nil {
+		return fmt.Errorf("server already serve: %v", s.listen.LocalAddr().String())
+	}
+	s.listen = l
+	close(s.serverStartedChan)
+	return nil
+}
+
+func (s *Server) closeConnection(cc *client.Conn) {
+	if err := cc.Close(); err != nil {
+		s.cfg.Errors(fmt.Errorf("cannot close connection: %w", err))
+	}
+}
+
+func (s *Server) shouldPropagateError(err error) bool {
+	return s.ctx.Err() == nil && !coapNet.IsCancelOrCloseError(err)
+}
+
+func isMalformedMessageError(err error) bool {
+	var malformedErr *client.MalformedMessageError
+	return errors.As(err, &malformedErr)
+}
+
+func makeResetDatagram(mid int32) ([]byte, error) {
+	if !message.ValidateMID(mid) {
+		return nil, fmt.Errorf("invalid reset mid: %v", mid)
+	}
+	d := make([]byte, 4)
+	// Ver=1, Type=RST(3), TKL=0
+	d[0] = 0x70
+	// Code=0.00 Empty
+	d[1] = 0x00
+	midU16, err := pkgMath.SafeCastTo[uint16](mid)
+	if err != nil {
+		return nil, fmt.Errorf("invalid reset mid: %w", err)
+	}
+	binary.BigEndian.PutUint16(d[2:4], midU16)
+	return d, nil
+}
+
+func (s *Server) maybeRejectMalformedConfirmable(l *coapNet.UDPConn, cc *client.Conn, cm *coapNet.ControlMessage, processErr error) {
+	if !isMalformedMessageError(processErr) {
+		return
+	}
+	var malformedErr *client.MalformedMessageError
+	if !errors.As(processErr, &malformedErr) {
+		return
+	}
+	if malformedErr.InvalidVersion {
+		// RFC 7252 §3: unknown CoAP versions MUST be silently ignored.
+		return
+	}
+	if !malformedErr.HasHeader {
+		return
+	}
+	if malformedErr.Type != message.Confirmable {
+		return
+	}
+	if !message.ValidateMID(malformedErr.MessageID) {
+		return
+	}
+
+	raddr, ok := cc.RemoteAddr().(*net.UDPAddr)
+	if !ok || raddr == nil {
+		return
+	}
+
+	resetDatagram, err := makeResetDatagram(malformedErr.MessageID)
+	if err != nil {
+		s.cfg.Errors(fmt.Errorf("%v: cannot build reset for malformed confirmable packet: %w", cc.RemoteAddr(), err))
+		return
+	}
+	writeOpts := []coapNet.UDPWriteOption{coapNet.WithContext(s.ctx), coapNet.WithRemoteAddr(raddr)}
+	if cm != nil {
+		writeOpts = append(writeOpts, coapNet.WithControlMessage(&coapNet.ControlMessage{
+			IfIndex: cm.GetIfIndex(),
+			Src:     cm.Dst,
+		}))
+	}
+	if err := l.WriteWithOptions(resetDatagram, writeOpts...); err != nil {
+		s.cfg.Errors(fmt.Errorf("%v: cannot send reset for malformed confirmable packet: %w", cc.RemoteAddr(), err))
+	}
+}
+
+func isUnknownVersionError(err error) bool {
+	var malformedErr *client.MalformedMessageError
+	if errors.As(err, &malformedErr) {
+		return malformedErr.InvalidVersion
+	}
+	return errors.Is(err, coder.ErrMessageInvalidVersion)
+}
+
+type incomingDatagram struct {
+	buf   []byte
+	raddr *net.UDPAddr
+	cm    *coapNet.ControlMessage
+}
+
+func (s *Server) readIncomingDatagram(l *coapNet.UDPConn, buf []byte) (incomingDatagram, error) {
+	var raddr *net.UDPAddr
+	var cm *coapNet.ControlMessage
+	n, err := l.ReadWithOptions(buf, coapNet.WithContext(s.ctx), coapNet.WithGetControlMessage(&cm), coapNet.WithGetRemoteAddr(&raddr))
+	if err != nil {
+		return incomingDatagram{}, err
+	}
+	return incomingDatagram{
+		buf:   buf[:n],
+		raddr: raddr,
+		cm:    cm,
+	}, nil
+}
+
+func (s *Server) resolvePacketLocalAddr(l *coapNet.UDPConn, cm *coapNet.ControlMessage) (*net.UDPAddr, error) {
+	// UDPConn.LocalAddr() only takes into account the address it is bound to.
+	// In the case of a wildcard address, the actual destination address is in the control message.
+	// On server-initiated exchanges, listener's LocalAddr can be used as the client has no assumptions of the source.
+	laddr, err := s.getListenerLocalAddr(l)
+	if err != nil {
+		return nil, err
+	}
+	if cm != nil && len(cm.Dst) > 0 && !cm.Dst.IsMulticast() {
+		laddr.IP = cm.Dst
+	}
+	return laddr, nil
+}
+
+func (s *Server) handleProcessError(l *coapNet.UDPConn, cc *client.Conn, cm *coapNet.ControlMessage, err error) {
+	if isMalformedMessageError(err) {
+		s.maybeRejectMalformedConfirmable(l, cc, cm, err)
+		if isUnknownVersionError(err) {
+			// RFC 7252 §3: unknown CoAP versions MUST be silently ignored.
+			return
+		}
+		s.cfg.Errors(fmt.Errorf("%v: dropping malformed packet: %w", cc.RemoteAddr(), err))
+		return
+	}
+	s.closeConnection(cc)
+	s.cfg.Errors(fmt.Errorf("%v: cannot process packet: %w", cc.RemoteAddr(), err))
+}
+
+func (s *Server) Serve(l *coapNet.UDPConn) error {
+	if s.cfg.BlockwiseSZX > blockwise.SZX1024 {
+		return errors.New("invalid blockwiseSZX")
+	}
+
+	err := s.checkAndSetListener(l)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		s.closeSessions()
+		s.doneCancel()
+		s.listenMutex.Lock()
+		defer s.listenMutex.Unlock()
+		s.listen = nil
+		s.serverStartedChan = make(chan struct{}, 1)
+	}()
+
+	// One extra byte so that an oversized datagram is not silently truncated to
+	// MaxMessageSize and is rejected before selecting a peer connection.
+	m := make([]byte, uint64(s.cfg.MaxMessageSize)+1)
+
+	s.cfg.PeriodicRunner(func(now time.Time) bool {
+		s.handleInactivityMonitors(now)
+		return s.ctx.Err() == nil
+	})
+
+	for {
+		packet, err := s.readIncomingDatagram(l, m)
+		if err != nil {
+			if !s.shouldPropagateError(err) {
+				return nil
+			}
+			if coapNet.IsMessageSizeError(err) {
+				s.cfg.Errors(fmt.Errorf("cannot read oversized datagram: %w", err))
+				continue
+			}
+			return err
+		}
+		if int64(len(packet.buf)) > int64(s.cfg.MaxMessageSize) {
+			s.cfg.Errors(fmt.Errorf("%v: max message size(%v) was exceeded %v", packet.raddr, s.cfg.MaxMessageSize, len(packet.buf)))
+			continue
+		}
+
+		laddr, err := s.resolvePacketLocalAddr(l, packet.cm)
+		if err != nil {
+			return err
+		}
+
+		cc, created, err := s.getConn(l, packet.raddr, laddr, true)
+		if err != nil {
+			s.cfg.Errors(fmt.Errorf("%v: cannot get client connection: %w", packet.raddr, err))
+			continue
+		}
+		err = cc.Process(packet.cm, packet.buf)
+		if err != nil {
+			s.handleProcessError(l, cc, packet.cm, err)
+			if created && isMalformedMessageError(err) {
+				s.closeConnection(cc)
+			}
+			continue
+		}
+	}
+}
+
+func (s *Server) getListener() *coapNet.UDPConn {
+	s.listenMutex.Lock()
+	defer s.listenMutex.Unlock()
+	return s.listen
+}
+
+func (s *Server) getListenerLocalAddr(l *coapNet.UDPConn) (*net.UDPAddr, error) {
+	localAddr, ok := l.LocalAddr().(*net.UDPAddr)
+	if !ok || localAddr == nil {
+		return nil, fmt.Errorf("unexpected listener local addr type: %T", l.LocalAddr())
+	}
+	laddrVal := *localAddr
+	return &laddrVal, nil
+}
+
+// Stop stops server without wait of ends Serve function.
+func (s *Server) Stop() {
+	s.cancel()
+	l := s.getListener()
+	if l != nil {
+		if errC := l.Close(); errC != nil {
+			s.cfg.Errors(fmt.Errorf("cannot close listener: %w", errC))
+		}
+	}
+	s.closeSessions()
+}
+
+func (s *Server) closeSessions() {
+	s.connsMutex.Lock()
+	conns := s.conns
+	s.conns = make(map[string]*client.Conn)
+	s.connsMutex.Unlock()
+	for _, cc := range conns {
+		s.closeConnection(cc)
+		if closeFn := getClose(cc); closeFn != nil {
+			closeFn()
+		}
+	}
+}
+
+func (s *Server) conn() *coapNet.UDPConn {
+	s.listenMutex.Lock()
+	serverStartedChan := s.serverStartedChan
+	s.listenMutex.Unlock()
+	select {
+	case <-serverStartedChan:
+	case <-s.ctx.Done():
+	}
+	s.listenMutex.Lock()
+	defer s.listenMutex.Unlock()
+	return s.listen
+}
+
+const closeKey = "gocoapCloseConnection"
+
+func (s *Server) getConns() []*client.Conn {
+	s.connsMutex.Lock()
+	defer s.connsMutex.Unlock()
+	conns := make([]*client.Conn, 0, 32)
+	for _, c := range s.conns {
+		conns = append(conns, c)
+	}
+	return conns
+}
+
+func (s *Server) handleInactivityMonitors(now time.Time) {
+	for _, cc := range s.getConns() {
+		select {
+		case <-cc.Context().Done():
+			if closeFn := getClose(cc); closeFn != nil {
+				closeFn()
+			}
+			continue
+		default:
+			cc.CheckExpirations(now)
+		}
+	}
+}
+
+func getClose(cc *client.Conn) func() {
+	v := cc.Context().Value(closeKey)
+	if v == nil {
+		return nil
+	}
+	closeFn, ok := v.(func())
+	if !ok {
+		panic(fmt.Errorf("invalid type(%T) of context value for key %s", v, closeKey))
+	}
+	return closeFn
+}
+
+func getConnKey(raddr, laddr *net.UDPAddr) string {
+	normalizedLocalAddr := *laddr
+	if len(normalizedLocalAddr.IP) > 0 && normalizedLocalAddr.IP.IsMulticast() {
+		// Multicast destination address does not identify a unique server-side source address.
+		// Normalize it to avoid creating one conn key per multicast group.
+		normalizedLocalAddr.IP = nil
+		normalizedLocalAddr.Zone = ""
+	}
+	if len(normalizedLocalAddr.IP) > 0 && normalizedLocalAddr.IP.IsUnspecified() {
+		// Wildcard listener addresses (0.0.0.0 / ::) are placeholders and do not identify
+		// a concrete destination address selected by the kernel for outgoing packets.
+		normalizedLocalAddr.IP = nil
+		normalizedLocalAddr.Zone = ""
+	}
+	return raddr.String() + "-" + normalizedLocalAddr.String()
+}
+
+func localAddrCanFallbackToWildcard(laddr *net.UDPAddr) bool {
+	if laddr == nil || len(laddr.IP) == 0 {
+		return false
+	}
+	if laddr.IP.IsMulticast() || laddr.IP.IsUnspecified() {
+		return false
+	}
+	return true
+}
+
+func toWildcardLocalAddr(laddr *net.UDPAddr) *net.UDPAddr {
+	wildcard := *laddr
+	wildcard.IP = nil
+	wildcard.Zone = ""
+	return &wildcard
+}
+
+func (s *Server) getOrCreateConn(udpConn *coapNet.UDPConn, raddr *net.UDPAddr, laddr *net.UDPAddr) (cc *client.Conn, created bool) {
+	s.connsMutex.Lock()
+	defer s.connsMutex.Unlock()
+	key := getConnKey(raddr, laddr)
+	cc = s.conns[key]
+
+	if cc != nil {
+		return cc, false
+	}
+
+	// When a client connection is created via NewConn() on a wildcard-bound listener,
+	// it is keyed by wildcard local address. Incoming datagrams can carry the concrete
+	// destination address in control messages, so fallback keeps these packets on the
+	// same conn instead of creating a second server-side conn.
+	if localAddrCanFallbackToWildcard(laddr) {
+		if cc = s.conns[getConnKey(raddr, toWildcardLocalAddr(laddr))]; cc != nil {
+			return cc, false
+		}
+	}
+
+	createBlockWise := func(*client.Conn) *blockwise.BlockWise[*client.Conn] {
+		return nil
+	}
+	if s.cfg.BlockwiseEnable {
+		createBlockWise = func(cc *client.Conn) *blockwise.BlockWise[*client.Conn] {
+			v := cc
+			bw := blockwise.New(
+				v,
+				s.cfg.BlockwiseTransferTimeout,
+				s.cfg.Errors,
+				func(token message.Token) (*pool.Message, bool) {
+					msg, ok := v.GetObservationRequest(token)
+					if ok {
+						return msg, ok
+					}
+					return s.multicastRequests.LoadWithFunc(token.Hash(), func(m *pool.Message) *pool.Message {
+						msg := v.AcquireMessage(m.Context())
+						msg.ResetOptionsTo(m.Options())
+						msg.SetCode(m.Code())
+						msg.SetToken(m.Token())
+						msg.SetMessageID(m.MessageID())
+						return msg
+					})
+				},
+			)
+			bw.SetReceivingMessagesCacheMaxEntries(s.cfg.BlockwiseReceivingMessagesCacheMaxEntries)
+			return bw
+		}
+	}
+	session := NewSession(
+		s.ctx,
+		s.doneCtx,
+		udpConn,
+		raddr,
+		s.cfg.MaxMessageSize,
+		s.cfg.MTU,
+		false,
+		s.cfg.Errors,
+	)
+	monitor := s.cfg.CreateInactivityMonitor()
+	cfg := client.DefaultConfig
+	cfg.TransmissionNStart = s.cfg.TransmissionNStart
+	cfg.TransmissionAcknowledgeTimeout = s.cfg.TransmissionAcknowledgeTimeout
+	cfg.TransmissionAcknowledgeRandomFactor = s.cfg.TransmissionAcknowledgeRandomFactor
+	cfg.TransmissionMaxRetransmit = s.cfg.TransmissionMaxRetransmit
+	cfg.MaxPendingMessages = s.cfg.MaxPendingMessages
+	cfg.Handler = func(w *responsewriter.ResponseWriter[*client.Conn], r *pool.Message) {
+		h, ok := s.multicastHandler.Load(r.Token().Hash())
+		if ok {
+			h(w, r)
+			return
+		}
+		s.cfg.Handler(w, r)
+	}
+	cfg.BlockwiseSZX = s.cfg.BlockwiseSZX
+	cfg.Errors = s.cfg.Errors
+	cfg.GetMID = s.cfg.GetMID
+	cfg.GetToken = s.cfg.GetToken
+	cfg.MessagePool = s.cfg.MessagePool
+	cfg.ProcessReceivedMessage = s.cfg.ProcessReceivedMessage
+	cfg.ReceivedMessageQueueSize = s.cfg.ReceivedMessageQueueSize
+
+	requestMonitor := s.cfg.RequestMonitor
+	cc = client.NewConnWithOpts(
+		session,
+		&cfg,
+		client.WithInactivityMonitor(monitor),
+		client.WithRequestMonitor(requestMonitor),
+		client.WithBlockWise(createBlockWise),
+	)
+	cc.SetContextValue(closeKey, func() {
+		if err := session.Close(); err != nil {
+			s.cfg.Errors(fmt.Errorf("cannot close session: %w", err))
+		}
+		session.shutdown()
+	})
+	cc.AddOnClose(func() {
+		s.connsMutex.Lock()
+		defer s.connsMutex.Unlock()
+		if cc == s.conns[key] {
+			delete(s.conns, key)
+		}
+	})
+	s.conns[key] = cc
+	return cc, true
+}
+
+func (s *Server) getConn(l *coapNet.UDPConn, raddr *net.UDPAddr, laddr *net.UDPAddr, firstTime bool) (*client.Conn, bool, error) {
+	if raddr == nil {
+		return nil, false, errors.New("invalid remote address")
+	}
+	if laddr == nil {
+		var err error
+		laddr, err = s.getListenerLocalAddr(l)
+		if err != nil {
+			return nil, false, err
+		}
+	}
+
+	cc, created := s.getOrCreateConn(l, raddr, laddr)
+	if created {
+		if s.cfg.OnNewConn != nil {
+			s.cfg.OnNewConn(cc)
+		}
+	} else {
+		// check if client is not expired now + 10ms  - if so, close it
+		// 10ms - The expected maximum time taken by cc.CheckExpirations and cc.InactivityMonitor().Notify()
+		cc.CheckExpirations(time.Now().Add(10 * time.Millisecond))
+		if cc.Context().Err() == nil {
+			// if client is not closed, extend expiration time
+			cc.InactivityMonitor().Notify()
+		}
+	}
+
+	if cc.Context().Err() != nil {
+		// connection is closed so we need to create new one
+		if closeFn := getClose(cc); closeFn != nil {
+			closeFn()
+		}
+		if firstTime {
+			return s.getConn(l, raddr, laddr, false)
+		}
+		return nil, false, errors.New("connection is closed")
+	}
+	return cc, created, nil
+}
+
+// NewConn creates or gets a connection for the provided remote address.
+//
+// Optional laddr may be used to pin a concrete local address when the listener is bound to a wildcard address.
+// If laddr is omitted or nil, listener's local address is used.
+// For wildcard listeners, incoming packets addressed to concrete local IPs are matched to this conn.
+func (s *Server) NewConn(addr *net.UDPAddr, laddr ...*net.UDPAddr) (*client.Conn, error) {
+	if len(laddr) > 1 {
+		return nil, fmt.Errorf("invalid number of local addresses: %d", len(laddr))
+	}
+	var localAddr *net.UDPAddr
+	if len(laddr) == 1 {
+		localAddr = laddr[0]
+	}
+
+	l := s.getListener()
+	if l == nil {
+		// server is not started/stopped
+		return nil, errors.New("server is not running")
+	}
+	cc, _, err := s.getConn(l, addr, localAddr, true)
+	return cc, err
+}

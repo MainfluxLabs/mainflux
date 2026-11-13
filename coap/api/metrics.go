@@ -76,3 +76,12 @@ func (mm *metricsMiddleware) Unsubscribe(ctx context.Context, key domain.ThingKe
 
 	return mm.svc.Unsubscribe(ctx, key, subtopic, token)
 }
+
+func (mm *metricsMiddleware) RemoveObserver(subtopic string, c coap.Client) error {
+	defer func(begin time.Time) {
+		mm.counter.With("method", "remove_observer").Add(1)
+		mm.latency.With("method", "remove_observer").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return mm.svc.RemoveObserver(subtopic, c)
+}

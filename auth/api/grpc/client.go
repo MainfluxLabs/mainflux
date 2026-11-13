@@ -211,6 +211,27 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 	return ir.value, nil
 }
 
+func (client grpcClient) IssueImpersonated(ctx context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	req := issueReq{
+		id:                id,
+		email:             email,
+		keyType:           domain.LoginKey,
+		impersonatorID:    impersonator.ID,
+		impersonatorEmail: impersonator.Email,
+	}
+
+	res, err := client.issue(ctx, req)
+	if err != nil {
+		return "", err
+	}
+
+	ir := res.(issueRes)
+	return ir.value, nil
+}
+
 func (client grpcClient) RefreshToken(ctx context.Context, token string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, client.timeout)
 	defer cancel()
@@ -249,7 +270,13 @@ func encodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
 
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(issueReq)
-	return &protomfx.IssueReq{Id: req.id, Email: req.email, Type: req.keyType}, nil
+	return &protomfx.IssueReq{
+		Id:                req.id,
+		Email:             req.email,
+		Type:              req.keyType,
+		ImpersonatorId:    req.impersonatorID,
+		ImpersonatorEmail: req.impersonatorEmail,
+	}, nil
 }
 
 func decodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
@@ -267,7 +294,19 @@ func (client grpcClient) Identify(ctx context.Context, token string) (domain.Ide
 	}
 
 	ir := res.(identityRes)
-	return domain.Identity{ID: ir.id, Email: ir.email}, nil
+	identity := domain.Identity{
+		ID:    ir.id,
+		Email: ir.email,
+	}
+
+	if ir.impersonatorID != "" {
+		identity.Impersonator = &domain.Identity{
+			ID:    ir.impersonatorID,
+			Email: ir.impersonatorEmail,
+		}
+	}
+
+	return identity, nil
 }
 
 func (client grpcClient) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
@@ -290,7 +329,14 @@ func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 
 func decodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.UserIdentity)
-	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
+	ir := identityRes{
+		id:                res.GetId(),
+		email:             res.GetEmail(),
+		impersonatorID:    res.GetImpersonatorId(),
+		impersonatorEmail: res.GetImpersonatorEmail(),
+	}
+
+	return ir, nil
 }
 
 func (client grpcClient) Authorize(ctx context.Context, ar domain.AuthzReq) error {

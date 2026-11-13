@@ -302,6 +302,20 @@ func (lm *loggingMiddleware) EnableUser(ctx context.Context, token string, id st
 	return lm.svc.EnableUser(ctx, token, id)
 }
 
+func (lm *loggingMiddleware) Impersonate(ctx context.Context, token string, id string) (impersonationToken string, err error) {
+	defer func(begin time.Time) {
+		email := authn.EmailFromToken(token)
+		message := fmt.Sprintf("Method impersonate by user %s, for user id %s took %s to complete", email, id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.Impersonate(ctx, token, id)
+}
+
 func (lm *loggingMiddleware) DisableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

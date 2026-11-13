@@ -130,6 +130,10 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 		FamilyID:  familyID,
 		StartedAt: startedAt,
 	}
+	if key.Impersonator != nil {
+		session.ImpersonatorID = key.Impersonator.ID
+	}
+
 	if err := svc.sessions.Save(ctx, session); err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
 	}
@@ -156,12 +160,14 @@ func (svc service) RefreshToken(ctx context.Context, token string) (string, erro
 		return "", errors.Wrap(errRefresh, err)
 	}
 
+	// The impersonator comes from the signed token, so it survives rotation unchanged.
 	_, secret, err := svc.tmpKey(svc.loginDuration, Key{
-		ID:       jti,
-		Type:     LoginKey,
-		IssuerID: key.IssuerID,
-		Subject:  key.Subject,
-		IssuedAt: getTimestamp(),
+		ID:           jti,
+		Type:         LoginKey,
+		IssuerID:     key.IssuerID,
+		Subject:      key.Subject,
+		IssuedAt:     getTimestamp(),
+		Impersonator: key.Impersonator,
 	})
 
 	if err != nil {
@@ -215,6 +221,15 @@ func (svc service) LogoutAll(ctx context.Context, token string) error {
 	session, err := svc.liveSession(ctx, token)
 	if err != nil {
 		return errors.Wrap(errLogout, err)
+	}
+
+	// An impersonated session ends only itself, so the impersonated user stays signed in.
+	if session.ImpersonatorID != "" {
+		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
+			return errors.Wrap(errLogout, err)
+		}
+
+		return nil
 	}
 
 	if err := svc.sessions.RevokeByUser(ctx, session.UserID, getTimestamp()); err != nil {
@@ -330,6 +345,16 @@ func (svc service) userKey(ctx context.Context, token string, key Key) (Key, str
 	id, sub, err := svc.login(ctx, token)
 	if err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
+	}
+
+	// An API key outlives the impersonated session and records no impersonator.
+	loginKey, err := svc.tokenizer.Parse(token)
+	if err != nil {
+		return Key{}, "", errors.Wrap(errIssueUser, err)
+	}
+
+	if loginKey.Impersonator != nil {
+		return Key{}, "", errors.Wrap(errIssueUser, errors.ErrAuthorization)
 	}
 
 	key.IssuerID = id

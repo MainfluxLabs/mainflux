@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -15,8 +16,10 @@ const issuerName = "mainflux.auth"
 
 type claims struct {
 	jwt.StandardClaims
-	IssuerID string  `json:"issuer_id,omitempty"`
-	Type     *uint32 `json:"type,omitempty"`
+	IssuerID          string  `json:"issuer_id,omitempty"`
+	Type              *uint32 `json:"type,omitempty"`
+	ImpersonatorID    string  `json:"impersonator_id,omitempty"`
+	ImpersonatorEmail string  `json:"impersonator_email,omitempty"`
 }
 
 func (c claims) Valid() error {
@@ -52,6 +55,10 @@ func (svc tokenizer) Issue(key auth.Key) (string, error) {
 	}
 	if key.ID != "" {
 		claims.Id = key.ID
+	}
+	if key.Impersonator != nil {
+		claims.ImpersonatorID = key.Impersonator.ID
+		claims.ImpersonatorEmail = key.Impersonator.Email
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -95,6 +102,13 @@ func (c claims) toKey() auth.Key {
 	// Default type is 0.
 	if c.Type != nil {
 		key.Type = *c.Type
+	}
+
+	if c.ImpersonatorID != "" {
+		key.Impersonator = &domain.Identity{
+			ID:    c.ImpersonatorID,
+			Email: c.ImpersonatorEmail,
+		}
 	}
 
 	return key
