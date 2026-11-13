@@ -45,6 +45,7 @@ var (
 	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: password}
 	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: password}
 	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
+	backupRootAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f9a", Role: "root"}
 	formerAdmin     = users.User{Email: "former-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: password}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: password}
 	platformAdmin   = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Role: domain.RoleAdmin, Password: password}
@@ -1320,6 +1321,19 @@ func TestRestore(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
 	assert.Equal(t, "", role, fmt.Sprintf("expected empty role got %s\n", role))
 
+	err = svc.Restore(context.Background(), tokenAdmin, backupRootAdmin, nil, nil)
+	require.Nil(t, err, fmt.Sprintf("Restoring backup of root admin with another ID expected to succeed: %s", err))
+
+	roles := map[string]string{
+		admin.ID:           "",
+		backupRootAdmin.ID: domain.RoleRootAdmin,
+	}
+
+	for id, expected := range roles {
+		role, err := authSvc.RetrieveRole(context.Background(), id)
+		require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
+		assert.Equal(t, expected, role, fmt.Sprintf("%s: expected role %s got %s\n", id, expected, role))
+	}
 }
 
 func TestCreatePlatformInvite(t *testing.T) {
