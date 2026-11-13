@@ -166,6 +166,12 @@ func NewLuaEnv(service *rulesService, script *LuaScript, ruleID string, message 
 	state.PushNil()
 	state.SetGlobal("print")
 
+	// dofile and loadfile read the service filesystem, and load compiles chunks outside the script.
+	for _, name := range []string{"dofile", "loadfile", "load"} {
+		state.PushNil()
+		state.SetGlobal(name)
+	}
+
 	return env, nil
 }
 

@@ -751,3 +751,40 @@ func TestUnassignRulesFromThing(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }
+
+func TestConsumeMessageScriptSandbox(t *testing.T) {
+	svc := newService()
+
+	script := rules.LuaScript{
+		Name:   "sandbox",
+		Script: "mfx.log(type(dofile)..' '..type(loadfile)..' '..type(load)) return true",
+	}
+	scripts, err := svc.CreateScripts(context.Background(), token, groupID, script)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	rule := rules.Rule{
+		Name:       "sandbox-rule",
+		Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
+		Conditions: []rules.Condition{{Type: rules.ConditionTypeScript, ScriptID: scripts[0].ID}},
+		Actions:    []rules.Action{{Type: rules.ActionTypeAlarm, Level: 1}},
+	}
+	_, err = svc.CreateRules(context.Background(), token, groupID, rule)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	msg := protomfx.Message{
+		ThingId:     thingID,
+		Records:     toRecords(t, map[string]any{"temperature": float64(30)}),
+		ContentType: "application/json",
+	}
+	err = svc.ConsumeMessage(subject, msg)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	pm := rules.PageMetadata{Limit: 10}
+	page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	require.Len(t, page.Runs, 1)
+
+	logs := page.Runs[0].Logs
+	desc := fmt.Sprintf("expected file and chunk loaders to be unset got %v\n", logs)
+	assert.Equal(t, []string{"nil nil nil"}, logs, desc)
+}
