@@ -9,9 +9,12 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/mqtt"
 	"github.com/MainfluxLabs/mainflux/mqtt/mocks"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/mproxy/session"
+	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/stretchr/testify/assert"
 )
@@ -195,7 +198,7 @@ func TestAuthPublish(t *testing.T) {
 				Password: []byte(recipientID),
 			},
 			err:     mqtt.ErrUnauthorizedPublishTopic,
-			topic:   strPtr("groups/" + groupID + "/commands"),
+			topic:   new("groups/" + groupID + "/commands"),
 			payload: payload,
 		},
 	}
@@ -205,8 +208,6 @@ func TestAuthPublish(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
-
-func strPtr(s string) *string { return &s }
 
 func TestAuthSubscribe(t *testing.T) {
 	handler := newHandler()
@@ -314,7 +315,6 @@ func TestConnect(t *testing.T) {
 }
 
 func TestPublish(t *testing.T) {
-	handler := newHandler()
 	logBuffer.Reset()
 
 	malformedSubtopics := topic + "/" + subtopic + "%"
@@ -322,11 +322,14 @@ func TestPublish(t *testing.T) {
 	validSubtopic := topic + "/" + subtopic
 
 	cases := []struct {
-		desc    string
-		client  *session.Client
-		topic   string
-		payload []byte
-		logMsg  string
+		desc            string
+		client          *session.Client
+		topic           string
+		payload         []byte
+		logMsg          string
+		publishSubject  string
+		commandSubject  string
+		dispatchedCount int
 	}{
 		{
 			desc:    "publish without active session",
@@ -350,24 +353,54 @@ func TestPublish(t *testing.T) {
 			logMsg:  logFailedPublish,
 		},
 		{
-			desc:    "publish with subtopic",
-			client:  &sessionClient,
-			topic:   validSubtopic,
-			payload: payload,
-			logMsg:  subtopic,
+			desc:            "publish with subtopic",
+			client:          &sessionClient,
+			topic:           validSubtopic,
+			payload:         payload,
+			logMsg:          subtopic,
+			dispatchedCount: 1,
 		},
 		{
-			desc:    "publish without subtopic",
-			client:  &sessionClient,
-			topic:   topic,
-			payload: payload,
-			logMsg:  "",
+			desc:            "publish without subtopic",
+			client:          &sessionClient,
+			topic:           topic,
+			payload:         payload,
+			logMsg:          "",
+			dispatchedCount: 1,
+		},
+		{
+			desc:            "publish to thing messages topic",
+			client:          &sessionClient,
+			topic:           "things/" + thingID + "/messages",
+			payload:         payload,
+			dispatchedCount: 1,
+		},
+		{
+			desc:           "publish to thing commands topic",
+			client:         &sessionClient,
+			topic:          "things/" + recipientID + "/commands",
+			payload:        payload,
+			commandSubject: nats.GetThingCommandsSubject(recipientID, ""),
+		},
+		{
+			desc:           "publish ota status",
+			client:         &sessionClient,
+			topic:          "things/" + thingID + "/ota/status",
+			payload:        payload,
+			publishSubject: nats.GetOTASubject(thingID, nats.OTAStatusSubtopic),
 		},
 	}
 
 	for _, tc := range cases {
+		publisher := &recordingPublisher{}
+		handler := newHandlerWithPublisher(publisher)
+
 		handler.Publish(tc.client, &tc.topic, &tc.payload)
-		assert.Contains(t, logBuffer.String(), tc.logMsg)
+
+		assert.Contains(t, logBuffer.String(), tc.logMsg, fmt.Sprintf("%s: log message mismatch", tc.desc))
+		assert.Equal(t, tc.publishSubject, publisher.publishSubject, fmt.Sprintf("%s: publish subject mismatch", tc.desc))
+		assert.Equal(t, tc.commandSubject, publisher.commandSubject, fmt.Sprintf("%s: command subject mismatch", tc.desc))
+		assert.Equal(t, tc.dispatchedCount, publisher.dispatchedCount, fmt.Sprintf("%s: dispatched count mismatch", tc.desc))
 	}
 }
 
@@ -514,6 +547,10 @@ func TestDisconnectPublishesWill(t *testing.T) {
 }
 
 func newHandler() session.Handler {
+	return newHandlerWithPublisher(pkgmocks.NewPublisher())
+}
+
+func newHandlerWithPublisher(publisher mqtt.Publisher) session.Handler {
 	logger, err := logger.New(&logBuffer, "debug")
 	if err != nil {
 		log.Fatalf("failed to create logger: %s", err)
@@ -532,5 +569,30 @@ func newHandler() session.Handler {
 		},
 	)
 
-	return mqtt.NewHandler(pkgmocks.NewPublisher(), thingsClient, newService(), mocks.NewCache(), logger)
+	return mqtt.NewHandler(publisher, thingsClient, newService(), mocks.NewCache(), logger)
+}
+
+type recordingPublisher struct {
+	publishSubject  string
+	commandSubject  string
+	dispatchedCount int
+}
+
+func (rp *recordingPublisher) Publish(subject string, _ protomfx.Message) error {
+	rp.publishSubject = subject
+	return nil
+}
+
+func (rp *recordingPublisher) Close() error {
+	return nil
+}
+
+func (rp *recordingPublisher) PublishCommand(subject string, _ protomfx.Command) error {
+	rp.commandSubject = subject
+	return nil
+}
+
+func (rp *recordingPublisher) Dispatch(_ protomfx.Message, _ *domain.ProfileConfig) error {
+	rp.dispatchedCount++
+	return nil
 }
