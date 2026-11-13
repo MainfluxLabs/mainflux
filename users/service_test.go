@@ -961,11 +961,17 @@ func TestImpersonate(t *testing.T) {
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
 	tokenUser, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
+
+	err = svc.AssignAdminRole(context.Background(), tokenAdmin, unauthUser.ID)
+	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
 	impersonatedToken, err := svc.Impersonate(context.Background(), tokenAdmin, user.ID)
 	require.Nil(t, err, fmt.Sprintf("Impersonating user expected to succeed: %s", err))
@@ -983,6 +989,10 @@ func TestImpersonate(t *testing.T) {
 		{"impersonate non-existing user as root admin", tokenAdmin, wrong, dbutil.ErrNotFound},
 		{"impersonate disabled user as root admin", tokenAdmin, registerUser.ID, users.ErrDisabledUser},
 		{"impersonate user from an impersonated session", impersonatedToken, unauthUser.ID, errors.ErrAuthorization},
+		{"impersonate user as platform admin", tokenPlatformAdmin, user.ID, nil},
+		{"impersonate root admin as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
+		{"impersonate platform admin as platform admin", tokenPlatformAdmin, unauthUser.ID, errors.ErrAuthorization},
+		{"impersonate platform admin as root admin", tokenAdmin, unauthUser.ID, nil},
 	}
 
 	for _, tc := range cases {

@@ -532,11 +532,12 @@ paths:
     post:
       summary: Impersonates a user
       description: |
-        Issues a login token for the given user on behalf of the root admin.
-        The token carries the root admin as impersonator, and audit events
+        Issues a login token for the given user on behalf of the platform admin.
+        The token carries the platform admin as impersonator, and audit events
         raised with it record both users. Root admins, disabled users and
-        the caller cannot be impersonated, and an impersonated session
-        cannot start another impersonation or issue API keys.
+        the caller cannot be impersonated, only the root admin can impersonate
+        a platform admin, and an impersonated session cannot start another
+        impersonation or issue API keys.
       tags:
         - users
       parameters:
@@ -551,7 +552,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Caller is not root admin, or the user cannot be impersonated.
+          description: Caller is not a platform admin, or the user cannot be impersonated.
         '404':
           description: Failed due to non existing user.
         '409':

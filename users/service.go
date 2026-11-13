@@ -146,7 +146,8 @@ type Service interface {
 	DisableUser(ctx context.Context, token, id string) error
 
 	// Impersonate issues a login token for the user identified with the provided ID,
-	// on behalf of the root admin identified by the provided token.
+	// on behalf of the platform admin identified by the provided token.
+	// Only the root admin is allowed to impersonate a platform admin.
 	Impersonate(ctx context.Context, token, id string) (string, error)
 
 	// AssignAdminRole assigns the platform admin role to the user with the provided ID.
@@ -1077,6 +1078,12 @@ func (svc usersService) Impersonate(ctx context.Context, token, id string) (stri
 
 	if targetRole == domain.RoleRootAdmin {
 		return "", errors.ErrAuthorization
+	}
+
+	if targetRole == domain.RoleAdmin {
+		if err := svc.canAccessAsRoot(ctx, admin.id); err != nil {
+			return "", err
+		}
 	}
 
 	impersonator := domain.Identity{
