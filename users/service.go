@@ -1185,11 +1185,12 @@ func (svc usersService) UnassignAdminRole(ctx context.Context, token, id string)
 		return ErrNotPlatformAdmin
 	}
 
-	if err := svc.auth.UnassignRole(ctx, id); err != nil {
+	// Sessions are revoked first so that a retry after a failed revocation still finds the role.
+	if err := svc.auth.RevokeSessions(ctx, id); err != nil {
 		return err
 	}
 
-	return svc.auth.RevokeSessions(ctx, id)
+	return svc.auth.UnassignRole(ctx, id)
 }
 
 // Auth helpers
