@@ -47,6 +47,7 @@ func buildBackupResponse(b auth.Backup) backupRes {
 	res := backupRes{
 		Orgs:           []viewOrgRes{},
 		OrgMemberships: []viewOrgMembership{},
+		UserRoles:      []viewUserRole{},
 	}
 
 	for _, org := range b.Orgs {
@@ -71,6 +72,14 @@ func buildBackupResponse(b auth.Backup) backupRes {
 			UpdatedAt: om.UpdatedAt,
 		}
 		res.OrgMemberships = append(res.OrgMemberships, view)
+	}
+
+	for _, ur := range b.UserRoles {
+		view := viewUserRole{
+			UserID: ur.UserID,
+			Role:   ur.Role,
+		}
+		res.UserRoles = append(res.UserRoles, view)
 	}
 
 	return res
@@ -99,6 +108,14 @@ func buildRestoreReq(req restoreReq) (b auth.Backup) {
 			UpdatedAt: om.UpdatedAt,
 		}
 		b.OrgMemberships = append(b.OrgMemberships, m)
+	}
+
+	for _, ur := range req.UserRoles {
+		r := auth.UserRole{
+			UserID: ur.UserID,
+			Role:   ur.Role,
+		}
+		b.UserRoles = append(b.UserRoles, r)
 	}
 
 	return b

@@ -83,3 +83,39 @@ func (rrm *rolesRepositoryMock) RemoveRole(ctx context.Context, id string) error
 
 	return nil
 }
+
+func (rrm *rolesRepositoryMock) BackupAll(_ context.Context) ([]auth.UserRole, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	var urs []auth.UserRole
+	for id, role := range rrm.roles {
+		urs = append(urs, auth.UserRole{
+			UserID: id,
+			Role:   role,
+		})
+	}
+
+	return urs, nil
+}
+
+func (rrm *rolesRepositoryMock) RestoreAll(_ context.Context, urs ...auth.UserRole) error {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	for _, ur := range urs {
+		if ur.Role != auth.RoleRootAdmin && ur.Role != auth.RoleAdmin {
+			return dbutil.ErrMalformedEntity
+		}
+	}
+
+	for _, ur := range urs {
+		if _, ok := rrm.roles[ur.UserID]; ok {
+			continue
+		}
+
+		rrm.roles[ur.UserID] = ur.Role
+	}
+
+	return nil
+}

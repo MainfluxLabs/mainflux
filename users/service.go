@@ -859,19 +859,8 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.users.UpdateUserMetadata(ctx, admin); err != nil {
+	if err := svc.restoreAdmin(ctx, ir, admin); err != nil {
 		return err
-	}
-
-	role, err := svc.auth.RetrieveRole(ctx, admin.ID)
-	if err != nil {
-		return err
-	}
-
-	if role != domain.RoleRootAdmin {
-		if err := svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin); err != nil {
-			return err
-		}
 	}
 
 	for _, user := range users {
@@ -1195,6 +1184,45 @@ func (svc usersService) UnassignAdminRole(ctx context.Context, token, id string)
 	}
 
 	return svc.auth.UnassignRole(ctx, id)
+}
+
+// restoreAdmin assigns the root role only to the configured root admin.
+func (svc usersService) restoreAdmin(ctx context.Context, root userIdentity, admin User) error {
+	if admin.Email != root.email {
+		_, err := svc.users.Save(ctx, admin)
+		return err
+	}
+
+	if err := svc.users.UpdateUserMetadata(ctx, admin); err != nil {
+		return err
+	}
+
+	role, err := svc.auth.RetrieveRole(ctx, admin.ID)
+	if err != nil {
+		return err
+	}
+
+	if role != domain.RoleRootAdmin {
+		if err := svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin); err != nil {
+			return err
+		}
+	}
+
+	if admin.ID == root.id {
+		return nil
+	}
+
+	// The root admin user now has the ID from the backup, so its previous ID no longer holds the role.
+	prevRole, err := svc.auth.RetrieveRole(ctx, root.id)
+	if err != nil {
+		return err
+	}
+
+	if prevRole == "" {
+		return nil
+	}
+
+	return svc.auth.UnassignRole(ctx, root.id)
 }
 
 // Auth helpers
