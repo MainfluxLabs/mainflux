@@ -556,7 +556,7 @@ func TestCreateDormantOrgInvite(t *testing.T) {
 	assert.Equal(t, codes.InvalidArgument, e.Code(), msg)
 }
 
-func TestRemoveRole(t *testing.T) {
+func TestUnassignRole(t *testing.T) {
 	roleUserID := "roleUserID"
 	err := svc.AssignRole(context.Background(), roleUserID, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("Assigning role expected to succeed: %s", err))
@@ -571,24 +571,24 @@ func TestRemoveRole(t *testing.T) {
 		code codes.Code
 	}{
 		{
-			desc: "remove role",
+			desc: "unassign role",
 			id:   roleUserID,
 			code: codes.OK,
 		},
 		{
-			desc: "remove non-existing role",
+			desc: "unassign non-existing role",
 			id:   roleUserID,
 			code: codes.NotFound,
 		},
 		{
-			desc: "remove role without user id",
+			desc: "unassign role without user id",
 			id:   "",
 			code: codes.InvalidArgument,
 		},
 	}
 
 	for _, tc := range cases {
-		err := client.RemoveRole(context.Background(), tc.id)
+		err := client.UnassignRole(context.Background(), tc.id)
 		e, ok := status.FromError(err)
 		assert.True(t, ok, "gRPC status can't be extracted from the error")
 		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())

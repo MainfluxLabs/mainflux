@@ -146,9 +146,9 @@ type Service interface {
 	// Only the root admin is allowed to assign it.
 	AssignAdminRole(ctx context.Context, token, id string) error
 
-	// RevokeAdminRole revokes the platform admin role from the user with the provided ID.
-	// Only the root admin is allowed to revoke it.
-	RevokeAdminRole(ctx context.Context, token, id string) error
+	// UnassignAdminRole unassigns the platform admin role from the user with the provided ID.
+	// Only the root admin is allowed to unassign it.
+	UnassignAdminRole(ctx context.Context, token, id string) error
 
 	// Backup returns admin, all users, and all OAuth identities. Only accessible by root admin.
 	Backup(ctx context.Context, token string) (User, []User, []Identity, error)
@@ -373,7 +373,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		case domain.RoleRootAdmin:
 			return nil
 		case domain.RoleAdmin:
-			if err := svc.auth.RemoveRole(ctx, u.ID); err != nil {
+			if err := svc.auth.UnassignRole(ctx, u.ID); err != nil {
 				return err
 			}
 		}
@@ -766,7 +766,7 @@ func (svc usersService) Backup(ctx context.Context, token string) (User, []User,
 		return User{}, []User{}, []Identity{}, err
 	}
 
-	if err := svc.isRootAdmin(ctx, user.id); err != nil {
+	if err := svc.canAccessAsRoot(ctx, user.id); err != nil {
 		return User{}, []User{}, []Identity{}, err
 	}
 
@@ -798,7 +798,7 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.isRootAdmin(ctx, ir.id); err != nil {
+	if err := svc.canAccessAsRoot(ctx, ir.id); err != nil {
 		return err
 	}
 
@@ -809,12 +809,6 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 	role, err := svc.auth.RetrieveRole(ctx, admin.ID)
 	if err != nil {
 		return err
-	}
-
-	if role == domain.RoleAdmin {
-		if err := svc.auth.RemoveRole(ctx, admin.ID); err != nil {
-			return err
-		}
 	}
 
 	if role != domain.RoleRootAdmin {
@@ -997,7 +991,7 @@ func (svc usersService) AssignAdminRole(ctx context.Context, token, id string) e
 		return err
 	}
 
-	if err := svc.isRootAdmin(ctx, ir.id); err != nil {
+	if err := svc.canAccessAsRoot(ctx, ir.id); err != nil {
 		return err
 	}
 
@@ -1017,13 +1011,13 @@ func (svc usersService) AssignAdminRole(ctx context.Context, token, id string) e
 	return svc.auth.AssignRole(ctx, id, domain.RoleAdmin)
 }
 
-func (svc usersService) RevokeAdminRole(ctx context.Context, token, id string) error {
+func (svc usersService) UnassignAdminRole(ctx context.Context, token, id string) error {
 	ir, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if err := svc.isRootAdmin(ctx, ir.id); err != nil {
+	if err := svc.canAccessAsRoot(ctx, ir.id); err != nil {
 		return err
 	}
 
@@ -1036,7 +1030,7 @@ func (svc usersService) RevokeAdminRole(ctx context.Context, token, id string) e
 		return ErrNotPlatformAdmin
 	}
 
-	return svc.auth.RemoveRole(ctx, id)
+	return svc.auth.UnassignRole(ctx, id)
 }
 
 // Auth helpers
@@ -1070,7 +1064,7 @@ func (svc usersService) canAccessPlatform(ctx context.Context, token string) err
 	return nil
 }
 
-func (svc usersService) isRootAdmin(ctx context.Context, userID string) error {
+func (svc usersService) canAccessAsRoot(ctx context.Context, userID string) error {
 	role, err := svc.auth.RetrieveRole(ctx, userID)
 	if err != nil {
 		return err
@@ -1094,7 +1088,7 @@ func (svc usersService) canModifyUser(ctx context.Context, callerID, userID stri
 		return nil
 	}
 
-	return svc.isRootAdmin(ctx, callerID)
+	return svc.canAccessAsRoot(ctx, callerID)
 }
 
 func generateRandomState() (string, error) {

@@ -19,8 +19,8 @@ type Roles interface {
 	// RetrieveRole retrieves a role for a user.
 	RetrieveRole(ctx context.Context, id string) (string, error)
 
-	// RemoveRole removes the role of a user.
-	RemoveRole(ctx context.Context, id string) error
+	// UnassignRole unassigns the role from a user.
+	UnassignRole(ctx context.Context, id string) error
 }
 
 type RolesRepository interface {
@@ -42,6 +42,6 @@ func (svc service) RetrieveRole(ctx context.Context, id string) (string, error) 
 	return svc.roles.RetrieveRole(ctx, id)
 }
 
-func (svc service) RemoveRole(ctx context.Context, id string) error {
+func (svc service) UnassignRole(ctx context.Context, id string) error {
 	return svc.roles.RemoveRole(ctx, id)
 }

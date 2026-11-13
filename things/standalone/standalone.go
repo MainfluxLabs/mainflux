@@ -75,7 +75,7 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string,
 	return "", errUnsupported
 }
 
-func (repo singleUserRepo) RemoveRole(ctx context.Context, id string) error {
+func (repo singleUserRepo) UnassignRole(ctx context.Context, id string) error {
 	return errUnsupported
 }
 

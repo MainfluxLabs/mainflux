@@ -167,11 +167,11 @@ func (req retrieveRoleReq) validate() error {
 	return nil
 }
 
-type removeRoleReq struct {
+type unassignRoleReq struct {
 	id string
 }
 
-func (req removeRoleReq) validate() error {
+func (req unassignRoleReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingUserID
 	}

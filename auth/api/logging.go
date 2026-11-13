@@ -429,9 +429,9 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (_ str
 	return lm.svc.RetrieveRole(ctx, id)
 }
 
-func (lm *loggingMiddleware) RemoveRole(ctx context.Context, id string) (err error) {
+func (lm *loggingMiddleware) UnassignRole(ctx context.Context, id string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_role for id %s took %s to complete",
+		message := fmt.Sprintf("Method unassign_role for id %s took %s to complete",
 			id, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -440,7 +440,7 @@ func (lm *loggingMiddleware) RemoveRole(ctx context.Context, id string) (err err
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveRole(ctx, id)
+	return lm.svc.UnassignRole(ctx, id)
 }
 
 func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token string, oi auth.OrgInvite, invRedirectPath string) (_ auth.OrgInvite, err error) {

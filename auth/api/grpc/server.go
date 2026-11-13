@@ -31,7 +31,7 @@ type grpcServer struct {
 	getOwnerIDByOrg                     kitgrpc.Handler
 	assignRole                          kitgrpc.Handler
 	retrieveRole                        kitgrpc.Handler
-	removeRole                          kitgrpc.Handler
+	unassignRole                        kitgrpc.Handler
 	createDormantOrgInvite              kitgrpc.Handler
 	activateOrgInvite                   kitgrpc.Handler
 	getDormantOrgInviteByPlatformInvite kitgrpc.Handler
@@ -89,9 +89,9 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
 		),
-		removeRole: kitgrpc.NewServer(
-			kitot.TraceServer(tracer, "remove_role")(removeRoleEndpoint(svc)),
-			decodeRemoveRoleRequest,
+		unassignRole: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "unassign_role")(unassignRoleEndpoint(svc)),
+			decodeUnassignRoleRequest,
 			encodeEmptyResponse,
 		),
 		createDormantOrgInvite: kitgrpc.NewServer(
@@ -205,8 +205,8 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
-func (s *grpcServer) RemoveRole(ctx context.Context, req *protomfx.RemoveRoleReq) (*emptypb.Empty, error) {
-	_, res, err := s.removeRole.ServeGRPC(ctx, req)
+func (s *grpcServer) UnassignRole(ctx context.Context, req *protomfx.UnassignRoleReq) (*emptypb.Empty, error) {
+	_, res, err := s.unassignRole.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, encodeError(err)
 	}
@@ -290,9 +290,9 @@ func encodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	return &protomfx.RetrieveRoleRes{Role: res.role}, nil
 }
 
-func decodeRemoveRoleRequest(_ context.Context, grpcReq any) (any, error) {
-	req := grpcReq.(*protomfx.RemoveRoleReq)
-	return removeRoleReq{id: req.GetId()}, nil
+func decodeUnassignRoleRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.UnassignRoleReq)
+	return unassignRoleReq{id: req.GetId()}, nil
 }
 
 func decodeIssueRequest(_ context.Context, grpcReq any) (any, error) {

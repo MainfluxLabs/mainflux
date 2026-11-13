@@ -204,9 +204,9 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	mux.Delete("/users/:id/admin", kithttp.NewServer(
 		endpoint.Chain(
-			kitot.TraceServer(tracer, "revoke_admin_role"),
+			kitot.TraceServer(tracer, "unassign_admin_role"),
 			withIdentity,
-		)(revokeAdminRoleEndpoint(svc)),
+		)(unassignAdminRoleEndpoint(svc)),
 		decodeAdminRole,
 		encodeResponse,
 		opts...,

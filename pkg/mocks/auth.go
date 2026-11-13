@@ -183,7 +183,7 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, id string) (string, e
 	return svc.platformRoles[id], nil
 }
 
-func (svc authServiceMock) RemoveRole(_ context.Context, id string) error {
+func (svc authServiceMock) UnassignRole(_ context.Context, id string) error {
 	if _, ok := svc.platformRoles[id]; !ok {
 		return dbutil.ErrNotFound
 	}

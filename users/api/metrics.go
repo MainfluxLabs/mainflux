@@ -229,13 +229,13 @@ func (ms *metricsMiddleware) AssignAdminRole(ctx context.Context, token string, 
 	return ms.svc.AssignAdminRole(ctx, token, id)
 }
 
-func (ms *metricsMiddleware) RevokeAdminRole(ctx context.Context, token string, id string) (err error) {
+func (ms *metricsMiddleware) UnassignAdminRole(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "revoke_admin_role").Add(1)
-		ms.latency.With("method", "revoke_admin_role").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "unassign_admin_role").Add(1)
+		ms.latency.With("method", "unassign_admin_role").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RevokeAdminRole(ctx, token, id)
+	return ms.svc.UnassignAdminRole(ctx, token, id)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {

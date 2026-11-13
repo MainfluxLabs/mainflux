@@ -230,15 +230,15 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
-func removeRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+func unassignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(removeRoleReq)
+		req := request.(unassignRoleReq)
 
 		if err := req.validate(); err != nil {
 			return emptyRes{}, err
 		}
 
-		if err := svc.RemoveRole(ctx, req.id); err != nil {
+		if err := svc.UnassignRole(ctx, req.id); err != nil {
 			return emptyRes{}, err
 		}
 

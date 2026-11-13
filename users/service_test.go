@@ -820,7 +820,7 @@ func TestAssignAdminRole(t *testing.T) {
 	assert.Nil(t, err, msg)
 }
 
-func TestRevokeAdminRole(t *testing.T) {
+func TestUnassignAdminRole(t *testing.T) {
 	svc := newService()
 
 	tokenAdmin, err := svc.Login(context.Background(), admin)
@@ -839,43 +839,43 @@ func TestRevokeAdminRole(t *testing.T) {
 		err   error
 	}{
 		{
-			desc:  "revoke admin role as non-admin user",
+			desc:  "unassign admin role as non-admin user",
 			token: tokenUser,
 			id:    platformAdmin.ID,
 			err:   errors.ErrAuthorization,
 		},
 		{
-			desc:  "revoke admin role as platform admin",
+			desc:  "unassign admin role as platform admin",
 			token: tokenPlatformAdmin,
 			id:    platformAdmin.ID,
 			err:   errors.ErrAuthorization,
 		},
 		{
-			desc:  "revoke admin role with invalid token",
+			desc:  "unassign admin role with invalid token",
 			token: wrong,
 			id:    platformAdmin.ID,
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "revoke admin role from root admin",
+			desc:  "unassign admin role from root admin",
 			token: tokenAdmin,
 			id:    admin.ID,
 			err:   users.ErrNotPlatformAdmin,
 		},
 		{
-			desc:  "revoke admin role from regular user",
+			desc:  "unassign admin role from regular user",
 			token: tokenAdmin,
 			id:    user.ID,
 			err:   users.ErrNotPlatformAdmin,
 		},
 		{
-			desc:  "revoke admin role as root admin",
+			desc:  "unassign admin role as root admin",
 			token: tokenAdmin,
 			id:    platformAdmin.ID,
 			err:   nil,
 		},
 		{
-			desc:  "revoke already revoked admin role",
+			desc:  "unassign already unassigned admin role",
 			token: tokenAdmin,
 			id:    platformAdmin.ID,
 			err:   users.ErrNotPlatformAdmin,
@@ -883,14 +883,14 @@ func TestRevokeAdminRole(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RevokeAdminRole(context.Background(), tc.token, tc.id)
+		err := svc.UnassignAdminRole(context.Background(), tc.token, tc.id)
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 
 	err = svc.DisableUser(context.Background(), tokenPlatformAdmin, user.ID)
 	msg := fmt.Sprintf(
-		"disable user as revoked platform admin: expected %s got %s\n",
+		"disable user as unassigned platform admin: expected %s got %s\n",
 		errors.ErrAuthorization,
 		err,
 	)
@@ -950,51 +950,35 @@ func TestRestore(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
-		admin users.User
 		err   error
 	}{
 		{
 			desc:  "restore as non-admin user",
 			token: tokenUser,
-			admin: noPasswordAdmin,
 			err:   errors.ErrAuthorization,
 		},
 		{
 			desc:  "restore as platform admin",
 			token: tokenPlatformAdmin,
-			admin: noPasswordAdmin,
 			err:   errors.ErrAuthorization,
 		},
 		{
 			desc:  "restore with invalid token",
 			token: wrong,
-			admin: noPasswordAdmin,
 			err:   errors.ErrAuthentication,
 		},
 		{
 			desc:  "restore backup of existing root admin",
 			token: tokenAdmin,
-			admin: noPasswordAdmin,
-			err:   nil,
-		},
-		{
-			desc:  "restore backup of root admin with platform admin role",
-			token: tokenAdmin,
-			admin: platformAdmin,
 			err:   nil,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Restore(context.Background(), tc.token, tc.admin, nil, nil)
+		err := svc.Restore(context.Background(), tc.token, noPasswordAdmin, nil, nil)
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
-
-	u, err := svc.ViewProfile(context.Background(), tokenPlatformAdmin)
-	require.Nil(t, err, fmt.Sprintf("Viewing profile expected to succeed: %s", err))
-	msg := fmt.Sprintf("expected role %s got %s\n", domain.RoleRootAdmin, u.Role)
-	assert.Equal(t, domain.RoleRootAdmin, u.Role, msg)
 }
 
 func TestCreatePlatformInvite(t *testing.T) {

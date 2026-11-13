@@ -509,16 +509,16 @@ paths:
         '500':
           $ref: "#/components/responses/ServiceError"
     delete:
-      summary: Revokes the platform admin role
+      summary: Unassigns the platform admin role
       description: |
-        Revokes the platform admin role from a user. Only accessible by root admin.
+        Unassigns the platform admin role from a user. Only accessible by root admin.
       tags:
         - users
       parameters:
         - $ref: "#/components/parameters/UserId"
       responses:
         '204':
-          description: Platform admin role revoked.
+          description: Platform admin role unassigned.
         '401':
           description: Missing or invalid access token provided.
         '403':

@@ -1302,7 +1302,7 @@ func TestAssignAdminRole(t *testing.T) {
 	}
 }
 
-func TestRevokeAdminRole(t *testing.T) {
+func TestUnassignAdminRole(t *testing.T) {
 	rootAdmin := admin
 	rootAdmin.Role = domain.RoleRootAdmin
 	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin})
@@ -1327,42 +1327,42 @@ func TestRevokeAdminRole(t *testing.T) {
 		res    string
 	}{
 		{
-			desc:   "revoke admin role as platform admin",
+			desc:   "unassign admin role as platform admin",
 			id:     platformAdmin.ID,
 			token:  platformAdminToken,
 			status: http.StatusForbidden,
 			res:    forbiddenRes,
 		},
 		{
-			desc:   "revoke admin role with invalid token",
+			desc:   "unassign admin role with invalid token",
 			id:     platformAdmin.ID,
 			token:  invalidToken,
 			status: http.StatusUnauthorized,
 			res:    unauthRes,
 		},
 		{
-			desc:   "revoke admin role with empty token",
+			desc:   "unassign admin role with empty token",
 			id:     platformAdmin.ID,
 			token:  emptyValue,
 			status: http.StatusUnauthorized,
 			res:    missingTokRes,
 		},
 		{
-			desc:   "revoke admin role from root admin",
+			desc:   "unassign admin role from root admin",
 			id:     admin.ID,
 			token:  adminToken,
 			status: http.StatusNotFound,
 			res:    notAdminRes,
 		},
 		{
-			desc:   "revoke admin role from regular user",
+			desc:   "unassign admin role from regular user",
 			id:     user.ID,
 			token:  adminToken,
 			status: http.StatusNotFound,
 			res:    notAdminRes,
 		},
 		{
-			desc:   "revoke admin role as root admin",
+			desc:   "unassign admin role as root admin",
 			id:     platformAdmin.ID,
 			token:  adminToken,
 			status: http.StatusNoContent,

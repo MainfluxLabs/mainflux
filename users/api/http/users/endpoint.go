@@ -301,13 +301,13 @@ func assignAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func revokeAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
+func unassignAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(adminRoleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
-		if err := svc.RevokeAdminRole(ctx, req.token, req.id); err != nil {
+		if err := svc.UnassignAdminRole(ctx, req.token, req.id); err != nil {
 			return nil, err
 		}
 		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil

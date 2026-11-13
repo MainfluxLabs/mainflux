@@ -181,8 +181,8 @@ type AuthClient interface {
 	// RetrieveRole retrieves the role for a user.
 	RetrieveRole(ctx context.Context, id string) (string, error)
 
-	// RemoveRole removes the role of a user.
-	RemoveRole(ctx context.Context, id string) error
+	// UnassignRole unassigns the role from a user.
+	UnassignRole(ctx context.Context, id string) error
 
 	// CreateDormantOrgInvite creates a dormant org invite.
 	CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []GroupInvite) error
