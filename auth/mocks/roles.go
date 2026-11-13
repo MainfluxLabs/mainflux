@@ -25,7 +25,7 @@ func (rrm *rolesRepositoryMock) SaveRole(ctx context.Context, id, role string) e
 
 	// The roles table allows a single role per user.
 	if _, ok := rrm.roles[id]; ok {
-		return dbutil.ErrCreateEntity
+		return dbutil.ErrConflict
 	}
 
 	rrm.roles[id] = role

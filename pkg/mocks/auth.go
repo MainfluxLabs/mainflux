@@ -208,7 +208,7 @@ func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, orgID string) (str
 func (svc authServiceMock) AssignRole(_ context.Context, id, role string) error {
 	// The roles table allows a single role per user.
 	if svc.platformRoles[id] != "" {
-		return dbutil.ErrCreateEntity
+		return dbutil.ErrConflict
 	}
 
 	svc.platformRoles[id] = role

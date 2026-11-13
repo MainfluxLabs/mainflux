@@ -556,6 +556,42 @@ func TestCreateDormantOrgInvite(t *testing.T) {
 	assert.Equal(t, codes.InvalidArgument, e.Code(), msg)
 }
 
+func TestAssignRole(t *testing.T) {
+	roleUserID := "assignRoleUserID"
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc string
+		id   string
+		role string
+		code codes.Code
+	}{
+		{
+			desc: "assign role",
+			id:   roleUserID,
+			role: auth.RoleAdmin,
+			code: codes.OK,
+		},
+		{
+			desc: "assign role to user with role",
+			id:   roleUserID,
+			role: auth.RoleAdmin,
+			code: codes.AlreadyExists,
+		},
+	}
+
+	for _, tc := range cases {
+		err := client.AssignRole(context.Background(), tc.id, tc.role)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+}
+
 func TestRetrieveRoles(t *testing.T) {
 	adminUserID := "retrieveRolesAdminID"
 	err := svc.AssignRole(context.Background(), adminUserID, auth.RoleAdmin)

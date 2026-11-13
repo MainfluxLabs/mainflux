@@ -520,6 +520,8 @@ func encodeError(err error) error {
 		return status.Error(codes.PermissionDenied, err.Error())
 	case errors.Contains(err, dbutil.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
+	case errors.Contains(err, dbutil.ErrConflict):
+		return status.Error(codes.AlreadyExists, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")
 	}

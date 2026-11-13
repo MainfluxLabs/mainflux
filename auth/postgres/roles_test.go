@@ -41,7 +41,7 @@ func TestSaveRole(t *testing.T) {
 			desc: "save already existing role",
 			id:   userID,
 			role: auth.RoleRootAdmin,
-			err:  dbutil.ErrCreateEntity,
+			err:  dbutil.ErrConflict,
 		},
 		{
 			desc: "save invalid role",

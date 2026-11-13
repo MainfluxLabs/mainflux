@@ -6,6 +6,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var _ auth.RolesRepository = (*rolesRepository)(nil)
@@ -27,6 +29,10 @@ func (rr rolesRepository) SaveRole(ctx context.Context, userID, role string) err
 	dbur := toDBUsersRole(userID, role)
 
 	if _, err := rr.db.NamedExecContext(ctx, q, dbur); err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.UniqueViolation {
+			return errors.Wrap(dbutil.ErrConflict, err)
+		}
+
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
