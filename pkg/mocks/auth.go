@@ -183,6 +183,17 @@ func (svc authServiceMock) RetrieveRole(_ context.Context, id string) (string, e
 	return svc.platformRoles[id], nil
 }
 
+func (svc authServiceMock) RetrieveRoles(_ context.Context, ids []string) (map[string]string, error) {
+	roles := make(map[string]string)
+	for _, id := range ids {
+		if role, ok := svc.platformRoles[id]; ok {
+			roles[id] = role
+		}
+	}
+
+	return roles, nil
+}
+
 func (svc authServiceMock) UnassignRole(_ context.Context, id string) error {
 	if _, ok := svc.platformRoles[id]; !ok {
 		return dbutil.ErrNotFound

@@ -704,12 +704,18 @@ func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, e
 		return User{}, errors.Wrap(dbutil.ErrNotFound, err)
 	}
 
+	role, err := svc.auth.RetrieveRole(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+
 	return User{
 		ID:       id,
 		Email:    dbUser.Email,
 		Password: "",
 		Metadata: dbUser.Metadata,
 		Status:   dbUser.Status,
+		Role:     role,
 	}, nil
 }
 
@@ -742,7 +748,30 @@ func (svc usersService) ListUsers(ctx context.Context, token string, pm PageMeta
 		return UsersPage{}, err
 	}
 
-	return svc.users.RetrieveByIDs(ctx, nil, pm)
+	up, err := svc.users.RetrieveByIDs(ctx, nil, pm)
+	if err != nil {
+		return UsersPage{}, err
+	}
+
+	if len(up.Users) == 0 {
+		return up, nil
+	}
+
+	ids := make([]string, 0, len(up.Users))
+	for _, u := range up.Users {
+		ids = append(ids, u.ID)
+	}
+
+	roles, err := svc.auth.RetrieveRoles(ctx, ids)
+	if err != nil {
+		return UsersPage{}, err
+	}
+
+	for i := range up.Users {
+		up.Users[i].Role = roles[up.Users[i].ID]
+	}
+
+	return up, nil
 }
 
 func (svc usersService) ListUsersByIDs(ctx context.Context, ids []string, pm PageMetadata) (UsersPage, error) {

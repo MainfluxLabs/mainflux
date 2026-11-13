@@ -54,6 +54,22 @@ func (rr rolesRepository) RetrieveRole(ctx context.Context, userID string) (stri
 	return role, nil
 }
 
+func (rr rolesRepository) RetrieveRoles(ctx context.Context, userIDs []string) (map[string]string, error) {
+	q := `SELECT user_id, role FROM users_roles WHERE user_id = ANY($1::uuid[]);`
+
+	var dburs []dbUserRole
+	if err := rr.db.SelectContext(ctx, &dburs, q, userIDs); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	roles := make(map[string]string, len(dburs))
+	for _, dbur := range dburs {
+		roles[dbur.UserID] = dbur.Role
+	}
+
+	return roles, nil
+}
+
 func (rr rolesRepository) UpdateRole(ctx context.Context, userID, role string) error {
 	q := `UPDATE users_roles SET role = :role WHERE user_id = :user_id;`
 

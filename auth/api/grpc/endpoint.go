@@ -230,6 +230,27 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func retrieveRolesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(retrieveRolesReq)
+
+		if err := req.validate(); err != nil {
+			return retrieveRolesRes{}, err
+		}
+
+		roles, err := svc.RetrieveRoles(ctx, req.ids)
+		if err != nil {
+			return retrieveRolesRes{}, err
+		}
+
+		res := retrieveRolesRes{
+			roles: roles,
+		}
+
+		return res, nil
+	}
+}
+
 func unassignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(unassignRoleReq)

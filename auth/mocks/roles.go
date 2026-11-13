@@ -44,6 +44,20 @@ func (rrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, id string) (st
 	return "", nil
 }
 
+func (rrm *rolesRepositoryMock) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	roles := make(map[string]string)
+	for _, id := range ids {
+		if role, ok := rrm.roles[id]; ok {
+			roles[id] = role
+		}
+	}
+
+	return roles, nil
+}
+
 func (rrm *rolesRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()

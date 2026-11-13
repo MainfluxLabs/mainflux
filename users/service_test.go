@@ -346,12 +346,25 @@ func TestViewUser(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
 	cases := map[string]struct {
 		user   users.User
 		token  string
 		userID string
 		err    error
 	}{
+		"view platform admin as root admin": {
+			user: users.User{
+				ID:    platformAdmin.ID,
+				Email: platformAdmin.Email,
+				Role:  domain.RoleAdmin,
+			},
+			token:  adminToken,
+			userID: platformAdmin.ID,
+			err:    nil,
+		},
 		"view user with authorized token": {
 			user:   noPasswordUser,
 			token:  token,
@@ -526,6 +539,28 @@ func TestListUsers(t *testing.T) {
 		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d\n", desc, tc.size, size))
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
+
+	page, err = svc.ListUsers(context.Background(), token, users.PageMetadata{Status: "all"})
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	expected := map[string]string{
+		admin.ID:         domain.RoleRootAdmin,
+		platformAdmin.ID: domain.RoleAdmin,
+		user.ID:          "",
+	}
+
+	found := 0
+	for _, u := range page.Users {
+		role, ok := expected[u.ID]
+		if !ok {
+			continue
+		}
+		found++
+		msg := fmt.Sprintf("list users: expected role %s for %s got %s\n", role, u.Email, u.Role)
+		assert.Equal(t, role, u.Role, msg)
+	}
+	msg := fmt.Sprintf("list users: expected %d checked users got %d\n", len(expected), found)
+	assert.Equal(t, len(expected), found, msg)
 }
 
 func TestUpdateUser(t *testing.T) {

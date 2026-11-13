@@ -75,6 +75,10 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string,
 	return "", errUnsupported
 }
 
+func (repo singleUserRepo) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	return nil, errUnsupported
+}
+
 func (repo singleUserRepo) UnassignRole(ctx context.Context, id string) error {
 	return errUnsupported
 }

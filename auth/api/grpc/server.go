@@ -31,6 +31,7 @@ type grpcServer struct {
 	getOwnerIDByOrg                     kitgrpc.Handler
 	assignRole                          kitgrpc.Handler
 	retrieveRole                        kitgrpc.Handler
+	retrieveRoles                       kitgrpc.Handler
 	unassignRole                        kitgrpc.Handler
 	createDormantOrgInvite              kitgrpc.Handler
 	activateOrgInvite                   kitgrpc.Handler
@@ -88,6 +89,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "retrieve_role")(retrieveRoleEndpoint(svc)),
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
+		),
+		retrieveRoles: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "retrieve_roles")(retrieveRolesEndpoint(svc)),
+			decodeRetrieveRolesRequest,
+			encodeRetrieveRolesResponse,
 		),
 		unassignRole: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "unassign_role")(unassignRoleEndpoint(svc)),
@@ -205,6 +211,14 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 	return res.(*protomfx.RetrieveRoleRes), nil
 }
 
+func (s *grpcServer) RetrieveRoles(ctx context.Context, req *protomfx.RetrieveRolesReq) (*protomfx.RetrieveRolesRes, error) {
+	_, res, err := s.retrieveRoles.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.RetrieveRolesRes), nil
+}
+
 func (s *grpcServer) UnassignRole(ctx context.Context, req *protomfx.UnassignRoleReq) (*emptypb.Empty, error) {
 	_, res, err := s.unassignRole.ServeGRPC(ctx, req)
 	if err != nil {
@@ -288,6 +302,25 @@ func decodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
 func encodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(retrieveRoleRes)
 	return &protomfx.RetrieveRoleRes{Role: res.role}, nil
+}
+
+func decodeRetrieveRolesRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RetrieveRolesReq)
+	return retrieveRolesReq{ids: req.GetIds()}, nil
+}
+
+func encodeRetrieveRolesResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(retrieveRolesRes)
+
+	var roles []*protomfx.UserRole
+	for userID, role := range res.roles {
+		roles = append(roles, &protomfx.UserRole{
+			UserId: userID,
+			Role:   role,
+		})
+	}
+
+	return &protomfx.RetrieveRolesRes{Roles: roles}, nil
 }
 
 func decodeUnassignRoleRequest(_ context.Context, grpcReq any) (any, error) {

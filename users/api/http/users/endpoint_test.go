@@ -475,7 +475,10 @@ func TestListUsers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
-	data = append(data, viewUserRes{admin.ID, admin.Email}, viewUserRes{user.ID, user.Email})
+	data = append(data,
+		viewUserRes{admin.ID, admin.Email, domain.RoleRootAdmin},
+		viewUserRes{user.ID, user.Email, ""},
+	)
 	for i := 1; i < userNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i)
 		email := fmt.Sprintf("users%d@example.com", i)
@@ -488,7 +491,7 @@ func TestListUsers(t *testing.T) {
 		usersList, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		data = append(data, viewUserRes{usersList, email})
+		data = append(data, viewUserRes{usersList, email, ""})
 	}
 
 	sort.Slice(data, func(i, j int) bool {
@@ -667,7 +670,10 @@ func TestSearchUsers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
-	data = append(data, viewUserRes{admin.ID, admin.Email}, viewUserRes{user.ID, user.Email})
+	data = append(data,
+		viewUserRes{admin.ID, admin.Email, domain.RoleRootAdmin},
+		viewUserRes{user.ID, user.Email, ""},
+	)
 	for i := 1; i < userNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i)
 		email := fmt.Sprintf("users%d@example.com", i)
@@ -680,7 +686,7 @@ func TestSearchUsers(t *testing.T) {
 		usersList, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		data = append(data, viewUserRes{usersList, email})
+		data = append(data, viewUserRes{usersList, email, ""})
 	}
 
 	sort.Slice(data, func(i, j int) bool {
@@ -1408,6 +1414,7 @@ func TestUnassignAdminRole(t *testing.T) {
 type viewUserRes struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
+	Role  string `json:"role,omitempty"`
 }
 
 type pageRes struct {

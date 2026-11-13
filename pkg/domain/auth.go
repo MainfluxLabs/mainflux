@@ -181,6 +181,9 @@ type AuthClient interface {
 	// RetrieveRole retrieves the role for a user.
 	RetrieveRole(ctx context.Context, id string) (string, error)
 
+	// RetrieveRoles retrieves the roles of the users with the provided IDs, keyed by user ID.
+	RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error)
+
 	// UnassignRole unassigns the role from a user.
 	UnassignRole(ctx context.Context, id string) error
 

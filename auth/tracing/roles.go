@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	saveRole     = "save_role"
-	retrieveRole = "retrieve_role"
-	updateRole   = "update_role"
-	removeRole   = "remove_role"
+	saveRole      = "save_role"
+	retrieveRole  = "retrieve_role"
+	retrieveRoles = "retrieve_roles"
+	updateRole    = "update_role"
+	removeRole    = "remove_role"
 )
 
 var _ auth.RolesRepository = (*rolesRepositoryMiddleware)(nil)
@@ -60,4 +61,12 @@ func (rrm rolesRepositoryMiddleware) RemoveRole(ctx context.Context, id string) 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return rrm.repo.RemoveRole(ctx, id)
+}
+
+func (rrm rolesRepositoryMiddleware) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	span := dbutil.CreateSpan(ctx, rrm.tracer, retrieveRoles)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return rrm.repo.RetrieveRoles(ctx, ids)
 }

@@ -19,6 +19,9 @@ type Roles interface {
 	// RetrieveRole retrieves a role for a user.
 	RetrieveRole(ctx context.Context, id string) (string, error)
 
+	// RetrieveRoles retrieves the roles of the users with the provided IDs, keyed by user ID.
+	RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error)
+
 	// UnassignRole unassigns the role from a user.
 	UnassignRole(ctx context.Context, id string) error
 }
@@ -28,6 +31,8 @@ type RolesRepository interface {
 	SaveRole(ctx context.Context, id, role string) error
 	// RetrieveRole retrieves the user role.
 	RetrieveRole(ctx context.Context, id string) (string, error)
+	// RetrieveRoles retrieves the roles of the users with the provided IDs, keyed by user ID.
+	RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error)
 	// UpdateRole updates the user role.
 	UpdateRole(ctx context.Context, id, role string) error
 	// RemoveRole removes the user role.
@@ -40,6 +45,10 @@ func (svc service) AssignRole(ctx context.Context, id, role string) error {
 
 func (svc service) RetrieveRole(ctx context.Context, id string) (string, error) {
 	return svc.roles.RetrieveRole(ctx, id)
+}
+
+func (svc service) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	return svc.roles.RetrieveRoles(ctx, ids)
 }
 
 func (svc service) UnassignRole(ctx context.Context, id string) error {

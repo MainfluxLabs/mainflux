@@ -116,6 +116,7 @@ func viewUserEndpoint(svc users.Service) endpoint.Endpoint {
 			ID:       u.ID,
 			Email:    u.Email,
 			Metadata: u.Metadata,
+			Role:     u.Role,
 		}, nil
 	}
 }
@@ -332,6 +333,7 @@ func buildUsersResponse(up users.UsersPage, pm users.PageMetadata) userPageRes {
 			ID:       user.ID,
 			Email:    user.Email,
 			Metadata: user.Metadata,
+			Role:     user.Role,
 		}
 		res.Users = append(res.Users, view)
 	}

@@ -287,6 +287,15 @@ func (ms *metricsMiddleware) RetrieveRole(ctx context.Context, id string) (strin
 	return ms.svc.RetrieveRole(ctx, id)
 }
 
+func (ms *metricsMiddleware) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "retrieve_roles").Add(1)
+		ms.latency.With("method", "retrieve_roles").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RetrieveRoles(ctx, ids)
+}
+
 func (ms *metricsMiddleware) UnassignRole(ctx context.Context, id string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "unassign_role").Add(1)
