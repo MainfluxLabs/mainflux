@@ -466,7 +466,7 @@ paths:
     post:
       summary: Disables a user account
       description: |
-        Disables a user account for a given user ID.
+        Disables a user account for a given user ID. A user with a platform role cannot be disabled.
       tags:
         - users
       parameters:
@@ -483,7 +483,7 @@ paths:
         '403':
           description: Failed to perform authorization over the entity.
         '409':
-          description: The user is already disabled.
+          description: The user is already disabled or has a platform role.
         '500':
          $ref: "#/components/responses/ServiceError"
   /users/{userId}/admin:

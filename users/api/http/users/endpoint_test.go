@@ -1004,6 +1004,7 @@ func TestDisableUser(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	alreadyDisabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyDisabledUser.Error()})
+	platformRoleRes := toJSON(apiutil.ErrorRes{Err: users.ErrPlatformRoleAssigned.Error()})
 
 	cases := []struct {
 		desc   string
@@ -1012,6 +1013,13 @@ func TestDisableUser(t *testing.T) {
 		status int
 		res    string
 	}{
+		{
+			desc:   "disable user with platform role",
+			id:     admin.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    platformRoleRes,
+		},
 		{
 			desc:   "disable user with invalid token",
 			id:     user.ID,

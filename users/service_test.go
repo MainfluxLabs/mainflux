@@ -888,7 +888,7 @@ func TestEnableUser(t *testing.T) {
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignAdminRole(context.Background(), tokenAdmin, registerUser.ID)
+	err = svc.AssignAdminRole(context.Background(), tokenAdmin, unauthUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
 	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
@@ -903,7 +903,7 @@ func TestEnableUser(t *testing.T) {
 	}{
 		{"enable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
 		{"enable root as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
-		{"enable platform admin as platform admin", tokenPlatformAdmin, registerUser.ID, errors.ErrAuthorization},
+		{"enable platform admin as platform admin", tokenPlatformAdmin, unauthUser.ID, errors.ErrAuthorization},
 		{"enable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
 		{"enable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
 		{"enable user as admin", tokenAdmin, registerUser.ID, nil},
@@ -944,8 +944,10 @@ func TestDisableUser(t *testing.T) {
 		{"disable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
 		{"disable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
 		{"disable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
-		{"disable user as admin", tokenAdmin, registerUser.ID, nil},
-		{"disable already disabled user as admin", tokenAdmin, registerUser.ID, users.ErrAlreadyDisabledUser},
+		{"disable platform admin as root admin", tokenAdmin, registerUser.ID, users.ErrPlatformRoleAssigned},
+		{"disable root as root admin", tokenAdmin, admin.ID, users.ErrPlatformRoleAssigned},
+		{"disable user as admin", tokenAdmin, unauthUser.ID, nil},
+		{"disable already disabled user as admin", tokenAdmin, unauthUser.ID, users.ErrAlreadyDisabledUser},
 		{"disable user as platform admin", tokenPlatformAdmin, user.ID, nil},
 	}
 

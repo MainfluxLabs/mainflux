@@ -1113,6 +1113,18 @@ func (svc usersService) changeStatus(ctx context.Context, token, id, status stri
 		return err
 	}
 
+	// A platform role grants access through API keys, which disabling the user does not revoke.
+	if status == DisabledStatusKey {
+		role, err := svc.auth.RetrieveRole(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if role != "" {
+			return ErrPlatformRoleAssigned
+		}
+	}
+
 	if dbUser.Status == status {
 		if status == DisabledStatusKey {
 			return ErrAlreadyDisabledUser
