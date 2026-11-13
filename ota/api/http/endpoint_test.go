@@ -109,7 +109,8 @@ func TestCreateUpdate(t *testing.T) {
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
-	validData := fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","file_size":412,"checksum":"9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e","timeout":3600,"thing_ids":["%s"]}`, fwVersion, thingID)
+	checksum := "9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e"
+	validData := fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","file_size":412,"checksum":"%s","timeout":3600,"thing_ids":["%s"]}`, fwVersion, checksum, thingID)
 
 	cases := []struct {
 		desc        string
@@ -154,6 +155,13 @@ func TestCreateUpdate(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:        "create update without checksum",
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","thing_ids":["%s"]}`, fwVersion, thingID),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "create update with invalid checksum length",
 			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"9f2ca71e","thing_ids":["%s"]}`, fwVersion, thingID),
 			contentType: contentType,
@@ -161,22 +169,36 @@ func TestCreateUpdate(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:        "create update with non-hex checksum",
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"%s","thing_ids":["%s"]}`, fwVersion, strings.Repeat("z", 64), thingID),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create update with duplicate things",
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"%s","thing_ids":["%s","%s"]}`, fwVersion, checksum, thingID, thingID),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "create update with negative timeout",
-			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","timeout":-1,"thing_ids":["%s"]}`, fwVersion, thingID),
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"%s","timeout":-1,"thing_ids":["%s"]}`, fwVersion, checksum, thingID),
 			contentType: contentType,
 			token:       token,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "create update with too long timeout",
-			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","timeout":9223372036854775807,"thing_ids":["%s"]}`, fwVersion, thingID),
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"%s","timeout":9223372036854775807,"thing_ids":["%s"]}`, fwVersion, checksum, thingID),
 			contentType: contentType,
 			token:       token,
 			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "create update without things",
-			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","thing_ids":[]}`, fwVersion),
+			data:        fmt.Sprintf(`{"file_name":"fw.bin","version":"%s","checksum":"%s","thing_ids":[]}`, fwVersion, checksum),
 			contentType: contentType,
 			token:       token,
 			status:      http.StatusBadRequest,
