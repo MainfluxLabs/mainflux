@@ -29,6 +29,7 @@ type (
 type Backup struct {
 	Orgs           []Org
 	OrgMemberships []OrgMembership
+	UserRoles      []UserRole
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -52,10 +53,11 @@ type Orgs interface {
 	// GetOwnerIDByOrg returns an owner ID for a given org ID.
 	GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error)
 
-	// Backup retrieves all orgs and org memberships. Only accessible by admin.
+	// Backup retrieves all orgs, org memberships and user roles. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds orgs and org memberships from a backup. Only accessible by admin.
+	// Restore adds orgs, org memberships and user roles from a backup.
+	// Only accessible by root admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 

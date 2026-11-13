@@ -12,6 +12,12 @@ const (
 	RoleAdmin     = domain.RoleAdmin
 )
 
+// UserRole represents the platform role of a user.
+type UserRole struct {
+	UserID string
+	Role   string
+}
+
 type Roles interface {
 	// AssignRole assigns a role to a user.
 	AssignRole(ctx context.Context, id, role string) error
@@ -37,6 +43,10 @@ type RolesRepository interface {
 	UpdateRole(ctx context.Context, id, role string) error
 	// RemoveRole removes the user role.
 	RemoveRole(ctx context.Context, id string) error
+	// BackupAll retrieves all user roles.
+	BackupAll(ctx context.Context) ([]UserRole, error)
+	// RestoreAll saves the user roles and skips users that already have a role.
+	RestoreAll(ctx context.Context, urs ...UserRole) error
 }
 
 func (svc service) AssignRole(ctx context.Context, id, role string) error {

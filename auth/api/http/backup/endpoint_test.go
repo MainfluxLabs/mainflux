@@ -166,7 +166,18 @@ func TestBackup(t *testing.T) {
 		},
 	}
 
-	data := backup{or, m}
+	urs := []viewUserRole{
+		{
+			UserID: id,
+			Role:   auth.RoleAdmin,
+		},
+	}
+
+	data := backup{
+		Orgs:           or,
+		OrgMemberships: m,
+		UserRoles:      urs,
+	}
 
 	cases := []struct {
 		desc   string
@@ -229,8 +240,18 @@ func TestRestore(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	platformAdminKey := auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: adminID,
+		Subject:  adminEmail,
+	}
+	_, platformAdminToken, err := svc.Issue(context.Background(), "", platformAdminKey)
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), id, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ts := newServer(svc)
 	defer ts.Close()
@@ -267,9 +288,47 @@ func TestRestore(t *testing.T) {
 		},
 	}
 
+	urs := []viewUserRole{
+		{
+			UserID: id,
+			Role:   auth.RoleAdmin,
+		},
+		{
+			UserID: editorID,
+			Role:   auth.RoleAdmin,
+		},
+		{
+			UserID: viewerID,
+			Role:   auth.RoleRootAdmin,
+		},
+	}
+
 	data := toJSON(backup{
 		Orgs:           or,
 		OrgMemberships: m,
+		UserRoles:      urs,
+	})
+
+	invalidRoleData := toJSON(backup{
+		Orgs:           or,
+		OrgMemberships: m,
+		UserRoles: []viewUserRole{
+			{
+				UserID: viewerID,
+				Role:   wrongValue,
+			},
+		},
+	})
+
+	missingUserIDData := toJSON(backup{
+		Orgs:           or,
+		OrgMemberships: m,
+		UserRoles: []viewUserRole{
+			{
+				UserID: "",
+				Role:   auth.RoleAdmin,
+			},
+		},
 	})
 
 	cases := []struct {
@@ -278,6 +337,18 @@ func TestRestore(t *testing.T) {
 		req    string
 		status int
 	}{
+		{
+			desc:   "restore from backup with invalid user role",
+			token:  adminToken,
+			req:    invalidRoleData,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "restore from backup with user role without user id",
+			token:  adminToken,
+			req:    missingUserIDData,
+			status: http.StatusBadRequest,
+		},
 		{
 			desc:   "restore from backup",
 			token:  adminToken,
@@ -309,6 +380,12 @@ func TestRestore(t *testing.T) {
 			status: http.StatusForbidden,
 		},
 		{
+			desc:   "restore from backup as platform admin",
+			token:  platformAdminToken,
+			req:    data,
+			status: http.StatusForbidden,
+		},
+		{
 			desc:   "restore from backup without request body",
 			token:  adminToken,
 			req:    "",
@@ -329,6 +406,19 @@ func TestRestore(t *testing.T) {
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 
 	}
+
+	roles := map[string]string{
+		id:       auth.RoleRootAdmin,
+		editorID: auth.RoleAdmin,
+		viewerID: "",
+	}
+
+	for userID, expected := range roles {
+		role, err := svc.RetrieveRole(context.Background(), userID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		msg := fmt.Sprintf("%s: expected role %s got %s", userID, expected, role)
+		assert.Equal(t, expected, role, msg)
+	}
 }
 
 type orgRes struct {
@@ -344,7 +434,13 @@ type viewOrgMembership struct {
 	OrgID    string `json:"org_id"`
 	Role     string `json:"role"`
 }
+type viewUserRole struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+}
+
 type backup struct {
 	Orgs           []orgRes            `json:"orgs"`
 	OrgMemberships []viewOrgMembership `json:"org_memberships"`
+	UserRoles      []viewUserRole      `json:"user_roles"`
 }

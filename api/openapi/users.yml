@@ -579,7 +579,9 @@ paths:
     post:
       summary: Restore users
       description: |
-        Restores all users. Only accessible by root admin.
+        Restores all users. The backed up admin keeps the root role only when its e-mail
+        matches the configured root admin; otherwise it is restored as a regular user.
+        Only accessible by root admin.
       tags:
         - users
       requestBody:
@@ -593,6 +595,8 @@ paths:
           description: Missing or invalid access token provided.
         '403':
           description: This endpoint is available only for the root administrator.
+        '409':
+          description: A restored user already exists.
         '415':
           description: Missing or invalid content type.
         '500':

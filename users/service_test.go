@@ -45,6 +45,7 @@ var (
 	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: password}
 	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: password}
 	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
+	formerAdmin     = users.User{Email: "former-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: password}
 	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: password}
 	platformAdmin   = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Role: domain.RoleAdmin, Password: password}
 	usersList       = []users.User{admin, registerUser, user, unauthUser, platformAdmin}
@@ -1227,7 +1228,27 @@ func TestBackup(t *testing.T) {
 }
 
 func TestRestore(t *testing.T) {
-	svc := newService()
+	userRepo := usmocks.NewUserRepository(usersList)
+	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
+	invitesRepo := usmocks.NewPlatformInvitesRepository()
+	identityRepo := usmocks.NewIdentityRepository()
+	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	config := users.Config{
+		PassMinLength: users.MinPasswordLength,
+	}
+	svc := users.New(
+		userRepo,
+		verificationRepo,
+		invitesRepo,
+		identityRepo,
+		usmocks.NewHasher(),
+		usmocks.NewLegacyHasher(),
+		authSvc,
+		usmocks.NewEmailer(),
+		idProvider,
+		logger.NewMock(),
+		config,
+	)
 
 	tokenAdmin, err := svc.Login(context.Background(), admin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -1241,11 +1262,13 @@ func TestRestore(t *testing.T) {
 	cases := []struct {
 		desc  string
 		token string
+		admin users.User
 		err   error
 	}{
 		{
 			desc:  "restore as non-admin user",
 			token: tokenUser,
+			admin: noPasswordAdmin,
 			err:   errors.ErrAuthorization,
 		},
 		{
@@ -1256,20 +1279,47 @@ func TestRestore(t *testing.T) {
 		{
 			desc:  "restore with invalid token",
 			token: wrong,
+			admin: noPasswordAdmin,
 			err:   errors.ErrAuthentication,
 		},
 		{
 			desc:  "restore backup of existing root admin",
 			token: tokenAdmin,
+			admin: noPasswordAdmin,
 			err:   nil,
+		},
+		{
+			desc:  "restore backup of root admin with another email",
+			token: tokenAdmin,
+			admin: formerAdmin,
+			err:   nil,
+		},
+		{
+			desc:  "restore backup of already restored root admin with another email",
+			token: tokenAdmin,
+			admin: formerAdmin,
+			err:   dbutil.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Restore(context.Background(), tc.token, noPasswordAdmin, nil, nil)
+		err := svc.Restore(context.Background(), tc.token, tc.admin, nil, nil)
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
+
+	adminProfile, err := svc.ViewProfile(context.Background(), tokenAdmin)
+	require.Nil(t, err, fmt.Sprintf("Viewing profile expected to succeed: %s", err))
+	msg := fmt.Sprintf("expected role %s got %s\n", domain.RoleRootAdmin, adminProfile.Role)
+	assert.Equal(t, domain.RoleRootAdmin, adminProfile.Role, msg)
+
+	_, err = userRepo.RetrieveByID(context.Background(), formerAdmin.ID)
+	assert.Nil(t, err, fmt.Sprintf("retrieve restored former admin: unexpected error %s\n", err))
+
+	role, err := authSvc.RetrieveRole(context.Background(), formerAdmin.ID)
+	require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
+	assert.Equal(t, "", role, fmt.Sprintf("expected empty role got %s\n", role))
+
 }
 
 func TestCreatePlatformInvite(t *testing.T) {

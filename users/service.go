@@ -859,19 +859,8 @@ func (svc usersService) Restore(ctx context.Context, token string, admin User, u
 		return err
 	}
 
-	if err := svc.users.UpdateUserMetadata(ctx, admin); err != nil {
+	if err := svc.restoreAdmin(ctx, ir.email, admin); err != nil {
 		return err
-	}
-
-	role, err := svc.auth.RetrieveRole(ctx, admin.ID)
-	if err != nil {
-		return err
-	}
-
-	if role != domain.RoleRootAdmin {
-		if err := svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin); err != nil {
-			return err
-		}
 	}
 
 	for _, user := range users {
@@ -1195,6 +1184,29 @@ func (svc usersService) UnassignAdminRole(ctx context.Context, token, id string)
 	}
 
 	return svc.auth.UnassignRole(ctx, id)
+}
+
+// restoreAdmin assigns the root role only to the configured root admin.
+func (svc usersService) restoreAdmin(ctx context.Context, rootEmail string, admin User) error {
+	if admin.Email != rootEmail {
+		_, err := svc.users.Save(ctx, admin)
+		return err
+	}
+
+	if err := svc.users.UpdateUserMetadata(ctx, admin); err != nil {
+		return err
+	}
+
+	role, err := svc.auth.RetrieveRole(ctx, admin.ID)
+	if err != nil {
+		return err
+	}
+
+	if role == domain.RoleRootAdmin {
+		return nil
+	}
+
+	return svc.auth.AssignRole(ctx, admin.ID, domain.RoleRootAdmin)
 }
 
 // Auth helpers

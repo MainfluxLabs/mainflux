@@ -110,6 +110,55 @@ func (rr rolesRepository) RemoveRole(ctx context.Context, userID string) error {
 	return nil
 }
 
+func (rr rolesRepository) BackupAll(ctx context.Context) ([]auth.UserRole, error) {
+	q := `SELECT user_id, role FROM users_roles;`
+
+	var dburs []dbUserRole
+	if err := rr.db.SelectContext(ctx, &dburs, q); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	var urs []auth.UserRole
+	for _, dbur := range dburs {
+		urs = append(urs, toUserRole(dbur))
+	}
+
+	return urs, nil
+}
+
+func (rr rolesRepository) RestoreAll(ctx context.Context, urs ...auth.UserRole) error {
+	tx, err := rr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+	defer tx.Rollback()
+
+	q := `INSERT INTO users_roles (user_id, role) VALUES (:user_id, :role)
+	      ON CONFLICT (user_id) DO NOTHING;`
+
+	for _, ur := range urs {
+		dbur := toDBUsersRole(ur.UserID, ur.Role)
+
+		if _, err := tx.NamedExecContext(ctx, q, dbur); err != nil {
+			pgErr, ok := err.(*pgconn.PgError)
+			if ok {
+				switch pgErr.Code {
+				case pgerrcode.InvalidTextRepresentation, pgerrcode.CheckViolation:
+					return errors.Wrap(dbutil.ErrMalformedEntity, err)
+				}
+			}
+
+			return errors.Wrap(dbutil.ErrCreateEntity, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
 type dbUserRole struct {
 	UserID string `db:"user_id"`
 	Role   string `db:"role"`
@@ -119,5 +168,12 @@ func toDBUsersRole(userID, role string) dbUserRole {
 	return dbUserRole{
 		UserID: userID,
 		Role:   role,
+	}
+}
+
+func toUserRole(dbur dbUserRole) auth.UserRole {
+	return auth.UserRole{
+		UserID: dbur.UserID,
+		Role:   dbur.Role,
 	}
 }
