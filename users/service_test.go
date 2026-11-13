@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -28,30 +28,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	"golang.org/x/text/unicode/norm"
 )
 
 const (
-	wrong   = "wrong-value"
-	userNum = 101
+	wrong       = "wrong-value"
+	newPassword = "fresh-river-stone"
+	userNum     = 101
 
 	inviteDuration     = 7 * 24 * time.Hour
 	inviteRedirectPath = "/register/invite"
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: "password"}
+	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: password}
 	noPasswordAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
-	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: "password"}
-	selfRegister    = users.User{Email: "self-register@example.com", Password: "password"}
-	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: "password"}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: "password"}
+	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: password}
+	selfRegister    = users.User{Email: "self-register@example.com", Password: password}
+	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: password}
+	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: password}
 	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: "password"}
+	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: password}
 	usersList       = []users.User{admin, registerUser, user, unauthUser}
 	host            = "example.com"
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		User:      users.User{Email: "example@verify.com", Password: password},
 		Token:     "8a813b28-6f91-4fa5-8a18-783ffd2d27fb",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -74,7 +76,6 @@ var (
 	verificationsList = []users.EmailVerification{verification, duplicateVerification, expiredVerification}
 
 	idProvider = uuid.New()
-	passRegex  = regexp.MustCompile(`^\S{8,}$`)
 )
 
 func newService(srv ...*httptest.Server) users.Service {
@@ -112,9 +113,9 @@ func newService(srv ...*httptest.Server) users.Service {
 		GoogleOAuth:         oauthGoogleCfg,
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
-		PassRegex:           passRegex,
+		PassMinLength:       users.MinPasswordLength,
 	}
-	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, authSvc, e, idProvider, c)
+	return users.New(userRepo, verificationRepo, invitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), authSvc, e, idProvider, logger.NewMock(), c)
 }
 
 func TestSelfRegister(t *testing.T) {
@@ -158,9 +159,9 @@ func TestRegisterAdmin(t *testing.T) {
 	identityRepo := usmocks.NewIdentityRepository()
 	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
 	config := users.Config{
-		PassRegex: passRegex,
+		PassMinLength: users.MinPasswordLength,
 	}
-	svc := users.New(userRepo, verificationRepo, invitesRepo, identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, config)
+	svc := users.New(userRepo, verificationRepo, invitesRepo, identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), config)
 
 	cases := map[string]struct {
 		user users.User
@@ -169,7 +170,7 @@ func TestRegisterAdmin(t *testing.T) {
 		"create admin with valid credentials": {
 			user: users.User{
 				Email:    "new-admin@example.com",
-				Password: "password",
+				Password: password,
 			},
 			err: nil,
 		},
@@ -179,23 +180,30 @@ func TestRegisterAdmin(t *testing.T) {
 			},
 			err: errors.ErrPasswordFormat,
 		},
-		"create admin with password that does not match the regex": {
+		"create admin with password that is too short": {
 			user: users.User{
 				Email:    "short-password-admin@example.com",
 				Password: "short",
 			},
 			err: errors.ErrPasswordFormat,
 		},
+		"create admin with common password": {
+			user: users.User{
+				Email:    "common-password-admin@example.com",
+				Password: "Password1!",
+			},
+			err: errors.ErrPasswordFormat,
+		},
 		"create admin with invalid e-mail": {
 			user: users.User{
 				Email:    wrong,
-				Password: "password",
+				Password: password,
 			},
 			err: errors.ErrMalformedEntity,
 		},
 		"create admin with empty e-mail": {
 			user: users.User{
-				Password: "password",
+				Password: password,
 			},
 			err: errors.ErrMalformedEntity,
 		},
@@ -303,6 +311,88 @@ func TestLogin(t *testing.T) {
 	for desc, tc := range cases {
 		_, err := svc.Login(context.Background(), tc.user)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	}
+}
+
+func TestLoginPasswordForms(t *testing.T) {
+	composed := "pässwörd-ünïcödé"
+	legacyPassword := "12345678"
+	decomposed := norm.NFD.String(composed)
+	legacyUser := users.User{Email: "legacy@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: usmocks.LegacyHashPrefix + legacyPassword}
+	legacyDecomposedUser := users.User{Email: "legacy-nfd@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: usmocks.LegacyHashPrefix + decomposed}
+	oauthUser := users.User{Email: "oauth-only@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f99"}
+	unicodeUser := users.User{Email: "unicode@example.com", Password: composed}
+
+	userRepo := usmocks.NewUserRepository([]users.User{legacyUser, legacyDecomposedUser, oauthUser})
+	authSvc := mocks.NewAuthService(admin.ID, []users.User{legacyUser, legacyDecomposedUser, oauthUser, unicodeUser}, nil)
+	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), usmocks.NewIdentityRepository(), usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), users.Config{SelfRegisterEnabled: true})
+
+	_, err := svc.SelfRegister(context.Background(), unicodeUser, "")
+	require.Nil(t, err, fmt.Sprintf("self register expected to succeed: %s", err))
+
+	cases := []struct {
+		desc string
+		user users.User
+		hash string
+		err  error
+	}{
+		{
+			desc: "login with composed form of password",
+			user: unicodeUser,
+			hash: composed,
+			err:  nil,
+		},
+		{
+			desc: "login with decomposed form of password",
+			user: users.User{Email: unicodeUser.Email, Password: decomposed},
+			hash: composed,
+			err:  nil,
+		},
+		{
+			desc: "login with legacy hash of password that does not meet the policy",
+			user: users.User{Email: legacyUser.Email, Password: legacyPassword},
+			hash: legacyPassword,
+			err:  nil,
+		},
+		{
+			desc: "login after legacy hash was replaced",
+			user: users.User{Email: legacyUser.Email, Password: legacyPassword},
+			hash: legacyPassword,
+			err:  nil,
+		},
+		{
+			desc: "login with wrong password and legacy hash",
+			user: users.User{Email: legacyDecomposedUser.Email, Password: composed},
+			hash: legacyDecomposedUser.Password,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "login with legacy hash of password as received",
+			user: users.User{Email: legacyDecomposedUser.Email, Password: decomposed},
+			hash: composed,
+			err:  nil,
+		},
+		{
+			desc: "login with empty password",
+			user: users.User{Email: legacyUser.Email},
+			hash: legacyPassword,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "login with user without password",
+			user: users.User{Email: oauthUser.Email, Password: "any-password-at-all"},
+			hash: "",
+			err:  errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.Login(context.Background(), tc.user)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		stored, err := userRepo.RetrieveByEmail(context.Background(), tc.user.Email)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.hash, stored.Password, fmt.Sprintf("%s: expected stored hash %s got %s", tc.desc, tc.hash, stored.Password))
 	}
 }
 
@@ -433,7 +523,7 @@ func TestListUsers(t *testing.T) {
 		email := fmt.Sprintf("TestListUsers%d@example.com", i)
 		user := users.User{
 			Email:    email,
-			Password: "passpass",
+			Password: password,
 		}
 		_, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -565,26 +655,75 @@ func TestChangePassword(t *testing.T) {
 	userToken, _ := svc.Login(context.Background(), registerUser)
 	adminToken, _ := svc.Login(context.Background(), admin)
 
-	cases := map[string]struct {
+	cases := []struct {
+		desc        string
 		token       string
 		email       string
 		password    string
 		oldPassword string
 		err         error
 	}{
-		"valid user change password ":                    {userToken, "", "newpassword", registerUser.Password, nil},
-		"valid user change password with wrong password": {userToken, "", "newpassword", "wrongpassword", errors.ErrInvalidPassword},
-		"valid user change password invalid token":       {"", "", "newpassword", registerUser.Password, errors.ErrAuthentication},
-
-		"valid admin change user password ":            {adminToken, registerUser.Email, "newpassword", "", nil},
-		"valid admin change password with wrong email": {adminToken, "wrongemail@example.com", "newpassword", "", dbutil.ErrNotFound},
-		"valid admin change password invalid token":    {"", registerUser.Email, "newpassword", "", errors.ErrAuthentication},
+		{
+			desc:        "valid user change password",
+			token:       userToken,
+			email:       "",
+			password:    newPassword,
+			oldPassword: registerUser.Password,
+			err:         nil,
+		},
+		{
+			desc:        "valid user change password with wrong password",
+			token:       userToken,
+			email:       "",
+			password:    newPassword,
+			oldPassword: "wrongpassword",
+			err:         errors.ErrInvalidPassword,
+		},
+		{
+			desc:        "valid user change password invalid token",
+			token:       "",
+			email:       "",
+			password:    newPassword,
+			oldPassword: registerUser.Password,
+			err:         errors.ErrAuthentication,
+		},
+		{
+			desc:        "valid admin change user password",
+			token:       adminToken,
+			email:       registerUser.Email,
+			password:    newPassword,
+			oldPassword: "",
+			err:         nil,
+		},
+		{
+			desc:        "valid admin change password with wrong email",
+			token:       adminToken,
+			email:       "wrongemail@example.com",
+			password:    newPassword,
+			oldPassword: "",
+			err:         dbutil.ErrNotFound,
+		},
+		{
+			desc:        "valid admin change password invalid token",
+			token:       "",
+			email:       registerUser.Email,
+			password:    newPassword,
+			oldPassword: "",
+			err:         errors.ErrAuthentication,
+		},
+		{
+			desc:        "valid admin change user password to common password",
+			token:       adminToken,
+			email:       registerUser.Email,
+			password:    "1q2w3e4r5t6y7u8i",
+			oldPassword: "",
+			err:         errors.ErrPasswordFormat,
+		},
 	}
 
-	for desc, tc := range cases {
+	for _, tc := range cases {
 		err := svc.ChangePassword(context.Background(), tc.token, tc.email, tc.password, tc.oldPassword)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
-
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
 
@@ -606,10 +745,31 @@ func TestResetPassword(t *testing.T) {
 		password string
 		err      error
 	}{
-		"valid user reset password ":      {resetToken, registerUser.Email, nil},
-		"invalid user reset password ":    {"", "newpassword", errors.ErrAuthentication},
-		"reset password with login token": {loginToken, "newpassword", errors.ErrAuthentication},
-		"reset password with API token":   {apiToken, "newpassword", errors.ErrAuthentication},
+		"valid user reset password ": {
+			token:    resetToken,
+			password: newPassword,
+			err:      nil,
+		},
+		"reset password with weak password": {
+			token:    resetToken,
+			password: "register-user-pass",
+			err:      errors.ErrPasswordFormat,
+		},
+		"invalid user reset password ": {
+			token:    "",
+			password: newPassword,
+			err:      errors.ErrAuthentication,
+		},
+		"reset password with login token": {
+			token:    loginToken,
+			password: newPassword,
+			err:      errors.ErrAuthentication,
+		},
+		"reset password with API token": {
+			token:    apiToken,
+			password: newPassword,
+			err:      errors.ErrAuthentication,
+		},
 	}
 
 	for desc, tc := range cases {
@@ -1160,7 +1320,7 @@ func TestOIDCCallback(t *testing.T) {
 			RedirectLoginURL: "https://example.com/login",
 		},
 	}
-	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, c)
+	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), c)
 
 	loginData, err := svc.OAuthLogin(users.OIDCProvider)
 	require.Nil(t, err)
@@ -1286,7 +1446,7 @@ func TestOIDCCallback(t *testing.T) {
 	assert.Equal(t, newOIDCUser.Email, linkedUser.Email, "unverified e-mail change should not be applied to linked user")
 
 	c.EmailVerifyEnabled = true
-	verifyingSvc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), authSvc, usmocks.NewEmailer(), idProvider, c)
+	verifyingSvc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), c)
 	idToken = signIDToken(signingKey, tokenClaims("oidc-sub-014", oidcClientID, map[string]any{"email": "another-new-oidc-user@example.com"}))
 	userInfoClaims = nil
 

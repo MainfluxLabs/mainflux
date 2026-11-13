@@ -334,7 +334,7 @@ paths:
       tags:
         - users
       requestBody:
-        $ref: "#/components/requestBodies/UserCreateReq"
+        $ref: "#/components/requestBodies/LoginReq"
       responses:
         '201':
           description: User authenticated.
@@ -577,6 +577,21 @@ paths:
 
 components:
   schemas:
+    NewPassword:
+      type: string
+      format: password
+      minLength: 8
+      maxLength: 128
+      description: |
+        Account password. Rules:
+        - Unicode NFKC normalized before validation and hashing.
+        - At least `MF_USERS_PASS_MIN_LENGTH` characters (15 by default) and at most 128,
+          counted in Unicode code points after normalization.
+        - All characters are allowed, including spaces, symbols and Unicode.
+          No uppercase, digit or special character requirements.
+        - Must not be on the NCSC list of the 100,000 most used passwords (case-insensitive).
+        - Must not contain the local part of the user's e-mail address (case-insensitive),
+          when the local part has at least 3 characters.
     Token:
       type: object
       properties:
@@ -595,10 +610,7 @@ components:
           example: "test@example.com"
           description: User's email address will be used as its unique identifier
         password:
-          type: string
-          format: password
-          minimum: 8
-          description: Free-form account password used for acquiring auth token(s).
+          $ref: '#/components/schemas/NewPassword'
       required:
         - email
         - password
@@ -618,10 +630,7 @@ components:
               example: "test@example.com"
               description: User's email address will be used as its unique identifier
             password:
-              type: string
-              format: password
-              minimum: 8
-              description: Free-form account password used for acquiring auth token(s).
+              $ref: '#/components/schemas/NewPassword'
     PlatformInviteRegisterReqObj:
       type: object
       properties:
@@ -634,10 +643,7 @@ components:
               example: "test@example.com"
               description: User's email address will be used as its unique identifier
             password:
-              type: string
-              format: password
-              minimum: 8
-              description: Free-form account password used for acquiring auth token(s).
+              $ref: '#/components/schemas/NewPassword'
         redirect_path:
           type: string
           description: The path portion of the Organization Invite view URL that the end user receives in the email notification.
@@ -934,6 +940,25 @@ components:
         enum: [google, github, oidc]
       required: true
   requestBodies:
+    LoginReq:
+      description: JSON-formatted document containing user credentials
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+                example: "test@example.com"
+              password:
+                type: string
+                format: password
+                description: Account password. The password policy is not applied at login.
+            required:
+              - email
+              - password
     UserCreateReq:
       description: JSON-formatted document describing the new user to be registered
       required: true
@@ -996,15 +1021,11 @@ components:
             type: object
             properties:
               password:
-                type: string
-                format: password
-                description: New password.
-                minimum: 8
+                $ref: '#/components/schemas/NewPassword'
               confirm_password:
                 type: string
                 format: password
-                description: New confirmation password.
-                minimum: 8
+                description: Must be equal to password.
               token:
                 type: string
                 format: jwt
@@ -1018,9 +1039,7 @@ components:
             type: object
             properties:
               password:
-                type: string
-                format: password
-                description: New password.
+                $ref: '#/components/schemas/NewPassword'
               old_password:
                 type: string
                 format: password

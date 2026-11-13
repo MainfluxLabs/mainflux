@@ -117,6 +117,14 @@ func migrateDB(db *sqlx.DB) error {
 			{
 				Id: "users_05",
 				Up: []string{
+					`ALTER TABLE users ALTER COLUMN password TYPE TEXT`,
+					`ALTER TABLE verifications ALTER COLUMN password TYPE TEXT`,
+				},
+				Down: []string{},
+			},
+			{
+				Id: "users_06",
+				Up: []string{
 					`ALTER TABLE oauth_identities ALTER COLUMN provider_user_id TYPE VARCHAR(512)`,
 				},
 				Down: []string{

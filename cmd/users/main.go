@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
 	httpapi "github.com/MainfluxLabs/mainflux/users/api/http"
+	"github.com/MainfluxLabs/mainflux/users/argon2"
 	"github.com/MainfluxLabs/mainflux/users/bcrypt"
 	"github.com/MainfluxLabs/mainflux/users/emailer"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
@@ -72,7 +72,7 @@ const (
 	defEmailTemplatesDir = "."
 	defAdminEmail        = ""
 	defAdminPassword     = ""
-	defPassRegex         = `^\S{8,}$`
+	defPassMinLength     = "15"
 
 	defHost = "http://localhost"
 
@@ -111,7 +111,7 @@ const (
 
 	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
 	envAdminPassword = "MF_USERS_ADMIN_PASSWORD"
-	envPassRegex     = "MF_USERS_PASS_REGEX"
+	envPassMinLength = "MF_USERS_PASS_MIN_LENGTH"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -164,7 +164,7 @@ type config struct {
 	authGRPCTimeout     time.Duration
 	adminEmail          string
 	adminPassword       string
-	passRegex           *regexp.Regexp
+	passMinLength       int
 	host                string
 	selfRegisterEnabled bool
 	emailVerifyEnabled  bool
@@ -207,7 +207,7 @@ func main() {
 	svc := newService(db, dbTracer, auth, cfg, logger)
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, usersHttpTracer, logger, cfg.passRegex), cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, usersHttpTracer, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -238,9 +238,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envAuthTLS)
 	}
 
-	passRegex, err := regexp.Compile(mainflux.Env(envPassRegex, defPassRegex))
-	if err != nil {
-		log.Fatalf("Invalid password validation rules %s\n", envPassRegex)
+	passMinLength, err := strconv.Atoi(mainflux.Env(envPassMinLength, defPassMinLength))
+	if err != nil || passMinLength < users.MinPasswordLength || passMinLength > users.MaxPasswordLength {
+		log.Fatalf("Invalid %s value: must be an integer between %d and %d", envPassMinLength, users.MinPasswordLength, users.MaxPasswordLength)
 	}
 
 	selfRegisterEnabled, err := strconv.ParseBool(mainflux.Env(envSelfRegisterEnabled, defSelfRegisterEnabled))
@@ -348,7 +348,7 @@ func loadConfig() config {
 		adminEmail:          mainflux.Env(envAdminEmail, defAdminEmail),
 		adminPassword:       mainflux.Env(envAdminPassword, defAdminPassword),
 		host:                mainflux.Env(envHost, defHost),
-		passRegex:           passRegex,
+		passMinLength:       passMinLength,
 		selfRegisterEnabled: selfRegisterEnabled,
 		emailVerifyEnabled:  emailVerifyEnabled,
 		inviteDuration:      inviteDuration,
@@ -370,7 +370,9 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 
 func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c config, logger logger.Logger) users.Service {
 	database := dbutil.NewDatabase(db)
-	hasher := bcrypt.New()
+	hasher := argon2.New()
+	// Only verifies bcrypt hashes from earlier versions, replaced on login; remove once none remain.
+	legacyHasher := bcrypt.New()
 	userRepo := tracing.UserRepositoryMiddleware(postgres.NewUserRepo(database), tracer)
 	verificationRepo := tracing.VerificationRepositoryMiddleware(postgres.NewEmailVerificationRepo(database), tracer)
 	platformInvitesRepo := tracing.PlatformInvitesRepositoryMiddleware(postgres.NewPlatformInvitesRepo(database), tracer)
@@ -408,10 +410,10 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 		GitHubOAuth:         c.githubOauthConfig,
 		OIDC:                c.oidcConfig,
 		URLs:                c.urls,
-		PassRegex:           c.passRegex,
+		PassMinLength:       c.passMinLength,
 	}
 
-	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, ac, svcEmailer, idProvider, usersCfg)
+	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, legacyHasher, ac, svcEmailer, idProvider, logger, usersCfg)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

@@ -10,10 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strconv"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -175,6 +175,7 @@ type usersService struct {
 	emailVerifyEnabled  bool
 	selfRegisterEnabled bool
 	hasher              Hasher
+	legacyHasher        Hasher
 	email               Emailer
 	auth                domain.AuthClient
 	idProvider          uuid.IDProvider
@@ -182,7 +183,8 @@ type usersService struct {
 	githubOAuth         oauth2.Config
 	oidc                *oidcClient
 	urls                ConfigURLs
-	passRegex           *regexp.Regexp
+	passMinLength       int
+	logger              logger.Logger
 }
 
 // Config holds configuration values for the users service.
@@ -194,11 +196,11 @@ type Config struct {
 	GitHubOAuth         oauth2.Config
 	OIDC                OIDCConfig
 	URLs                ConfigURLs
-	PassRegex           *regexp.Regexp
+	PassMinLength       int
 }
 
 // New instantiates the users service implementation
-func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher Hasher, auth domain.AuthClient, e Emailer, idp uuid.IDProvider, c Config) Service {
+func New(users UserRepository, verifications EmailVerificationRepository, invites PlatformInvitesRepository, identity IdentityRepository, hasher, legacyHasher Hasher, auth domain.AuthClient, e Emailer, idp uuid.IDProvider, logger logger.Logger, c Config) Service {
 	return &usersService{
 		users:               users,
 		emailVerifications:  verifications,
@@ -208,6 +210,7 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		emailVerifyEnabled:  c.EmailVerifyEnabled,
 		selfRegisterEnabled: c.SelfRegisterEnabled,
 		hasher:              hasher,
+		legacyHasher:        legacyHasher,
 		auth:                auth,
 		email:               e,
 		idProvider:          idp,
@@ -215,13 +218,18 @@ func New(users UserRepository, verifications EmailVerificationRepository, invite
 		githubOAuth:         c.GitHubOAuth,
 		oidc:                newOIDCClient(c.OIDC),
 		urls:                c.URLs,
-		passRegex:           c.PassRegex,
+		passMinLength:       c.PassMinLength,
+		logger:              logger,
 	}
 }
 
 func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPath string) (string, error) {
 	if !svc.selfRegisterEnabled {
 		return "", ErrSelfRegisterDisabled
+	}
+
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
+		return "", err
 	}
 
 	_, err := svc.users.RetrieveByEmail(ctx, user.Email)
@@ -233,7 +241,7 @@ func (svc usersService) SelfRegister(ctx context.Context, user User, redirectPat
 		return "", dbutil.ErrConflict
 	}
 
-	hash, err := svc.hasher.Hash(user.Password)
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -299,7 +307,11 @@ func (svc usersService) RegisterByInvite(ctx context.Context, user User, inviteI
 		return "", err
 	}
 
-	hash, err := svc.hasher.Hash(user.Password)
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
+		return "", err
+	}
+
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -382,7 +394,11 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 		return nil
 	}
 
-	if err := user.Validate(svc.passRegex); err != nil {
+	if err := user.Validate(); err != nil {
+		return errors.Wrap(ErrInvalidAdminCredentials, err)
+	}
+
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
 		return errors.Wrap(ErrInvalidAdminCredentials, err)
 	}
 
@@ -392,7 +408,7 @@ func (svc usersService) RegisterAdmin(ctx context.Context, user User) error {
 	}
 	user.ID = uid
 
-	hash, err := svc.hasher.Hash(user.Password)
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -416,6 +432,10 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 		return "", err
 	}
 
+	if err := ValidatePassword(user.Password, user.Email, svc.passMinLength); err != nil {
+		return "", err
+	}
+
 	uid, err := svc.idProvider.ID()
 	if err != nil {
 		return "", err
@@ -423,7 +443,7 @@ func (svc usersService) Register(ctx context.Context, token string, user User) (
 
 	user.ID = uid
 
-	hash, err := svc.hasher.Hash(user.Password)
+	hash, err := svc.hashPassword(user.Password)
 	if err != nil {
 		return "", errors.Wrap(dbutil.ErrMalformedEntity, err)
 	}
@@ -453,7 +473,7 @@ func (svc usersService) Login(ctx context.Context, user User) (string, error) {
 	if dbUser.Password == "" {
 		return "", errors.ErrAuthentication
 	}
-	if err := svc.hasher.Compare(user.Password, dbUser.Password); err != nil {
+	if err := svc.comparePassword(ctx, dbUser, user.Password); err != nil {
 		return "", errors.Wrap(errors.ErrAuthentication, err)
 	}
 	return svc.issue(ctx, dbUser.ID, dbUser.Email, domain.LoginKey)
@@ -959,7 +979,11 @@ func (svc usersService) ResetPassword(ctx context.Context, resetToken, password 
 		return dbutil.ErrNotFound
 	}
 
-	password, err = svc.hasher.Hash(password)
+	if err := ValidatePassword(password, u.Email, svc.passMinLength); err != nil {
+		return err
+	}
+
+	password, err = svc.hashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -1006,7 +1030,11 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		return errors.ErrAuthentication
 	}
 
-	hashedPassword, err := svc.hasher.Hash(password)
+	if err := ValidatePassword(password, userEmail, svc.passMinLength); err != nil {
+		return err
+	}
+
+	hashedPassword, err := svc.hashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -1016,6 +1044,33 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 	}
 
 	return svc.auth.RevokeSessions(ctx, userID)
+}
+
+func (svc usersService) hashPassword(password string) (string, error) {
+	return svc.hasher.Hash(NormalizePassword(password))
+}
+
+func (svc usersService) comparePassword(ctx context.Context, dbUser User, password string) error {
+	err := svc.hasher.Compare(NormalizePassword(password), dbUser.Password)
+	if !errors.Contains(err, ErrUnsupportedHash) {
+		return err
+	}
+
+	// Legacy hashes were created from the password as received, before normalization.
+	if err := svc.legacyHasher.Compare(password, dbUser.Password); err != nil {
+		return err
+	}
+
+	hash, err := svc.hashPassword(password)
+	if err == nil {
+		err = svc.users.UpdatePassword(ctx, dbUser.Email, hash)
+	}
+	if err != nil {
+		// Login still succeeds; the hash is replaced on a later login.
+		svc.logger.Warn(fmt.Sprintf("failed to replace legacy password hash of user %s: %s", dbUser.ID, err))
+	}
+
+	return nil
 }
 
 func (svc usersService) SendPasswordReset(_ context.Context, redirectPath, email, token string) error {

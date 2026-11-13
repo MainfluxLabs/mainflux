@@ -4,8 +4,6 @@
 package users
 
 import (
-	"regexp"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
@@ -37,9 +35,8 @@ func (req userReq) validate() error {
 }
 
 type selfRegisterUserReq struct {
-	User          users.User `json:"user"`
-	RedirectPath  string     `json:"redirect_path"`
-	passwordRegex *regexp.Regexp
+	User         users.User `json:"user"`
+	RedirectPath string     `json:"redirect_path"`
 }
 
 func (req selfRegisterUserReq) validate() error {
@@ -47,7 +44,11 @@ func (req selfRegisterUserReq) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	return req.User.Validate(req.passwordRegex)
+	if req.User.Password == "" {
+		return apiutil.ErrMissingPass
+	}
+
+	return req.User.Validate()
 }
 
 func validProvider(provider string) bool {
@@ -111,16 +112,20 @@ func (req verifyEmailReq) validate() error {
 }
 
 type registerUserReq struct {
-	user          users.User
-	token         string
-	passwordRegex *regexp.Regexp
+	user  users.User
+	token string
 }
 
 func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
-	return req.user.Validate(req.passwordRegex)
+
+	if req.user.Password == "" {
+		return apiutil.ErrMissingPass
+	}
+
+	return req.user.Validate()
 }
 
 type refreshReq struct {
@@ -193,19 +198,14 @@ func (req passwResetReq) validate() error {
 }
 
 type resetTokenReq struct {
-	Token         string `json:"token"`
-	Password      string `json:"password"`
-	ConfPass      string `json:"confirm_password"`
-	passwordRegex *regexp.Regexp
+	Token    string `json:"token"`
+	Password string `json:"password"`
+	ConfPass string `json:"confirm_password"`
 }
 
 func (req resetTokenReq) validate() error {
 	if req.Password == "" {
 		return apiutil.ErrMissingPass
-	}
-
-	if !req.passwordRegex.MatchString(req.Password) {
-		return errors.ErrPasswordFormat
 	}
 
 	if req.ConfPass == "" {
@@ -224,11 +224,10 @@ func (req resetTokenReq) validate() error {
 }
 
 type passwChangeReq struct {
-	token         string
-	Password      string `json:"password"`
-	OldPassword   string `json:"old_password,omitempty"`
-	Email         string `json:"email,omitempty"`
-	passwordRegex *regexp.Regexp
+	token       string
+	Password    string `json:"password"`
+	OldPassword string `json:"old_password,omitempty"`
+	Email       string `json:"email,omitempty"`
 }
 
 func (req passwChangeReq) validate() error {
@@ -239,8 +238,8 @@ func (req passwChangeReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
-	if !req.passwordRegex.MatchString(req.Password) {
-		return errors.ErrPasswordFormat
+	if req.Password == "" {
+		return apiutil.ErrMissingPass
 	}
 
 	return nil

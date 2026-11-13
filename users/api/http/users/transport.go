@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -36,7 +35,7 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
+func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -51,14 +50,14 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			kitot.TraceServer(tracer, "register"),
 			withIdentity,
 		)(registrationEndpoint(svc)),
-		decodeRegisterUser(passwordRegex),
+		decodeRegisterUser,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Post("/register", kithttp.NewServer(
 		kitot.TraceServer(tracer, "self_register")(selfRegistrationEndpoint(svc)),
-		decodeSelfRegisterUser(passwordRegex),
+		decodeSelfRegisterUser,
 		encodeResponse,
 		opts...,
 	))
@@ -129,7 +128,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	mux.Put("/password/reset", kithttp.NewServer(
 		kitot.TraceServer(tracer, "reset")(passwordResetEndpoint(svc)),
-		decodePasswordReset(passwordRegex),
+		decodePasswordReset,
 		encodeResponse,
 		opts...,
 	))
@@ -139,7 +138,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			kitot.TraceServer(tracer, "reset"),
 			withIdentity,
 		)(passwordChangeEndpoint(svc)),
-		decodePasswordChange(passwordRegex),
+		decodePasswordChange,
 		encodeResponse,
 		opts...,
 	))
@@ -339,42 +338,37 @@ func decodeRefresh(_ context.Context, r *http.Request) (any, error) {
 	return refreshReq{token: apiutil.ExtractBearerToken(r)}, nil
 }
 
-func decodeRegisterUser(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		var user users.User
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		user.Email = strings.TrimSpace(user.Email)
-		req := registerUserReq{
-			user:          user,
-			token:         apiutil.ExtractBearerToken(r),
-			passwordRegex: passwordRegex,
-		}
-
-		return req, nil
+func decodeRegisterUser(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	var user users.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	user.Email = strings.TrimSpace(user.Email)
+	req := registerUserReq{
+		user:  user,
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	return req, nil
 }
 
-func decodeSelfRegisterUser(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		req := selfRegisterUserReq{passwordRegex: passwordRegex}
-
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		return req, nil
+func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	var req selfRegisterUserReq
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
 func decodeOAuthLogin(_ context.Context, r *http.Request) (any, error) {
@@ -446,37 +440,30 @@ func decodePasswordResetRequest(_ context.Context, r *http.Request) (any, error)
 	return req, nil
 }
 
-func decodePasswordReset(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		req := resetTokenReq{passwordRegex: passwordRegex}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		return req, nil
+func decodePasswordReset(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	var req resetTokenReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
-func decodePasswordChange(passwordRegex *regexp.Regexp) kithttp.DecodeRequestFunc {
-	return func(_ context.Context, r *http.Request) (any, error) {
-		if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-			return nil, apiutil.ErrUnsupportedContentType
-		}
-
-		req := passwChangeReq{
-			token:         apiutil.ExtractBearerToken(r),
-			passwordRegex: passwordRegex,
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-		}
-
-		return req, nil
+func decodePasswordChange(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
 	}
+
+	req := passwChangeReq{token: apiutil.ExtractBearerToken(r)}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
+	return req, nil
 }
 
 func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {

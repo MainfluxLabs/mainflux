@@ -4,6 +4,8 @@
 package cli
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -120,10 +122,16 @@ var cmdProvision = []cobra.Command{
 
 			un := fmt.Sprintf("%s@email.com", namesgenerator.GetRandomName(0))
 
+			password, err := randomPassword()
+			if err != nil {
+				logError(err)
+				return
+			}
+
 			// Create test User
 			user := mfxsdk.User{
 				Email:    un,
-				Password: "12345678",
+				Password: password,
 			}
 			if _, err := sdk.RegisterUser(user); err != nil {
 				logError(err)
@@ -362,4 +370,13 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 	}
 
 	return profiles, nil
+}
+
+// randomPassword returns a 64-character random password.
+func randomPassword() (string, error) {
+	buf := make([]byte, 48)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
