@@ -280,3 +280,235 @@ func (es eventStore) RemoveGroupsByOrg(ctx context.Context, orgID string) ([]str
 
 	return ids, nil
 }
+
+func (es eventStore) UpdateThingsMetadata(ctx context.Context, token string, ths ...things.Thing) error {
+	if err := es.Service.UpdateThingsMetadata(ctx, token, ths...); err != nil {
+		return err
+	}
+
+	groupIDByThing := make(map[string]string, len(ths))
+	orgIDByGroup := make(map[string]string)
+	for _, th := range ths {
+		groupID, err := es.Service.GetGroupIDByThing(ctx, th.ID)
+		if err != nil {
+			return err
+		}
+		groupIDByThing[th.ID] = groupID
+
+		if _, ok := orgIDByGroup[groupID]; ok {
+			continue
+		}
+
+		orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
+		if err != nil {
+			return err
+		}
+		orgIDByGroup[groupID] = orgID
+	}
+
+	for _, th := range ths {
+		groupID := groupIDByThing[th.ID]
+		es.pub.Publish(ctx, events.Event{
+			Action: events.ThingMetadataUpdated{
+				ID:       th.ID,
+				Metadata: th.Metadata,
+			},
+			GroupID: groupID,
+			OrgID:   orgIDByGroup[groupID],
+		})
+	}
+
+	return nil
+}
+
+func (es eventStore) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
+	if err := es.Service.UpdateExternalKey(ctx, token, key, thingID); err != nil {
+		return err
+	}
+
+	groupID, orgID, err := es.thingScope(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	es.pub.Publish(ctx, events.Event{
+		Action:  events.ThingExternalKeyUpdated{ID: thingID},
+		GroupID: groupID,
+		OrgID:   orgID,
+	})
+
+	return nil
+}
+
+func (es eventStore) RemoveExternalKey(ctx context.Context, token, thingID string) error {
+	if err := es.Service.RemoveExternalKey(ctx, token, thingID); err != nil {
+		return err
+	}
+
+	groupID, orgID, err := es.thingScope(ctx, thingID)
+	if err != nil {
+		return err
+	}
+
+	es.pub.Publish(ctx, events.Event{
+		Action:  events.ThingExternalKeyRemoved{ID: thingID},
+		GroupID: groupID,
+		OrgID:   orgID,
+	})
+
+	return nil
+}
+
+func (es eventStore) CreateGroups(ctx context.Context, token, orgID string, groups ...things.Group) ([]things.Group, error) {
+	grs, err := es.Service.CreateGroups(ctx, token, orgID, groups...)
+	if err != nil {
+		return grs, err
+	}
+
+	for _, gr := range grs {
+		es.pub.Publish(ctx, events.Event{
+			Action: events.GroupCreated{
+				ID:          gr.ID,
+				Name:        gr.Name,
+				Description: gr.Description,
+				Metadata:    gr.Metadata,
+			},
+			GroupID: gr.ID,
+			OrgID:   orgID,
+		})
+	}
+
+	return grs, nil
+}
+
+func (es eventStore) UpdateGroup(ctx context.Context, token string, group things.Group) (things.Group, error) {
+	gr, err := es.Service.UpdateGroup(ctx, token, group)
+	if err != nil {
+		return gr, err
+	}
+
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, group.ID)
+	if err != nil {
+		return things.Group{}, err
+	}
+
+	es.pub.Publish(ctx, events.Event{
+		Action: events.GroupUpdated{
+			ID:          group.ID,
+			Name:        group.Name,
+			Description: group.Description,
+			Metadata:    group.Metadata,
+		},
+		GroupID: group.ID,
+		OrgID:   orgID,
+	})
+
+	return gr, nil
+}
+
+func (es eventStore) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...things.GroupMembership) error {
+	if err := es.Service.CreateGroupMemberships(ctx, token, redirectPath, gms...); err != nil {
+		return err
+	}
+
+	orgIDByGroup, err := es.orgIDsByGroups(ctx, gms)
+	if err != nil {
+		return err
+	}
+
+	for _, gm := range gms {
+		es.pub.Publish(ctx, events.Event{
+			Action: events.GroupMembershipCreated{
+				GroupID:  gm.GroupID,
+				MemberID: gm.MemberID,
+				Role:     gm.Role,
+			},
+			GroupID: gm.GroupID,
+			OrgID:   orgIDByGroup[gm.GroupID],
+		})
+	}
+
+	return nil
+}
+
+func (es eventStore) UpdateGroupMemberships(ctx context.Context, token string, gms ...things.GroupMembership) error {
+	if err := es.Service.UpdateGroupMemberships(ctx, token, gms...); err != nil {
+		return err
+	}
+
+	orgIDByGroup, err := es.orgIDsByGroups(ctx, gms)
+	if err != nil {
+		return err
+	}
+
+	for _, gm := range gms {
+		es.pub.Publish(ctx, events.Event{
+			Action: events.GroupMembershipUpdated{
+				GroupID:  gm.GroupID,
+				MemberID: gm.MemberID,
+				Role:     gm.Role,
+			},
+			GroupID: gm.GroupID,
+			OrgID:   orgIDByGroup[gm.GroupID],
+		})
+	}
+
+	return nil
+}
+
+func (es eventStore) RemoveGroupMemberships(ctx context.Context, token, groupID string, memberIDs ...string) error {
+	if err := es.Service.RemoveGroupMemberships(ctx, token, groupID, memberIDs...); err != nil {
+		return err
+	}
+
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
+	for _, memberID := range memberIDs {
+		es.pub.Publish(ctx, events.Event{
+			Action: events.GroupMembershipRemoved{
+				GroupID:  groupID,
+				MemberID: memberID,
+			},
+			GroupID: groupID,
+			OrgID:   orgID,
+		})
+	}
+
+	return nil
+}
+
+// thingScope returns the group and org a thing belongs to.
+func (es eventStore) thingScope(ctx context.Context, thingID string) (string, string, error) {
+	groupID, err := es.Service.GetGroupIDByThing(ctx, thingID)
+	if err != nil {
+		return "", "", err
+	}
+
+	orgID, err := es.Service.GetOrgIDByGroup(ctx, groupID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return groupID, orgID, nil
+}
+
+// orgIDsByGroups returns the org ID of each distinct group in the memberships.
+func (es eventStore) orgIDsByGroups(ctx context.Context, gms []things.GroupMembership) (map[string]string, error) {
+	orgIDByGroup := make(map[string]string)
+	for _, gm := range gms {
+		if _, ok := orgIDByGroup[gm.GroupID]; ok {
+			continue
+		}
+
+		orgID, err := es.Service.GetOrgIDByGroup(ctx, gm.GroupID)
+		if err != nil {
+			return nil, err
+		}
+		orgIDByGroup[gm.GroupID] = orgID
+	}
+
+	return orgIDByGroup, nil
+}
