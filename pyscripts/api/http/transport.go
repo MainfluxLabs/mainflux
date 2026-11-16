@@ -232,6 +232,11 @@ func decodeListRunsByScript(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	order, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, "started_at")
+	if err != nil {
+		return nil, err
+	}
+
 	status, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, "")
 	if err != nil {
 		return nil, err
@@ -261,7 +266,7 @@ func decodeListRunsByScript(_ context.Context, r *http.Request) (any, error) {
 		pageMetadata: pyscripts.PageMetadata{
 			Offset: base.Offset,
 			Limit:  base.Limit,
-			Order:  base.Order,
+			Order:  order,
 			Dir:    base.Dir,
 			Status: status,
 			From:   from,

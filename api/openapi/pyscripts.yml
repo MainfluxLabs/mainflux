@@ -296,6 +296,7 @@ components:
       schema:
         type: string
         enum: [id, started_at, status]
+        default: started_at
     Direction:
       name: direction
       in: query
