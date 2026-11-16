@@ -932,11 +932,7 @@ func (ts *thingsService) ListProfilesByGroup(ctx context.Context, token, groupID
 }
 
 func (ts *thingsService) canAccessPlatform(ctx context.Context, token string) error {
-	if err := ts.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
-		return errors.Wrap(errors.ErrAuthorization, err)
-	}
-
-	return nil
+	return ts.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub})
 }
 
 func (ts *thingsService) canAccessOrg(ctx context.Context, token, orgID, subject, action string) error {
