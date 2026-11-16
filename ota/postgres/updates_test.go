@@ -283,6 +283,7 @@ func TestRetryFailed(t *testing.T) {
 	cases := []struct {
 		desc        string
 		newerStatus string
+		unlisted    bool
 		retried     bool
 	}{
 		{
@@ -296,6 +297,10 @@ func TestRetryFailed(t *testing.T) {
 		{
 			desc:        "retry thing update superseded by a finished update",
 			newerStatus: ota.StatusSucceeded,
+		},
+		{
+			desc:     "retry failed thing update of an unlisted thing",
+			unlisted: true,
 		},
 	}
 
@@ -313,15 +318,19 @@ func TestRetryFailed(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("%s: updating thing update failed: %s", tc.desc, err))
 
 		before := time.Now().UTC()
-		retried, err := repo.RetryFailed(context.Background(), u.ID)
+		listedThingIDs := []string{thingID, otherThingID}
+		if tc.unlisted {
+			listedThingIDs = []string{otherThingID}
+		}
+		retried, err := repo.RetryFailed(context.Background(), u.ID, listedThingIDs)
 		require.Nil(t, err, fmt.Sprintf("%s: retrying failed thing updates failed: %s", tc.desc, err))
 
 		tu, err := repo.RetrieveThingUpdate(context.Background(), u.ID, thingID)
 		require.Nil(t, err, fmt.Sprintf("%s: retrieving thing update failed: %s", tc.desc, err))
 
 		if !tc.retried {
-			assert.Empty(t, retried, fmt.Sprintf("%s: things with a newer update must not be retried", tc.desc))
-			assert.Equal(t, ota.StatusFailed, tu.Status, fmt.Sprintf("%s: superseded thing update must stay failed", tc.desc))
+			assert.Empty(t, retried, fmt.Sprintf("%s: thing must not be retried", tc.desc))
+			assert.Equal(t, ota.StatusFailed, tu.Status, fmt.Sprintf("%s: thing update must stay failed", tc.desc))
 			continue
 		}
 
@@ -330,6 +339,19 @@ func TestRetryFailed(t *testing.T) {
 		assert.Empty(t, tu.Error, fmt.Sprintf("%s: retry must clear the error", tc.desc))
 		assert.False(t, tu.UpdatedAt.Before(before.Truncate(time.Millisecond)), fmt.Sprintf("%s: retry must restart the timeout clock", tc.desc))
 	}
+}
+
+func TestRetrieveFailedThingIDs(t *testing.T) {
+	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
+	failedThingID, pendingThingID := newID(t), newID(t)
+	u := saveUpdate(t, repo, newID(t), time.Now().UTC(), failedThingID, pendingThingID)
+
+	err := repo.UpdateThingUpdate(context.Background(), ota.ThingUpdate{UpdateID: u.ID, ThingID: failedThingID, Status: ota.StatusFailed, UpdatedAt: time.Now().UTC()})
+	require.Nil(t, err, fmt.Sprintf("updating thing update failed: %s", err))
+
+	thingIDs, err := repo.RetrieveFailedThingIDs(context.Background(), u.ID)
+	require.Nil(t, err, fmt.Sprintf("retrieving failed thing ids failed: %s", err))
+	assert.Equal(t, []string{failedThingID}, thingIDs, "only failed things must be retrieved")
 }
 
 func TestOneActiveUpdate(t *testing.T) {

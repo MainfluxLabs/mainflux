@@ -278,13 +278,25 @@ func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUp
 	return nil
 }
 
-func (ur updateRepository) RetryFailed(ctx context.Context, updateID string) ([]string, error) {
+func (ur updateRepository) RetrieveFailedThingIDs(ctx context.Context, updateID string) ([]string, error) {
+	q := `SELECT thing_id FROM thing_updates WHERE update_id = $1 AND status = $2;`
+
+	var thingIDs []string
+	if err := ur.db.SelectContext(ctx, &thingIDs, q, updateID, ota.StatusFailed); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return thingIDs, nil
+}
+
+func (ur updateRepository) RetryFailed(ctx context.Context, updateID string, thingIDs []string) ([]string, error) {
 	// Things that got a newer update since are skipped, so a retry never rolls them back.
 	q := `UPDATE thing_updates t
 		SET status = :pending, error = '', updated_at = :updated_at
 		FROM updates u
 		WHERE u.id = t.update_id
 		AND t.update_id = :update_id
+		AND t.thing_id = ANY(:thing_ids)
 		AND t.status = :failed
 		AND NOT EXISTS (
 			SELECT 1 FROM thing_updates nt
@@ -299,6 +311,7 @@ func (ur updateRepository) RetryFailed(ctx context.Context, updateID string) ([]
 		"failed":     ota.StatusFailed,
 		"updated_at": time.Now().UTC(),
 		"update_id":  updateID,
+		"thing_ids":  thingIDs,
 	}
 
 	rows, err := ur.db.NamedQueryContext(ctx, q, params)
@@ -307,16 +320,16 @@ func (ur updateRepository) RetryFailed(ctx context.Context, updateID string) ([]
 	}
 	defer rows.Close()
 
-	var thingIDs []string
+	var retriedThingIDs []string
 	for rows.Next() {
 		var thingID string
 		if err := rows.Scan(&thingID); err != nil {
 			return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
-		thingIDs = append(thingIDs, thingID)
+		retriedThingIDs = append(retriedThingIDs, thingID)
 	}
 
-	return thingIDs, nil
+	return retriedThingIDs, nil
 }
 
 func (ur updateRepository) FailTimedOut(ctx context.Context, now time.Time) error {

@@ -209,23 +209,38 @@ func (urm *updateRepositoryMock) UpdateThingUpdate(_ context.Context, tu ota.Thi
 	return nil
 }
 
-func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string) ([]string, error) {
+func (urm *updateRepositoryMock) RetrieveFailedThingIDs(_ context.Context, updateID string) ([]string, error) {
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
 	var thingIDs []string
+	for _, tu := range urm.thingUpdates {
+		if tu.UpdateID == updateID && tu.Status == ota.StatusFailed {
+			thingIDs = append(thingIDs, tu.ThingID)
+		}
+	}
+
+	return thingIDs, nil
+}
+
+func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string, thingIDs []string) ([]string, error) {
+	urm.mu.Lock()
+	defer urm.mu.Unlock()
+
+	var retriedThingIDs []string
 	for k, tu := range urm.thingUpdates {
-		if tu.UpdateID != updateID || tu.Status != ota.StatusFailed || urm.hasNewerUpdate(tu) {
+		if tu.UpdateID != updateID || !slices.Contains(thingIDs, tu.ThingID) ||
+			tu.Status != ota.StatusFailed || urm.hasNewerUpdate(tu) {
 			continue
 		}
 		tu.Status = ota.StatusPending
 		tu.Error = ""
 		tu.UpdatedAt = time.Now().UTC()
 		urm.thingUpdates[k] = tu
-		thingIDs = append(thingIDs, tu.ThingID)
+		retriedThingIDs = append(retriedThingIDs, tu.ThingID)
 	}
 
-	return thingIDs, nil
+	return retriedThingIDs, nil
 }
 
 func (urm *updateRepositoryMock) FailTimedOut(_ context.Context, now time.Time) error {

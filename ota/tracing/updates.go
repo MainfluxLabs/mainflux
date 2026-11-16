@@ -22,6 +22,7 @@ const (
 	retrieveThingUpdate       = "retrieve_thing_update"
 	retrieveActiveThingUpdate = "retrieve_active_thing_update"
 	updateThingUpdate         = "update_thing_update"
+	retrieveFailedThingIDs    = "retrieve_failed_thing_ids"
 	retryFailedThingUpdates   = "retry_failed_thing_updates"
 	failTimedOutThingUpdates  = "fail_timed_out_thing_updates"
 	removeThingUpdatesByThing = "remove_thing_updates_by_thing"
@@ -115,12 +116,20 @@ func (urm updateRepositoryMiddleware) UpdateThingUpdate(ctx context.Context, tu 
 	return urm.repo.UpdateThingUpdate(ctx, tu)
 }
 
-func (urm updateRepositoryMiddleware) RetryFailed(ctx context.Context, updateID string) ([]string, error) {
+func (urm updateRepositoryMiddleware) RetrieveFailedThingIDs(ctx context.Context, updateID string) ([]string, error) {
+	span := dbutil.CreateSpan(ctx, urm.tracer, retrieveFailedThingIDs)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return urm.repo.RetrieveFailedThingIDs(ctx, updateID)
+}
+
+func (urm updateRepositoryMiddleware) RetryFailed(ctx context.Context, updateID string, thingIDs []string) ([]string, error) {
 	span := dbutil.CreateSpan(ctx, urm.tracer, retryFailedThingUpdates)
 	defer span.Finish()
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	return urm.repo.RetryFailed(ctx, updateID)
+	return urm.repo.RetryFailed(ctx, updateID, thingIDs)
 }
 
 func (urm updateRepositoryMiddleware) FailTimedOut(ctx context.Context, now time.Time) error {

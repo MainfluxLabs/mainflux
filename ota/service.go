@@ -208,7 +208,27 @@ func (ots *otaService) RetryFailed(ctx context.Context, token, updateID string) 
 		return err
 	}
 
-	thingIDs, err := ots.updates.RetryFailed(ctx, updateID)
+	failedThingIDs, err := ots.updates.RetrieveFailedThingIDs(ctx, updateID)
+	if err != nil {
+		return err
+	}
+
+	if len(failedThingIDs) == 0 {
+		return nil
+	}
+
+	// A moved thing keeps its updates until the group change event is handled.
+	ar := domain.UserAccessThingsReq{
+		Token:   token,
+		IDs:     failedThingIDs,
+		GroupID: u.GroupID,
+		Action:  domain.GroupEditor,
+	}
+	if err := ots.things.CanUserAccessThings(ctx, ar); err != nil {
+		return err
+	}
+
+	thingIDs, err := ots.updates.RetryFailed(ctx, updateID, failedThingIDs)
 	if err != nil {
 		return err
 	}

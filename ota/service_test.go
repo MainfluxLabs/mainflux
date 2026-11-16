@@ -30,6 +30,7 @@ const (
 	thingID      = "5384fb1c-d0ae-4cbe-be52-c54223150fe0"
 	otherThingID = "6384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	groupID      = "574106f7-030e-4881-8ab0-151195c29f94"
+	otherGroupID = "674106f7-030e-4881-8ab0-151195c29f95"
 	thingKey     = "8384fb1c-d0ae-4cbe-be52-c54223150fe2"
 	fwVersion    = "1.4.0"
 	firmwareURL  = "https://localhost/fs/groupfiles"
@@ -346,6 +347,32 @@ func TestRetryFailed(t *testing.T) {
 	assert.Equal(t, ota.StatusPending, page.ThingUpdates[0].Status, "retried thing must be pending")
 	assert.Empty(t, page.ThingUpdates[0].Error, "retry must clear the error")
 	assert.Len(t, pub.Commands(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic)), 2, "retry must send the command again")
+}
+
+func TestRetryFailedMovedThing(t *testing.T) {
+	things := map[string]domain.Thing{
+		token:    {ID: thingID, GroupID: groupID},
+		thingKey: {ID: thingID, GroupID: groupID},
+		thingID:  {ID: thingID, GroupID: groupID},
+	}
+	groups := map[string]domain.Group{token: {ID: groupID}}
+	tc := mocks.NewThingsServiceClient(nil, things, groups)
+	pub := otamocks.NewCommandPublisher()
+	svc := ota.New(tc, otamocks.NewUpdateRepository(), pub, uuid.NewMock(), firmwareURL, logger.NewMock())
+	u := createUpdate(t, svc, firmware)
+
+	err := svc.ReportStatus(context.Background(), key(), ota.StatusReport{UpdateID: u.ID, Status: ota.StatusFailed, Error: "timed out"})
+	require.Nil(t, err, fmt.Sprintf("reporting status failed: %s", err))
+
+	things[thingID] = domain.Thing{ID: thingID, GroupID: otherGroupID}
+
+	err = svc.RetryFailed(context.Background(), token, u.ID)
+	assert.True(t, errors.Contains(err, errors.ErrAuthorization), fmt.Sprintf("expected %s got %s", errors.ErrAuthorization, err))
+
+	page, err := svc.ListThingUpdates(context.Background(), token, u.ID, ota.PageMetadata{})
+	require.Nil(t, err, fmt.Sprintf("listing thing updates failed: %s", err))
+	assert.Equal(t, ota.StatusFailed, page.ThingUpdates[0].Status, "moved thing must stay failed")
+	assert.Len(t, pub.Commands(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic)), 1, "moved thing must not be notified again")
 }
 
 func TestFailTimedOut(t *testing.T) {

@@ -91,7 +91,9 @@ pending ─► downloading ─► installing ─► succeeded
 
 Authorization is delegated to the Things service: viewing updates requires `viewer` access on the
 group, while creating, retrying or removing updates requires `editor` access. Things authenticate
-with their thing key. Updates and progress are removed when their group or thing is removed.
+with their thing key. Updates and progress are removed when their group or thing is removed, and
+a thing's progress is removed when it moves to another group. A retry is refused while any of its
+failed things is outside the update's group.
 
 ## Configuration
 

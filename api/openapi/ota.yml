@@ -128,6 +128,7 @@ paths:
         Moves the update's failed things back to pending and sends them the `ota`
         command again. Things that got a newer update since are skipped, so a retry
         never rolls a thing back to older firmware.
+        The retry is refused while any failed thing is outside the update's group.
       tags:
         - updates
       parameters:
@@ -138,7 +139,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Failed to perform authorization over the entity.
+          description: Failed to perform authorization over the update or one of its failed things.
         '404':
           description: Update does not exist.
         '500':

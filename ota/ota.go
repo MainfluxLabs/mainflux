@@ -123,9 +123,12 @@ type UpdateRepository interface {
 	// UpdateThingUpdate updates the progress of an active thing update.
 	UpdateThingUpdate(ctx context.Context, tu ThingUpdate) error
 
-	// RetryFailed moves the failed thing updates of the given update back to pending
+	// RetrieveFailedThingIDs retrieves the IDs of the failed things of the given update.
+	RetrieveFailedThingIDs(ctx context.Context, updateID string) ([]string, error)
+
+	// RetryFailed moves the failed thing updates of the given update and things back to pending
 	// and returns the IDs of the affected things.
-	RetryFailed(ctx context.Context, updateID string) ([]string, error)
+	RetryFailed(ctx context.Context, updateID string, thingIDs []string) ([]string, error)
 
 	// FailTimedOut marks active thing updates without progress for their update's timeout as failed.
 	FailTimedOut(ctx context.Context, now time.Time) error
