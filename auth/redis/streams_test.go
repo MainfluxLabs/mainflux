@@ -32,6 +32,10 @@ const (
 	secret      = "secret"
 	ownerEmail  = "owner@test.com"
 	ownerID     = "ownerID"
+	memberEmail = "member@test.com"
+	memberID    = "memberID"
+	otherEmail  = "other@test.com"
+	otherID     = "otherID"
 	description = "description"
 	name        = "name"
 
@@ -43,8 +47,11 @@ const (
 
 var (
 	org           = auth.Org{Name: name, Description: description, Metadata: map[string]any{"test": "test"}}
-	usersByEmails = map[string]users.User{ownerEmail: {ID: ownerID, Email: ownerEmail}}
-	usersByIDs    = map[string]users.User{ownerID: {ID: ownerID, Email: ownerEmail}}
+	owner         = users.User{ID: ownerID, Email: ownerEmail}
+	member        = users.User{ID: memberID, Email: memberEmail}
+	other         = users.User{ID: otherID, Email: otherEmail}
+	usersByEmails = map[string]users.User{ownerEmail: owner, memberEmail: member, otherEmail: other}
+	usersByIDs    = map[string]users.User{ownerID: owner, memberID: member, otherID: other}
 )
 
 // withEventStore wraps svc in the event-store middleware backed by a fresh
@@ -283,5 +290,576 @@ func TestRemoveOrg(t *testing.T) {
 		}
 
 		assert.Equal(t, oc.event, event, fmt.Sprintf("%s: expected %v got %v\n", oc.desc, oc.event, event))
+	}
+}
+
+// nextEvent reads the event after lastID from the auth stream, without its occurred_at field.
+func nextEvent(t *testing.T, desc, lastID string) (map[string]any, string) {
+	t.Helper()
+	streams := redisClient.XRead(context.Background(), &r.XReadArgs{
+		Streams: []string{events.AuthStream, lastID},
+		Count:   1,
+		Block:   time.Second,
+	}).Val()
+
+	if len(streams) == 0 || len(streams[0].Messages) == 0 {
+		return nil, lastID
+	}
+
+	msg := streams[0].Messages[0]
+	assert.NotEmpty(t, msg.Values["occurred_at"], desc)
+	delete(msg.Values, "occurred_at")
+
+	return msg.Values, msg.ID
+}
+
+// loginToken issues a login key for the user without sending events.
+func loginToken(t *testing.T, svc auth.Service, u users.User) string {
+	t.Helper()
+	key := auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: u.ID,
+		Subject:  u.Email,
+	}
+	_, token, err := svc.Issue(context.Background(), "", key)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	return token
+}
+
+// setupOrg creates an org owned by the owner without sending events.
+func setupOrg(t *testing.T, svc auth.Service) (string, auth.Org) {
+	t.Helper()
+	ownerToken := loginToken(t, svc, owner)
+	o, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	return ownerToken, o
+}
+
+func TestIssueAPIKey(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken := loginToken(t, svc, owner)
+	svc = withEventStore(t, svc)
+
+	expiresAt := time.Now().Add(time.Hour).UTC()
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "issue API key successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"operation":    events.APIKeyIssue,
+				"expires_at":   expiresAt.Format(time.RFC3339Nano),
+				"evt_org_id":   "",
+				"evt_group_id": "",
+			},
+		},
+		{
+			desc:  "issue API key with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		key := auth.Key{
+			Type:      auth.APIKey,
+			IssuedAt:  time.Now(),
+			ExpiresAt: expiresAt,
+		}
+		issued, _, err := svc.Issue(context.Background(), tc.token, key)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+		if tc.event != nil {
+			tc.event["id"] = issued.ID
+		}
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestRevokeAPIKey(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken := loginToken(t, svc, owner)
+	key := auth.Key{Type: auth.APIKey, IssuedAt: time.Now()}
+	issued, _, err := svc.Issue(context.Background(), ownerToken, key)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "revoke API key with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+		{
+			desc:  "revoke API key successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"id":           issued.ID,
+				"operation":    events.APIKeyRevoke,
+				"evt_org_id":   "",
+				"evt_group_id": "",
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.Revoke(context.Background(), tc.token, issued.ID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestUpdateOrg(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	svc = withEventStore(t, svc)
+
+	update := auth.Org{
+		ID:          o.ID,
+		Name:        "updated",
+		Description: "updated-desc",
+		Metadata:    map[string]any{"test": "updated"},
+	}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "update org successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"id":           o.ID,
+				"name":         update.Name,
+				"description":  update.Description,
+				"metadata":     "{\"test\":\"updated\"}",
+				"operation":    events.OrgUpdate,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+		{
+			desc:  "update org with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, err := svc.UpdateOrg(context.Background(), tc.token, update)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestCreateOrgMemberships(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	svc = withEventStore(t, svc)
+
+	om := auth.OrgMembership{Email: memberEmail, Role: auth.Viewer}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "create org memberships with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+		{
+			desc:  "create org memberships successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"org_id":       o.ID,
+				"member_id":    memberID,
+				"role":         auth.Viewer,
+				"operation":    events.OrgMembershipCreate,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, err := svc.CreateOrgMemberships(context.Background(), tc.token, o.ID, om)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestUpdateOrgMemberships(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	om := auth.OrgMembership{Email: memberEmail, Role: auth.Viewer}
+	_, err := svc.CreateOrgMemberships(context.Background(), ownerToken, o.ID, om)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	om.Role = auth.Editor
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "update org memberships successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"org_id":       o.ID,
+				"member_id":    memberID,
+				"role":         auth.Editor,
+				"operation":    events.OrgMembershipUpdate,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+		{
+			desc:  "update org memberships with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, err := svc.UpdateOrgMemberships(context.Background(), tc.token, o.ID, om)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestRemoveOrgMemberships(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	om := auth.OrgMembership{Email: memberEmail, Role: auth.Viewer}
+	_, err := svc.CreateOrgMemberships(context.Background(), ownerToken, o.ID, om)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "remove org memberships with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+		{
+			desc:  "remove org memberships successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"org_id":       o.ID,
+				"member_id":    memberID,
+				"operation":    events.OrgMembershipRemove,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.RemoveOrgMemberships(context.Background(), tc.token, o.ID, memberID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestCreateOrgInvite(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	svc = withEventStore(t, svc)
+
+	oi := auth.OrgInvite{OrgID: o.ID, InviteeEmail: memberEmail, InviteeRole: auth.Viewer}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "create org invite successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"invitee_id":    memberID,
+				"invitee_email": memberEmail,
+				"invitee_role":  auth.Viewer,
+				"operation":     events.OrgInviteCreate,
+				"evt_org_id":    o.ID,
+				"evt_group_id":  "",
+			},
+		},
+		{
+			desc:  "create org invite with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		invite, err := svc.CreateOrgInvite(context.Background(), tc.token, oi, "")
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+		if tc.event != nil {
+			tc.event["id"] = invite.ID
+		}
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestRevokeOrgInvite(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	oi := auth.OrgInvite{OrgID: o.ID, InviteeEmail: memberEmail, InviteeRole: auth.Viewer}
+	invite, err := svc.CreateOrgInvite(context.Background(), ownerToken, oi, "")
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "revoke org invite with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+		{
+			desc:  "revoke org invite successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"id":           invite.ID,
+				"operation":    events.OrgInviteRevoke,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, err := svc.RevokeOrgInvite(context.Background(), tc.token, invite.ID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestRespondOrgInvite(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	memberToken := loginToken(t, svc, member)
+	otherToken := loginToken(t, svc, other)
+
+	oi := auth.OrgInvite{OrgID: o.ID, InviteeEmail: memberEmail, InviteeRole: auth.Viewer}
+	declined, err := svc.CreateOrgInvite(context.Background(), ownerToken, oi, "")
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	oi.InviteeEmail = otherEmail
+	accepted, err := svc.CreateOrgInvite(context.Background(), ownerToken, oi, "")
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc     string
+		token    string
+		inviteID string
+		accept   bool
+		err      error
+		event    map[string]any
+	}{
+		{
+			desc:     "respond to org invite with invalid credentials",
+			token:    "invalid",
+			inviteID: declined.ID,
+			accept:   false,
+			err:      errors.ErrAuthentication,
+			event:    nil,
+		},
+		{
+			desc:     "decline org invite successfully",
+			token:    memberToken,
+			inviteID: declined.ID,
+			accept:   false,
+			err:      nil,
+			event: map[string]any{
+				"id":           declined.ID,
+				"operation":    events.OrgInviteDecline,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+		{
+			desc:     "accept org invite successfully",
+			token:    otherToken,
+			inviteID: accepted.ID,
+			accept:   true,
+			err:      nil,
+			event: map[string]any{
+				"id":           accepted.ID,
+				"operation":    events.OrgInviteAccept,
+				"evt_org_id":   o.ID,
+				"evt_group_id": "",
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestLogoutAll(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken := loginToken(t, svc, owner)
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "logout all sessions successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"operation":    events.SessionLogoutAll,
+				"evt_org_id":   "",
+				"evt_group_id": "",
+			},
+		},
+		{
+			desc:  "logout all sessions with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.LogoutAll(context.Background(), tc.token)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
 	}
 }
