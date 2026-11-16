@@ -66,6 +66,15 @@ func (ms *metricsMiddleware) LogoutAll(ctx context.Context, token string) error 
 	return ms.svc.LogoutAll(ctx, token)
 }
 
+func (ms *metricsMiddleware) RevokeAPIKeys(ctx context.Context, userID string) error {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "revoke_api_keys").Add(1)
+		ms.latency.With("method", "revoke_api_keys").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RevokeAPIKeys(ctx, userID)
+}
+
 func (ms *metricsMiddleware) RevokeSessions(ctx context.Context, userID string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "revoke_sessions").Add(1)

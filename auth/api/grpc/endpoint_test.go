@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/jwt"
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -676,4 +677,47 @@ func TestUnassignRole(t *testing.T) {
 	role, err := svc.RetrieveRole(context.Background(), roleUserID)
 	require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
 	assert.Equal(t, "", role, fmt.Sprintf("expected empty role got %s", role))
+}
+
+func TestRevokeAPIKeys(t *testing.T) {
+	loginKey := auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail}
+	_, loginSecret, err := svc.Issue(context.Background(), "", loginKey)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	apiKey := auth.Key{Type: auth.APIKey, IssuedAt: time.Now()}
+	_, apiSecret, err := svc.Issue(context.Background(), loginSecret, apiKey)
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	authAddr := fmt.Sprintf("localhost:%d", port)
+	conn, _ := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client := grpcapi.NewClient(conn, mocktracer.New(), time.Second)
+
+	cases := []struct {
+		desc string
+		id   string
+		code codes.Code
+	}{
+		{
+			desc: "revoke API keys",
+			id:   viewerID,
+			code: codes.OK,
+		},
+		{
+			desc: "revoke API keys without user id",
+			id:   "",
+			code: codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range cases {
+		err := client.RevokeAPIKeys(context.Background(), tc.id)
+		e, ok := status.FromError(err)
+		assert.True(t, ok, "gRPC status can't be extracted from the error")
+		msg := fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.code, e.Code())
+		assert.Equal(t, tc.code, e.Code(), msg)
+	}
+
+	_, err = svc.Identify(context.Background(), apiSecret)
+	msg := fmt.Sprintf("revoked API key: expected %s got %s", errors.ErrAuthentication, err)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), msg)
 }
