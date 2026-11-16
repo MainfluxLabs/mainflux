@@ -16,7 +16,8 @@ func createOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.CreateOrgMemberships(ctx, req.token, req.orgID, req.OrgMemberships...); err != nil {
+		_, err := svc.CreateOrgMemberships(ctx, req.token, req.orgID, req.OrgMemberships...)
+		if err != nil {
 			return nil, err
 		}
 
@@ -79,7 +80,8 @@ func updateOrgMembershipsEndpoint(svc auth.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.UpdateOrgMemberships(ctx, req.token, req.orgID, req.OrgMemberships...); err != nil {
+		_, err := svc.UpdateOrgMemberships(ctx, req.token, req.orgID, req.OrgMemberships...)
+		if err != nil {
 			return nil, err
 		}
 

@@ -54,14 +54,15 @@ type OrgMembershipsRepository interface {
 // OrgMemberships specify an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 type OrgMemberships interface {
-	// CreateOrgMemberships adds memberships with member emails into the org identified by orgID.
-	CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
+	// CreateOrgMemberships adds memberships with member emails into the org identified by orgID,
+	// and returns the saved memberships.
+	CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) ([]OrgMembership, error)
 
 	// RemoveOrgMemberships removes memberships with member ids from org identified by orgID.
 	RemoveOrgMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error
 
-	// UpdateOrgMemberships updates membership roles in an org.
-	UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error
+	// UpdateOrgMemberships updates membership roles in an org, and returns the updated memberships.
+	UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) ([]OrgMembership, error)
 
 	// ListOrgMemberships retrieves memberships created for an org identified by orgID.
 	ListOrgMemberships(ctx context.Context, token, orgID string, pm PageMetadata) (OrgMembershipsPage, error)
@@ -79,9 +80,9 @@ type OrgMemberships interface {
 	GetOrgMembership(ctx context.Context, orgID, memberID string) (OrgMembership, error)
 }
 
-func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
+func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) ([]OrgMembership, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
-		return err
+		return nil, err
 	}
 
 	var memberEmails []string
@@ -93,7 +94,7 @@ func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string
 
 	usr, err := svc.users.GetUsersByEmails(ctx, memberEmails)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	timestamp := getTimestamp()
@@ -111,10 +112,10 @@ func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string
 	}
 
 	if err := svc.memberships.Save(ctx, memberships...); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return memberships, nil
 }
 
 func (svc service) GetAdminsByOrg(ctx context.Context, orgID string) ([]OrgMembership, error) {
@@ -209,14 +210,14 @@ func (svc service) ListOrgMemberships(ctx context.Context, token string, orgID s
 	}, nil
 }
 
-func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) error {
+func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string, members ...OrgMembership) ([]OrgMembership, error) {
 	if err := svc.canAccessOrg(ctx, token, orgID, Admin); err != nil {
-		return err
+		return nil, err
 	}
 
 	org, err := svc.orgs.RetrieveByID(ctx, orgID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var memberEmails []string
@@ -228,13 +229,13 @@ func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string
 
 	usr, err := svc.users.GetUsersByEmails(ctx, memberEmails)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var oms []OrgMembership
 	for _, user := range usr {
 		if user.ID == org.OwnerID {
-			return errors.ErrAuthorization
+			return nil, errors.ErrAuthorization
 		}
 
 		om := OrgMembership{
@@ -248,10 +249,10 @@ func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string
 	}
 
 	if err := svc.memberships.Update(ctx, oms...); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return oms, nil
 }
 
 func (svc service) RemoveOrgMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error {
