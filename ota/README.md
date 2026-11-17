@@ -86,8 +86,8 @@ pending ─► downloading ─► installing ─► succeeded
    stays failed even if it reports later, e.g. `succeeded` after a timeout; retry the update to
    track it again.
 6. **Retry.** A user can move the failed things of an update back to `pending`
-   (`POST /updates/{id}/retry`); they are notified again. Things that got a newer update since are
-   skipped, so a retry never rolls a thing back to older firmware. The service never retries on its own.
+   (`POST /updates/{id}/retry`); they are notified again. Things with a newer update are skipped.
+   Preventing a downgrade is the firmware's job. The service never retries on its own.
 
 Authorization is delegated to the Things service: viewing updates requires `viewer` access on the
 group, while creating, retrying or removing updates requires `editor` access. Things authenticate

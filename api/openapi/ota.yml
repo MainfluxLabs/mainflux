@@ -126,8 +126,8 @@ paths:
       summary: Retries failed things
       description: |
         Moves the update's failed things back to pending and sends them the `ota`
-        command again. Things that got a newer update since are skipped, so a retry
-        never rolls a thing back to older firmware.
+        command again. Things with a newer update are skipped. Preventing a downgrade
+        is the firmware's job.
         The retry is refused while any failed thing is outside the update's group.
       tags:
         - updates

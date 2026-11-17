@@ -290,7 +290,7 @@ func (ur updateRepository) RetrieveFailedThingIDs(ctx context.Context, updateID 
 }
 
 func (ur updateRepository) RetryFailed(ctx context.Context, updateID string, thingIDs []string) ([]string, error) {
-	// Things that got a newer update since are skipped, so a retry never rolls them back.
+	// Things with a newer update are skipped.
 	q := `UPDATE thing_updates t
 		SET status = :pending, error = '', updated_at = :updated_at
 		FROM updates u
