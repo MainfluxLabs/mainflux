@@ -344,3 +344,75 @@ func TestReplace(t *testing.T) {
 	p.replace()
 	assert.Equal(t, 2, p.owed(), "expected a rate-limited respawn to be owed")
 }
+
+func newSandboxPool(t *testing.T) *pool {
+	t.Helper()
+
+	python, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("python3 is not installed")
+	}
+	if err := exec.Command(python, "-I", "-c", "import pyseccomp").Run(); err != nil {
+		t.Skip("pyseccomp is not installed")
+	}
+
+	cfg := testConfig()
+	cfg.Python = python
+	cfg.Workers = 1
+	cfg.StartTimeout = time.Minute
+	cfg.BLASThreads = 1
+	cfg.Limits = Limits{CPUSeconds: 5, MaxMemory: 1 << 28}
+
+	p := &pool{cfg: cfg, logger: logger.NewMock(), free: make(chan *worker, 1)}
+	w, err := p.spawn()
+	require.Nil(t, err, fmt.Sprintf("unexpected error starting a sandboxed worker: %s", err))
+	p.free <- w
+
+	t.Cleanup(func() { p.Close() })
+
+	return p
+}
+
+func TestRunSandboxed(t *testing.T) {
+	cases := []struct {
+		desc  string
+		code  string
+		value any
+		err   string
+	}{
+		{
+			desc:  "run a script",
+			code:  runCode,
+			value: json.Number("3"),
+		},
+		{
+			desc: "deny opening a socket",
+			code: "import socket\nsocket.socket()",
+			err:  "PermissionError",
+		},
+		{
+			desc: "deny forking a process",
+			code: "import os\nos.fork()",
+			err:  "PermissionError",
+		},
+		{
+			desc: "deny writing a file",
+			code: "open('/tmp/x', 'w')",
+			err:  "Read-only file system",
+		},
+		{
+			desc: "kill a script that runs past the timeout",
+			code: "while True: pass",
+			err:  "timeout after 2s",
+		},
+	}
+
+	for _, tc := range cases {
+		p := newSandboxPool(t)
+
+		res, err := p.Run(context.Background(), tc.code, Input{})
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected run error: %s", tc.desc, err))
+		assert.Equal(t, tc.value, res.Value, fmt.Sprintf("%s: unexpected value", tc.desc))
+		assert.Contains(t, res.Error, tc.err, fmt.Sprintf("%s: unexpected error %q", tc.desc, res.Error))
+	}
+}

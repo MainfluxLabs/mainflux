@@ -235,7 +235,7 @@ func toScript(dbs dbScript) pyscripts.Script {
 func wrapWrite(err error, fallback error) error {
 	if pgErr, ok := err.(*pgconn.PgError); ok {
 		switch pgErr.Code {
-		case pgerrcode.InvalidTextRepresentation:
+		case pgerrcode.InvalidTextRepresentation, pgerrcode.CharacterNotInRepertoire:
 			return errors.Wrap(dbutil.ErrMalformedEntity, err)
 		case pgerrcode.UniqueViolation:
 			return errors.Wrap(dbutil.ErrConflict, err)

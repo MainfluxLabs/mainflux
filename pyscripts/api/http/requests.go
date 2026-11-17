@@ -5,6 +5,7 @@ package http
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -45,7 +46,7 @@ func (s script) validate() error {
 		return apiutil.ErrNameSize
 	}
 
-	if s.Source == "" {
+	if s.Source == "" || strings.ContainsRune(s.Name+s.Description, 0) {
 		return errors.ErrMalformedEntity
 	}
 

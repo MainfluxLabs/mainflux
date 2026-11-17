@@ -160,6 +160,22 @@ func TestCreateScripts(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:        "create scripts with a NUL byte in the name",
+			body:        toJSON(map[string]any{"scripts": []map[string]any{{"name": "a\x00b", "source": validSource}}}),
+			groupID:     groupID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "create scripts with a NUL byte in the description",
+			body:        toJSON(map[string]any{"scripts": []map[string]any{{"name": "a", "description": "a\x00b", "source": validSource}}}),
+			groupID:     groupID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+		},
+		{
 			desc:        "create scripts with empty token",
 			body:        valid,
 			groupID:     groupID,
@@ -318,6 +334,14 @@ func TestUpdateScript(t *testing.T) {
 			contentType: emptyValue,
 			token:       token,
 			status:      http.StatusUnsupportedMediaType,
+		},
+		{
+			desc:        "update script with a NUL byte in the name",
+			id:          s.ID,
+			body:        toJSON(map[string]any{"name": "a\x00b", "source": "2 + 2"}),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
 		},
 		{
 			desc:        "update non-existent script",
