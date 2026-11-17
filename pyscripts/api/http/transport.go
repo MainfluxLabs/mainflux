@@ -26,7 +26,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// MakeHandler returns a HTTP handler for Python script API endpoints.
+// MakeHandler returns an HTTP handler for Python script API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc pyscripts.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
 
 	opts := []kithttp.ServerOption{
