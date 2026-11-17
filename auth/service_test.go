@@ -573,6 +573,57 @@ func TestRevoke(t *testing.T) {
 	}
 }
 
+func TestRevokeAPIKeys(t *testing.T) {
+	svc := newService()
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, otherSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, apiKey, err := svc.Issue(context.Background(), secret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now()})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+	_, otherAPIKey, err := svc.Issue(context.Background(), otherSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now()})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc   string
+		userID string
+		err    error
+	}{
+		{
+			desc:   "revoke API keys",
+			userID: id,
+			err:    nil,
+		},
+		{
+			desc:   "revoke API keys of user without API keys",
+			userID: id,
+			err:    nil,
+		},
+		{
+			desc:   "revoke API keys without user id",
+			userID: "",
+			err:    apiutil.ErrMissingUserID,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RevokeAPIKeys(context.Background(), tc.userID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+
+	_, err = svc.Identify(context.Background(), apiKey)
+	msg := fmt.Sprintf("revoked API key: expected %s got %s\n", errors.ErrAuthentication, err)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), msg)
+
+	_, err = svc.Identify(context.Background(), secret)
+	assert.Nil(t, err, fmt.Sprintf("login key of the user expected to survive: %s", err))
+
+	_, err = svc.Identify(context.Background(), otherAPIKey)
+	assert.Nil(t, err, fmt.Sprintf("API key of another user expected to survive: %s", err))
+}
+
 func TestRetrieve(t *testing.T) {
 	svc := newService()
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), Subject: email, IssuerID: id})
@@ -2164,6 +2215,7 @@ func TestBackup(t *testing.T) {
 		token             string
 		orgSize           int
 		orgMembershipSize int
+		userRoleSize      int
 		err               error
 	}{
 		{
@@ -2171,6 +2223,7 @@ func TestBackup(t *testing.T) {
 			token:             superAdminToken,
 			orgSize:           1,
 			orgMembershipSize: len(memberships) + 1,
+			userRoleSize:      1,
 			err:               nil,
 		},
 		{
@@ -2200,8 +2253,11 @@ func TestBackup(t *testing.T) {
 		page, err := svc.Backup(context.Background(), tc.token)
 		orgSize := len(page.Orgs)
 		orgMembershipSize := len(page.OrgMemberships)
+		userRoleSize := len(page.UserRoles)
 		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
 		assert.Equal(t, tc.orgMembershipSize, orgMembershipSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgMembershipSize, orgMembershipSize))
+		msg := fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.userRoleSize, userRoleSize)
+		assert.Equal(t, tc.userRoleSize, userRoleSize, msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -2213,8 +2269,18 @@ func TestRestore(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	platformAdminKey := auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: adminID,
+		Subject:  adminEmail,
+	}
+	_, platformAdminToken, err := svc.Issue(context.Background(), "", platformAdminKey)
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	var memberIDs []string
@@ -2230,9 +2296,25 @@ func TestRestore(t *testing.T) {
 		orgMemberships = append(orgMemberships, auth.OrgMembership{MemberID: memberID, OrgID: id})
 	}
 
+	userRoles := []auth.UserRole{
+		{
+			UserID: rootAdminID,
+			Role:   auth.RoleAdmin,
+		},
+		{
+			UserID: editorID,
+			Role:   auth.RoleAdmin,
+		},
+		{
+			UserID: viewerID,
+			Role:   auth.RoleRootAdmin,
+		},
+	}
+
 	backup := auth.Backup{
 		Orgs:           orgs,
 		OrgMemberships: orgMemberships,
+		UserRoles:      userRoles,
 	}
 
 	cases := []struct {
@@ -2265,10 +2347,29 @@ func TestRestore(t *testing.T) {
 			backup: backup,
 			err:    errors.ErrAuthorization,
 		},
+		{
+			desc:   "restore as platform admin",
+			token:  platformAdminToken,
+			backup: backup,
+			err:    errors.ErrAuthorization,
+		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Restore(context.Background(), tc.token, backup)
+		err := svc.Restore(context.Background(), tc.token, tc.backup)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+
+	roles := map[string]string{
+		rootAdminID: auth.RoleRootAdmin,
+		editorID:    auth.RoleAdmin,
+		viewerID:    "",
+	}
+
+	for userID, expected := range roles {
+		role, err := svc.RetrieveRole(context.Background(), userID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		msg := fmt.Sprintf("%s: expected role %s got %s\n", userID, expected, role)
+		assert.Equal(t, expected, role, msg)
 	}
 }

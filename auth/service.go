@@ -251,16 +251,23 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
+	urs, err := svc.roles.BackupAll(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	backup := Backup{
 		Orgs:           orgs,
 		OrgMemberships: mrs,
+		UserRoles:      urs,
 	}
 
 	return backup, nil
 }
 
 func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := svc.canAccessPlatform(ctx, token); err != nil {
+	// Restoring platform roles is restricted to the root admin to prevent privilege escalation.
+	if err := svc.canAccessAsRoot(ctx, token); err != nil {
 		return err
 	}
 
@@ -272,16 +279,23 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
+	// The root role belongs only to the configured root admin.
+	var urs []UserRole
+	for _, ur := range backup.UserRoles {
+		if ur.Role != RoleRootAdmin {
+			urs = append(urs, ur)
+		}
+	}
+
+	if err := svc.roles.RestoreAll(ctx, urs...); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (svc service) canAccessPlatform(ctx context.Context, token string) error {
-	user, err := svc.identify(ctx, token)
-	if err != nil {
-		return err
-	}
-
-	role, err := svc.roles.RetrieveRole(ctx, user.ID)
+	role, err := svc.retrieveCallerRole(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -291,4 +305,26 @@ func (svc service) canAccessPlatform(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func (svc service) canAccessAsRoot(ctx context.Context, token string) error {
+	role, err := svc.retrieveCallerRole(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if role != RoleRootAdmin {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (svc service) retrieveCallerRole(ctx context.Context, token string) (string, error) {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
+		return "", err
+	}
+
+	return svc.roles.RetrieveRole(ctx, user.ID)
 }

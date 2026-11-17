@@ -24,6 +24,10 @@ type retrieveRoleRes struct {
 	role string
 }
 
+type retrieveRolesRes struct {
+	roles map[string]string
+}
+
 type ownerIDByOrgRes struct {
 	ownerID string
 }

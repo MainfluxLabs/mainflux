@@ -51,6 +51,10 @@ func (repo singleUserRepo) RevokeSessions(ctx context.Context, id string) error 
 	return errUnsupported
 }
 
+func (repo singleUserRepo) RevokeAPIKeys(ctx context.Context, id string) error {
+	return errUnsupported
+}
+
 func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.Identity, error) {
 	if repo.token != token {
 		return domain.Identity{}, errors.ErrAuthentication
@@ -77,6 +81,14 @@ func (repo singleUserRepo) AssignRole(ctx context.Context, id, role string) erro
 
 func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string, error) {
 	return "", errUnsupported
+}
+
+func (repo singleUserRepo) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	return nil, errUnsupported
+}
+
+func (repo singleUserRepo) UnassignRole(ctx context.Context, id string) error {
+	return errUnsupported
 }
 
 func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {

@@ -461,7 +461,7 @@ func TestBackup(t *testing.T) {
 			desc:  "backup with invalid token",
 			token: wrongToken,
 			size:  0,
-			err:   errors.ErrAuthorization,
+			err:   errors.ErrAuthentication,
 		},
 	}
 
@@ -499,7 +499,7 @@ func TestRestore(t *testing.T) {
 			desc:      "restore with invalid token",
 			token:     wrongToken,
 			downlinks: []downlinks.Downlink{downlink},
-			err:       errors.ErrAuthorization,
+			err:       errors.ErrAuthentication,
 		},
 	}
 

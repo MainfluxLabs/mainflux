@@ -25,12 +25,15 @@ type grpcServer struct {
 	issue                               kitgrpc.Handler
 	refresh                             kitgrpc.Handler
 	revokeSessions                      kitgrpc.Handler
+	revokeAPIKeys                       kitgrpc.Handler
 	identify                            kitgrpc.Handler
 	identifyRecovery                    kitgrpc.Handler
 	authorize                           kitgrpc.Handler
 	getOwnerIDByOrg                     kitgrpc.Handler
 	assignRole                          kitgrpc.Handler
 	retrieveRole                        kitgrpc.Handler
+	retrieveRoles                       kitgrpc.Handler
+	unassignRole                        kitgrpc.Handler
 	createDormantOrgInvite              kitgrpc.Handler
 	activateOrgInvite                   kitgrpc.Handler
 	getDormantOrgInviteByPlatformInvite kitgrpc.Handler
@@ -56,6 +59,11 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 		revokeSessions: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "revoke_sessions")(revokeSessionsEndpoint(svc)),
 			decodeRevokeSessionsRequest,
+			encodeEmptyResponse,
+		),
+		revokeAPIKeys: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "revoke_api_keys")(revokeAPIKeysEndpoint(svc)),
+			decodeRevokeAPIKeysRequest,
 			encodeEmptyResponse,
 		),
 		identify: kitgrpc.NewServer(
@@ -87,6 +95,16 @@ func NewServer(tracer opentracing.Tracer, svc auth.Service) protomfx.AuthService
 			kitot.TraceServer(tracer, "retrieve_role")(retrieveRoleEndpoint(svc)),
 			decodeRetrieveRoleRequest,
 			encodeRetrieveRoleResponse,
+		),
+		retrieveRoles: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "retrieve_roles")(retrieveRolesEndpoint(svc)),
+			decodeRetrieveRolesRequest,
+			encodeRetrieveRolesResponse,
+		),
+		unassignRole: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "unassign_role")(unassignRoleEndpoint(svc)),
+			decodeUnassignRoleRequest,
+			encodeEmptyResponse,
 		),
 		createDormantOrgInvite: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "create_dormant_org_invite")(createDormantOrgInviteEndpoint(svc)),
@@ -150,6 +168,14 @@ func (s *grpcServer) RevokeSessions(ctx context.Context, req *protomfx.RevokeSes
 	return res.(*emptypb.Empty), nil
 }
 
+func (s *grpcServer) RevokeAPIKeys(ctx context.Context, req *protomfx.RevokeAPIKeysReq) (*emptypb.Empty, error) {
+	_, res, err := s.revokeAPIKeys.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*emptypb.Empty), nil
+}
+
 func (s *grpcServer) Identify(ctx context.Context, token *protomfx.Token) (*protomfx.UserIdentity, error) {
 	_, res, err := s.identify.ServeGRPC(ctx, token)
 	if err != nil {
@@ -197,6 +223,22 @@ func (s *grpcServer) RetrieveRole(ctx context.Context, req *protomfx.RetrieveRol
 		return nil, encodeError(err)
 	}
 	return res.(*protomfx.RetrieveRoleRes), nil
+}
+
+func (s *grpcServer) RetrieveRoles(ctx context.Context, req *protomfx.RetrieveRolesReq) (*protomfx.RetrieveRolesRes, error) {
+	_, res, err := s.retrieveRoles.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*protomfx.RetrieveRolesRes), nil
+}
+
+func (s *grpcServer) UnassignRole(ctx context.Context, req *protomfx.UnassignRoleReq) (*emptypb.Empty, error) {
+	_, res, err := s.unassignRole.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+	return res.(*emptypb.Empty), nil
 }
 
 func (s *grpcServer) CreateDormantOrgInvite(ctx context.Context, req *protomfx.CreateDormantOrgInviteReq) (*emptypb.Empty, error) {
@@ -276,6 +318,30 @@ func encodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	return &protomfx.RetrieveRoleRes{Role: res.role}, nil
 }
 
+func decodeRetrieveRolesRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RetrieveRolesReq)
+	return retrieveRolesReq{ids: req.GetIds()}, nil
+}
+
+func encodeRetrieveRolesResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(retrieveRolesRes)
+
+	var roles []*protomfx.UserRole
+	for userID, role := range res.roles {
+		roles = append(roles, &protomfx.UserRole{
+			UserId: userID,
+			Role:   role,
+		})
+	}
+
+	return &protomfx.RetrieveRolesRes{Roles: roles}, nil
+}
+
+func decodeUnassignRoleRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.UnassignRoleReq)
+	return unassignRoleReq{id: req.GetId()}, nil
+}
+
 func decodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.IssueReq)
 	return issueReq{
@@ -300,6 +366,11 @@ func decodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.RevokeSessionsReq)
 	return revokeSessionsReq{id: req.GetId()}, nil
+}
+
+func decodeRevokeAPIKeysRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RevokeAPIKeysReq)
+	return revokeAPIKeysReq{id: req.GetId()}, nil
 }
 
 func decodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
@@ -468,6 +539,8 @@ func encodeError(err error) error {
 		return status.Error(codes.PermissionDenied, err.Error())
 	case errors.Contains(err, dbutil.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
+	case errors.Contains(err, dbutil.ErrConflict):
+		return status.Error(codes.AlreadyExists, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")
 	}

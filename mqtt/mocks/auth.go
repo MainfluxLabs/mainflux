@@ -48,6 +48,10 @@ func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
 	return nil
 }
 
+func (svc authServiceMock) RevokeAPIKeys(_ context.Context, id string) error {
+	return nil
+}
+
 func (svc authServiceMock) IssueImpersonated(_ context.Context, id, email string, impersonator domain.Identity) (string, error) {
 	return "", errors.ErrAuthorization
 }
@@ -79,6 +83,14 @@ func (svc authServiceMock) AssignRole(context.Context, string, string) error {
 }
 
 func (svc authServiceMock) RetrieveRole(context.Context, string) (string, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) RetrieveRoles(context.Context, []string) (map[string]string, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) UnassignRole(context.Context, string) error {
 	panic("not implemented")
 }
 

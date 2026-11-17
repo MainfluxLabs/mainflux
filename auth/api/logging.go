@@ -69,6 +69,19 @@ func (lm *loggingMiddleware) LogoutAll(ctx context.Context, token string) (err e
 	return lm.svc.LogoutAll(ctx, token)
 }
 
+func (lm *loggingMiddleware) RevokeAPIKeys(ctx context.Context, userID string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method revoke_api_keys for user id %s took %s to complete", userID, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RevokeAPIKeys(ctx, userID)
+}
+
 func (lm *loggingMiddleware) RevokeSessions(ctx context.Context, userID string) (err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method revoke_sessions for user id %s took %s to complete", userID, time.Since(begin))
@@ -427,6 +440,34 @@ func (lm *loggingMiddleware) RetrieveRole(ctx context.Context, id string) (_ str
 	}(time.Now())
 
 	return lm.svc.RetrieveRole(ctx, id)
+}
+
+func (lm *loggingMiddleware) RetrieveRoles(ctx context.Context, ids []string) (_ map[string]string, err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method retrieve_roles for %d ids took %s to complete",
+			len(ids), time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RetrieveRoles(ctx, ids)
+}
+
+func (lm *loggingMiddleware) UnassignRole(ctx context.Context, id string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method unassign_role for id %s took %s to complete",
+			id, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.UnassignRole(ctx, id)
 }
 
 func (lm *loggingMiddleware) CreateOrgInvite(ctx context.Context, token string, oi auth.OrgInvite, invRedirectPath string) (_ auth.OrgInvite, err error) {

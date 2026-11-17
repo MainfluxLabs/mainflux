@@ -66,12 +66,20 @@ func (urm *userRepositoryMock) UpdateUserMetadata(ctx context.Context, u users.U
 	urm.mu.Lock()
 	defer urm.mu.Unlock()
 
-	if _, ok := urm.usersByEmail[u.Email]; !ok {
-		return dbutil.ErrNotFound
+	// The repository updates no rows when no enabled user has the given email.
+	dbu, ok := urm.usersByEmail[u.Email]
+	if !ok || dbu.Status == users.DisabledStatusKey {
+		return nil
 	}
 
-	urm.usersByEmail[u.Email] = u
-	urm.usersByID[u.ID] = u
+	if u.ID != "" {
+		delete(urm.usersByID, dbu.ID)
+		dbu.ID = u.ID
+	}
+	dbu.Metadata = u.Metadata
+
+	urm.usersByEmail[u.Email] = dbu
+	urm.usersByID[dbu.ID] = dbu
 	return nil
 }
 

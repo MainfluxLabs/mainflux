@@ -19,24 +19,24 @@ import (
 const (
 	recoveryTokenPrefix     = "recovery-"
 	impersonatedTokenPrefix = "impersonated-"
+	apiKeyTokenPrefix       = "api-key-"
 )
 
 var _ domain.AuthClient = (*authServiceMock)(nil)
 
 type authServiceMock struct {
-	adminIDs      []string
 	platformRoles map[string]string
 	orgRoles      map[string]map[string]string
 	usersByEmail  map[string]users.User
 	orgs          map[string]auth.Org
 	impersonators map[string]domain.Identity
+	apiKeys       map[string]users.User
 }
 
 // NewAuthService creates mock of auth service client.
 // Org owners come from orgList, other org roles come from orgMemberships.
 func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, orgMemberships ...auth.OrgMembership) domain.AuthClient {
 	usersByEmail := make(map[string]users.User)
-	adminIDs := []string{adminID}
 	platformRoles := map[string]string{adminID: auth.RoleRootAdmin}
 	orgRoles := make(map[string]map[string]string)
 	orgs := make(map[string]auth.Org)
@@ -45,9 +45,6 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 		usersByEmail[user.Email] = user
 		if user.Role != "" {
 			platformRoles[user.ID] = user.Role
-		}
-		if user.Role == auth.RoleRootAdmin || user.Role == auth.RoleAdmin {
-			adminIDs = append(adminIDs, user.ID)
 		}
 	}
 
@@ -64,17 +61,21 @@ func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, o
 	}
 
 	return &authServiceMock{
-		adminIDs:      adminIDs,
 		platformRoles: platformRoles,
 		orgRoles:      orgRoles,
 		usersByEmail:  usersByEmail,
 		orgs:          orgs,
 		impersonators: make(map[string]domain.Identity),
+		apiKeys:       make(map[string]users.User),
 	}
 }
 
 func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Identity, error) {
 	if u, ok := svc.usersByEmail[token]; ok {
+		return domain.Identity{ID: u.ID, Email: u.Email}, nil
+	}
+
+	if u, ok := svc.apiKeys[token]; ok {
 		return domain.Identity{ID: u.ID, Email: u.Email}, nil
 	}
 
@@ -108,6 +109,10 @@ func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType ui
 		switch keyType {
 		case domain.RecoveryKey:
 			return recoveryTokenPrefix + u.Email, nil
+		case domain.APIKey:
+			token := apiKeyTokenPrefix + u.Email
+			svc.apiKeys[token] = u
+			return token, nil
 		default:
 			return u.Email, nil
 		}
@@ -136,6 +141,22 @@ func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string
 }
 
 func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
+	for token, impersonator := range svc.impersonators {
+		if impersonator.ID == id {
+			delete(svc.impersonators, token)
+		}
+	}
+
+	return nil
+}
+
+func (svc authServiceMock) RevokeAPIKeys(_ context.Context, id string) error {
+	for token, u := range svc.apiKeys {
+		if u.ID == id {
+			delete(svc.apiKeys, token)
+		}
+	}
+
 	return nil
 }
 
@@ -147,7 +168,7 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 
 	switch ar.Subject {
 	case auth.RootSub:
-		if !contains(svc.adminIDs, u.ID) {
+		if !svc.isPlatformAdmin(u.ID) {
 			return errors.ErrAuthorization
 		}
 	case auth.OrgSub:
@@ -161,17 +182,13 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 	return nil
 }
 
-func contains(ids []string, id string) bool {
-	for _, existingID := range ids {
-		if existingID == id {
-			return true
-		}
-	}
-	return false
+func (svc authServiceMock) isPlatformAdmin(userID string) bool {
+	role := svc.platformRoles[userID]
+	return role == auth.RoleRootAdmin || role == auth.RoleAdmin
 }
 
 func (svc authServiceMock) canAccessOrg(userID, orgID, action string) error {
-	if contains(svc.adminIDs, userID) {
+	if svc.isPlatformAdmin(userID) {
 		return nil
 	}
 
@@ -212,7 +229,7 @@ func (svc authServiceMock) GetOwnerIDByOrg(_ context.Context, orgID string) (str
 func (svc authServiceMock) AssignRole(_ context.Context, id, role string) error {
 	// The roles table allows a single role per user.
 	if svc.platformRoles[id] != "" {
-		return dbutil.ErrCreateEntity
+		return dbutil.ErrConflict
 	}
 
 	svc.platformRoles[id] = role
@@ -221,6 +238,26 @@ func (svc authServiceMock) AssignRole(_ context.Context, id, role string) error 
 
 func (svc authServiceMock) RetrieveRole(_ context.Context, id string) (string, error) {
 	return svc.platformRoles[id], nil
+}
+
+func (svc authServiceMock) RetrieveRoles(_ context.Context, ids []string) (map[string]string, error) {
+	roles := make(map[string]string)
+	for _, id := range ids {
+		if role, ok := svc.platformRoles[id]; ok {
+			roles[id] = role
+		}
+	}
+
+	return roles, nil
+}
+
+func (svc authServiceMock) UnassignRole(_ context.Context, id string) error {
+	if _, ok := svc.platformRoles[id]; !ok {
+		return dbutil.ErrNotFound
+	}
+
+	delete(svc.platformRoles, id)
+	return nil
 }
 
 func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domain.GroupInvite) error {

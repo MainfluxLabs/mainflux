@@ -116,6 +116,7 @@ func viewUserEndpoint(svc users.Service) endpoint.Endpoint {
 			ID:       u.ID,
 			Email:    u.Email,
 			Metadata: u.Metadata,
+			Role:     u.Role,
 		}, nil
 	}
 }
@@ -288,6 +289,32 @@ func disableUserEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
+func assignAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminRoleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		if err := svc.AssignAdminRole(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
+	}
+}
+
+func unassignAdminRoleEndpoint(svc users.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminRoleReq)
+		if err := req.validate(); err != nil {
+			return nil, err
+		}
+		if err := svc.UnassignAdminRole(ctx, req.token, req.id); err != nil {
+			return nil, err
+		}
+		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
+	}
+}
+
 func impersonateEndpoint(svc users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(impersonateReq)
@@ -322,6 +349,7 @@ func buildUsersResponse(up users.UsersPage, pm users.PageMetadata) userPageRes {
 			ID:       user.ID,
 			Email:    user.Email,
 			Metadata: user.Metadata,
+			Role:     user.Role,
 		}
 		res.Users = append(res.Users, view)
 	}

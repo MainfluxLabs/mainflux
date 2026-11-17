@@ -72,6 +72,18 @@ func (req revokeSessionsReq) validate() error {
 	return nil
 }
 
+type revokeAPIKeysReq struct {
+	id string
+}
+
+func (req revokeAPIKeysReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
 type authReq struct {
 	Token   string
 	Object  string
@@ -167,6 +179,30 @@ type retrieveRoleReq struct {
 }
 
 func (req retrieveRoleReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
+type retrieveRolesReq struct {
+	ids []string
+}
+
+func (req retrieveRolesReq) validate() error {
+	if len(req.ids) == 0 {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
+type unassignRoleReq struct {
+	id string
+}
+
+func (req unassignRoleReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingUserID
 	}

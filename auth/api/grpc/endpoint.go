@@ -58,6 +58,21 @@ func refreshEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func revokeAPIKeysEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(revokeAPIKeysReq)
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		if err := svc.RevokeAPIKeys(ctx, req.id); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func revokeSessionsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(revokeSessionsReq)
@@ -240,6 +255,43 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return res, nil
+	}
+}
+
+func retrieveRolesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(retrieveRolesReq)
+
+		if err := req.validate(); err != nil {
+			return retrieveRolesRes{}, err
+		}
+
+		roles, err := svc.RetrieveRoles(ctx, req.ids)
+		if err != nil {
+			return retrieveRolesRes{}, err
+		}
+
+		res := retrieveRolesRes{
+			roles: roles,
+		}
+
+		return res, nil
+	}
+}
+
+func unassignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(unassignRoleReq)
+
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		if err := svc.UnassignRole(ctx, req.id); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
 	}
 }
 
