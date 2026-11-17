@@ -31,7 +31,7 @@ type scriptRepositoryMiddleware struct {
 	repo   pyscripts.ScriptRepository
 }
 
-// ScriptRepositoryMiddleware tracks request and their latency, and adds spans to context.
+// ScriptRepositoryMiddleware tracks requests and their latency, and adds spans to context.
 func ScriptRepositoryMiddleware(tracer opentracing.Tracer, repo pyscripts.ScriptRepository) pyscripts.ScriptRepository {
 	return scriptRepositoryMiddleware{tracer: tracer, repo: repo}
 }

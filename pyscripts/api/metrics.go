@@ -19,7 +19,7 @@ type metricsMiddleware struct {
 	svc     pyscripts.Service
 }
 
-// MetricsMiddleware instruments core service by tracking request count and latency.
+// MetricsMiddleware instruments the core service by tracking request count and latency.
 func MetricsMiddleware(svc pyscripts.Service, counter metrics.Counter, latency metrics.Histogram) pyscripts.Service {
 	return &metricsMiddleware{
 		counter: counter,
