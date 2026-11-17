@@ -15,8 +15,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pyscripts"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -44,7 +42,7 @@ func (sr scriptRepository) SaveRuns(ctx context.Context, runs ...pyscripts.Scrip
 		}
 
 		if _, err := tx.NamedExecContext(ctx, query, dbr); err != nil {
-			return []pyscripts.ScriptRun{}, wrapWrite(err, dbutil.ErrCreateEntity)
+			return []pyscripts.ScriptRun{}, handlePgError(err, dbutil.ErrCreateEntity)
 		}
 
 		if _, done := pruned[run.ScriptID]; !done {
@@ -96,11 +94,7 @@ func (sr scriptRepository) RetrieveRunByID(ctx context.Context, id string) (pysc
 			return pyscripts.ScriptRun{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
-			return pyscripts.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-		}
-
-		return pyscripts.ScriptRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return pyscripts.ScriptRun{}, handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 
 	run, err := toRun(dbr)
@@ -148,7 +142,7 @@ func (sr scriptRepository) RetrieveRunsByScript(ctx context.Context, scriptID st
 
 	rows, err := sr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return pyscripts.ScriptRunsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return pyscripts.ScriptRunsPage{}, handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 	defer rows.Close()
 

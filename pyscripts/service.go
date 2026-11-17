@@ -34,7 +34,7 @@ func (g *groupRateLimiter) remove(groupID string) {
 	g.limiters.Delete(groupID)
 }
 
-// Service specifies an API that must be fullfiled by the domain service
+// Service specifies an API that must be fulfilled by the domain service
 // implementation, and all of its decorators (e.g. logging & metrics).
 // All methods that accept a token parameter use it to identify and authorize
 // the user performing the operation.

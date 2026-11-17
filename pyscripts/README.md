@@ -63,6 +63,8 @@ The service kills the run's process group when `MF_PYSCRIPTS_RUN_TIMEOUT` expire
 
 This is meant for scripts written by trusted group editors, not for hostile multi-tenant code. Script source and run logs are readable by every group viewer, so they must not contain credentials.
 
+Scripts run under the same uid as the service and may open any file that uid can read. The workers get none of the service's environment variables, but files are not hidden: if `MF_PYSCRIPTS_SERVER_KEY` or `MF_PYSCRIPTS_DB_SSL_KEY` point to files mounted into the container, a group editor can read them and return their contents as a run result. Do not mount private keys the service user can read, or do not enable script execution where they are mounted.
+
 ## Configuration
 
 The service is configured using the environment variables from the following table. Note that any unset variables will be replaced with their default values.

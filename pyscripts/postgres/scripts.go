@@ -43,7 +43,7 @@ func (sr scriptRepository) SaveScripts(ctx context.Context, scripts ...pyscripts
 	for i, script := range scripts {
 		rows, err := sqlx.NamedQueryContext(ctx, tx, query, toDBScript(script))
 		if err != nil {
-			return []pyscripts.Script{}, wrapWrite(err, dbutil.ErrCreateEntity)
+			return []pyscripts.Script{}, handlePgError(err, dbutil.ErrCreateEntity)
 		}
 
 		if !rows.Next() {
@@ -81,11 +81,7 @@ func (sr scriptRepository) RetrieveScriptByID(ctx context.Context, id string) (p
 			return pyscripts.Script{}, errors.Wrap(dbutil.ErrNotFound, err)
 		}
 
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == pgerrcode.InvalidTextRepresentation {
-			return pyscripts.Script{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-		}
-
-		return pyscripts.Script{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return pyscripts.Script{}, handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 
 	return toScript(dbs), nil
@@ -117,7 +113,7 @@ func (sr scriptRepository) RetrieveScriptsByGroup(ctx context.Context, groupID s
 
 	rows, err := sr.db.NamedQueryContext(ctx, query, params)
 	if err != nil {
-		return pyscripts.ScriptsPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return pyscripts.ScriptsPage{}, handlePgError(err, dbutil.ErrRetrieveEntity)
 	}
 	defer rows.Close()
 
@@ -149,7 +145,7 @@ func (sr scriptRepository) UpdateScript(ctx context.Context, script pyscripts.Sc
 
 	res, err := sr.db.NamedExecContext(ctx, query, toDBScript(script))
 	if err != nil {
-		return wrapWrite(err, dbutil.ErrUpdateEntity)
+		return handlePgError(err, dbutil.ErrUpdateEntity)
 	}
 
 	cnt, err := res.RowsAffected()
@@ -232,7 +228,7 @@ func toScript(dbs dbScript) pyscripts.Script {
 	}
 }
 
-func wrapWrite(err error, fallback error) error {
+func handlePgError(err error, wrapErr error) error {
 	if pgErr, ok := err.(*pgconn.PgError); ok {
 		switch pgErr.Code {
 		case pgerrcode.InvalidTextRepresentation, pgerrcode.CharacterNotInRepertoire:
@@ -244,5 +240,5 @@ func wrapWrite(err error, fallback error) error {
 		}
 	}
 
-	return errors.Wrap(fallback, err)
+	return errors.Wrap(wrapErr, err)
 }

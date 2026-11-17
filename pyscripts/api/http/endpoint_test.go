@@ -504,6 +504,34 @@ func TestRunScript(t *testing.T) {
 	}
 }
 
+func TestRunScriptRateLimited(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	s := createScript(t, svc, "a")
+	body := toJSON(map[string]any{"payload": map[string]any{"x": 1}})
+
+	var statuses []int
+	for range 15 {
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPost,
+			url:         fmt.Sprintf("%s/scripts/%s/run", ts.URL, s.ID),
+			contentType: contentType,
+			token:       token,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+		res.Body.Close()
+		statuses = append(statuses, res.StatusCode)
+	}
+
+	assert.Equal(t, http.StatusOK, statuses[0], fmt.Sprintf("expected the first run to succeed, got statuses %v", statuses))
+	assert.Equal(t, http.StatusTooManyRequests, statuses[len(statuses)-1], fmt.Sprintf("expected runs beyond the group burst to be rejected, got statuses %v", statuses))
+}
+
 func TestRunScriptLargeInteger(t *testing.T) {
 	things := pkgmocks.NewThingsServiceClient(
 		nil,
