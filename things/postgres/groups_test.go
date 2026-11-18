@@ -268,8 +268,45 @@ func TestRemoveGroup(t *testing.T) {
 
 	grIDs := []string{group1.ID, group2.ID}
 
-	err = groupRepo.Remove(context.Background(), grIDs...)
-	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete non empty groups: expected %v got %v\n", nil, err))
+	cases := []struct {
+		desc        string
+		grIDs       []string
+		retainedIDs []string
+		err         error
+	}{
+		{
+			desc:        "delete groups with a malformed id",
+			grIDs:       append([]string{"wrong"}, grIDs...),
+			retainedIDs: grIDs,
+			err:         dbutil.ErrMalformedEntity,
+		},
+		{
+			desc:        "delete groups with a non-existing id",
+			grIDs:       append([]string{generateUUID(t)}, grIDs...),
+			retainedIDs: grIDs,
+			err:         dbutil.ErrRemoveEntity,
+		},
+		{
+			desc:  "delete non empty groups",
+			grIDs: grIDs,
+			err:   nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := groupRepo.Remove(context.Background(), tc.grIDs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.retainedIDs {
+			_, err := groupRepo.RetrieveByID(context.Background(), id)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected %s retained got %s\n", tc.desc, id, err))
+		}
+	}
+
+	for _, id := range grIDs {
+		_, err := groupRepo.RetrieveByID(context.Background(), id)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", id, err))
+	}
 }
 
 func TestRetrieveByIDs(t *testing.T) {
