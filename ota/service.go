@@ -166,7 +166,7 @@ func (ots *otaService) CreateUpdate(ctx context.Context, token, groupID string, 
 
 	ots.notify(u, thingIDs...)
 	u.Stats = UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))}
-	u.Status = UpdateStatusInProgress
+	u.Status = u.Stats.Status()
 
 	return u, nil
 }

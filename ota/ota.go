@@ -67,6 +67,18 @@ type UpdateStats struct {
 	Failed      uint64
 }
 
+// Status returns the update status the stats add up to.
+func (s UpdateStats) Status() string {
+	switch {
+	case s.Pending+s.Downloading+s.Installing > 0:
+		return UpdateStatusInProgress
+	case s.Failed > 0:
+		return UpdateStatusCompletedWithFailures
+	default:
+		return UpdateStatusCompleted
+	}
+}
+
 // ThingUpdate is the progress of one thing within an update.
 type ThingUpdate struct {
 	UpdateID        string

@@ -80,7 +80,7 @@ func (urm *updateRepositoryMock) RetrieveByID(_ context.Context, id string) (ota
 		return ota.Update{}, dbutil.ErrNotFound
 	}
 	u.Stats = urm.stats(id)
-	u.Status = updateStatus(u.Stats)
+	u.Status = u.Stats.Status()
 
 	return u, nil
 }
@@ -95,7 +95,7 @@ func (urm *updateRepositoryMock) RetrieveByGroup(_ context.Context, groupID stri
 			continue
 		}
 		u.Stats = urm.stats(u.ID)
-		u.Status = updateStatus(u.Stats)
+		u.Status = u.Stats.Status()
 		if pm.Status != "" && u.Status != pm.Status {
 			continue
 		}
@@ -322,15 +322,4 @@ func pageBounds(total uint64, pm ota.PageMetadata) (uint64, uint64) {
 	}
 
 	return start, end
-}
-
-func updateStatus(s ota.UpdateStats) string {
-	switch {
-	case s.Pending+s.Downloading+s.Installing > 0:
-		return ota.UpdateStatusInProgress
-	case s.Failed > 0:
-		return ota.UpdateStatusCompletedWithFailures
-	default:
-		return ota.UpdateStatusCompleted
-	}
 }

@@ -434,8 +434,9 @@ func (ur updateRepository) retrieveThingUpdate(ctx context.Context, q string, ar
 	return toThingUpdate(dbtu), nil
 }
 
-// refreshStats recounts the thing updates of the given updates by status. Every change of
-// thing updates calls it in the same transaction, so the stored stats and status never drift.
+// refreshStats recounts the thing updates of the given updates by status and stores the
+// resulting update status. Every change of thing updates calls it in the same transaction,
+// so the stored stats and status never drift.
 func refreshStats(ctx context.Context, tx *sqlx.Tx, updateIDs []string) error {
 	if len(updateIDs) == 0 {
 		return nil
@@ -454,15 +455,40 @@ func refreshStats(ctx context.Context, tx *sqlx.Tx, updateIDs []string) error {
 			FROM thing_updates t
 			WHERE t.update_id = u.id
 		)
-		WHERE u.id = ANY(:update_ids);`
+		WHERE u.id = ANY(:update_ids)
+		RETURNING id, targets, pending, downloading, installing, succeeded, failed;`
+	qStatus := `UPDATE updates SET status = :status WHERE id = ANY(:update_ids);`
 	params := map[string]any{"update_ids": updateIDs}
 
 	if _, err := queryIDs(ctx, tx, qLock, params); err != nil {
 		return err
 	}
 
-	if _, err := tx.NamedExecContext(ctx, qRefresh, params); err != nil {
+	rows, err := sqlx.NamedQueryContext(ctx, tx, qRefresh, params)
+	if err != nil {
 		return err
+	}
+	defer rows.Close()
+
+	idsByStatus := map[string][]string{}
+	for rows.Next() {
+		var dbu dbUpdate
+		if err := rows.StructScan(&dbu); err != nil {
+			return err
+		}
+		status := toUpdate(dbu).Stats.Status()
+		idsByStatus[status] = append(idsByStatus[status], dbu.ID)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	rows.Close()
+
+	for status, ids := range idsByStatus {
+		statusParams := map[string]any{"status": status, "update_ids": ids}
+		if _, err := tx.NamedExecContext(ctx, qStatus, statusParams); err != nil {
+			return err
+		}
 	}
 
 	return nil
