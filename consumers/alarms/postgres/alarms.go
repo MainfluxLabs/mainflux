@@ -194,13 +194,14 @@ func (ar *alarmRepository) RetrieveByGroups(ctx context.Context, groupIDs []stri
 }
 
 func (ar *alarmRepository) Remove(ctx context.Context, ids ...string) error {
-	q := `DELETE FROM alarms WHERE id = :id;`
+	q := `DELETE FROM alarms WHERE id = ANY(:ids);`
 
-	for _, id := range ids {
-		dba := dbAlarm{ID: id}
-		if _, err := ar.db.NamedExecContext(ctx, q, dba); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := ar.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
