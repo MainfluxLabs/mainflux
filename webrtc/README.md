@@ -9,6 +9,7 @@ Sessions are kept in memory in a single instance and are lost on restart. Nothin
 - **Devices** signal over reserved `webrtc.*` subtopics on the WS and MQTT adapters. The adapters divert those messages to the broker subject `webrtc.<thingID>.<kind>`, and the WebRTC service consumes them. Replies are sent to the device as commands on `things.<thingID>.commands.<subtopic>`.
 - **Viewers** signal over the HTTP endpoints of this service, authorized with a user token that must have viewer access to the thing.
 - One publisher session exists per thing. A new offer replaces the previous session and closes its viewers.
+- Data channels are bridged by label. A message a viewer sends goes to the thing's channel with the same label, and a message the thing sends goes to every viewer that has that label open. Text and binary types are kept.
 - Pion's default codecs are used.
 
 ## Device signaling
@@ -43,7 +44,7 @@ All endpoints require `Authorization: Bearer <user token>`. See `api/openapi/web
 | `POST /webrtc/things/{id}/view`           | Body `{"sdp": "<offer>"}`. Returns `{"session_id", "sdp"}` once ICE gathering is complete |
 | `PATCH /webrtc/sessions/{id}/candidates`  | Body `{"candidate": {...}}`. Adds a viewer ICE candidate                          |
 
-Viewing a thing without an active publisher returns 404. The server does not trickle candidates to viewers.
+Viewing a thing without an active publisher returns 404. A publisher is active once it has a media track or an open data channel, so a thing that only exchanges commands can be viewed too. The server does not trickle candidates to viewers.
 
 ## TURN credentials
 
