@@ -147,9 +147,9 @@ func (ir invitesRepository) ActivateOrgInvite(ctx context.Context, platformInvit
 
 	_, err = ir.db.NamedExecContext(ctx, queryDelete, params)
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -209,9 +209,9 @@ func (ir invitesRepository) RemoveOrgInvite(ctx context.Context, inviteID string
 
 	res, err := ir.db.NamedExecContext(ctx, qDel, invite)
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -282,9 +282,9 @@ func (ir invitesRepository) UpdateOrgInviteState(ctx context.Context, inviteID, 
 	})
 
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -470,9 +470,9 @@ func (ir invitesRepository) syncOrgInviteStateByUserID(ctx context.Context, user
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"userID": userID})
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -496,9 +496,9 @@ func (ir invitesRepository) syncOrgInviteStateByInvite(ctx context.Context, invi
 
 	_, err := ir.db.NamedExecContext(ctx, query, dbInvite)
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -520,9 +520,9 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
