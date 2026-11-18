@@ -68,6 +68,7 @@ func (res updateRes) Empty() bool {
 
 type updatesPageRes struct {
 	pageRes
+	Status  string      `json:"status,omitempty"`
 	Updates []updateRes `json:"updates"`
 }
 
@@ -163,6 +164,7 @@ func buildUpdatesPageRes(page ota.UpdatesPage, pm ota.PageMetadata) updatesPageR
 			Order:  pm.Order,
 			Dir:    pm.Dir,
 		},
+		Status:  pm.Status,
 		Updates: []updateRes{},
 	}
 
