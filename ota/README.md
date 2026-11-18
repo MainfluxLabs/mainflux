@@ -41,8 +41,8 @@ pending ─► downloading ─► installing ─► succeeded
 
 ### Update status
 
-The update's `status` is computed from its things on every read and is never stored. Use it to
-filter the updates list with `?status=`.
+The update stores its `stats` and `status`, and every change of its things updates them in the
+same transaction. Use `status` to filter the updates list with `?status=`.
 
 | Status                    | Meaning                                                  |
 | ------------------------- | -------------------------------------------------------- |

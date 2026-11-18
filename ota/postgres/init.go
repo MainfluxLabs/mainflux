@@ -85,6 +85,39 @@ func migrateDB(db *sqlx.DB) error {
 					"DROP TABLE updates",
 				},
 			},
+			{
+				Id: "ota_02",
+				Up: []string{
+					`ALTER TABLE updates
+						ADD COLUMN IF NOT EXISTS targets BIGINT NOT NULL DEFAULT 0,
+						ADD COLUMN IF NOT EXISTS pending BIGINT NOT NULL DEFAULT 0,
+						ADD COLUMN IF NOT EXISTS downloading BIGINT NOT NULL DEFAULT 0,
+						ADD COLUMN IF NOT EXISTS installing BIGINT NOT NULL DEFAULT 0,
+						ADD COLUMN IF NOT EXISTS succeeded BIGINT NOT NULL DEFAULT 0,
+						ADD COLUMN IF NOT EXISTS failed BIGINT NOT NULL DEFAULT 0`,
+					`ALTER TABLE updates ADD COLUMN IF NOT EXISTS status VARCHAR(32)
+						GENERATED ALWAYS AS (CASE
+							WHEN pending + downloading + installing > 0 THEN 'in_progress'
+							WHEN failed > 0 THEN 'completed_with_failures'
+							ELSE 'completed'
+						END) STORED`,
+					`CREATE INDEX IF NOT EXISTS idx_updates_group_id_status
+						ON updates (group_id, status)`,
+					`DROP INDEX IF EXISTS idx_updates_group_id`,
+				},
+				Down: []string{
+					`CREATE INDEX IF NOT EXISTS idx_updates_group_id ON updates (group_id)`,
+					`DROP INDEX IF EXISTS idx_updates_group_id_status`,
+					`ALTER TABLE updates
+						DROP COLUMN IF EXISTS status,
+						DROP COLUMN IF EXISTS targets,
+						DROP COLUMN IF EXISTS pending,
+						DROP COLUMN IF EXISTS downloading,
+						DROP COLUMN IF EXISTS installing,
+						DROP COLUMN IF EXISTS succeeded,
+						DROP COLUMN IF EXISTS failed`,
+				},
+			},
 		},
 	}
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
