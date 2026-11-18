@@ -405,6 +405,18 @@ func TestRunSandboxed(t *testing.T) {
 			err:  "Read-only file system",
 		},
 		{
+			desc: "deny signalling another process through fcntl",
+			code: "import os, fcntl, signal\nr, w = os.pipe()\nfcntl.fcntl(r, fcntl.F_SETOWN, os.getppid())\nfcntl.fcntl(r, 10, signal.SIGKILL)\n" +
+				"fcntl.fcntl(r, fcntl.F_SETFL, fcntl.fcntl(r, fcntl.F_GETFL) | os.O_ASYNC)\nos.write(w, b'x')",
+			err: "PermissionError",
+		},
+		{
+			desc: "allow the fd handling of the standard library",
+			code: "import os\nr, w = os.pipe()\nos.set_inheritable(r, True)\nos.set_blocking(r, False)\nd = os.dup(r)\n" +
+				"[os.get_inheritable(d), os.get_blocking(r), os.isatty(r)]",
+			value: []any{false, false, false},
+		},
+		{
 			desc:  "allow allocating within the memory limit",
 			code:  "len(bytearray(64 << 20))",
 			value: json.Number("67108864"),

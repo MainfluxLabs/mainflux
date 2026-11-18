@@ -130,8 +130,9 @@ class Out:
 // misses surfaces as an OSError. On top of it: clone only with CLONE_THREAD, so
 // no fork; clone3 and openat2 return ENOSYS so glibc falls back to calls the
 // filter can inspect; open and openat are read-only and fail with EROFS;
-// signals go only to the child's own pid; prlimit64 can only read. A syscall
-// through another ABI hits the default and is denied.
+// signals go only to the child's own pid; fcntl takes only the fd commands
+// Python uses, so F_SETOWN cannot aim SIGIO at another process; prlimit64 can
+// only read. A syscall through another ABI hits the default and is denied.
 //
 // RLIMIT_CPU's soft limit sits below the hard one, so SIGXCPU names the cause
 // before SIGKILL. RLIMIT_DATA is used rather than RLIMIT_AS, which breaks
@@ -166,7 +167,7 @@ ALLOWED_SYSCALLS = (
     "read", "readv", "preadv", "preadv2", "pread64",
     "write", "writev", "pwritev", "pwritev2", "pwrite64",
     "close", "close_range", "lseek", "_llseek",
-    "dup", "dup2", "dup3", "fcntl", "fcntl64", "ioctl",
+    "dup", "dup2", "dup3", "ioctl",
     "flock", "fsync", "fdatasync", "sync_file_range", "readahead",
     "fadvise64", "fadvise64_64",
     "stat", "stat64", "lstat", "lstat64", "fstat", "fstat64",
@@ -186,6 +187,8 @@ ALLOWED_SYSCALLS = (
 SIGNAL_TO_SELF = ("kill", "tgkill", "rt_sigqueueinfo", "rt_tgsigqueueinfo")
 
 CLONE_THREAD = 0x00010000
+
+F_DUPFD, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_DUPFD_CLOEXEC = 0, 1, 2, 3, 4, 1030
 
 O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT = 0o3, 0o1, 0o2, 0o100
 
@@ -224,6 +227,14 @@ def allow_signals_to_self(f, own):
             f.add_rule(pyseccomp.ALLOW, name, pyseccomp.Arg(0, pyseccomp.EQ, own))
         except (ValueError, RuntimeError, OSError, AttributeError):
             pass
+
+def allow_fd_commands(f):
+    for name in ("fcntl", "fcntl64"):
+        for cmd in (F_DUPFD, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_DUPFD_CLOEXEC):
+            try:
+                f.add_rule(pyseccomp.ALLOW, name, pyseccomp.Arg(1, pyseccomp.EQ, cmd))
+            except (ValueError, RuntimeError, OSError, AttributeError):
+                pass
 
 def allow_reads_deny_writes(f):
     for name, flags in (("open", 1), ("openat", 2)):
@@ -284,6 +295,7 @@ def install_filter():
             pass
     allow_threads(f)
     allow_signals_to_self(f, os.getpid())
+    allow_fd_commands(f)
     allow_reads_deny_writes(f)
     allow_read_rlimit(f)
     allow_mmap_except_shared_anon(f)
