@@ -136,7 +136,9 @@ class Out:
 // RLIMIT_CPU's soft limit sits below the hard one, so SIGXCPU names the cause
 // before SIGKILL. RLIMIT_DATA is used rather than RLIMIT_AS, which breaks
 // importing numpy. It does not charge anonymous MAP_SHARED mappings, so those
-// are refused.
+// are refused. It is set to max_memory above the child's VmData at fork, which
+// already includes the worker's numpy and pandas, so max_memory is what the
+// script itself may allocate.
 //
 // Out implements enough of a text stream (isatty, fileno, encoding, writelines)
 // for libraries such as tqdm and rich. isolate puts /dev/null on fds 0, 1 and
@@ -287,12 +289,22 @@ def install_filter():
     allow_mmap_except_shared_anon(f)
     f.load()
 
+def data_in_use():
+    try:
+        for line in open("/proc/self/status"):
+            if line.startswith("VmData:"):
+                return int(line.split()[1]) * 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    return 0
+
 def confine(lim):
     import resource
 
     cpu = lim.get("cpu_seconds")
+    mem = lim.get("max_memory")
     caps = [
-        ("RLIMIT_DATA", lim.get("max_memory"), None),
+        ("RLIMIT_DATA", None if mem is None else data_in_use() + mem, None),
         ("RLIMIT_FSIZE", lim.get("max_file_size"), None),
         ("RLIMIT_CORE", 0, None),
     ]
@@ -392,20 +404,32 @@ def execute(job, code):
 // on the control channel, which only this parent can write. fork_and_wait
 // reports the pid at once so Go can kill a run at its deadline, and kills the
 // process group after reaping so nothing a run forked survives into the next.
-// The source travels with every job rather than being cached, so one run cannot
-// read another's.
+// The parent reads only the job header and the child reads the body, so no
+// job's source or input enters the parent and no later child inherits it. A
+// child that exits without acknowledging its body leaves it in the pipe, so the
+// parent exits rather than read it as the next header.
 const pyLoop = `
 def answered(seq, status, sig, nonce):
     send(1, {"kind": "exit", "seq": seq, "status": status, "signal": sig, "nonce": nonce})
 
 def fork_and_wait(seq, target):
+    ack_r, ack_w = os.pipe()
     pid = os.fork()
     if pid == 0:
-        target()
+        os.close(ack_r)
+        job = recv(0)
+        if job is None:
+            os._exit(1)
+        os.write(ack_w, b"1")
+        os.close(ack_w)
+        target(job)
         os._exit(0)
 
+    os.close(ack_w)
     send(1, {"kind": "pid", "pid": pid, "seq": seq})
     _, status = os.waitpid(pid, 0)
+    taken = os.read(ack_r, 1)
+    os.close(ack_r)
 
     try:
         os.killpg(pid, signal.SIGKILL)
@@ -422,19 +446,22 @@ def fork_and_wait(seq, target):
              os.WTERMSIG(status) if os.WIFSIGNALED(status) else 0,
              nonce)
 
+    if not taken:
+        os._exit(1)
+
 send(1, {"kind": "ready", "loaded": LOADED, "sandbox": SANDBOX, "hidden": HIDDEN})
 
 while True:
-    job = recv(0)
-    if job is None:
+    header = recv(0)
+    if header is None:
         break
 
-    seq = job.get("seq", 0)
+    seq = header.get("seq", 0)
     SEQ = seq
 
-    if job.get("check"):
-        fork_and_wait(seq, lambda: check_source(job))
+    if header.get("check"):
+        fork_and_wait(seq, check_source)
         continue
 
-    fork_and_wait(seq, lambda: execute(job, job.get("code") or ""))
+    fork_and_wait(seq, lambda job: execute(job, job.get("code") or ""))
 `

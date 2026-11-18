@@ -19,12 +19,27 @@ const maxFrame = 8 << 20
 // stream stayed aligned. It never reaches a caller: only pumpData interprets it.
 var errBadFrame = errors.New("undecodable frame")
 
+// jobHeader is all the worker parent reads before forking. The jobFrame body
+// that follows is read by the child, so no job's source or input ever enters
+// the parent's memory, which every later child inherits.
+type jobHeader struct {
+	Seq   uint64 `json:"seq"`
+	Check bool   `json:"check,omitempty"`
+}
+
 type jobFrame struct {
-	Seq    uint64 `json:"seq"`
-	Code   string `json:"code,omitempty"`
-	Input  Input  `json:"input"`
-	Limits Limits `json:"limits"`
-	Check  bool   `json:"check,omitempty"`
+	jobHeader `json:"-"`
+	Code      string `json:"code,omitempty"`
+	Input     Input  `json:"input"`
+	Limits    Limits `json:"limits"`
+}
+
+func writeJob(w io.Writer, job jobFrame) error {
+	if err := writeFrame(w, job.jobHeader); err != nil {
+		return err
+	}
+
+	return writeFrame(w, job)
 }
 
 // ctlFrame travels on the worker's stdout. The forked child has /dev/null on its

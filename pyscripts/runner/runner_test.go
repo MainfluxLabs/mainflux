@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -105,6 +106,9 @@ func newTestWorker(t *testing.T, b behaviour) *worker {
 		go func() {
 			for {
 				var job jobFrame
+				if _, err := readFrame(jobR, &job.jobHeader); err != nil {
+					return
+				}
 				if _, err := readFrame(jobR, &job); err != nil {
 					return
 				}
@@ -401,6 +405,16 @@ func TestRunSandboxed(t *testing.T) {
 			err:  "Read-only file system",
 		},
 		{
+			desc:  "allow allocating within the memory limit",
+			code:  "len(bytearray(64 << 20))",
+			value: json.Number("67108864"),
+		},
+		{
+			desc: "deny allocating beyond the memory limit",
+			code: "bytearray(512 << 20)",
+			err:  "MemoryError",
+		},
+		{
 			desc: "kill a script that runs past the timeout",
 			code: "while True: pass",
 			err:  "timeout after 2s",
@@ -415,4 +429,42 @@ func TestRunSandboxed(t *testing.T) {
 		assert.Equal(t, tc.value, res.Value, fmt.Sprintf("%s: unexpected value", tc.desc))
 		assert.Contains(t, res.Error, tc.err, fmt.Sprintf("%s: unexpected error %q", tc.desc, res.Error))
 	}
+}
+
+func TestRunDoesNotSeeEarlierJobs(t *testing.T) {
+	p := newSandboxPool(t)
+
+	earlier := Input{Payload: map[string]any{"pad": strings.Repeat("p", 200<<10), "secret": "leak-canary-c8e1f2"}}
+	for range 3 {
+		_, err := p.Run(context.Background(), runCode, earlier)
+		require.Nil(t, err, fmt.Sprintf("unexpected error running an earlier job: %s", err))
+	}
+
+	scan := `
+import ctypes
+head, tail = b"leak-canary-", b"c8e1f2"
+step, span = 1 << 16, len(head) + len(tail)
+buf = bytearray(step + span)
+dst = ctypes.addressof((ctypes.c_char * len(buf)).from_buffer(buf))
+found = False
+for line in open("/proc/self/maps"):
+    f = line.split()
+    if not f[1].startswith("rw"):
+        continue
+    lo, hi = (int(x, 16) for x in f[0].split("-"))
+    at = lo
+    while at < hi and not found:
+        n = min(step + span, hi - at)
+        ctypes.memmove(dst, at, n)
+        i = buf.find(head, 0, n)
+        while i >= 0 and not found:
+            found = i + span <= n and buf.startswith(tail, i + len(head))
+            i = buf.find(head, i + 1, n)
+        at += step
+found
+`
+	res, err := p.Run(context.Background(), scan, Input{})
+	require.Nil(t, err, fmt.Sprintf("unexpected error running the second job: %s", err))
+	assert.Empty(t, res.Error, "expected the memory scan to complete")
+	assert.Equal(t, false, res.Value, "expected a run not to find an earlier job's payload in its memory")
 }

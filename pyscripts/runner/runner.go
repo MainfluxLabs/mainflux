@@ -576,7 +576,7 @@ type worker struct {
 }
 
 func (w *worker) check(ctx context.Context, code string, cfg Config) (outcome, error) {
-	return w.exchange(ctx, jobFrame{Code: code, Check: true, Limits: cfg.Limits}, cfg)
+	return w.exchange(ctx, jobFrame{jobHeader: jobHeader{Check: true}, Code: code, Limits: cfg.Limits}, cfg)
 }
 
 func (w *worker) run(ctx context.Context, code string, in Input, cfg Config) (outcome, error) {
@@ -602,7 +602,7 @@ func (w *worker) exchange(ctx context.Context, job jobFrame, cfg Config) (outcom
 		defer w.jobs.SetWriteDeadline(time.Time{})
 	}
 
-	if err := writeFrame(w.jobs, job); err != nil {
+	if err := writeJob(w.jobs, job); err != nil {
 		// A handoff that failed because the caller's context ended is not a
 		// broken worker. Reporting it as one would retry the job on a fresh
 		// worker for a request that is already over, running it again.

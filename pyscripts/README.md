@@ -101,7 +101,7 @@ The service is configured using the environment variables from the following tab
 | `MF_PYSCRIPTS_MAX_OUTPUT_SIZE`   | Maximum output a run may produce, in bytes                                 | 1048576                  |
 | `MF_PYSCRIPTS_MAX_LOG_LINES`     | Maximum number of log lines kept per run                                   | 256                      |
 | `MF_PYSCRIPTS_MAX_CPU_SECONDS`   | CPU time limit of one run (`RLIMIT_CPU`), in seconds                       | 5                        |
-| `MF_PYSCRIPTS_MAX_MEMORY`        | Memory limit of one run (`RLIMIT_DATA`), in bytes                          | 268435456                |
+| `MF_PYSCRIPTS_MAX_MEMORY`        | Memory one run may allocate on top of the worker's own (`RLIMIT_DATA`), in bytes | 268435456          |
 | `MF_PYSCRIPTS_MAX_FILE_SIZE`     | File size limit of one run (`RLIMIT_FSIZE`), in bytes                      | 0                        |
 | `MF_PYSCRIPTS_BLAS_THREADS`      | Number of BLAS/OpenMP threads per run                                      | 1                        |
 
