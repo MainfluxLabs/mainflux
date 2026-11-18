@@ -39,30 +39,38 @@ func (rr ruleRepository) Save(ctx context.Context, rls ...rules.Rule) ([]rules.R
 	rq := `INSERT INTO rules (id, group_id, name, description, input_type, input_config, conditions, operator, actions)
 		VALUES (:id, :group_id, :name, :description, :input_type, :input_config, :conditions, :operator, :actions);`
 
+	dbrs := make([]dbRule, 0, len(rls))
 	for _, rule := range rls {
 		dbr, err := toDBRule(rule)
 		if err != nil {
 			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, rq, dbr); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []rules.Rule{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
-			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
-		}
+		dbrs = append(dbrs, dbr)
+	}
 
-		if err := insertRulesThings(ctx, tx, rule.ID, rule.Input.ThingIDs); err != nil {
-			return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, rq, dbrs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []rules.Rule{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []rules.Rule{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+		return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	var rulesThings []map[string]any
+	for _, rule := range rls {
+		rulesThings = append(rulesThings, toDBRulesThings(rule.ID, rule.Input.ThingIDs)...)
+	}
+
+	if err := insertRulesThings(ctx, tx, rulesThings); err != nil {
+		return []rules.Rule{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -267,7 +275,7 @@ func (rr ruleRepository) AssignThings(ctx context.Context, ruleID string, thingI
 	}
 	defer tx.Rollback()
 
-	if err := insertRulesThings(ctx, tx, ruleID, thingIDs); err != nil {
+	if err := insertRulesThings(ctx, tx, toDBRulesThings(ruleID, thingIDs)); err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok && pgErr.Code == pgerrcode.UniqueViolation {
 			return errors.Wrap(dbutil.ErrConflict, err)
@@ -365,23 +373,22 @@ func (rr ruleRepository) fetchThingIDsByRules(ctx context.Context, ruleIDs []str
 	return result, nil
 }
 
-func insertRulesThings(ctx context.Context, tx *sqlx.Tx, ruleID string, thingIDs []string) error {
-	if len(thingIDs) == 0 {
-		return nil
-	}
-
+func insertRulesThings(ctx context.Context, tx *sqlx.Tx, rulesThings []map[string]any) error {
 	q := `INSERT INTO rules_things (rule_id, thing_id) VALUES (:rule_id, :thing_id);`
 
+	return dbutil.NamedExecBatch(ctx, tx, q, rulesThings)
+}
+
+func toDBRulesThings(ruleID string, thingIDs []string) []map[string]any {
+	rulesThings := make([]map[string]any, 0, len(thingIDs))
 	for _, thingID := range thingIDs {
-		if _, err := tx.NamedExecContext(ctx, q, map[string]any{
+		rulesThings = append(rulesThings, map[string]any{
 			"rule_id":  ruleID,
 			"thing_id": thingID,
-		}); err != nil {
-			return err
-		}
+		})
 	}
 
-	return nil
+	return rulesThings
 }
 
 type dbRule struct {

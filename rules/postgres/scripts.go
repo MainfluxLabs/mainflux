@@ -26,23 +26,26 @@ func (rr ruleRepository) SaveScripts(ctx context.Context, scripts ...rules.LuaSc
 		VALUES (:id, :group_id, :script, :name, :description);
 	`
 
+	dbScripts := make([]dbLuaScript, 0, len(scripts))
 	for _, script := range scripts {
 		dbScript := toDBLuaScript(script)
-		if _, err := tx.NamedExecContext(ctx, query, dbScript); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []rules.LuaScript{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbScripts = append(dbScripts, dbScript)
+	}
 
-			return []rules.LuaScript{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, query, dbScripts); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []rules.LuaScript{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []rules.LuaScript{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -210,27 +213,30 @@ func (rr ruleRepository) SaveScriptRuns(ctx context.Context, runs ...rules.Scrip
 		VALUES (:id, :script_id, :rule_id, :thing_id, :logs, :started_at, :finished_at, :status, :error);
 	`
 
+	dbRuns := make([]dbScriptRun, 0, len(runs))
 	for _, run := range runs {
 		dbRun, err := toDBScriptRun(run)
 		if err != nil {
 			return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, query, dbRun); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbRuns = append(dbRuns, dbRun)
+	}
 
-			return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, query, dbRuns); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
