@@ -30,7 +30,7 @@ func NewPlatformInvitesRepo(db dbutil.Database) users.PlatformInvitesRepository 
 func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...users.PlatformInvite) error {
 	tx, err := ir.db.BeginTxx(ctx, nil)
 	if err != nil {
-		errors.Wrap(dbutil.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	defer tx.Rollback()
 

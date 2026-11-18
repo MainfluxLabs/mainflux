@@ -78,11 +78,6 @@ func (sr *senmlRepository) Remove(ctx context.Context, rpm readers.SenMLPageMeta
 }
 
 func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Message) error {
-	tx, err := sr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
 	q := `INSERT INTO senml (subtopic, thing_id, protocol,
           name, unit, value, string_value, bool_value, data_value, sum,
           time, update_time)
@@ -98,6 +93,11 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
 		}
 
 		senmlMsgs = append(senmlMsgs, senmlMsg)
+	}
+
+	tx, err := sr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	if err := dbutil.NamedExecBatch(ctx, tx, q, senmlMsgs); err != nil {

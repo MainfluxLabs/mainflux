@@ -174,11 +174,6 @@ func (jr *jsonRepository) handlePgError(err error, wrapErr error) error {
 }
 
 func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Message) error {
-	tx, err := jr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
 	q := `INSERT INTO json (subtopic, thing_id, protocol, payload, created)
           VALUES (:subtopic, :thing_id, :protocol, :payload, :created);`
 
@@ -190,6 +185,11 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 		}
 
 		jsonMsgs = append(jsonMsgs, jsonMsg)
+	}
+
+	tx, err := jr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	if err := dbutil.NamedExecBatch(ctx, tx, q, jsonMsgs); err != nil {
