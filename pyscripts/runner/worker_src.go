@@ -129,7 +129,8 @@ class Out:
 // The seccomp filter is an allow-list with an EPERM default, so a call it
 // misses surfaces as an OSError. On top of it: clone only with CLONE_THREAD, so
 // no fork; clone3 and openat2 return ENOSYS so glibc falls back to calls the
-// filter can inspect; open and openat are read-only and fail with EROFS;
+// filter can inspect; open and openat are read-only, without O_CREAT or
+// O_TRUNC, and fail with EROFS otherwise;
 // signals go only to the child's own pid; fcntl takes only the fd commands
 // Python uses, so F_SETOWN cannot aim SIGIO at another process; prlimit64 can
 // only read. A syscall through another ABI hits the default and is denied.
@@ -190,7 +191,7 @@ CLONE_THREAD = 0x00010000
 
 F_DUPFD, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_DUPFD_CLOEXEC = 0, 1, 2, 3, 4, 1030
 
-O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT = 0o3, 0o1, 0o2, 0o100
+O_ACCMODE, O_WRONLY, O_RDWR, O_CREAT, O_TRUNC = 0o3, 0o1, 0o2, 0o100, 0o1000
 
 MAP_SHARED, MAP_ANONYMOUS = 0x01, 0x20
 
@@ -240,10 +241,10 @@ def allow_reads_deny_writes(f):
     for name, flags in (("open", 1), ("openat", 2)):
         try:
             f.add_rule(pyseccomp.ALLOW, name,
-                       pyseccomp.Arg(flags, pyseccomp.MASKED_EQ, O_ACCMODE, 0))
+                       pyseccomp.Arg(flags, pyseccomp.MASKED_EQ, O_ACCMODE | O_CREAT | O_TRUNC, 0))
         except (ValueError, RuntimeError, OSError, AttributeError):
             pass
-        for mask, val in ((O_ACCMODE, O_WRONLY), (O_ACCMODE, O_RDWR), (O_CREAT, O_CREAT)):
+        for mask, val in ((O_ACCMODE, O_WRONLY), (O_ACCMODE, O_RDWR), (O_CREAT, O_CREAT), (O_TRUNC, O_TRUNC)):
             try:
                 f.add_rule(pyseccomp.ERRNO(errno.EROFS), name,
                            pyseccomp.Arg(flags, pyseccomp.MASKED_EQ, mask, val))

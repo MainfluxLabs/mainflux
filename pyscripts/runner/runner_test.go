@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -378,6 +379,9 @@ func newSandboxPool(t *testing.T) *pool {
 }
 
 func TestRunSandboxed(t *testing.T) {
+	kept := filepath.Join(t.TempDir(), "kept")
+	require.Nil(t, os.WriteFile(kept, []byte("data"), 0o600))
+
 	cases := []struct {
 		desc  string
 		code  string
@@ -402,6 +406,11 @@ func TestRunSandboxed(t *testing.T) {
 		{
 			desc: "deny writing a file",
 			code: "open('/tmp/x', 'w')",
+			err:  "Read-only file system",
+		},
+		{
+			desc: "deny truncating a file opened read-only",
+			code: fmt.Sprintf("import os\nos.open(%q, os.O_RDONLY | os.O_TRUNC)", kept),
 			err:  "Read-only file system",
 		},
 		{
@@ -459,6 +468,10 @@ func TestRunSandboxed(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error on the next run: %s", tc.desc, err))
 		assert.Equal(t, json.Number("3"), res.Value, fmt.Sprintf("%s: expected the same worker to serve the next run", tc.desc))
 	}
+
+	data, err := os.ReadFile(kept)
+	require.Nil(t, err, fmt.Sprintf("unexpected error reading %s: %s", kept, err))
+	assert.Equal(t, "data", string(data), "deny truncating a file opened read-only: expected the file to keep its content")
 }
 
 func TestRunDoesNotSeeEarlierJobs(t *testing.T) {
