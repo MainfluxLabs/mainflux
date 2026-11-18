@@ -110,7 +110,7 @@ paths:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/ThingUpdateOrder"
         - $ref: "#/components/parameters/Direction"
-        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/ThingUpdateStatus"
       responses:
         '200':
           $ref: "#/components/responses/ThingUpdatesPageRes"
@@ -320,7 +320,7 @@ components:
           type: string
           format: uuid
         status:
-          $ref: "#/components/schemas/Status"
+          $ref: "#/components/schemas/ThingUpdateStatus"
         error:
           type: string
           description: Reason of the failure, e.g. reported by the thing or "timed out".
@@ -388,7 +388,7 @@ components:
       required:
         - update_id
         - status
-    Status:
+    ThingUpdateStatus:
       type: string
       enum: [pending, downloading, installing, succeeded, failed]
     UpdateStatus:
@@ -462,12 +462,12 @@ components:
         default: desc
         enum: [asc, desc]
       required: false
-    Status:
+    ThingUpdateStatus:
       name: status
       description: Filter things by status.
       in: query
       schema:
-        $ref: "#/components/schemas/Status"
+        $ref: "#/components/schemas/ThingUpdateStatus"
       required: false
     UpdateStatus:
       name: status
