@@ -799,23 +799,62 @@ func TestRemoveThing(t *testing.T) {
 	ths, _ := thingRepo.Save(context.Background(), thing)
 	thing.ID = ths[0].ID
 
-	cases := map[string]struct {
-		thingID string
-		err     error
+	var thingIDs []string
+	for i := 0; i < 2; i++ {
+		th := things.Thing{
+			ID:        generateUUID(t),
+			GroupID:   group.ID,
+			ProfileID: prID,
+			Name:      fmt.Sprintf("%s-%d", thingName, i),
+			Key:       generateUUID(t),
+		}
+		_, err := thingRepo.Save(context.Background(), th)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		thingIDs = append(thingIDs, th.ID)
+	}
+
+	cases := []struct {
+		desc        string
+		thingIDs    []string
+		retainedIDs []string
+		err         error
 	}{
-		"remove non-existing thing": {
-			thingID: "wrong",
-			err:     dbutil.ErrRemoveEntity,
+		{
+			desc:     "remove non-existing thing",
+			thingIDs: []string{"wrong"},
+			err:      dbutil.ErrRemoveEntity,
 		},
-		"remove thing": {
-			thingID: thing.ID,
-			err:     nil,
+		{
+			desc:     "remove thing",
+			thingIDs: []string{thing.ID},
+			err:      nil,
+		},
+		{
+			desc:        "remove things with a malformed id",
+			thingIDs:    append([]string{"wrong"}, thingIDs...),
+			retainedIDs: thingIDs,
+			err:         dbutil.ErrRemoveEntity,
+		},
+		{
+			desc:     "remove things",
+			thingIDs: thingIDs,
+			err:      nil,
 		},
 	}
 
-	for desc, tc := range cases {
-		err := thingRepo.Remove(context.Background(), tc.thingID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	for _, tc := range cases {
+		err := thingRepo.Remove(context.Background(), tc.thingIDs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.retainedIDs {
+			_, err := thingRepo.RetrieveByID(context.Background(), id)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected %s retained got %s\n", tc.desc, id, err))
+		}
+	}
+
+	for _, id := range append([]string{thing.ID}, thingIDs...) {
+		_, err := thingRepo.RetrieveByID(context.Background(), id)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", id, err))
 	}
 }
 
