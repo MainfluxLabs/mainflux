@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -72,18 +73,16 @@ func (tr timescaleRepo) saveSenML(msgs []senml.Message) (err error) {
 		}
 	}()
 
-	for _, dbmsg := range msgs {
-		if _, err := tx.NamedExec(q, dbmsg); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
-				}
+	if err := dbutil.NamedExecBatch(context.Background(), tx, q, msgs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
 			}
-
-			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
+
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return err
@@ -116,19 +115,23 @@ func (tr timescaleRepo) saveJSON(msgs []mfjson.Message) error {
 		}
 	}()
 
+	rows := make([]jsonRow, 0, len(msgs))
 	for _, dbmsg := range msgs {
 		row := jsonRow{Message: dbmsg, PayloadHash: messaging.PayloadHash(dbmsg.Payload)}
-		if _, err := tx.NamedExec(q, row); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
-				}
-			}
 
-			return errors.Wrap(errors.ErrSaveMessages, err)
+		rows = append(rows, row)
+	}
+
+	if err := dbutil.NamedExecBatch(context.Background(), tx, q, rows); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(errors.ErrSaveMessages, errInvalidMessage)
+			}
 		}
+
+		return errors.Wrap(errors.ErrSaveMessages, err)
 	}
 
 	return err
