@@ -18,11 +18,12 @@ An update describes the firmware and who should install it.
 | `checksum`    | Hex-encoded SHA-256 of the firmware, for the thing to verify the download               |
 | `description` | Free text                                                                               |
 | `timeout`     | Seconds without progress after which a thing is marked failed (default 24h, max 7 days) |
+| `status`      | `in_progress`, `completed` or `completed_with_failures`, derived from its things        |
 | `stats`       | Number of the update's things by status                                                 |
 
 Each thing of an update has its own progress: `status`, `error`, `reported_version` and `updated_at`.
 
-### Statuses
+### Thing status
 
 ```
 pending ─► downloading ─► installing ─► succeeded
@@ -37,6 +38,19 @@ pending ─► downloading ─► installing ─► succeeded
 | `installing`  | The thing is installing the firmware                                         |
 | `succeeded`   | The thing reported the update's version                                      |
 | `failed`      | The thing reported an error or another version, timed out, or was superseded |
+
+### Update status
+
+The update's `status` is computed from its things on every read and is never stored. Use it to
+filter the updates list with `?status=`.
+
+| Status                    | Meaning                                                  |
+| ------------------------- | -------------------------------------------------------- |
+| `in_progress`             | At least one thing is pending, downloading or installing |
+| `completed`               | No thing is running or failed                            |
+| `completed_with_failures` | No thing is running and at least one failed              |
+
+An update whose things were all removed (deleted or moved to another group) is `completed`.
 
 ## How it works
 

@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	// ErrInvalidStatus indicates a status report with an unknown status.
+	// ErrInvalidStatus indicates an unknown status.
 	ErrInvalidStatus = errors.New("invalid OTA status")
 
 	// ErrUpdateFinished indicates a status report for a thing update that already finished.

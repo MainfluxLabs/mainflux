@@ -45,6 +45,7 @@ type updateRes struct {
 	Description string    `json:"description,omitempty"`
 	Timeout     int64     `json:"timeout"`
 	CreatedAt   time.Time `json:"created_at"`
+	Status      string    `json:"status"`
 	Stats       statsRes  `json:"stats"`
 	created     bool
 }
@@ -140,6 +141,7 @@ func buildUpdateRes(u ota.Update, created bool) updateRes {
 		Description: u.Description,
 		Timeout:     int64(u.Timeout / time.Second),
 		CreatedAt:   u.CreatedAt,
+		Status:      u.Status,
 		Stats: statsRes{
 			Targets:     u.Stats.Targets,
 			Pending:     u.Stats.Pending,

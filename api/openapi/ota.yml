@@ -38,7 +38,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
     get:
       summary: Retrieves updates by group
-      description: Retrieves a page of updates of the group, each with its thing counts by status.
+      description: |
+        Retrieves a page of updates of the group, each with its status and thing counts by status,
+        optionally filtered by status.
       tags:
         - updates
       parameters:
@@ -47,6 +49,7 @@ paths:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/UpdateOrder"
         - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/UpdateStatus"
       responses:
         '200':
           $ref: "#/components/responses/UpdatesPageRes"
@@ -61,7 +64,7 @@ paths:
   /updates/{updateId}:
     get:
       summary: Retrieves an update
-      description: Retrieves the update with its thing counts by status.
+      description: Retrieves the update with its status and thing counts by status.
       tags:
         - updates
       parameters:
@@ -287,6 +290,8 @@ components:
         created_at:
           type: string
           format: date-time
+        status:
+          $ref: "#/components/schemas/UpdateStatus"
         stats:
           $ref: "#/components/schemas/StatsSchema"
     UpdatesPage:
@@ -384,6 +389,13 @@ components:
     Status:
       type: string
       enum: [pending, downloading, installing, succeeded, failed]
+    UpdateStatus:
+      type: string
+      enum: [in_progress, completed, completed_with_failures]
+      description: |
+        Derived from the update's things: `in_progress` while any thing is pending, downloading
+        or installing; otherwise `completed_with_failures` if any thing failed, else `completed`.
+        An update without things is `completed`.
 
   parameters:
     GroupId:
@@ -454,6 +466,13 @@ components:
       in: query
       schema:
         $ref: "#/components/schemas/Status"
+      required: false
+    UpdateStatus:
+      name: status
+      description: Filter updates by status.
+      in: query
+      schema:
+        $ref: "#/components/schemas/UpdateStatus"
       required: false
 
   requestBodies:

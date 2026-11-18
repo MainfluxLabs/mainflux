@@ -209,6 +209,27 @@ func TestListUpdatesByGroup(t *testing.T) {
 			err:   nil,
 		},
 		{
+			desc:  "list in progress updates",
+			token: token,
+			pm:    ota.PageMetadata{Status: ota.UpdateStatusInProgress},
+			size:  1,
+			err:   nil,
+		},
+		{
+			desc:  "list updates completed with failures",
+			token: token,
+			pm:    ota.PageMetadata{Status: ota.UpdateStatusCompletedWithFailures},
+			size:  2,
+			err:   nil,
+		},
+		{
+			desc:  "list completed updates",
+			token: token,
+			pm:    ota.PageMetadata{Status: ota.UpdateStatusCompleted},
+			size:  0,
+			err:   nil,
+		},
+		{
 			desc:  "list updates with wrong credentials",
 			token: wrongValue,
 			pm:    ota.PageMetadata{},

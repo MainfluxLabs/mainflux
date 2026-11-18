@@ -30,6 +30,15 @@ const (
 	ErrMsgSuperseded = "superseded by update %s"
 )
 
+const (
+	// UpdateStatusInProgress means at least one thing is still active.
+	UpdateStatusInProgress = "in_progress"
+	// UpdateStatusCompleted means no thing is active or failed.
+	UpdateStatusCompleted = "completed"
+	// UpdateStatusCompletedWithFailures means no thing is active and at least one failed.
+	UpdateStatusCompletedWithFailures = "completed_with_failures"
+)
+
 // ActiveStatuses are the statuses of a thing update that is still running.
 var ActiveStatuses = []string{StatusPending, StatusDownloading, StatusInstalling}
 
@@ -44,6 +53,7 @@ type Update struct {
 	Description string
 	Timeout     time.Duration
 	CreatedAt   time.Time
+	Status      string
 	Stats       UpdateStats
 }
 
@@ -99,10 +109,11 @@ type UpdateRepository interface {
 	// thing updates of the same things are marked failed as superseded in the same transaction.
 	Save(ctx context.Context, u Update, thingIDs ...string) error
 
-	// RetrieveByID retrieves the update with the given ID, including its stats.
+	// RetrieveByID retrieves the update with the given ID, including its status and stats.
 	RetrieveByID(ctx context.Context, id string) (Update, error)
 
-	// RetrieveByGroup retrieves a page of updates of the given group, including their stats.
+	// RetrieveByGroup retrieves a page of updates of the given group, including their status and
+	// stats, optionally filtered by status.
 	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (UpdatesPage, error)
 
 	// Remove removes the update with the given ID and its thing updates.

@@ -82,10 +82,10 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 }
 
 func (ur updateRepository) RetrieveByID(ctx context.Context, id string) (ota.Update, error) {
-	q := `SELECT id, group_id, file_name, version, file_size, checksum,
-		description, timeout, created_at
-		FROM updates
-		WHERE id = $1;`
+	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum,
+		description, timeout, created_at, %s AS status
+		FROM updates u
+		WHERE id = $1;`, updateStatusQuery)
 
 	var dbu dbUpdate
 	if err := ur.db.QueryRowxContext(ctx, q, id).StructScan(&dbu); err != nil {
@@ -114,15 +114,19 @@ func (ur updateRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
+	sq := updateStatusFilterQuery(pm.Status)
+	whereClause := dbutil.BuildWhereClause("group_id = :group_id", sq)
+
 	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum,
-		description, timeout, created_at
-		FROM updates
-		WHERE group_id = :group_id
-		ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM updates WHERE group_id = :group_id;`
+		description, timeout, created_at, %s AS status
+		FROM updates u
+		%s
+		ORDER BY %s %s %s;`, updateStatusQuery, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM updates u %s;`, whereClause)
 
 	params := map[string]any{
 		"group_id": groupID,
+		"status":   pm.Status,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
@@ -396,6 +400,15 @@ func (ur updateRepository) retrieveThingUpdate(ctx context.Context, q string, ar
 	return toThingUpdate(dbtu), nil
 }
 
+// updateStatusQuery derives the status of the update aliased u from its thing updates.
+const updateStatusQuery = `CASE
+	WHEN EXISTS (SELECT 1 FROM thing_updates t WHERE t.update_id = u.id
+		AND t.status IN ('pending', 'downloading', 'installing')) THEN 'in_progress'
+	WHEN EXISTS (SELECT 1 FROM thing_updates t WHERE t.update_id = u.id
+		AND t.status = 'failed') THEN 'completed_with_failures'
+	ELSE 'completed'
+	END`
+
 // stats returns thing update counts by status for each of the given updates.
 func (ur updateRepository) stats(ctx context.Context, updateIDs ...string) (map[string]ota.UpdateStats, error) {
 	q := `SELECT update_id,
@@ -429,6 +442,13 @@ func (ur updateRepository) stats(ctx context.Context, updateIDs ...string) (map[
 	return stats, nil
 }
 
+func updateStatusFilterQuery(status string) string {
+	if status == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s = :status", updateStatusQuery)
+}
+
 func statusQuery(status string) string {
 	if status == "" {
 		return ""
@@ -460,6 +480,7 @@ type dbUpdate struct {
 	Description string    `db:"description"`
 	Timeout     int64     `db:"timeout"`
 	CreatedAt   time.Time `db:"created_at"`
+	Status      string    `db:"status"`
 }
 
 type dbUpdateStats struct {
@@ -497,6 +518,7 @@ func toUpdate(dbu dbUpdate, stats ota.UpdateStats) ota.Update {
 		Description: dbu.Description,
 		Timeout:     time.Duration(dbu.Timeout) * time.Second,
 		CreatedAt:   dbu.CreatedAt,
+		Status:      dbu.Status,
 		Stats:       stats,
 	}
 }

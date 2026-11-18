@@ -282,6 +282,7 @@ func TestViewUpdate(t *testing.T) {
 			require.Nil(t, json.NewDecoder(res.Body).Decode(&body), fmt.Sprintf("%s: invalid response body", tc.desc))
 			assert.Equal(t, fwVersion, body["version"], fmt.Sprintf("%s: version mismatch", tc.desc))
 			assert.Equal(t, float64(3600), body["timeout"], fmt.Sprintf("%s: timeout must be in seconds", tc.desc))
+			assert.Equal(t, ota.UpdateStatusInProgress, body["status"], fmt.Sprintf("%s: status mismatch", tc.desc))
 		}
 		res.Body.Close()
 	}
@@ -315,6 +316,33 @@ func TestListUpdates(t *testing.T) {
 			token:  token,
 			status: http.StatusOK,
 			size:   2,
+		},
+		{
+			desc:   "list in progress updates",
+			query:  "?status=in_progress",
+			token:  token,
+			status: http.StatusOK,
+			size:   1,
+		},
+		{
+			desc:   "list updates completed with failures",
+			query:  "?status=completed_with_failures",
+			token:  token,
+			status: http.StatusOK,
+			size:   2,
+		},
+		{
+			desc:   "list completed updates",
+			query:  "?status=completed",
+			token:  token,
+			status: http.StatusOK,
+			size:   0,
+		},
+		{
+			desc:   "list updates with invalid status",
+			query:  "?status=wrong",
+			token:  token,
+			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "list updates with invalid order",

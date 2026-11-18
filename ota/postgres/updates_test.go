@@ -81,16 +81,18 @@ func TestRetrieveByID(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("updating thing update failed: %s", err))
 
 	cases := []struct {
-		desc  string
-		id    string
-		stats ota.UpdateStats
-		err   error
+		desc   string
+		id     string
+		status string
+		stats  ota.UpdateStats
+		err    error
 	}{
 		{
-			desc:  "retrieve update with stats",
-			id:    u.ID,
-			stats: ota.UpdateStats{Targets: 3, Pending: 1, Downloading: 1, Succeeded: 1},
-			err:   nil,
+			desc:   "retrieve update with stats",
+			id:     u.ID,
+			status: ota.UpdateStatusInProgress,
+			stats:  ota.UpdateStats{Targets: 3, Pending: 1, Downloading: 1, Succeeded: 1},
+			err:    nil,
 		},
 		{
 			desc: "retrieve non-existing update",
@@ -110,6 +112,7 @@ func TestRetrieveByID(t *testing.T) {
 		if tc.err != nil {
 			continue
 		}
+		assert.Equal(t, tc.status, got.Status, fmt.Sprintf("%s: status mismatch", tc.desc))
 		assert.Equal(t, tc.stats, got.Stats, fmt.Sprintf("%s: stats mismatch", tc.desc))
 		assert.Equal(t, time.Hour, got.Timeout, fmt.Sprintf("%s: timeout mismatch", tc.desc))
 	}
@@ -164,6 +167,97 @@ func TestRetrieveByGroup(t *testing.T) {
 		page, err := repo.RetrieveByGroup(context.Background(), tc.groupID, tc.pm)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 		assert.Len(t, page.Updates, tc.size, fmt.Sprintf("%s: size mismatch", tc.desc))
+		assert.Equal(t, tc.total, page.Total, fmt.Sprintf("%s: total mismatch", tc.desc))
+	}
+}
+
+func TestRetrieveByGroupStatus(t *testing.T) {
+	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
+	groupID := newID(t)
+	now := time.Now().UTC()
+
+	finish := func(u ota.Update, thingID, status string) {
+		tu := ota.ThingUpdate{
+			UpdateID:        u.ID,
+			ThingID:         thingID,
+			Status:          status,
+			ReportedVersion: u.Version,
+			UpdatedAt:       time.Now().UTC(),
+		}
+		err := repo.UpdateThingUpdate(context.Background(), tu)
+		require.Nil(t, err, fmt.Sprintf("updating thing update failed: %s", err))
+	}
+
+	inProgress := saveUpdate(t, repo, groupID, now, newID(t))
+
+	succeededThingID := newID(t)
+	completed := saveUpdate(t, repo, groupID, now.Add(time.Second), succeededThingID)
+	finish(completed, succeededThingID, ota.StatusSucceeded)
+
+	failedThingID, otherThingID := newID(t), newID(t)
+	withFailures := saveUpdate(t, repo, groupID, now.Add(2*time.Second), failedThingID, otherThingID)
+	finish(withFailures, failedThingID, ota.StatusFailed)
+	finish(withFailures, otherThingID, ota.StatusSucceeded)
+
+	removedThingID := newID(t)
+	empty := saveUpdate(t, repo, groupID, now.Add(3*time.Second), removedThingID)
+	err := repo.RemoveThingUpdatesByThing(context.Background(), removedThingID)
+	require.Nil(t, err, fmt.Sprintf("removing thing updates failed: %s", err))
+
+	statuses := map[string]string{
+		inProgress.ID:   ota.UpdateStatusInProgress,
+		completed.ID:    ota.UpdateStatusCompleted,
+		withFailures.ID: ota.UpdateStatusCompletedWithFailures,
+		empty.ID:        ota.UpdateStatusCompleted,
+	}
+
+	cases := []struct {
+		desc  string
+		pm    ota.PageMetadata
+		ids   []string
+		total uint64
+	}{
+		{
+			desc:  "retrieve updates without status filter",
+			pm:    ota.PageMetadata{Order: "created_at", Dir: "asc"},
+			ids:   []string{inProgress.ID, completed.ID, withFailures.ID, empty.ID},
+			total: 4,
+		},
+		{
+			desc:  "retrieve in progress updates",
+			pm:    ota.PageMetadata{Status: ota.UpdateStatusInProgress},
+			ids:   []string{inProgress.ID},
+			total: 1,
+		},
+		{
+			desc:  "retrieve completed updates including one without things",
+			pm:    ota.PageMetadata{Order: "created_at", Dir: "asc", Status: ota.UpdateStatusCompleted},
+			ids:   []string{completed.ID, empty.ID},
+			total: 2,
+		},
+		{
+			desc:  "retrieve page of completed updates",
+			pm:    ota.PageMetadata{Limit: 1, Order: "created_at", Dir: "asc", Status: ota.UpdateStatusCompleted},
+			ids:   []string{completed.ID},
+			total: 2,
+		},
+		{
+			desc:  "retrieve updates completed with failures",
+			pm:    ota.PageMetadata{Status: ota.UpdateStatusCompletedWithFailures},
+			ids:   []string{withFailures.ID},
+			total: 1,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := repo.RetrieveByGroup(context.Background(), groupID, tc.pm)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		var ids []string
+		for _, u := range page.Updates {
+			ids = append(ids, u.ID)
+			assert.Equal(t, statuses[u.ID], u.Status, fmt.Sprintf("%s: status mismatch", tc.desc))
+		}
+		assert.Equal(t, tc.ids, ids, fmt.Sprintf("%s: updates mismatch", tc.desc))
 		assert.Equal(t, tc.total, page.Total, fmt.Sprintf("%s: total mismatch", tc.desc))
 	}
 }

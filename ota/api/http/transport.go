@@ -145,6 +145,11 @@ func decodeListUpdates(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	s, err := apiutil.ReadStringQuery(r, statusKey, "")
+	if err != nil {
+		return nil, err
+	}
+
 	req := listUpdatesReq{
 		token:   apiutil.ExtractBearerToken(r),
 		groupID: bone.GetValue(r, apiutil.IDKey),
@@ -153,6 +158,7 @@ func decodeListUpdates(_ context.Context, r *http.Request) (any, error) {
 			Limit:  pm.Limit,
 			Order:  pm.Order,
 			Dir:    pm.Dir,
+			Status: s,
 		},
 	}
 
