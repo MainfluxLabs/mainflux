@@ -90,6 +90,29 @@ func TestSave(t *testing.T) {
 		err := repo.Save(context.Background(), tc.org)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+
+	var orgs []auth.Org
+	for i := 0; i < 2; i++ {
+		orgID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+		orgs = append(orgs, auth.Org{ID: orgID, OwnerID: ownerID, Name: fmt.Sprintf("%s-%d", orgName, i)})
+	}
+
+	err = repo.Save(context.Background(), append(orgs, invalidIDOrg)...)
+	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
+		fmt.Sprintf("unexpected error: %s\n", err))
+	for _, o := range orgs {
+		_, err := repo.RetrieveByID(context.Background(), o.ID)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+			fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	err = repo.Save(context.Background(), orgs...)
+	assert.Nil(t, err, fmt.Sprintf("save orgs: unexpected error: %s\n", err))
+	for _, o := range orgs {
+		_, err := repo.RetrieveByID(context.Background(), o.ID)
+		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	}
 }
 
 func TestUpdate(t *testing.T) {

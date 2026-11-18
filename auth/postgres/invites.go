@@ -43,25 +43,29 @@ func (ir invitesRepository) SaveOrgInvite(ctx context.Context, invites ...auth.O
 		if err := ir.syncOrgInviteStateByInvite(ctx, invite); err != nil {
 			return err
 		}
+	}
 
-		dbInvite := toDBOrgInvite(invite)
-		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
+	dbInvites := make([]dbOrgInvite, 0, len(invites))
+	for _, invite := range invites {
+		dbInvites = append(dbInvites, toDBOrgInvite(invite))
+	}
+
+	if err := dbutil.NamedExecBatch(ctx, tx, qIns, dbInvites); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
 			}
-
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if err := ir.saveGroupInvites(ctx, tx, invite); err != nil {
-			return err
-		}
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	if err := ir.saveGroupInvites(ctx, tx, invites); err != nil {
+		return err
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -529,32 +533,35 @@ func (ir invitesRepository) syncOrgInviteStateByID(ctx context.Context, inviteID
 	return nil
 }
 
-func (ir invitesRepository) saveGroupInvites(ctx context.Context, tx *sqlx.Tx, invite auth.OrgInvite) error {
+func (ir invitesRepository) saveGroupInvites(ctx context.Context, tx *sqlx.Tx, invites []auth.OrgInvite) error {
 	qIns := `
 		INSERT INTO org_invites_groups (org_invite_id, group_id, member_role)
 		VALUES (:org_invite_id, :group_id, :member_role)
 	`
 
-	for _, gi := range invite.GroupInvites {
-		values := map[string]any{
-			"org_invite_id": invite.ID,
-			"group_id":      gi.GroupID,
-			"member_role":   gi.MemberRole,
+	var values []map[string]any
+	for _, invite := range invites {
+		for _, gi := range invite.GroupInvites {
+			values = append(values, map[string]any{
+				"org_invite_id": invite.ID,
+				"group_id":      gi.GroupID,
+				"member_role":   gi.MemberRole,
+			})
 		}
+	}
 
-		if _, err := tx.NamedExecContext(ctx, qIns, values); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, qIns, values); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
 			}
-
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil

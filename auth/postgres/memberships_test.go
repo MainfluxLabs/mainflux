@@ -120,6 +120,20 @@ func TestSaveOrgMemberships(t *testing.T) {
 		err := repoMembs.Save(context.Background(), tc.orgMemberships...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+
+	newMemberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	newOm := auth.OrgMembership{
+		OrgID:    orgMemberships[0].OrgID,
+		MemberID: newMemberID,
+		Role:     auth.Viewer,
+	}
+	err = repoMembs.Save(context.Background(), newOm, invalidMembershipData[0])
+	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
+		fmt.Sprintf("unexpected error: %s\n", err))
+	_, err = repoMembs.RetrieveRole(context.Background(), newMemberID, newOm.OrgID)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+		fmt.Sprintf("unexpected error: %s\n", err))
 }
 
 func TestRemoveOrgMemberships(t *testing.T) {

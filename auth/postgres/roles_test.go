@@ -295,6 +295,8 @@ func TestRestoreAllRoles(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	adminID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	repeatedID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	err = repo.SaveRole(context.Background(), rootID, auth.RoleRootAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -314,6 +316,20 @@ func TestRestoreAllRoles(t *testing.T) {
 				{
 					UserID: adminID,
 					Role:   auth.RoleAdmin,
+				},
+			},
+			err: nil,
+		},
+		{
+			desc: "restore repeated user role",
+			urs: []auth.UserRole{
+				{
+					UserID: repeatedID,
+					Role:   auth.RoleAdmin,
+				},
+				{
+					UserID: repeatedID,
+					Role:   auth.RoleRootAdmin,
 				},
 			},
 			err: nil,
@@ -347,8 +363,9 @@ func TestRestoreAllRoles(t *testing.T) {
 	}
 
 	roles := map[string]string{
-		rootID:  auth.RoleRootAdmin,
-		adminID: auth.RoleAdmin,
+		rootID:     auth.RoleRootAdmin,
+		adminID:    auth.RoleAdmin,
+		repeatedID: auth.RoleAdmin,
 	}
 
 	for userID, expected := range roles {

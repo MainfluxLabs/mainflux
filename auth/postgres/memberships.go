@@ -137,24 +137,26 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 	qIns := `INSERT INTO org_memberships (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
+	dboms := make([]dbOrgMembership, 0, len(oms))
 	for _, om := range oms {
 		dbom := toDBOrgMembership(om)
+		dboms = append(dboms, dbom)
+	}
 
-		if _, err := tx.NamedExecContext(ctx, qIns, dbom); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrOrgMembershipExists, errors.New(pgErr.Detail))
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, qIns, dboms); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(auth.ErrOrgMembershipExists, errors.New(pgErr.Detail))
 			}
-
-			return errors.Wrap(auth.ErrCreateOrgMembership, err)
 		}
+
+		return errors.Wrap(auth.ErrCreateOrgMembership, err)
 	}
 
 	if err = tx.Commit(); err != nil {
