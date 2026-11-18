@@ -315,3 +315,87 @@ func TestPublisherClose(t *testing.T) {
 	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
 		fmt.Sprintf("view after publisher close: expected %s got %v\n", dbutil.ErrNotFound, err))
 }
+
+type dataClient struct {
+	pc    *pwebrtc.PeerConnection
+	dc    *pwebrtc.DataChannel
+	offer string
+	open  chan struct{}
+	msgs  chan pwebrtc.DataChannelMessage
+}
+
+func newDataClient(t *testing.T, label string) *dataClient {
+	pc := newClientPC(t)
+	dc, err := pc.CreateDataChannel(label, nil)
+	require.Nil(t, err, fmt.Sprintf("unexpected error creating data channel: %s", err))
+
+	c := &dataClient{pc: pc, dc: dc, open: make(chan struct{}), msgs: make(chan pwebrtc.DataChannelMessage, 10)}
+	dc.OnOpen(func() { close(c.open) })
+	dc.OnMessage(func(m pwebrtc.DataChannelMessage) { c.msgs <- m })
+	c.offer = gatheredOffer(t, pc)
+
+	return c
+}
+
+func (c *dataClient) waitOpen(t *testing.T, desc string) {
+	select {
+	case <-c.open:
+	case <-time.After(waitFor):
+		t.Fatalf("%s: data channel did not open\n", desc)
+	}
+}
+
+func TestDataChannel(t *testing.T) {
+	sfu := newSFU(t)
+	const label = "commands"
+
+	dev := newDataClient(t, label)
+	p := &publisher{pc: dev.pc}
+	answer, err := sfu.Publish("pub-1", thingID, dev.offer, p.onCandidate)
+	require.Nil(t, err, fmt.Sprintf("unexpected error publishing: %s", err))
+	p.applyAnswer(t, answer)
+	dev.waitOpen(t, "publish data-only thing")
+
+	ui := newDataClient(t, label)
+	deadline := time.Now().Add(waitFor)
+	for {
+		answer, err = sfu.View("view-1", thingID, userID, ui.offer)
+		if !errors.Contains(err, dbutil.ErrNotFound) || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	require.Nil(t, err, fmt.Sprintf("view data-only thing: expected no error got %s", err))
+	require.Nil(t, ui.pc.SetRemoteDescription(pwebrtc.SessionDescription{Type: pwebrtc.SDPTypeAnswer, SDP: answer}))
+	ui.waitOpen(t, "view data-only thing")
+
+	cases := []struct {
+		desc     string
+		from     *dataClient
+		to       *dataClient
+		data     []byte
+		isString bool
+	}{
+		{desc: "relay text from viewer to thing", from: ui, to: dev, data: []byte(`{"cmd":"reboot"}`), isString: true},
+		{desc: "relay binary from viewer to thing", from: ui, to: dev, data: []byte{0x01, 0x02}, isString: false},
+		{desc: "relay text from thing to viewer", from: dev, to: ui, data: []byte(`{"ok":true}`), isString: true},
+		{desc: "relay binary from thing to viewer", from: dev, to: ui, data: []byte{0x03, 0x04}, isString: false},
+	}
+
+	for _, tc := range cases {
+		if tc.isString {
+			err = tc.from.dc.SendText(string(tc.data))
+		} else {
+			err = tc.from.dc.Send(tc.data)
+		}
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error sending: %s", tc.desc, err))
+
+		select {
+		case m := <-tc.to.msgs:
+			assert.Equal(t, tc.data, m.Data, fmt.Sprintf("%s: expected %q got %q\n", tc.desc, tc.data, m.Data))
+			assert.Equal(t, tc.isString, m.IsString, fmt.Sprintf("%s: expected string %t got %t\n", tc.desc, tc.isString, m.IsString))
+		case <-time.After(waitFor):
+			t.Errorf("%s: message was not relayed\n", tc.desc)
+		}
+	}
+}

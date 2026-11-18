@@ -40,10 +40,11 @@ type track struct {
 }
 
 type session struct {
-	id      string
-	owner   string
-	thingID string
-	pc      *pwebrtc.PeerConnection
+	id       string
+	owner    string
+	thingID  string
+	pc       *pwebrtc.PeerConnection
+	channels map[string]*pwebrtc.DataChannel
 }
 
 type publisher struct {
@@ -112,9 +113,13 @@ func (s *sfu) Publish(sessionID, thingID, offer string, onCandidate func(webrtc.
 	}
 
 	pub := &publisher{
-		session: session{id: sessionID, owner: thingID, thingID: thingID, pc: pc},
+		session: session{id: sessionID, owner: thingID, thingID: thingID, pc: pc, channels: make(map[string]*pwebrtc.DataChannel)},
 		viewers: make(map[string]*session),
 	}
+
+	pc.OnDataChannel(func(dc *pwebrtc.DataChannel) {
+		s.bridge(&pub.session, dc, func() []*pwebrtc.DataChannel { return pub.viewerChannels(dc.Label()) })
+	})
 
 	pc.OnICECandidate(func(c *pwebrtc.ICECandidate) {
 		if c == nil || onCandidate == nil {
@@ -184,12 +189,14 @@ func (s *sfu) View(sessionID, thingID, userID, offer string) (string, error) {
 	s.mu.Lock()
 	pub := s.publishers[thingID]
 	var tracks []track
+	active := false
 	if pub != nil {
 		tracks = append(tracks, pub.tracks...)
+		active = len(tracks) > 0 || len(pub.channels) > 0
 	}
 	s.mu.Unlock()
 
-	if len(tracks) == 0 {
+	if !active {
 		return "", dbutil.ErrNotFound
 	}
 
@@ -198,7 +205,11 @@ func (s *sfu) View(sessionID, thingID, userID, offer string) (string, error) {
 		return "", err
 	}
 
-	sess := &session{id: sessionID, owner: userID, thingID: thingID, pc: pc}
+	sess := &session{id: sessionID, owner: userID, thingID: thingID, pc: pc, channels: make(map[string]*pwebrtc.DataChannel)}
+
+	pc.OnDataChannel(func(dc *pwebrtc.DataChannel) {
+		s.bridge(sess, dc, func() []*pwebrtc.DataChannel { return pub.channelsFor(dc.Label()) })
+	})
 
 	for _, t := range tracks {
 		sender, err := pc.AddTrack(t.local)
@@ -303,6 +314,57 @@ func (s *sfu) removeViewer(pub *publisher, v *session) {
 	s.mu.Unlock()
 
 	_ = v.pc.Close()
+}
+
+func (s *sfu) bridge(sess *session, dc *pwebrtc.DataChannel, peers func() []*pwebrtc.DataChannel) {
+	label := dc.Label()
+
+	dc.OnOpen(func() {
+		s.mu.Lock()
+		sess.channels[label] = dc
+		s.mu.Unlock()
+	})
+
+	dc.OnClose(func() {
+		s.mu.Lock()
+		if sess.channels[label] == dc {
+			delete(sess.channels, label)
+		}
+		s.mu.Unlock()
+	})
+
+	dc.OnMessage(func(msg pwebrtc.DataChannelMessage) {
+		s.mu.Lock()
+		targets := peers()
+		s.mu.Unlock()
+
+		for _, t := range targets {
+			if msg.IsString {
+				_ = t.SendText(string(msg.Data))
+				continue
+			}
+			_ = t.Send(msg.Data)
+		}
+	})
+}
+
+func (p *publisher) channelsFor(label string) []*pwebrtc.DataChannel {
+	if dc, ok := p.channels[label]; ok {
+		return []*pwebrtc.DataChannel{dc}
+	}
+
+	return nil
+}
+
+func (p *publisher) viewerChannels(label string) []*pwebrtc.DataChannel {
+	var dcs []*pwebrtc.DataChannel
+	for _, v := range p.viewers {
+		if dc, ok := v.channels[label]; ok {
+			dcs = append(dcs, dc)
+		}
+	}
+
+	return dcs
 }
 
 func answerOffer(pc *pwebrtc.PeerConnection, offer string) (string, error) {
