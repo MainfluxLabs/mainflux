@@ -182,13 +182,14 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 }
 
 func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbwh := dbWebhook{ID: id}
-		q := `DELETE FROM webhooks WHERE id = :id;`
+	q := `DELETE FROM webhooks WHERE id = ANY(:ids);`
 
-		if _, err := wr.db.NamedExecContext(ctx, q, dbwh); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := wr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
