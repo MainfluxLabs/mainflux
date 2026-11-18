@@ -43,22 +43,25 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 		if err := ir.syncPlatformInviteStateByEmail(ctx, invite.InviteeEmail); err != nil {
 			return err
 		}
+	}
 
-		dbInvite := toDBPlatformInvite(invite)
-		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
+	dbInvites := make([]dbPlatformInvite, 0, len(invites))
+	for _, invite := range invites {
+		dbInvites = append(dbInvites, toDBPlatformInvite(invite))
+	}
 
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(apiutil.ErrUserAlreadyInvited, err)
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, qIns, dbInvites); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(apiutil.ErrUserAlreadyInvited, err)
 			}
-
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
