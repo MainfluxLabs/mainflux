@@ -122,9 +122,9 @@ func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error 
 
 	res, err := tx.NamedExecContext(ctx, qd, params)
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:

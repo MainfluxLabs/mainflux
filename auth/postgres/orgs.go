@@ -112,13 +112,13 @@ func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...st
 
 	res, err := tx.NamedExecContext(ctx, qd, params)
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			case pgerrcode.ForeignKeyViolation:
-				switch pqErr.ConstraintName {
+				switch pgErr.ConstraintName {
 				case membershipsIDFkey:
 					return errors.Wrap(auth.ErrOrgNotEmpty, err)
 				}
