@@ -278,13 +278,14 @@ func (dr downlinkRepository) Update(ctx context.Context, w downlinks.Downlink) e
 }
 
 func (dr downlinkRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbDl := dbDownlink{ID: id}
-		q := `DELETE FROM downlinks WHERE id = :id;`
+	q := `DELETE FROM downlinks WHERE id = ANY(:ids);`
 
-		if _, err := dr.db.NamedExecContext(ctx, q, dbDl); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := dr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
