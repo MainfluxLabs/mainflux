@@ -90,19 +90,21 @@ func (sr *senmlRepository) Restore(ctx context.Context, messages ...readers.Mess
           :value, :string_value, :bool_value, :data_value, :sum,
           :time, :update_time);`
 
+	senmlMsgs := make([]senml.Message, 0, len(messages))
 	for _, msg := range messages {
 		senmlMsg, ok := msg.(senml.Message)
 		if !ok {
 			return errors.Wrap(errors.ErrSaveMessages, errors.ErrInvalidMessage)
 		}
 
-		_, err := tx.NamedExecContext(ctx, q, senmlMsg)
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				return errors.Wrap(errors.ErrSaveMessages, err)
-			}
-			return handlePgError(err, errors.ErrSaveMessages)
+		senmlMsgs = append(senmlMsgs, senmlMsg)
+	}
+
+	if err := dbutil.NamedExecBatch(ctx, tx, q, senmlMsgs); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
+		return handlePgError(err, errors.ErrSaveMessages)
 	}
 
 	if err := tx.Commit(); err != nil {
