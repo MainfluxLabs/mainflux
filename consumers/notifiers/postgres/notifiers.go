@@ -179,13 +179,14 @@ func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) e
 }
 
 func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
-	q := `DELETE FROM notifiers WHERE id = :id;`
+	q := `DELETE FROM notifiers WHERE id = ANY(:ids);`
 
-	for _, id := range ids {
-		dbNf := dbNotifier{ID: id}
-		if _, err := nr.db.NamedExecContext(ctx, q, dbNf); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := nr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
