@@ -242,7 +242,6 @@ func TestCollectorSpoiled(t *testing.T) {
 	cases := []struct {
 		desc    string
 		over    bool
-		fired   bool
 		overran bool
 		crossed bool
 		spoiled bool
@@ -250,15 +249,13 @@ func TestCollectorSpoiled(t *testing.T) {
 		{desc: "keep a worker after a clean run", spoiled: false},
 		{desc: "keep a worker after a frame from another job", crossed: true, spoiled: false},
 		{desc: "keep a worker after the output cap", over: true, spoiled: false},
-		{desc: "keep a worker after a timeout", fired: true, spoiled: false},
 		{desc: "retire a worker whose drain overran", overran: true, spoiled: true},
 	}
 
 	for _, tc := range cases {
 		c := &collector{over: tc.over, overran: tc.overran, crossed: tc.crossed}
-		d := &deadline{fired: tc.fired}
 
-		spoiled := c.spoiled(d)
+		spoiled := c.spoiled()
 		assert.Equal(t, tc.spoiled, spoiled, fmt.Sprintf("%s: expected spoiled %t got %t", tc.desc, tc.spoiled, spoiled))
 	}
 }

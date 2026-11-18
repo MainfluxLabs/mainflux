@@ -146,7 +146,7 @@ func (c *collector) finish(exit ctlFrame, d *deadline) outcome {
 // sentinel, and the worker relays only whole frames, so the stream is aligned.
 // A crossed frame does not count either: the next collector drops it by its
 // sequence number.
-func (c *collector) spoiled(_ *deadline) bool {
+func (c *collector) spoiled() bool {
 	return c.overran
 }
 

@@ -69,41 +69,41 @@ Scripts run under the same uid as the service and may open any file that uid can
 
 The service is configured using the environment variables from the following table. Note that any unset variables will be replaced with their default values.
 
-| Variable                         | Description                                                                | Default                  |
-|----------------------------------|----------------------------------------------------------------------------|--------------------------|
-| `MF_PYSCRIPTS_LOG_LEVEL`         | Log level for Pyscripts (debug, info, warn, error)                         | error                    |
-| `MF_PYSCRIPTS_DB_HOST`           | Database host address                                                      | localhost                |
-| `MF_PYSCRIPTS_DB_PORT`           | Database host port                                                         | 5432                     |
-| `MF_PYSCRIPTS_DB_USER`           | Database user                                                              | mainflux                 |
-| `MF_PYSCRIPTS_DB_PASS`           | Database password                                                          | mainflux                 |
-| `MF_PYSCRIPTS_DB`                | Name of the database used by the service                                   | pyscripts                |
-| `MF_PYSCRIPTS_DB_SSL_MODE`       | Database connection SSL mode (disable, require, verify-ca, verify-full)    | disable                  |
-| `MF_PYSCRIPTS_DB_SSL_CERT`       | Path to the PEM encoded certificate file                                   |                          |
-| `MF_PYSCRIPTS_DB_SSL_KEY`        | Path to the PEM encoded key file                                           |                          |
-| `MF_PYSCRIPTS_DB_SSL_ROOT_CERT`  | Path to the PEM encoded root certificate file                              |                          |
-| `MF_PYSCRIPTS_CLIENT_TLS`        | Flag that indicates if TLS should be turned on                             | false                    |
-| `MF_PYSCRIPTS_CA_CERTS`          | Path to trusted CAs in PEM format                                          |                          |
-| `MF_PYSCRIPTS_HTTP_PORT`         | Pyscripts service HTTP port                                                | 9032                     |
-| `MF_PYSCRIPTS_SERVER_CERT`       | Path to server certificate in pem format                                   |                          |
-| `MF_PYSCRIPTS_SERVER_KEY`        | Path to server key in pem format                                           |                          |
-| `MF_JAEGER_URL`                  | Jaeger server URL for distributed tracing. Leave empty to disable tracing. |                          |
-| `MF_THINGS_AUTH_GRPC_URL`        | Things auth service gRPC URL                                               | localhost:8183           |
-| `MF_THINGS_AUTH_GRPC_TIMEOUT`    | Things auth service gRPC request timeout                                   | 1s                       |
-| `MF_AUTH_GRPC_URL`               | Auth service gRPC URL                                                      | localhost:8181           |
-| `MF_AUTH_GRPC_TIMEOUT`           | Auth service gRPC request timeout                                          | 1s                       |
-| `MF_PYSCRIPTS_ES_URL`            | Event store URL                                                            | redis://localhost:6379/0 |
-| `MF_PYSCRIPTS_PYTHON`            | Python interpreter used for the workers                                    | python3                  |
-| `MF_PYSCRIPTS_WORKERS`           | Number of pre-warmed workers, i.e. the number of concurrent runs           | 2                        |
-| `MF_PYSCRIPTS_RUN_TIMEOUT`       | Wall-clock limit of one run                                                | 10s                      |
-| `MF_PYSCRIPTS_ACQUIRE_TIMEOUT`   | How long a request waits for a free worker before failing with 503         | 5s                       |
-| `MF_PYSCRIPTS_START_TIMEOUT`     | How long a worker may take to start                                        | 60s                      |
-| `MF_PYSCRIPTS_MAX_SCRIPT_SIZE`   | Maximum script source size in bytes                                        | 65535                    |
-| `MF_PYSCRIPTS_MAX_OUTPUT_SIZE`   | Maximum output a run may produce, in bytes                                 | 1048576                  |
-| `MF_PYSCRIPTS_MAX_LOG_LINES`     | Maximum number of log lines kept per run                                   | 256                      |
-| `MF_PYSCRIPTS_MAX_CPU_SECONDS`   | CPU time limit of one run (`RLIMIT_CPU`), in seconds                       | 5                        |
-| `MF_PYSCRIPTS_MAX_MEMORY`        | Memory one run may allocate on top of the worker's own (`RLIMIT_DATA`), in bytes | 268435456          |
-| `MF_PYSCRIPTS_MAX_FILE_SIZE`     | File size limit of one run (`RLIMIT_FSIZE`), in bytes                      | 0                        |
-| `MF_PYSCRIPTS_BLAS_THREADS`      | Number of BLAS/OpenMP threads per run                                      | 1                        |
+| Variable                         | Description                                                                      | Default                  |
+|----------------------------------|----------------------------------------------------------------------------------|--------------------------|
+| `MF_PYSCRIPTS_LOG_LEVEL`         | Log level for Pyscripts (debug, info, warn, error)                               | error                    |
+| `MF_PYSCRIPTS_DB_HOST`           | Database host address                                                            | localhost                |
+| `MF_PYSCRIPTS_DB_PORT`           | Database host port                                                               | 5432                     |
+| `MF_PYSCRIPTS_DB_USER`           | Database user                                                                    | mainflux                 |
+| `MF_PYSCRIPTS_DB_PASS`           | Database password                                                                | mainflux                 |
+| `MF_PYSCRIPTS_DB`                | Name of the database used by the service                                         | pyscripts                |
+| `MF_PYSCRIPTS_DB_SSL_MODE`       | Database connection SSL mode (disable, require, verify-ca, verify-full)          | disable                  |
+| `MF_PYSCRIPTS_DB_SSL_CERT`       | Path to the PEM encoded certificate file                                         |                          |
+| `MF_PYSCRIPTS_DB_SSL_KEY`        | Path to the PEM encoded key file                                                 |                          |
+| `MF_PYSCRIPTS_DB_SSL_ROOT_CERT`  | Path to the PEM encoded root certificate file                                    |                          |
+| `MF_PYSCRIPTS_CLIENT_TLS`        | Flag that indicates if TLS should be turned on                                   | false                    |
+| `MF_PYSCRIPTS_CA_CERTS`          | Path to trusted CAs in PEM format                                                |                          |
+| `MF_PYSCRIPTS_HTTP_PORT`         | Pyscripts service HTTP port                                                      | 9032                     |
+| `MF_PYSCRIPTS_SERVER_CERT`       | Path to server certificate in pem format                                         |                          |
+| `MF_PYSCRIPTS_SERVER_KEY`        | Path to server key in pem format                                                 |                          |
+| `MF_JAEGER_URL`                  | Jaeger server URL for distributed tracing. Leave empty to disable tracing.       |                          |
+| `MF_THINGS_AUTH_GRPC_URL`        | Things auth service gRPC URL                                                     | localhost:8183           |
+| `MF_THINGS_AUTH_GRPC_TIMEOUT`    | Things auth service gRPC request timeout                                         | 1s                       |
+| `MF_AUTH_GRPC_URL`               | Auth service gRPC URL                                                            | localhost:8181           |
+| `MF_AUTH_GRPC_TIMEOUT`           | Auth service gRPC request timeout                                                | 1s                       |
+| `MF_PYSCRIPTS_ES_URL`            | Event store URL                                                                  | redis://localhost:6379/0 |
+| `MF_PYSCRIPTS_PYTHON`            | Python interpreter used for the workers                                          | python3                  |
+| `MF_PYSCRIPTS_WORKERS`           | Number of pre-warmed workers, i.e. the number of concurrent runs                 | 2                        |
+| `MF_PYSCRIPTS_RUN_TIMEOUT`       | Wall-clock limit of one run                                                      | 10s                      |
+| `MF_PYSCRIPTS_ACQUIRE_TIMEOUT`   | How long a request waits for a free worker before failing with 503               | 5s                       |
+| `MF_PYSCRIPTS_START_TIMEOUT`     | How long a worker may take to start                                              | 60s                      |
+| `MF_PYSCRIPTS_MAX_SCRIPT_SIZE`   | Maximum script source size in bytes                                              | 65535                    |
+| `MF_PYSCRIPTS_MAX_OUTPUT_SIZE`   | Maximum output a run may produce, in bytes                                       | 1048576                  |
+| `MF_PYSCRIPTS_MAX_LOG_LINES`     | Maximum number of log lines kept per run                                         | 256                      |
+| `MF_PYSCRIPTS_MAX_CPU_SECONDS`   | CPU time limit of one run (`RLIMIT_CPU`), in seconds                             | 5                        |
+| `MF_PYSCRIPTS_MAX_MEMORY`        | Memory one run may allocate on top of the worker's own (`RLIMIT_DATA`), in bytes | 268435456                |
+| `MF_PYSCRIPTS_MAX_FILE_SIZE`     | File size limit of one run (`RLIMIT_FSIZE`), in bytes                            | 0                        |
+| `MF_PYSCRIPTS_BLAS_THREADS`      | Number of BLAS/OpenMP threads per run                                            | 1                        |
 
 In docker-compose the container is also bounded by `MF_PYSCRIPTS_MEM_LIMIT` and `MF_PYSCRIPTS_PIDS_LIMIT`. Keep `MF_PYSCRIPTS_MEM_LIMIT` above `MF_PYSCRIPTS_WORKERS × (~120 MB + MF_PYSCRIPTS_MAX_MEMORY)` and below the memory available to Docker, and scale the three together.
 
