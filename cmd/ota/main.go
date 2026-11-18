@@ -169,8 +169,7 @@ func main() {
 	})
 
 	g.Go(func() error {
-		handler := httpapi.MakeHandler(otaTracer, svc, auth, logger)
-		return servershttp.Start(ctx, handler, cfg.httpConfig, logger)
+		return servershttp.Start(ctx, httpapi.MakeHandler(otaTracer, svc, auth, logger), cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -192,9 +191,7 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsAuthGRPCTimeout, err := time.ParseDuration(
-		mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout),
-	)
+	thingsAuthGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
@@ -224,9 +221,7 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
-	timeoutCheckInterval, err := time.ParseDuration(
-		mainflux.Env(envTimeoutCheckInterval, defTimeoutCheckInterval),
-	)
+	timeoutCheckInterval, err := time.ParseDuration(mainflux.Env(envTimeoutCheckInterval, defTimeoutCheckInterval))
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envTimeoutCheckInterval, err.Error())
 	}

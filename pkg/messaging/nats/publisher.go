@@ -133,10 +133,7 @@ func IsCommandsSubject(subject string) bool {
 // IsOTASubject reports whether subject is a thing's OTA subject with the given subtopic.
 func IsOTASubject(subject, subtopic string) bool {
 	elems := strings.Split(subject, ".")
-	return len(elems) == 4 &&
-		elems[0] == thingsPrefix &&
-		elems[2] == otaSuffix &&
-		elems[3] == subtopic
+	return len(elems) == 4 && elems[0] == thingsPrefix && elems[2] == otaSuffix && elems[3] == subtopic
 }
 
 func createSubject(entity, id, suffix, subtopic string) string {

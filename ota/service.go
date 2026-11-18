@@ -407,9 +407,7 @@ func (ots *otaService) notify(u Update, thingIDs ...string) {
 		if err := ots.publisher.PublishCommand(subject, cmd); err != nil {
 			ots.logger.Warn(fmt.Sprintf(
 				"failed to send OTA command for update %s to thing %s: %s",
-				u.ID,
-				thingID,
-				err,
+				u.ID, thingID, err,
 			))
 		}
 	}

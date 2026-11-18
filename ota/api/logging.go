@@ -35,10 +35,7 @@ func (lm *loggingMiddleware) CreateUpdate(ctx context.Context, token, groupID st
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf(
 			"Method create_update by user %s, group id %s, update id %s took %s to complete",
-			email,
-			groupID,
-			response.ID,
-			time.Since(begin),
+			email, groupID, response.ID, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -55,9 +52,7 @@ func (lm *loggingMiddleware) ListUpdatesByGroup(ctx context.Context, token, grou
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf(
 			"Method list_updates_by_group by user %s, group id %s took %s to complete",
-			email,
-			groupID,
-			time.Since(begin),
+			email, groupID, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -74,9 +69,7 @@ func (lm *loggingMiddleware) ViewUpdate(ctx context.Context, token, id string) (
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf(
 			"Method view_update by user %s, id %s took %s to complete",
-			email,
-			id,
-			time.Since(begin),
+			email, id, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -93,9 +86,7 @@ func (lm *loggingMiddleware) ListThingUpdates(ctx context.Context, token, update
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf(
 			"Method list_thing_updates by user %s, update id %s took %s to complete",
-			email,
-			updateID,
-			time.Since(begin),
+			email, updateID, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -112,9 +103,7 @@ func (lm *loggingMiddleware) RetryFailed(ctx context.Context, token, updateID st
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf(
 			"Method retry_failed by user %s, update id %s took %s to complete",
-			email,
-			updateID,
-			time.Since(begin),
+			email, updateID, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -131,9 +120,7 @@ func (lm *loggingMiddleware) RemoveUpdate(ctx context.Context, token, id string)
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf(
 			"Method remove_update by user %s, id %s took %s to complete",
-			email,
-			id,
-			time.Since(begin),
+			email, id, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -162,9 +149,7 @@ func (lm *loggingMiddleware) ReportStatus(ctx context.Context, key domain.ThingK
 	defer func(begin time.Time) {
 		message := fmt.Sprintf(
 			"Method report_status for update id %s, status %s took %s to complete",
-			report.UpdateID,
-			report.Status,
-			time.Since(begin),
+			report.UpdateID, report.Status, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -193,8 +178,7 @@ func (lm *loggingMiddleware) RemoveThingUpdatesByThing(ctx context.Context, thin
 	defer func(begin time.Time) {
 		message := fmt.Sprintf(
 			"Method remove_thing_updates_by_thing for thing id %s took %s to complete",
-			thingID,
-			time.Since(begin),
+			thingID, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -210,8 +194,7 @@ func (lm *loggingMiddleware) RemoveUpdatesByGroup(ctx context.Context, groupID s
 	defer func(begin time.Time) {
 		message := fmt.Sprintf(
 			"Method remove_updates_by_group for group id %s took %s to complete",
-			groupID,
-			time.Since(begin),
+			groupID, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
@@ -227,8 +210,7 @@ func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message
 	defer func(begin time.Time) {
 		message := fmt.Sprintf(
 			"Method consume_message for thing id %s took %s to complete",
-			msg.ThingId,
-			time.Since(begin),
+			msg.ThingId, time.Since(begin),
 		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
