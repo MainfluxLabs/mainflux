@@ -148,7 +148,7 @@ func (h *handler) authorizePublish(thingID, topic string) error {
 	return nil
 }
 
-// authorizeOTAStatus lets a thing publish only its own OTA status, since OTA updates come from the ota service alone.
+// authorizeOTAStatus allows a thing only its own OTA status; only the OTA service sends updates.
 func authorizeOTAStatus(thingID, id string, parts []string) error {
 	if id != thingID || len(parts) != 4 || parts[3] != nats.OTAStatusSubtopic {
 		return errors.ErrAuthorization
@@ -259,8 +259,7 @@ func (h *handler) publishToBus(c *session.Client, topic string, payload []byte) 
 
 	switch {
 	case nats.IsOTASubject(subject, nats.OTAStatusSubtopic):
-		// Built from the publisher's ID, since will messages skip AuthPublish.
-		return h.publisher.Publish(nats.GetOTASubject(pc.ThingID, nats.OTAStatusSubtopic), msg)
+		return h.publisher.Publish(subject, msg)
 	case nats.IsCommandsSubject(subject):
 		return h.publishCommand(subject, msg)
 	default:
@@ -324,7 +323,8 @@ func parseTopic(topic, thingID string) (subject, subtopic string, err error) {
 		return nats.GetGroupCommandsSubject(id, subtopic), subtopic, nil
 	case prefix == topicPrefixThings && suffix == topicSuffixMessages:
 		return nats.GetMessagesSubject(id, subtopic), subtopic, nil
-	case prefix == topicPrefixThings && suffix == topicSuffixOTA && subtopic == nats.OTAStatusSubtopic:
+	case prefix == topicPrefixThings && suffix == topicSuffixOTA &&
+		subtopic == nats.OTAStatusSubtopic:
 		return nats.GetOTASubject(id, subtopic), subtopic, nil
 	}
 
@@ -459,8 +459,9 @@ func (h *handler) getSubscriptions(c *session.Client, topics *[]string) ([]Subsc
 	return subs, nil
 }
 
-// validateCustomTopic enforces authorization only for topics that match
-// custom patterns (things/thingID/commands, groups/groupID/commands, things/thingID/messages, things/thingID/ota).
+// validateCustomTopic enforces authorization only for topics that match custom patterns
+// (things/thingID/commands, groups/groupID/commands, things/thingID/messages,
+// things/thingID/ota).
 func validateCustomTopic(topic, thingID, groupID string) error {
 	// Reject leading-slash variants of the custom topic patterns.
 	if strings.HasPrefix(topic, "/"+topicPrefixThings+"/") || strings.HasPrefix(topic, "/"+topicPrefixGroups+"/") {

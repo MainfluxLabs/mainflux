@@ -29,7 +29,19 @@ type Config struct {
 // unapplied database migrations. A non-nil error is returned to indicate
 // failure.
 func Connect(cfg Config) (*sqlx.DB, error) {
-	url := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s", cfg.Host, cfg.Port, cfg.User, cfg.Name, cfg.Pass, cfg.SSLMode, cfg.SSLCert, cfg.SSLKey, cfg.SSLRootCert)
+	url := fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s sslcert=%s sslkey=%s "+
+			"sslrootcert=%s",
+		cfg.Host,
+		cfg.Port,
+		cfg.User,
+		cfg.Name,
+		cfg.Pass,
+		cfg.SSLMode,
+		cfg.SSLCert,
+		cfg.SSLKey,
+		cfg.SSLRootCert,
+	)
 
 	db, err := sqlx.Open("pgx", url)
 	if err != nil {
@@ -69,9 +81,12 @@ func migrateDB(db *sqlx.DB) error {
 						updated_at       TIMESTAMPTZ NOT NULL,
 						PRIMARY KEY (update_id, thing_id)
 					)`,
-					`CREATE INDEX IF NOT EXISTS idx_thing_updates_thing_id_status ON thing_updates (thing_id, status)`,
-					`CREATE INDEX IF NOT EXISTS idx_thing_updates_status_updated_at ON thing_updates (status, updated_at)`,
-					`CREATE UNIQUE INDEX IF NOT EXISTS idx_thing_updates_one_active ON thing_updates (thing_id)
+					`CREATE INDEX IF NOT EXISTS idx_thing_updates_thing_id_status
+						ON thing_updates (thing_id, status)`,
+					`CREATE INDEX IF NOT EXISTS idx_thing_updates_status_updated_at
+						ON thing_updates (status, updated_at)`,
+					`CREATE UNIQUE INDEX IF NOT EXISTS idx_thing_updates_one_active
+						ON thing_updates (thing_id)
 						WHERE status IN ('pending', 'downloading', 'installing')`,
 				},
 				Down: []string{

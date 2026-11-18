@@ -182,7 +182,8 @@ func (urm *updateRepositoryMock) RetrieveActiveThingUpdate(_ context.Context, th
 		if tu.ThingID != thingID || !isActive(tu.Status) {
 			continue
 		}
-		if !found || urm.updates[tu.UpdateID].CreatedAt.After(urm.updates[newest.UpdateID].CreatedAt) {
+		createdAt := urm.updates[tu.UpdateID].CreatedAt
+		if !found || createdAt.After(urm.updates[newest.UpdateID].CreatedAt) {
 			newest = tu
 			found = true
 		}

@@ -30,10 +30,10 @@ const (
 
 var (
 	// ErrInvalidStatus indicates a status report with an unknown status.
-	ErrInvalidStatus = errors.New("invalid ota status")
+	ErrInvalidStatus = errors.New("invalid OTA status")
 
-	// ErrUpdateFinished indicates a status report for a thing update that already succeeded or failed.
-	ErrUpdateFinished = errors.New("ota update already finished")
+	// ErrUpdateFinished indicates a status report for a thing update that already finished.
+	ErrUpdateFinished = errors.New("OTA update already finished")
 
 	// ErrMissingReportedVersion indicates a succeeded status report without the installed version.
 	ErrMissingReportedVersion = errors.New("missing reported version")
@@ -84,13 +84,13 @@ type Service interface {
 	// ListThingUpdates retrieves a page of thing updates of the given update.
 	ListThingUpdates(ctx context.Context, token, updateID string, pm PageMetadata) (ThingUpdatesPage, error)
 
-	// RetryFailed moves the failed things of the given update back to pending and notifies them again.
+	// RetryFailed moves the update's failed things back to pending and notifies them again.
 	RetryFailed(ctx context.Context, token, updateID string) error
 
 	// RemoveUpdate removes the update identified by the given ID.
 	RemoveUpdate(ctx context.Context, token, id string) error
 
-	// ViewPending retrieves the command for the update the thing identified by the key should apply.
+	// ViewPending retrieves the command of the update that the thing with the key should apply.
 	ViewPending(ctx context.Context, key domain.ThingKey) (Command, error)
 
 	// ReportStatus records the progress of an update reported by the thing identified by the key.
@@ -119,7 +119,7 @@ type otaService struct {
 
 var _ Service = (*otaService)(nil)
 
-// New instantiates the ota service implementation.
+// New instantiates the OTA service implementation.
 // firmwareURL is the public base URL things download firmware files from.
 func New(things domain.ThingsClient, updates UpdateRepository, publisher messaging.CommandPublisher, idp uuid.IDProvider, firmwareURL string, logger logger.Logger) Service {
 	return &otaService{
@@ -137,7 +137,13 @@ func (ots *otaService) CreateUpdate(ctx context.Context, token, groupID string, 
 		return Update{}, errors.ErrMalformedEntity
 	}
 
-	if err := ots.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, GroupID: groupID, Action: domain.GroupEditor}); err != nil {
+	ar := domain.UserAccessThingsReq{
+		Token:   token,
+		IDs:     thingIDs,
+		GroupID: groupID,
+		Action:  domain.GroupEditor,
+	}
+	if err := ots.things.CanUserAccessThings(ctx, ar); err != nil {
 		return Update{}, err
 	}
 
@@ -165,7 +171,12 @@ func (ots *otaService) CreateUpdate(ctx context.Context, token, groupID string, 
 }
 
 func (ots *otaService) ListUpdatesByGroup(ctx context.Context, token, groupID string, pm PageMetadata) (UpdatesPage, error) {
-	if err := ots.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupViewer}); err != nil {
+	ar := domain.UserAccessReq{
+		Token:  token,
+		ID:     groupID,
+		Action: domain.GroupViewer,
+	}
+	if err := ots.things.CanUserAccessGroup(ctx, ar); err != nil {
 		return UpdatesPage{}, err
 	}
 
@@ -178,7 +189,12 @@ func (ots *otaService) ViewUpdate(ctx context.Context, token, id string) (Update
 		return Update{}, err
 	}
 
-	if err := ots.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: u.GroupID, Action: domain.GroupViewer}); err != nil {
+	ar := domain.UserAccessReq{
+		Token:  token,
+		ID:     u.GroupID,
+		Action: domain.GroupViewer,
+	}
+	if err := ots.things.CanUserAccessGroup(ctx, ar); err != nil {
 		return Update{}, err
 	}
 
@@ -191,7 +207,12 @@ func (ots *otaService) ListThingUpdates(ctx context.Context, token, updateID str
 		return ThingUpdatesPage{}, err
 	}
 
-	if err := ots.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: u.GroupID, Action: domain.GroupViewer}); err != nil {
+	ar := domain.UserAccessReq{
+		Token:  token,
+		ID:     u.GroupID,
+		Action: domain.GroupViewer,
+	}
+	if err := ots.things.CanUserAccessGroup(ctx, ar); err != nil {
 		return ThingUpdatesPage{}, err
 	}
 
@@ -204,7 +225,12 @@ func (ots *otaService) RetryFailed(ctx context.Context, token, updateID string) 
 		return err
 	}
 
-	if err := ots.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: u.GroupID, Action: domain.GroupEditor}); err != nil {
+	ar := domain.UserAccessReq{
+		Token:  token,
+		ID:     u.GroupID,
+		Action: domain.GroupEditor,
+	}
+	if err := ots.things.CanUserAccessGroup(ctx, ar); err != nil {
 		return err
 	}
 
@@ -218,13 +244,13 @@ func (ots *otaService) RetryFailed(ctx context.Context, token, updateID string) 
 	}
 
 	// A moved thing keeps its updates until the group change event is handled.
-	ar := domain.UserAccessThingsReq{
+	thingsReq := domain.UserAccessThingsReq{
 		Token:   token,
 		IDs:     failedThingIDs,
 		GroupID: u.GroupID,
 		Action:  domain.GroupEditor,
 	}
-	if err := ots.things.CanUserAccessThings(ctx, ar); err != nil {
+	if err := ots.things.CanUserAccessThings(ctx, thingsReq); err != nil {
 		return err
 	}
 
@@ -244,7 +270,12 @@ func (ots *otaService) RemoveUpdate(ctx context.Context, token, id string) error
 		return err
 	}
 
-	if err := ots.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: u.GroupID, Action: domain.GroupEditor}); err != nil {
+	ar := domain.UserAccessReq{
+		Token:  token,
+		ID:     u.GroupID,
+		Action: domain.GroupEditor,
+	}
+	if err := ots.things.CanUserAccessGroup(ctx, ar); err != nil {
 		return err
 	}
 
@@ -355,11 +386,11 @@ func (ots *otaService) reportStatus(ctx context.Context, thingID string, report 
 	return nil
 }
 
-// notify sends the ota command to the given things; offline things pick the update up through ViewPending.
+// notify sends the OTA command to the given things; offline things fetch it through ViewPending.
 func (ots *otaService) notify(u Update, thingIDs ...string) {
 	payload, err := json.Marshal(ots.newCommand(u))
 	if err != nil {
-		ots.logger.Error(fmt.Sprintf("failed to encode ota command for update %s: %s", u.ID, err))
+		ots.logger.Error(fmt.Sprintf("failed to encode OTA command for update %s: %s", u.ID, err))
 		return
 	}
 
@@ -372,8 +403,14 @@ func (ots *otaService) notify(u Update, thingIDs ...string) {
 			Created:     time.Now().UnixNano(),
 		}
 
-		if err := ots.publisher.PublishCommand(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic), cmd); err != nil {
-			ots.logger.Warn(fmt.Sprintf("failed to send ota command for update %s to thing %s: %s", u.ID, thingID, err))
+		subject := nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic)
+		if err := ots.publisher.PublishCommand(subject, cmd); err != nil {
+			ots.logger.Warn(fmt.Sprintf(
+				"failed to send OTA command for update %s to thing %s: %s",
+				u.ID,
+				thingID,
+				err,
+			))
 		}
 	}
 }

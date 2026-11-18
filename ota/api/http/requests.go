@@ -168,7 +168,8 @@ func (req listThingUpdatesReq) validate() error {
 	}
 
 	switch req.pageMetadata.Status {
-	case "", ota.StatusPending, ota.StatusDownloading, ota.StatusInstalling, ota.StatusSucceeded, ota.StatusFailed:
+	case "", ota.StatusPending, ota.StatusDownloading, ota.StatusInstalling, ota.StatusSucceeded,
+		ota.StatusFailed:
 	default:
 		return ota.ErrInvalidStatus
 	}

@@ -49,7 +49,7 @@ const (
 	SubjectRules = "rules"
 	// SubjectOTAUpdates represents subject used to forward OTA updates to things.
 	SubjectOTAUpdates = "things.*.ota.update"
-	// SubjectOTAStatuses represents subject used to route OTA status reports to the ota service.
+	// SubjectOTAStatuses represents subject used to route OTA status reports to the OTA service.
 	SubjectOTAStatuses = "things.*.ota.status"
 )
 

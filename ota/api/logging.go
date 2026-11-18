@@ -33,7 +33,13 @@ func LoggingMiddleware(svc ota.Service, logger log.Logger) ota.Service {
 func (lm *loggingMiddleware) CreateUpdate(ctx context.Context, token, groupID string, u ota.Update, thingIDs ...string) (response ota.Update, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method create_update by user %s, group id %s, update id %s took %s to complete", email, groupID, response.ID, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method create_update by user %s, group id %s, update id %s took %s to complete",
+			email,
+			groupID,
+			response.ID,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -47,7 +53,12 @@ func (lm *loggingMiddleware) CreateUpdate(ctx context.Context, token, groupID st
 func (lm *loggingMiddleware) ListUpdatesByGroup(ctx context.Context, token, groupID string, pm ota.PageMetadata) (response ota.UpdatesPage, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method list_updates_by_group by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method list_updates_by_group by user %s, group id %s took %s to complete",
+			email,
+			groupID,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -61,7 +72,12 @@ func (lm *loggingMiddleware) ListUpdatesByGroup(ctx context.Context, token, grou
 func (lm *loggingMiddleware) ViewUpdate(ctx context.Context, token, id string) (response ota.Update, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method view_update by user %s, id %s took %s to complete", email, id, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method view_update by user %s, id %s took %s to complete",
+			email,
+			id,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -75,7 +91,12 @@ func (lm *loggingMiddleware) ViewUpdate(ctx context.Context, token, id string) (
 func (lm *loggingMiddleware) ListThingUpdates(ctx context.Context, token, updateID string, pm ota.PageMetadata) (response ota.ThingUpdatesPage, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method list_thing_updates by user %s, update id %s took %s to complete", email, updateID, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method list_thing_updates by user %s, update id %s took %s to complete",
+			email,
+			updateID,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -89,7 +110,12 @@ func (lm *loggingMiddleware) ListThingUpdates(ctx context.Context, token, update
 func (lm *loggingMiddleware) RetryFailed(ctx context.Context, token, updateID string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method retry_failed by user %s, update id %s took %s to complete", email, updateID, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method retry_failed by user %s, update id %s took %s to complete",
+			email,
+			updateID,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -103,7 +129,12 @@ func (lm *loggingMiddleware) RetryFailed(ctx context.Context, token, updateID st
 func (lm *loggingMiddleware) RemoveUpdate(ctx context.Context, token, id string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method remove_update by user %s, id %s took %s to complete", email, id, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method remove_update by user %s, id %s took %s to complete",
+			email,
+			id,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -129,7 +160,12 @@ func (lm *loggingMiddleware) ViewPending(ctx context.Context, key domain.ThingKe
 
 func (lm *loggingMiddleware) ReportStatus(ctx context.Context, key domain.ThingKey, report ota.StatusReport) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method report_status for update id %s, status %s took %s to complete", report.UpdateID, report.Status, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method report_status for update id %s, status %s took %s to complete",
+			report.UpdateID,
+			report.Status,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -155,7 +191,11 @@ func (lm *loggingMiddleware) FailTimedOut(ctx context.Context) (err error) {
 
 func (lm *loggingMiddleware) RemoveThingUpdatesByThing(ctx context.Context, thingID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_thing_updates_by_thing for thing id %s took %s to complete", thingID, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method remove_thing_updates_by_thing for thing id %s took %s to complete",
+			thingID,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -168,7 +208,11 @@ func (lm *loggingMiddleware) RemoveThingUpdatesByThing(ctx context.Context, thin
 
 func (lm *loggingMiddleware) RemoveUpdatesByGroup(ctx context.Context, groupID string) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method remove_updates_by_group for group id %s took %s to complete", groupID, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method remove_updates_by_group for group id %s took %s to complete",
+			groupID,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -181,7 +225,11 @@ func (lm *loggingMiddleware) RemoveUpdatesByGroup(ctx context.Context, groupID s
 
 func (lm *loggingMiddleware) ConsumeMessage(subject string, msg protomfx.Message) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method consume_message for thing id %s took %s to complete", msg.ThingId, time.Since(begin))
+		message := fmt.Sprintf(
+			"Method consume_message for thing id %s took %s to complete",
+			msg.ThingId,
+			time.Since(begin),
+		)
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return

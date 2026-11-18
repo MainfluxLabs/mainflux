@@ -86,7 +86,7 @@ var UpdateOrderFields = map[string]string{
 	"version":    "version",
 }
 
-// ThingUpdateOrderFields maps API-facing order keys to SQL column expressions for the thing updates table.
+// ThingUpdateOrderFields maps API order keys to SQL column expressions of the thing_updates table.
 var ThingUpdateOrderFields = map[string]string{
 	"thing_id":   "thing_id",
 	"updated_at": "updated_at",
@@ -130,7 +130,7 @@ type UpdateRepository interface {
 	// and returns the IDs of the affected things.
 	RetryFailed(ctx context.Context, updateID string, thingIDs []string) ([]string, error)
 
-	// FailTimedOut marks active thing updates without progress for their update's timeout as failed.
+	// FailTimedOut fails active thing updates without progress for their update's timeout.
 	FailTimedOut(ctx context.Context, now time.Time) error
 
 	// RemoveThingUpdatesByThing removes all thing updates of the given thing.

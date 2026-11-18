@@ -40,13 +40,25 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 		SET status = $1, error = $2, updated_at = $3
 		WHERE thing_id = ANY($4)
 		AND status = ANY($5);`
-	if _, err := tx.ExecContext(ctx, qFailActive, ota.StatusFailed, fmt.Sprintf(ota.ErrMsgSuperseded, u.ID), u.CreatedAt, thingIDs, ota.ActiveStatuses); err != nil {
+	supersededMsg := fmt.Sprintf(ota.ErrMsgSuperseded, u.ID)
+	if _, err := tx.ExecContext(
+		ctx,
+		qFailActive,
+		ota.StatusFailed,
+		supersededMsg,
+		u.CreatedAt,
+		thingIDs,
+		ota.ActiveStatuses,
+	); err != nil {
 		tx.Rollback()
 		return createErr(err)
 	}
 
-	qInsUpdate := `INSERT INTO updates (id, group_id, file_name, version, file_size, checksum, description, timeout, created_at)
-		VALUES (:id, :group_id, :file_name, :version, :file_size, :checksum, :description, :timeout, :created_at);`
+	qInsUpdate := `INSERT INTO updates
+		(id, group_id, file_name, version, file_size, checksum, description, timeout, created_at)
+		VALUES
+		(:id, :group_id, :file_name, :version, :file_size, :checksum, :description, :timeout,
+		:created_at);`
 	if _, err := tx.NamedExecContext(ctx, qInsUpdate, toDBUpdate(u)); err != nil {
 		tx.Rollback()
 		return createErr(err)
@@ -54,7 +66,14 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 
 	qInsThingUpdates := `INSERT INTO thing_updates (update_id, thing_id, status, updated_at)
 		SELECT $1, unnest($2::uuid[]), $3, $4;`
-	if _, err := tx.ExecContext(ctx, qInsThingUpdates, u.ID, thingIDs, ota.StatusPending, u.CreatedAt); err != nil {
+	if _, err := tx.ExecContext(
+		ctx,
+		qInsThingUpdates,
+		u.ID,
+		thingIDs,
+		ota.StatusPending,
+		u.CreatedAt,
+	); err != nil {
 		tx.Rollback()
 		return createErr(err)
 	}
@@ -67,7 +86,8 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 }
 
 func (ur updateRepository) RetrieveByID(ctx context.Context, id string) (ota.Update, error) {
-	q := `SELECT id, group_id, file_name, version, file_size, checksum, description, timeout, created_at
+	q := `SELECT id, group_id, file_name, version, file_size, checksum, description, timeout,
+		created_at
 		FROM updates
 		WHERE id = $1;`
 
@@ -98,7 +118,8 @@ func (ur updateRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum, description, timeout, created_at
+	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum, description,
+		timeout, created_at
 		FROM updates
 		WHERE group_id = :group_id
 		ORDER BY %s %s %s;`, oq, dq, olq)
@@ -242,7 +263,8 @@ func (ur updateRepository) RetrieveActiveThingUpdate(ctx context.Context, thingI
 
 func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUpdate) error {
 	q := `UPDATE thing_updates
-		SET status = :status, error = :error, reported_version = :reported_version, updated_at = :updated_at
+		SET status = :status, error = :error, reported_version = :reported_version,
+		updated_at = :updated_at
 		WHERE update_id = :update_id
 		AND thing_id = :thing_id
 		AND status = ANY(:active);`

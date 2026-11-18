@@ -169,7 +169,8 @@ func main() {
 	})
 
 	g.Go(func() error {
-		return servershttp.Start(ctx, httpapi.MakeHandler(otaTracer, svc, auth, logger), cfg.httpConfig, logger)
+		handler := httpapi.MakeHandler(otaTracer, svc, auth, logger)
+		return servershttp.Start(ctx, handler, cfg.httpConfig, logger)
 	})
 
 	g.Go(func() error {
@@ -191,7 +192,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid value passed for %s\n", envClientTLS)
 	}
 
-	thingsAuthGRPCTimeout, err := time.ParseDuration(mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout))
+	thingsAuthGRPCTimeout, err := time.ParseDuration(
+		mainflux.Env(envThingsGRPCTimeout, defThingsGRPCTimeout),
+	)
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envThingsGRPCTimeout, err.Error())
 	}
@@ -221,7 +224,9 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envAuthGRPCTimeout, err.Error())
 	}
 
-	timeoutCheckInterval, err := time.ParseDuration(mainflux.Env(envTimeoutCheckInterval, defTimeoutCheckInterval))
+	timeoutCheckInterval, err := time.ParseDuration(
+		mainflux.Env(envTimeoutCheckInterval, defTimeoutCheckInterval),
+	)
 	if err != nil {
 		log.Fatalf("Invalid %s value: %s", envTimeoutCheckInterval, err.Error())
 	}
@@ -289,7 +294,7 @@ func subscribeToThingsES(ctx context.Context, svc ota.Service, cfg config, logge
 	return subscriber.Subscribe(ctx, handler)
 }
 
-// failTimedOut periodically fails thing updates without progress; errors are logged by the service middleware.
+// failTimedOut periodically fails stalled thing updates; the service middleware logs errors.
 func failTimedOut(ctx context.Context, svc ota.Service, interval time.Duration) error {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

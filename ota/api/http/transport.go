@@ -165,7 +165,7 @@ func decodeListThingUpdates(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	// thing_updates has no id column, so the shared "id" default doesn't apply.
+	// thing_updates has no id column, so the shared "id" default does not apply.
 	order, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, defOrder)
 	if err != nil {
 		return nil, err
