@@ -10,10 +10,21 @@ CREATE TABLE IF NOT EXISTS updates (
     checksum    VARCHAR(64) NOT NULL DEFAULT '',
     description TEXT NOT NULL DEFAULT '',
     timeout     BIGINT NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL
+    created_at  TIMESTAMPTZ NOT NULL,
+    targets     BIGINT NOT NULL DEFAULT 0,
+    pending     BIGINT NOT NULL DEFAULT 0,
+    downloading BIGINT NOT NULL DEFAULT 0,
+    installing  BIGINT NOT NULL DEFAULT 0,
+    succeeded   BIGINT NOT NULL DEFAULT 0,
+    failed      BIGINT NOT NULL DEFAULT 0,
+    status      VARCHAR(32) GENERATED ALWAYS AS (CASE
+        WHEN pending + downloading + installing > 0 THEN 'in_progress'
+        WHEN failed > 0 THEN 'completed_with_failures'
+        ELSE 'completed'
+    END) STORED
 );
 
-CREATE INDEX IF NOT EXISTS idx_updates_group_id ON updates (group_id);
+CREATE INDEX IF NOT EXISTS idx_updates_group_id_status ON updates (group_id, status);
 
 CREATE TABLE IF NOT EXISTS thing_updates (
     update_id        UUID NOT NULL REFERENCES updates (id) ON DELETE CASCADE,
