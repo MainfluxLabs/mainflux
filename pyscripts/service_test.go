@@ -5,6 +5,7 @@ package pyscripts_test
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"testing"
@@ -553,4 +554,123 @@ func TestRunScriptRateLimit(t *testing.T) {
 
 	_, err = svc.RunScript(context.Background(), token2, s2[0].ID, pyscripts.Input{})
 	assert.Nil(t, err, fmt.Sprintf("expected a different group to be unaffected by another's limit: %s", err))
+}
+
+func TestRunScriptGroupConcurrency(t *testing.T) {
+	const (
+		token1 = "tenant-one"
+		token2 = "tenant-two"
+		group1 = "11111111-1111-1111-1111-111111111111"
+		group2 = "22222222-2222-2222-2222-222222222222"
+	)
+
+	things := pkgmocks.NewThingsServiceClient(
+		nil,
+		map[string]domain.Thing{},
+		map[string]domain.Group{
+			token1: {ID: group1},
+			token2: {ID: group2},
+		},
+	)
+	run := psmocks.NewRunner()
+	svc := pyscripts.New(psmocks.NewScriptRepository(), run, things, uuid.NewMock(), logger.NewMock(), maxScriptSize)
+
+	s1, err := svc.CreateScripts(context.Background(), token1, group1, script("a", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+	s2, err := svc.CreateScripts(context.Background(), token2, group2, script("b", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+
+	run.Gate = make(chan struct{})
+	held := make(chan error, 1)
+	go func() {
+		_, err := svc.RunScript(context.Background(), token1, s1[0].ID, pyscripts.Input{})
+		held <- err
+	}()
+	<-run.Gate
+
+	_, err = svc.RunScript(context.Background(), token1, s1[0].ID, pyscripts.Input{})
+	assert.True(t, errors.Contains(err, pyscripts.ErrRateLimited), fmt.Sprintf("expected a second run of a busy group to be refused, got %v", err))
+
+	err = svc.UpdateScript(context.Background(), token1, pyscripts.Script{ID: s1[0].ID, Name: "a", Source: validSource})
+	assert.True(t, errors.Contains(err, pyscripts.ErrRateLimited), fmt.Sprintf("expected an update of a busy group to be refused, got %v", err))
+
+	err = svc.UpdateScript(context.Background(), token2, pyscripts.Script{ID: s2[0].ID, Name: "b", Source: validSource})
+	assert.Nil(t, err, fmt.Sprintf("expected another group to be admitted while the first is busy: %s", err))
+
+	<-run.Gate
+	assert.Nil(t, <-held, "expected the held run to finish")
+
+	run.Gate = nil
+	_, err = svc.RunScript(context.Background(), token1, s1[0].ID, pyscripts.Input{})
+	assert.Nil(t, err, fmt.Sprintf("expected the group to run again once its run finished: %s", err))
+}
+
+func TestRunScriptRetiredWorker(t *testing.T) {
+	svc, run := newService()
+
+	saved, err := svc.CreateScripts(context.Background(), token, groupID, script("a", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+
+	run.Result = pyscripts.Result{Error: "timeout after 10s", Retired: true}
+	_, err = svc.RunScript(context.Background(), token, saved[0].ID, pyscripts.Input{})
+	assert.Nil(t, err, fmt.Sprintf("unexpected run error: %s", err))
+
+	run.Result = pyscripts.Result{}
+	_, err = svc.RunScript(context.Background(), token, saved[0].ID, pyscripts.Input{})
+	assert.True(t, errors.Contains(err, pyscripts.ErrRateLimited), fmt.Sprintf("expected a group whose run retired a worker to wait before the next run, got %v", err))
+}
+
+func userToken(subject, session string) string {
+	claims := base64.RawURLEncoding.EncodeToString([]byte(`{"sub":"` + subject + `"}`))
+	return session + "." + claims + ".signature"
+}
+
+func TestRunScriptUserConcurrency(t *testing.T) {
+	const (
+		group1 = "11111111-1111-1111-1111-111111111111"
+		group2 = "22222222-2222-2222-2222-222222222222"
+		group3 = "33333333-3333-3333-3333-333333333333"
+	)
+	alice1 := userToken("alice@example.com", "a1")
+	alice2 := userToken("alice@example.com", "a2")
+	bob := userToken("bob@example.com", "b1")
+
+	things := pkgmocks.NewThingsServiceClient(
+		nil,
+		map[string]domain.Thing{},
+		map[string]domain.Group{
+			alice1: {ID: group1},
+			alice2: {ID: group2},
+			bob:    {ID: group3},
+		},
+	)
+	run := psmocks.NewRunner()
+	svc := pyscripts.New(psmocks.NewScriptRepository(), run, things, uuid.NewMock(), logger.NewMock(), maxScriptSize)
+
+	s1, err := svc.CreateScripts(context.Background(), alice1, group1, script("a", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+	s2, err := svc.CreateScripts(context.Background(), alice2, group2, script("b", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+	s3, err := svc.CreateScripts(context.Background(), bob, group3, script("c", validSource))
+	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
+
+	run.Gate = make(chan struct{})
+	held := make(chan error, 1)
+	go func() {
+		_, err := svc.RunScript(context.Background(), alice1, s1[0].ID, pyscripts.Input{})
+		held <- err
+	}()
+	<-run.Gate
+
+	err = svc.UpdateScript(context.Background(), alice2, pyscripts.Script{ID: s2[0].ID, Name: "b", Source: validSource})
+	assert.True(t, errors.Contains(err, pyscripts.ErrRateLimited), fmt.Sprintf("expected a busy user to be refused in another group, got %v", err))
+
+	err = svc.UpdateScript(context.Background(), bob, pyscripts.Script{ID: s3[0].ID, Name: "c", Source: validSource})
+	assert.Nil(t, err, fmt.Sprintf("expected another user to be admitted while the first is busy: %s", err))
+
+	<-run.Gate
+	assert.Nil(t, <-held, "expected the held run to finish")
+
+	err = svc.UpdateScript(context.Background(), alice2, pyscripts.Script{ID: s2[0].ID, Name: "b", Source: validSource})
+	assert.Nil(t, err, fmt.Sprintf("expected the user to be admitted again once the run finished: %s", err))
 }

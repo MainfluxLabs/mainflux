@@ -412,11 +412,56 @@ const pyLoop = `
 def answered(seq, status, sig, nonce):
     send(1, {"kind": "exit", "seq": seq, "status": status, "signal": sig, "nonce": nonce})
 
+MAX_FRAME = 8 * 1024 * 1024
+FILL = memoryview(bytes(65536))
+NULL = os.open(os.devnull, os.O_WRONLY)
+
+def read_upto(fd, n):
+    b = b""
+    while len(b) < n:
+        c = os.read(fd, n - len(b))
+        if not c:
+            break
+        b += c
+    return b
+
+def splice_all(src, dst, n):
+    while n:
+        moved = os.splice(src, dst, n)
+        if not moved:
+            break
+        n -= moved
+    return n
+
+def write_all(fd, data):
+    while data:
+        data = data[os.write(fd, data):]
+
+def relay(src):
+    while True:
+        hdr = read_upto(src, 4)
+        if len(hdr) < 4:
+            return
+        n = struct.unpack(">I", hdr)[0]
+        if n > MAX_FRAME:
+            splice_all(src, NULL, n)
+            continue
+        write_all(DATA, hdr)
+        left = splice_all(src, DATA, n)
+        while left:
+            k = min(left, len(FILL))
+            write_all(DATA, FILL[:k])
+            left -= k
+
 def fork_and_wait(seq, target):
     ack_r, ack_w = os.pipe()
+    out_r, out_w = os.pipe()
     pid = os.fork()
     if pid == 0:
         os.close(ack_r)
+        os.close(out_r)
+        os.dup2(out_w, DATA)
+        os.close(out_w)
         job = recv(0)
         if job is None:
             os._exit(1)
@@ -426,7 +471,10 @@ def fork_and_wait(seq, target):
         os._exit(0)
 
     os.close(ack_w)
+    os.close(out_w)
     send(1, {"kind": "pid", "pid": pid, "seq": seq})
+    relay(out_r)
+    os.close(out_r)
     _, status = os.waitpid(pid, 0)
     taken = os.read(ack_r, 1)
     os.close(ack_r)
@@ -437,8 +485,8 @@ def fork_and_wait(seq, target):
         pass
 
     # The nonce is minted after the child is dead, so a script cannot emit it.
-    # Go sees its echo on the data channel only if the stream is frame-aligned;
-    # a partial frame swallows it and the worker is retired.
+    # The child writes to its own pipe and relay forwards only whole frames,
+    # padding a frame the child left short, so the echo arrives aligned.
     nonce = os.urandom(16).hex()
     send(DATA, {"kind": "flush", "seq": seq, "nonce": nonce})
     answered(seq,

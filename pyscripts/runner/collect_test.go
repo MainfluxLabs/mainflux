@@ -249,8 +249,8 @@ func TestCollectorSpoiled(t *testing.T) {
 	}{
 		{desc: "keep a worker after a clean run", spoiled: false},
 		{desc: "keep a worker after a frame from another job", crossed: true, spoiled: false},
-		{desc: "retire a worker after the output cap", over: true, spoiled: true},
-		{desc: "retire a worker after a timeout", fired: true, spoiled: true},
+		{desc: "keep a worker after the output cap", over: true, spoiled: false},
+		{desc: "keep a worker after a timeout", fired: true, spoiled: false},
 		{desc: "retire a worker whose drain overran", overran: true, spoiled: true},
 	}
 

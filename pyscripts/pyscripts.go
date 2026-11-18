@@ -103,6 +103,7 @@ type Result struct {
 	Error      string
 	StartedAt  time.Time
 	FinishedAt time.Time
+	Retired    bool
 }
 
 type Runner interface {

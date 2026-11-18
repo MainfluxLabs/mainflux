@@ -8,8 +8,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"sync"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -19,15 +21,46 @@ import (
 const (
 	groupRate  = rate.Limit(2)
 	groupBurst = 10
+
+	retiredHold = 2 * time.Second
 )
 
 type groupRateLimiter struct {
 	limiters sync.Map // groupID -> *rate.Limiter
+	busy     sync.Map // groupID or "user:"+subject -> struct{} while it holds a worker
 }
 
-func (g *groupRateLimiter) allow(groupID string) bool {
+// allow admits one worker job for the group and the token's user, and returns
+// the func that ends it. Each holds at most one worker at a time, so neither a
+// group nor a user with many groups can occupy the pool shared with everyone.
+// The token has already been verified by the group access check, so its
+// subject identifies the user.
+func (g *groupRateLimiter) allow(groupID, token string) (func(), bool) {
+	keys := []string{groupID}
+	if user := authn.EmailFromToken(token); user != "" {
+		keys = append(keys, "user:"+user)
+	}
+
+	release := func(keys []string) {
+		for _, k := range keys {
+			g.busy.Delete(k)
+		}
+	}
+
+	for i, k := range keys {
+		if _, held := g.busy.LoadOrStore(k, struct{}{}); held {
+			release(keys[:i])
+			return nil, false
+		}
+	}
+
 	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(groupRate, groupBurst))
-	return l.(*rate.Limiter).Allow()
+	if !l.(*rate.Limiter).Allow() {
+		release(keys)
+		return nil, false
+	}
+
+	return func() { release(keys) }, true
 }
 
 func (g *groupRateLimiter) remove(groupID string) {
@@ -96,9 +129,11 @@ func (ps *pyscriptsService) CreateScripts(ctx context.Context, token, groupID st
 		return []Script{}, err
 	}
 
-	if !ps.groupLimiter.allow(groupID) {
+	done, ok := ps.groupLimiter.allow(groupID, token)
+	if !ok {
 		return []Script{}, ErrRateLimited
 	}
+	defer done()
 
 	for i := range scripts {
 		if err := ps.validateSource(ctx, scripts[i].Source); err != nil {
@@ -149,9 +184,11 @@ func (ps *pyscriptsService) UpdateScript(ctx context.Context, token string, scri
 		return err
 	}
 
-	if !ps.groupLimiter.allow(existing.GroupID) {
+	done, ok := ps.groupLimiter.allow(existing.GroupID, token)
+	if !ok {
 		return ErrRateLimited
 	}
+	defer done()
 
 	if err := ps.validateSource(ctx, script.Source); err != nil {
 		return err
@@ -203,11 +240,20 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	if !ps.groupLimiter.allow(script.GroupID) {
+	done, ok := ps.groupLimiter.allow(script.GroupID, token)
+	if !ok {
 		return ScriptRun{}, ErrRateLimited
 	}
 
+	// A run that retired its worker keeps the group's slot for retiredHold, so
+	// one group cannot retire workers faster than the pool respawns them.
 	res, err := ps.runner.Run(ctx, script.Source, in)
+	switch {
+	case res.Retired:
+		time.AfterFunc(retiredHold, done)
+	default:
+		done()
+	}
 	if err != nil {
 		return ScriptRun{}, err
 	}

@@ -41,13 +41,13 @@ sum(readings) / len(readings)
 
 A script that raises still returns `200 OK`, with `status: "fail"` and the traceback in `error`. Other status codes:
 
-| Status | Cause                                                                  |
-|--------|------------------------------------------------------------------------|
-| `429`  | The group exceeded its rate limit (2 requests/s, burst of 10)          |
-| `503`  | No worker became free within `MF_PYSCRIPTS_ACQUIRE_TIMEOUT`            |
-| `500`  | The runner failed for a reason outside the script                      |
+| Status | Cause                                                                                                                 |
+|--------|-----------------------------------------------------------------------------------------------------------------------|
+| `429`  | The group exceeded its rate limit (2 requests/s, burst of 10), or the group or user already has a request in progress |
+| `503`  | No worker became free within `MF_PYSCRIPTS_ACQUIRE_TIMEOUT`                                                           |
+| `500`  | The runner failed for a reason outside the script                                                                     |
 
-The rate limit is per group and applies to creating, updating and running scripts.
+The rate limit is per group and applies to creating, updating and running scripts. Those requests each occupy a worker, so a group, and a user across all of their groups, may have only one of them in progress at a time. A run that leaves its worker unusable keeps the group and user busy for another 2 seconds.
 
 `GET /scripts/:id/runs` lists a script's runs, newest first by default (`order=started_at`, `dir=desc`), and can be filtered by `status` (`success`, `fail`) and a `from`/`to` range in Unix milliseconds. Run history is kept until it is removed with `PATCH /runs`.
 

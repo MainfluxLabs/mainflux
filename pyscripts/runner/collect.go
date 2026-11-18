@@ -141,10 +141,13 @@ func (c *collector) finish(exit ctlFrame, d *deadline) outcome {
 }
 
 // spoiled reports whether the worker may still hold frames from this run, in
-// which case it is retired. A crossed frame does not count: the next collector
-// drops it by its sequence number.
-func (c *collector) spoiled(d *deadline) bool {
-	return c.over || d.fired || c.overran
+// which case it is retired. Only a drain that missed the flush sentinel counts:
+// a run cut short by its deadline or output cap is still drained to the
+// sentinel, and the worker relays only whole frames, so the stream is aligned.
+// A crossed frame does not count either: the next collector drops it by its
+// sequence number.
+func (c *collector) spoiled(_ *deadline) bool {
+	return c.overran
 }
 
 // deadline arms a run's timeout exactly once. A context's Done channel stays

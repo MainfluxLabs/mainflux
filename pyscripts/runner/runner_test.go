@@ -247,7 +247,8 @@ func TestRunTimeout(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected run error: %s", err))
 	assert.Equal(t, "timeout after 200ms", res.Error, "expected the run to time out")
 	assert.Nil(t, res.Value, "expected no value from a timed out run")
-	assert.Equal(t, 0, len(p.free), "expected the worker to be retired after a timeout")
+	assert.Equal(t, 1, len(p.free), "expected the worker to be kept after a timeout")
+	assert.False(t, res.Retired, "expected the result not to report a retired worker")
 
 	pid := <-children
 	assert.Equal(t, syscall.ESRCH, syscall.Kill(pid, 0), "expected the run to be killed")
@@ -267,7 +268,6 @@ func TestRunCancelled(t *testing.T) {
 	res, err := p.Run(ctx, runCode, Input{})
 	require.Nil(t, err, fmt.Sprintf("unexpected run error: %s", err))
 	assert.Equal(t, "run cancelled by the caller", res.Error, "expected the run to record the cancellation")
-	assert.Equal(t, 0, len(p.free), "expected the worker to be retired after a cancellation")
 }
 
 func TestValidate(t *testing.T) {
@@ -419,6 +419,19 @@ func TestRunSandboxed(t *testing.T) {
 			code: "while True: pass",
 			err:  "timeout after 2s",
 		},
+		{
+			desc: "survive a partial frame written to the result channel",
+			code: "import os\nos.write(3, b'\\x00\\x00\\x10\\x00x')",
+		},
+		{
+			desc: "survive an oversized frame header written to the result channel",
+			code: "import os\nos.write(3, b'\\xff\\xff\\xff\\xff' + b'x' * 100)",
+		},
+		{
+			desc: "stop a script that floods its output",
+			code: "while True: print('x' * 4096)",
+			err:  "output limit exceeded",
+		},
 	}
 
 	for _, tc := range cases {
@@ -428,6 +441,11 @@ func TestRunSandboxed(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected run error: %s", tc.desc, err))
 		assert.Equal(t, tc.value, res.Value, fmt.Sprintf("%s: unexpected value", tc.desc))
 		assert.Contains(t, res.Error, tc.err, fmt.Sprintf("%s: unexpected error %q", tc.desc, res.Error))
+		assert.False(t, res.Retired, fmt.Sprintf("%s: expected the worker to be kept", tc.desc))
+
+		res, err = p.Run(context.Background(), runCode, Input{})
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error on the next run: %s", tc.desc, err))
+		assert.Equal(t, json.Number("3"), res.Value, fmt.Sprintf("%s: expected the same worker to serve the next run", tc.desc))
 	}
 }
 

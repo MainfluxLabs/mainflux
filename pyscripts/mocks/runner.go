@@ -20,6 +20,7 @@ type Runner struct {
 	Invalid     map[string]string
 	ValidateErr error
 	Closed      bool
+	Gate        chan struct{}
 }
 
 func NewRunner() *Runner {
@@ -27,6 +28,11 @@ func NewRunner() *Runner {
 }
 
 func (r *Runner) Run(_ context.Context, _ string, in pyscripts.Input) (pyscripts.Result, error) {
+	if r.Gate != nil {
+		r.Gate <- struct{}{}
+		r.Gate <- struct{}{}
+	}
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

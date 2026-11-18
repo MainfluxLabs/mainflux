@@ -278,6 +278,7 @@ func (p *pool) onWorker(ctx context.Context, job func(*worker, context.Context) 
 				p.release(w)
 			}
 
+			res.Retired = w.dirty
 			return res, nil
 		}
 
