@@ -230,8 +230,13 @@ func TestCreateUpdate(t *testing.T) {
 		}
 		res, err := req.make()
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		res.Body.Close()
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		if tc.status == http.StatusCreated {
+			var body map[string]any
+			require.Nil(t, json.NewDecoder(res.Body).Decode(&body), fmt.Sprintf("%s: invalid response body", tc.desc))
+			assert.Equal(t, ota.UpdateStatusInProgress, body["status"], fmt.Sprintf("%s: status mismatch", tc.desc))
+		}
+		res.Body.Close()
 	}
 }
 

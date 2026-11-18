@@ -114,6 +114,7 @@ func TestCreateUpdate(t *testing.T) {
 
 		assert.Equal(t, groupID, u.GroupID, fmt.Sprintf("%s: group mismatch", tc.desc))
 		assert.Equal(t, ota.UpdateStats{Targets: 1, Pending: 1}, u.Stats, fmt.Sprintf("%s: stats mismatch", tc.desc))
+		assert.Equal(t, ota.UpdateStatusInProgress, u.Status, fmt.Sprintf("%s: status mismatch", tc.desc))
 
 		cmds := pub.Commands(nats.GetOTASubject(thingID, nats.OTAUpdateSubtopic))
 		require.Len(t, cmds, 1, fmt.Sprintf("%s: expected one OTA command", tc.desc))
