@@ -1,7 +1,9 @@
 openapi: 3.0.1
 info:
   title: Mainflux webrtc service
-  description: HTTP API for viewing live media published by things through the WebRTC SFU.
+  description: |
+    HTTP API for viewing live media published by things through the WebRTC SFU,
+    and for exchanging messages with things over WebRTC data channels.
   version: 1.0.0
 
 paths:
@@ -29,7 +31,12 @@ paths:
       summary: Views the live stream of a thing
       description: |
         Sends an SDP offer and returns the SDP answer once ICE gathering is complete.
-        The user must have viewer access to the thing, and the thing must have an active publisher.
+        The user must have viewer access to the thing, and the thing must have an active publisher:
+        a session with at least one media track or one open data channel.
+
+        Data channels opened in the offer are bridged by label to the thing's data channel with the same label.
+        Messages from the viewer go to the thing, and messages from the thing go to every viewer that has that label open.
+        Text and binary message types are kept.
       tags:
         - webrtc
       security:
@@ -56,7 +63,7 @@ paths:
         '403':
           description: Failed to perform authorization over the entity.
         '404':
-          description: Thing has no active publisher.
+          description: Thing has no active publisher, or its session has no media track or open data channel yet.
         '415':
           description: Missing or invalid content type.
         '500':
