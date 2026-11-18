@@ -38,26 +38,29 @@ func (ar *alarmRepository) Save(ctx context.Context, alarms ...alarms.Alarm) err
 	q := `INSERT INTO alarms (id, thing_id, group_id, rule_id, script_id, subtopic, protocol, rule, level, status, created)
 	      VALUES (:id, :thing_id, :group_id, :rule_id, :script_id, :subtopic, :protocol, :rule, :level, :status, :created);`
 
+	dbAlarms := make([]dbAlarm, 0, len(alarms))
 	for _, alarm := range alarms {
 		dbAlarm, err := toDBAlarm(alarm)
 		if err != nil {
 			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbAlarm); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
+		dbAlarms = append(dbAlarms, dbAlarm)
+	}
+
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbAlarms); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
