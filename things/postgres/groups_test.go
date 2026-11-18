@@ -86,6 +86,27 @@ func TestSaveGroup(t *testing.T) {
 		_, err := groupRepo.Save(context.Background(), tc.group)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+
+	grs := []things.Group{
+		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-1"},
+		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-2"},
+	}
+	invalidGr := things.Group{ID: generateUUID(t), OrgID: orgID, Name: invalidName}
+	_, err := groupRepo.Save(context.Background(), append(grs, invalidGr)...)
+	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
+		fmt.Sprintf("unexpected error: %s\n", err))
+	for _, gr := range grs {
+		_, err := groupRepo.RetrieveByID(context.Background(), gr.ID)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+			fmt.Sprintf("unexpected error: %s\n", err))
+	}
+
+	_, err = groupRepo.Save(context.Background(), grs...)
+	assert.Nil(t, err, fmt.Sprintf("save new groups: expected no error got %s\n", err))
+	for _, gr := range grs {
+		_, err := groupRepo.RetrieveByID(context.Background(), gr.ID)
+		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+	}
 }
 
 func TestRetrieveGroupByID(t *testing.T) {

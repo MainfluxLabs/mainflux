@@ -100,6 +100,14 @@ func TestSave(t *testing.T) {
 		err := groupMembershipsRepo.Save(context.Background(), tc.gms...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+
+	newGm := things.GroupMembership{MemberID: generateUUID(t), GroupID: gr.ID, Role: things.Viewer}
+	err = groupMembershipsRepo.Save(context.Background(), newGm, gmsWithoutMemberIDs[0])
+	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
+		fmt.Sprintf("unexpected error: %s\n", err))
+	_, err = groupMembershipsRepo.RetrieveRole(context.Background(), newGm)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+		fmt.Sprintf("unexpected error: %s\n", err))
 }
 
 func TestRetrieveRole(t *testing.T) {

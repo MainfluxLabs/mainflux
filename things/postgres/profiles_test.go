@@ -76,6 +76,15 @@ func TestSaveProfiles(t *testing.T) {
 		_, err := profileRepo.Save(context.Background(), cc.profiles...)
 		assert.True(t, errors.Contains(err, cc.err), fmt.Sprintf("%s: expected %s got %s\n", cc.desc, cc.err, err))
 	}
+
+	newPr := things.Profile{ID: generateUUID(t), GroupID: group.ID, Name: profileName}
+	invalidPr := things.Profile{ID: "invalid", GroupID: group.ID, Name: profileName + "-invalid"}
+	_, err := profileRepo.Save(context.Background(), newPr, invalidPr)
+	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
+		fmt.Sprintf("unexpected error: %s\n", err))
+	_, err = profileRepo.RetrieveByID(context.Background(), newPr.ID)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+		fmt.Sprintf("unexpected error: %s\n", err))
 }
 
 func TestUpdateProfile(t *testing.T) {

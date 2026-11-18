@@ -114,6 +114,21 @@ func TestSaveThings(t *testing.T) {
 		_, err := thingRepo.Save(context.Background(), tc.things...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
+
+	newTh := things.Thing{
+		ID:        generateUUID(t),
+		GroupID:   group.ID,
+		ProfileID: prID,
+		Name:      thingName,
+		Key:       generateUUID(t),
+	}
+	invalidTh := things.Thing{ID: "invalid", GroupID: group.ID, ProfileID: prID, Key: generateUUID(t)}
+	_, err = thingRepo.Save(context.Background(), newTh, invalidTh)
+	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
+		fmt.Sprintf("unexpected error: %s\n", err))
+	_, err = thingRepo.RetrieveByID(context.Background(), newTh.ID)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+		fmt.Sprintf("unexpected error: %s\n", err))
 }
 
 func TestUpdateThing(t *testing.T) {
