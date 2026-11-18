@@ -172,6 +172,10 @@ func TestDelete(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 	unknownID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID2, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	orgID3, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	org := auth.Org{
 		ID:          orgID,
@@ -181,56 +185,94 @@ func TestDelete(t *testing.T) {
 		Metadata:    map[string]any{"key": "value"},
 	}
 
-	err = repo.Save(context.Background(), org)
+	org2 := auth.Org{
+		ID:          orgID2,
+		OwnerID:     ownerID,
+		Name:        orgName + "2",
+		Description: orgDesc,
+	}
+
+	org3 := auth.Org{
+		ID:          orgID3,
+		OwnerID:     ownerID,
+		Name:        orgName + "3",
+		Description: orgDesc,
+	}
+
+	err = repo.Save(context.Background(), org, org2, org3)
 	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 
 	cases := []struct {
-		desc    string
-		orgID   string
-		ownerID string
-		err     error
+		desc        string
+		orgIDs      []string
+		ownerID     string
+		retainedIDs []string
+		err         error
 	}{
 		{
 			desc:    "remove org with invalid org id",
-			orgID:   invalidID,
+			orgIDs:  []string{invalidID},
 			ownerID: ownerID,
 			err:     dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:    "remove org with unknown org id",
-			orgID:   unknownID,
+			orgIDs:  []string{unknownID},
 			ownerID: ownerID,
 			err:     dbutil.ErrRemoveEntity,
 		},
 		{
 			desc:    "remove org with invalid owner id",
-			orgID:   orgID,
+			orgIDs:  []string{orgID},
 			ownerID: invalidID,
 			err:     dbutil.ErrMalformedEntity,
 		},
 		{
 			desc:    "remove org with unknown owner id",
-			orgID:   orgID,
+			orgIDs:  []string{orgID},
 			ownerID: unknownID,
 			err:     dbutil.ErrRemoveEntity,
 		},
 		{
+			desc:        "remove orgs with an unknown org id",
+			orgIDs:      []string{orgID, orgID2, orgID3, unknownID},
+			ownerID:     ownerID,
+			retainedIDs: []string{orgID, orgID2, orgID3},
+			err:         dbutil.ErrRemoveEntity,
+		},
+		{
 			desc:    "remove org",
-			orgID:   orgID,
+			orgIDs:  []string{orgID},
+			ownerID: ownerID,
+			err:     nil,
+		},
+		{
+			desc:    "remove orgs",
+			orgIDs:  []string{orgID2, orgID3},
 			ownerID: ownerID,
 			err:     nil,
 		},
 		{
 			desc:    "remove removed org",
-			orgID:   orgID,
+			orgIDs:  []string{orgID},
 			ownerID: ownerID,
 			err:     dbutil.ErrRemoveEntity,
 		},
 	}
 
 	for _, tc := range cases {
-		err := repo.Remove(context.Background(), tc.ownerID, tc.orgID)
+		err := repo.Remove(context.Background(), tc.ownerID, tc.orgIDs...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.retainedIDs {
+			_, err := repo.RetrieveByID(context.Background(), id)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected %s retained got %s\n", tc.desc, id, err))
+		}
+	}
+
+	for _, id := range []string{orgID, orgID2, orgID3} {
+		_, err := repo.RetrieveByID(context.Background(), id)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", id, err))
 	}
 }
 

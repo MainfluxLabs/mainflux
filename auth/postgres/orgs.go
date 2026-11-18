@@ -97,44 +97,51 @@ func (or orgRepository) Update(ctx context.Context, org auth.Org) error {
 }
 
 func (or orgRepository) Remove(ctx context.Context, ownerID string, orgIDs ...string) error {
-	qd := `DELETE FROM orgs WHERE id = :id AND owner_id = :owner_id;`
-	for _, orgID := range orgIDs {
-		org := auth.Org{
-			ID:      orgID,
-			OwnerID: ownerID,
-		}
-		dbo, err := toDBOrg(org)
-		if err != nil {
-			return errors.Wrap(dbutil.ErrUpdateEntity, err)
-		}
-
-		res, err := or.db.NamedExecContext(ctx, qd, dbo)
-		if err != nil {
-			pqErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pqErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					switch pqErr.ConstraintName {
-					case membershipsIDFkey:
-						return errors.Wrap(auth.ErrOrgNotEmpty, err)
-					}
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
-			}
-			return errors.Wrap(dbutil.ErrUpdateEntity, err)
-		}
-
-		cnt, err := res.RowsAffected()
-		if err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
-
-		if cnt != 1 {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	tx, err := or.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
+	defer tx.Rollback()
+
+	qd := `DELETE FROM orgs WHERE id = ANY(:ids) AND owner_id = :owner_id;`
+
+	params := map[string]any{
+		"ids":      orgIDs,
+		"owner_id": ownerID,
+	}
+
+	res, err := tx.NamedExecContext(ctx, qd, params)
+	if err != nil {
+		pqErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pqErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				switch pqErr.ConstraintName {
+				case membershipsIDFkey:
+					return errors.Wrap(auth.ErrOrgNotEmpty, err)
+				}
+				return errors.Wrap(dbutil.ErrConflict, err)
+			}
+		}
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	// The transaction is rolled back when any org does not exist or belongs to another owner.
+	if cnt != int64(len(orgIDs)) {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
 	return nil
 }
 
