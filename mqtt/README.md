@@ -12,6 +12,10 @@ messages/<subtopic>
 
 `<subtopic>` is optional and can be any path-like string (e.g. `messages/sensors/temperature`).
 
+Things receive firmware updates from the OTA service on `things/<thing_id>/ota/update` and report
+their progress on `things/<thing_id>/ota/status`. A thing can subscribe and publish only to its own
+OTA topics, and only the OTA service publishes updates.
+
 ## Authentication
 
 Things authenticate over MQTT using:
@@ -22,7 +26,7 @@ Things authenticate over MQTT using:
 ## Ports
 
 | Port | Protocol | Description                                                                             |
-|------|----------|-----------------------------------------------------------------------------------------|
+| ---- | -------- | --------------------------------------------------------------------------------------- |
 | 1883 | MQTT     | Plain MQTT                                                                              |
 | 8883 | MQTTS    | MQTT over TLS (requires `MF_MQTT_ADAPTER_SERVER_CERT` and `MF_MQTT_ADAPTER_SERVER_KEY`) |
 | 8285 | WS       | MQTT over WebSocket                                                                     |
@@ -48,7 +52,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 The service is configured using the environment variables presented in the following table. Note that any unset variables will be replaced with their default values.
 
 | Variable                                   | Description                                                                | Default                  |
-|--------------------------------------------|----------------------------------------------------------------------------|--------------------------|
+| ------------------------------------------ | -------------------------------------------------------------------------- | ------------------------ |
 | `MF_MQTT_ADAPTER_LOG_LEVEL`                | Log level (debug, info, warn, error)                                       | error                    |
 | `MF_MQTT_ADAPTER_MQTT_PORT`                | Listening MQTT port                                                        | 1883                     |
 | `MF_MQTT_ADAPTER_MQTT_TARGET_HOST`         | Upstream MQTT broker host                                                  | 0.0.0.0                  |
@@ -131,4 +135,3 @@ $GOBIN/mainfluxlabs-mqtt
 Connect any MQTT client to port `1883` (plain) or `8883` (TLS) using a Thing key as the password. Publish messages to `messages/<subtopic>` to send them through the platform.
 
 For the full API reference, see the [AsyncAPI documentation](https://github.com/MainfluxLabs/mainflux/blob/master/api/asyncapi/mqtt.yml).
-

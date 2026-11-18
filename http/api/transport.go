@@ -116,8 +116,8 @@ func decodeRequest(_ context.Context, r *http.Request) (any, error) {
 		msg: protomfx.Message{
 			Protocol: protocol,
 			Subtopic: subtopic,
-			Payload:  payload,
 			Created:  time.Now().UnixNano(),
+			Records:  []*protomfx.Record{{Payload: payload}},
 		},
 		ThingKey: apiutil.ExtractThingKey(r),
 	}

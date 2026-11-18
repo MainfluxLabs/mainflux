@@ -211,6 +211,15 @@ func (ms *metricsMiddleware) EnableUser(ctx context.Context, token string, id st
 	return ms.svc.EnableUser(ctx, token, id)
 }
 
+func (ms *metricsMiddleware) Impersonate(ctx context.Context, token string, id string) (string, error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "impersonate").Add(1)
+		ms.latency.With("method", "impersonate").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.Impersonate(ctx, token, id)
+}
+
 func (ms *metricsMiddleware) DisableUser(ctx context.Context, token string, id string) (err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "disable_user").Add(1)
@@ -218,6 +227,24 @@ func (ms *metricsMiddleware) DisableUser(ctx context.Context, token string, id s
 	}(time.Now())
 
 	return ms.svc.DisableUser(ctx, token, id)
+}
+
+func (ms *metricsMiddleware) AssignAdminRole(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "assign_admin_role").Add(1)
+		ms.latency.With("method", "assign_admin_role").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.AssignAdminRole(ctx, token, id)
+}
+
+func (ms *metricsMiddleware) UnassignAdminRole(ctx context.Context, token string, id string) (err error) {
+	defer func(begin time.Time) {
+		ms.counter.With("method", "unassign_admin_role").Add(1)
+		ms.latency.With("method", "unassign_admin_role").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.UnassignAdminRole(ctx, token, id)
 }
 
 func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.User, []users.User, []users.Identity, error) {

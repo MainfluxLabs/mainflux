@@ -17,6 +17,8 @@ const (
 	removeOrgMemberships    = "remove_org_memberships"
 	updateOrgMemberships    = "update_org_memberships"
 	retrieveOrgMemberships  = "retrieve_org_memberships"
+	retrieveAdminsByOrg     = "retrieve_admins_by_org"
+	retrieveOrgIDsByAdmin   = "retrieve_org_ids_by_admin"
 	backupAllOrgMemberships = "backup_all_org_memberships"
 )
 
@@ -73,6 +75,22 @@ func (orm orgMembershipsRepositoryMiddleware) RetrieveByOrg(ctx context.Context,
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return orm.repo.RetrieveByOrg(ctx, orgID, pm)
+}
+
+func (orm orgMembershipsRepositoryMiddleware) RetrieveAdminsByOrg(ctx context.Context, orgID string) ([]auth.OrgMembership, error) {
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveAdminsByOrg)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveAdminsByOrg(ctx, orgID)
+}
+
+func (orm orgMembershipsRepositoryMiddleware) RetrieveOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	span := dbutil.CreateSpan(ctx, orm.tracer, retrieveOrgIDsByAdmin)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return orm.repo.RetrieveOrgIDsByAdmin(ctx, memberID)
 }
 
 func (orm orgMembershipsRepositoryMiddleware) BackupAll(ctx context.Context) ([]auth.OrgMembership, error) {

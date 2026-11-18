@@ -156,8 +156,13 @@ func encodeListSenMLMessagesResponse(_ context.Context, grpcRes any) (any, error
 			ThingId:     sm.ThingID,
 			Subtopic:    sm.Subtopic,
 			Protocol:    sm.Protocol,
-			Payload:     payload,
 			ContentType: "application/senml+json",
+			Records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    sm.Time,
+				},
+			},
 		})
 	}
 

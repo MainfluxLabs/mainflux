@@ -5,7 +5,6 @@ package domain
 
 import (
 	"context"
-	"regexp"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/email"
@@ -36,13 +35,9 @@ var UserOrderFields = map[string]string{
 }
 
 // Validate returns an error if user representation is invalid.
-func (u User) Validate(passRegex *regexp.Regexp) error {
+func (u User) Validate() error {
 	if !email.IsEmail(u.Email) {
 		return errors.ErrMalformedEntity
-	}
-
-	if !passRegex.MatchString(u.Password) {
-		return errors.ErrPasswordFormat
 	}
 
 	return nil

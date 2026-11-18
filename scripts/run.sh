@@ -38,7 +38,7 @@ done
 ###
 # Users
 ###
-MF_USERS_LOG_LEVEL=info MF_USERS_ADMIN_EMAIL=admin@mainflux.com MF_USERS_ADMIN_PASSWORD=12345678 MF_EMAIL_TEMPLATE=../docker/templates/users.tmpl $BUILD_DIR/mainfluxlabs-users &
+MF_USERS_LOG_LEVEL=info MF_USERS_ADMIN_EMAIL=admin@mainflux.com MF_USERS_ADMIN_PASSWORD=mainflux-pass MF_USERS_PASS_MIN_LENGTH=8 MF_EMAIL_TEMPLATE=../docker/templates/users.tmpl $BUILD_DIR/mainfluxlabs-users &
 
 ###
 # Things
@@ -63,7 +63,7 @@ MF_COAP_ADAPTER_LOG_LEVEL=info MF_COAP_ADAPTER_PORT=5683 MF_THINGS_AUTH_GRPC_URL
 ###
 # AUTH
 ###
-MF_AUTH_LOG_LEVEL=debug MF_AUTH_HTTP_PORT=8189 MF_AUTH_GRPC_PORT=8181 MF_AUTH_DB_PORT=5432 MF_AUTH_DB_USER=mainflux MF_AUTH_DB_PASS=mainflux MF_AUTH_DB=auth MF_AUTH_SECRET=secret MF_AUTH_LOGIN_TOKEN_DURATION=10h $BUILD_DIR/mainfluxlabs-auth &
+MF_AUTH_LOG_LEVEL=debug MF_AUTH_HTTP_PORT=8189 MF_AUTH_GRPC_PORT=8181 MF_AUTH_DB_PORT=5432 MF_AUTH_DB_USER=mainflux MF_AUTH_DB_PASS=mainflux MF_AUTH_DB=auth MF_AUTH_SECRET=mainflux-dev-only-change-in-production MF_AUTH_LOGIN_TOKEN_DURATION=10h $BUILD_DIR/mainfluxlabs-auth &
 
 trap cleanup EXIT
 

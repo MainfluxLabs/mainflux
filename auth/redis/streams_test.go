@@ -17,6 +17,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/redis"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
@@ -145,6 +146,77 @@ func TestCreateOrg(t *testing.T) {
 		}
 
 		assert.Equal(t, oc.event, event, fmt.Sprintf("%s: expected %v got %v\n", oc.desc, oc.event, event))
+	}
+}
+
+func TestIssue(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := withEventStore(t, newService())
+
+	impersonator := domain.Identity{
+		ID:    "root-id",
+		Email: "root@test.com",
+	}
+
+	cases := []struct {
+		desc  string
+		key   auth.Key
+		event map[string]any
+	}{
+		{
+			desc: "issue login key",
+			key: auth.Key{
+				Type:     auth.LoginKey,
+				IssuedAt: time.Now(),
+				IssuerID: ownerID,
+				Subject:  ownerEmail,
+			},
+			event: nil,
+		},
+		{
+			desc: "issue impersonated login key",
+			key: auth.Key{
+				Type:         auth.LoginKey,
+				IssuedAt:     time.Now(),
+				IssuerID:     ownerID,
+				Subject:      ownerEmail,
+				Impersonator: &impersonator,
+			},
+			event: map[string]any{
+				"operation":               events.UserImpersonate,
+				"id":                      ownerID,
+				"email":                   ownerEmail,
+				"jwt_identity_user_id":    impersonator.ID,
+				"jwt_identity_user_email": impersonator.Email,
+				"evt_org_id":              "",
+				"evt_group_id":            "",
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, _, err := svc.Issue(context.Background(), "", tc.key)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		streams := redisClient.XRead(context.Background(), &r.XReadArgs{
+			Streams: []string{events.AuthStream, lastID},
+			Count:   1,
+			Block:   time.Second,
+		}).Val()
+
+		var event map[string]any
+		if len(streams) > 0 && len(streams[0].Messages) > 0 {
+			msg := streams[0].Messages[0]
+			event = msg.Values
+			lastID = msg.ID
+
+			assert.NotEmpty(t, event["occurred_at"], tc.desc)
+			delete(event, "occurred_at")
+		}
+
+		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
 	}
 }
 

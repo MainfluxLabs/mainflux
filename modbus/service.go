@@ -694,7 +694,7 @@ func (cs *clientsService) LoadAndScheduleTasks(ctx context.Context) error {
 func (cs *clientsService) publish(config *domain.ProfileConfig, thingID string, payload []byte) error {
 	msg := protomfx.Message{
 		Protocol: modbusProtocol,
-		Payload:  payload,
+		Records:  []*protomfx.Record{{Payload: payload}},
 	}
 
 	pc := domain.PubConfigInfo{ThingID: thingID, ProfileConfig: config}

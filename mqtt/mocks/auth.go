@@ -31,6 +31,10 @@ func (svc authServiceMock) Identify(_ context.Context, token string) (domain.Ide
 	return domain.Identity{}, errors.ErrAuthentication
 }
 
+func (svc authServiceMock) IdentifyRecovery(_ context.Context, _ string) (domain.Identity, error) {
+	return domain.Identity{}, errors.ErrAuthentication
+}
+
 func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string, error) {
 	id, ok := svc.users[token]
 	if !ok {
@@ -42,6 +46,14 @@ func (svc authServiceMock) RefreshToken(_ context.Context, token string) (string
 
 func (svc authServiceMock) RevokeSessions(_ context.Context, id string) error {
 	return nil
+}
+
+func (svc authServiceMock) RevokeAPIKeys(_ context.Context, id string) error {
+	return nil
+}
+
+func (svc authServiceMock) IssueImpersonated(_ context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	return "", errors.ErrAuthorization
 }
 
 func (svc authServiceMock) Issue(_ context.Context, id, email string, keyType uint32) (string, error) {
@@ -74,6 +86,14 @@ func (svc authServiceMock) RetrieveRole(context.Context, string) (string, error)
 	panic("not implemented")
 }
 
+func (svc authServiceMock) RetrieveRoles(context.Context, []string) (map[string]string, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) UnassignRole(context.Context, string) error {
+	panic("not implemented")
+}
+
 func (svc authServiceMock) CreateDormantOrgInvite(context.Context, string, string, string, string, []domain.GroupInvite) error {
 	panic("not implemented")
 }
@@ -87,5 +107,17 @@ func (svc authServiceMock) GetDormantOrgInviteByPlatformInvite(context.Context, 
 }
 
 func (svc authServiceMock) ViewOrg(context.Context, string, string) (domain.Org, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) GetAdminsByOrg(context.Context, string) ([]domain.OrgMembership, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) GetOrgIDsByAdmin(context.Context, string) ([]string, error) {
+	panic("not implemented")
+}
+
+func (svc authServiceMock) GetOrgMembership(context.Context, string, string) (domain.OrgMembership, error) {
 	panic("not implemented")
 }

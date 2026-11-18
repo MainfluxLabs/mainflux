@@ -47,7 +47,6 @@ func TestListJSONMessages(t *testing.T) {
 		ThingId:     id1,
 		Subtopic:    subtopic,
 		Protocol:    coapProt,
-		Payload:     payload,
 		ContentType: jsonCT,
 	}
 
@@ -56,6 +55,12 @@ func TestListJSONMessages(t *testing.T) {
 	for i := 0; i < msgsNum; i++ {
 		msg := m
 		msg.Created = created + int64(i)
+		msg.Records = []*protomfx.Record{
+			{
+				Payload: payload,
+				Time:    msg.Created,
+			},
+		}
 		messages = append(messages, msg)
 	}
 
@@ -73,13 +78,18 @@ func TestListJSONMessages(t *testing.T) {
 		ThingId:     id2,
 		Subtopic:    subtopic,
 		Protocol:    udpProt,
-		Payload:     payload2,
 		ContentType: jsonCT,
 	}
 
 	for i := 0; i < msgsNum; i++ {
 		msg := m2
 		msg.Created = created + int64(i)
+		msg.Records = []*protomfx.Record{
+			{
+				Payload: payload2,
+				Time:    msg.Created,
+			},
+		}
 		if i%2 == 0 {
 			msg.Protocol = httpProt
 		}
@@ -165,9 +175,14 @@ func TestJSONAggregation(t *testing.T) {
 			ThingId:     thingID,
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
-			Payload:     payload,
 			ContentType: jsonCT,
 			Created:     now + int64(i),
+			Records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    now + int64(i),
+				},
+			},
 		}
 		err := writer.ConsumeMessage(subject, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -257,7 +272,6 @@ func TestDeleteJSONMessages(t *testing.T) {
 		ThingId:     id1,
 		Subtopic:    subtopic,
 		Protocol:    coapProt,
-		Payload:     payload,
 		ContentType: jsonCT,
 	}
 
@@ -266,6 +280,12 @@ func TestDeleteJSONMessages(t *testing.T) {
 	for i := 0; i < msgsNum; i++ {
 		msg := m
 		msg.Created = created + int64(i)
+		msg.Records = []*protomfx.Record{
+			{
+				Payload: payload,
+				Time:    msg.Created,
+			},
+		}
 		messages = append(messages, msg)
 	}
 
@@ -283,7 +303,6 @@ func TestDeleteJSONMessages(t *testing.T) {
 		ThingId:     id2,
 		Subtopic:    subtopic,
 		Protocol:    udpProt,
-		Payload:     payload2,
 		ContentType: jsonCT,
 	}
 
@@ -291,6 +310,12 @@ func TestDeleteJSONMessages(t *testing.T) {
 	for i := 0; i < msgsNum; i++ {
 		msg := m2
 		msg.Created = created + int64(i)
+		msg.Records = []*protomfx.Record{
+			{
+				Payload: payload2,
+				Time:    msg.Created,
+			},
+		}
 		if i%2 == 0 {
 			msg.Protocol = httpProt
 			httpMsgCount++
@@ -464,9 +489,14 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 			ThingId:     thingID,
 			Subtopic:    subtopic,
 			Protocol:    mqttProt,
-			Payload:     payload,
 			ContentType: jsonCT,
 			Created:     created + int64(i),
+			Records: []*protomfx.Record{
+				{
+					Payload: payload,
+					Time:    created + int64(i),
+				},
+			},
 		}
 		err = writer.ConsumeMessage(subject, msg)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -675,7 +705,7 @@ func fromJSON(msg []map[string]any) []readers.Message {
 
 func toMap(msg protomfx.Message) (map[string]any, error) {
 	var payload map[string]any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+	if err := json.Unmarshal(msg.Records[0].Payload, &payload); err != nil {
 		return nil, err
 	}
 

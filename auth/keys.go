@@ -65,6 +65,13 @@ type Keys interface {
 
 	// ListAPIKeys retrieves API keys.
 	ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error)
+
+	// RevokeAPIKeys removes every API key issued by the identified user.
+	RevokeAPIKeys(ctx context.Context, userID string) error
+
+	// IdentifyRecovery validates a password recovery token and returns
+	// the identity it was issued for. Any other token type is rejected.
+	IdentifyRecovery(ctx context.Context, token string) (Identity, error)
 }
 
 // KeyRepository specifies Key persistence API.
@@ -81,6 +88,9 @@ type KeyRepository interface {
 
 	// RetrieveAPIKeys retrieves all API Keys with pagination.
 	RetrieveAPIKeys(ctx context.Context, issuerID string, pm PageMetadata) (KeysPage, error)
+
+	// RemoveAPIKeys removes all API Keys issued by the provided issuer.
+	RemoveAPIKeys(ctx context.Context, issuerID string) error
 }
 
 func (svc service) Issue(ctx context.Context, token string, key Key) (Key, string, error) {
@@ -126,6 +136,10 @@ func (svc service) issueSessionKey(ctx context.Context, key Key, familyID string
 		FamilyID:  familyID,
 		StartedAt: startedAt,
 	}
+	if key.Impersonator != nil {
+		session.ImpersonatorID = key.Impersonator.ID
+	}
+
 	if err := svc.sessions.Save(ctx, session); err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
 	}
@@ -152,12 +166,14 @@ func (svc service) RefreshToken(ctx context.Context, token string) (string, erro
 		return "", errors.Wrap(errRefresh, err)
 	}
 
+	// The impersonator comes from the signed token, so it survives rotation unchanged.
 	_, secret, err := svc.tmpKey(svc.loginDuration, Key{
-		ID:       jti,
-		Type:     LoginKey,
-		IssuerID: key.IssuerID,
-		Subject:  key.Subject,
-		IssuedAt: getTimestamp(),
+		ID:           jti,
+		Type:         LoginKey,
+		IssuerID:     key.IssuerID,
+		Subject:      key.Subject,
+		IssuedAt:     getTimestamp(),
+		Impersonator: key.Impersonator,
 	})
 
 	if err != nil {
@@ -213,6 +229,15 @@ func (svc service) LogoutAll(ctx context.Context, token string) error {
 		return errors.Wrap(errLogout, err)
 	}
 
+	// An impersonated session ends only itself, so the impersonated user stays signed in.
+	if session.ImpersonatorID != "" {
+		if err := svc.sessions.RevokeFamily(ctx, session.FamilyID, getTimestamp()); err != nil {
+			return errors.Wrap(errLogout, err)
+		}
+
+		return nil
+	}
+
 	if err := svc.sessions.RevokeByUser(ctx, session.UserID, getTimestamp()); err != nil {
 		return errors.Wrap(errLogout, err)
 	}
@@ -241,15 +266,34 @@ func (svc service) liveSession(ctx context.Context, token string) (Session, erro
 	if err != nil {
 		return Session{}, err
 	}
-	if key.Type != LoginKey || key.IssuerID == "" || key.ID == "" {
+	if key.Type != LoginKey {
+		return Session{}, errors.ErrAuthentication
+	}
+
+	return svc.checkSession(ctx, key)
+}
+
+// checkSession rejects a login key with no session, a revoked session, a session
+// of another user, or a session past the maximum session duration.
+func (svc service) checkSession(ctx context.Context, key Key) (Session, error) {
+	if key.IssuerID == "" || key.ID == "" {
 		return Session{}, errors.ErrAuthentication
 	}
 
 	session, err := svc.sessions.Retrieve(ctx, key.ID)
 	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return Session{}, errors.ErrAuthentication
+		}
+
+		return Session{}, err
+	}
+
+	if session.Revoked() || session.UserID != key.IssuerID {
 		return Session{}, errors.ErrAuthentication
 	}
-	if session.Revoked() {
+
+	if getTimestamp().After(session.StartedAt.Add(svc.maxSessionDuration)) {
 		return Session{}, errors.ErrAuthentication
 	}
 
@@ -275,7 +319,7 @@ func (svc service) purgeDeadSessions(ctx context.Context) {
 }
 
 func (svc service) Revoke(ctx context.Context, token, id string) error {
-	issuerID, _, err := svc.login(token)
+	issuerID, _, err := svc.login(ctx, token)
 	if err != nil {
 		return errors.Wrap(errRevoke, err)
 	}
@@ -285,8 +329,20 @@ func (svc service) Revoke(ctx context.Context, token, id string) error {
 	return nil
 }
 
+func (svc service) RevokeAPIKeys(ctx context.Context, userID string) error {
+	if userID == "" {
+		return errors.Wrap(errRevoke, apiutil.ErrMissingUserID)
+	}
+
+	if err := svc.keys.RemoveAPIKeys(ctx, userID); err != nil {
+		return errors.Wrap(errRevoke, err)
+	}
+
+	return nil
+}
+
 func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, error) {
-	issuerID, _, err := svc.login(token)
+	issuerID, _, err := svc.login(ctx, token)
 	if err != nil {
 		return Key{}, errors.Wrap(errRetrieve, err)
 	}
@@ -295,7 +351,7 @@ func (svc service) RetrieveKey(ctx context.Context, token, id string) (Key, erro
 }
 
 func (svc service) ListAPIKeys(ctx context.Context, token string, pm PageMetadata) (KeysPage, error) {
-	issuerID, _, err := svc.login(token)
+	issuerID, _, err := svc.login(ctx, token)
 	if err != nil {
 		return KeysPage{}, errors.Wrap(errRetrieve, err)
 	}
@@ -304,9 +360,19 @@ func (svc service) ListAPIKeys(ctx context.Context, token string, pm PageMetadat
 }
 
 func (svc service) userKey(ctx context.Context, token string, key Key) (Key, string, error) {
-	id, sub, err := svc.login(token)
+	id, sub, err := svc.login(ctx, token)
 	if err != nil {
 		return Key{}, "", errors.Wrap(errIssueUser, err)
+	}
+
+	// An API key outlives the impersonated session and records no impersonator.
+	loginKey, err := svc.tokenizer.Parse(token)
+	if err != nil {
+		return Key{}, "", errors.Wrap(errIssueUser, err)
+	}
+
+	if loginKey.Impersonator != nil {
+		return Key{}, "", errors.Wrap(errIssueUser, errors.ErrAuthorization)
 	}
 
 	key.IssuerID = id

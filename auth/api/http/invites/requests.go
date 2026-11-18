@@ -46,6 +46,11 @@ func (req createOrgInviteReq) validate() error {
 		return errors.ErrMalformedEntity
 	}
 
+	// Org admins hold their group roles through their org role.
+	if req.Role == auth.Admin && len(req.GroupInvites) > 0 {
+		return errors.ErrMalformedEntity
+	}
+
 	for _, gi := range req.GroupInvites {
 		if err := apiutil.ValidateOrgInviteeRole(gi.MemberRole); err != nil {
 			return err

@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/logger"
@@ -36,9 +35,7 @@ const (
 )
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
-	userPasswordRegex = passwordRegex
-
+func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -194,6 +191,36 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 		opts...,
 	))
 
+	mux.Post("/users/:id/admin", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "assign_admin_role"),
+			withIdentity,
+		)(assignAdminRoleEndpoint(svc)),
+		decodeAdminRole,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Delete("/users/:id/admin", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "unassign_admin_role"),
+			withIdentity,
+		)(unassignAdminRoleEndpoint(svc)),
+		decodeAdminRole,
+		encodeResponse,
+		opts...,
+	))
+
+	mux.Post("/users/:id/impersonate", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "impersonate"),
+			withIdentity,
+		)(impersonateEndpoint(svc)),
+		decodeImpersonate,
+		encodeResponse,
+		opts...,
+	))
+
 	return mux
 }
 
@@ -323,7 +350,8 @@ func decodeCredentials(_ context.Context, r *http.Request) (any, error) {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
 	}
 	user.Email = strings.TrimSpace(user.Email)
-	return userReq{user}, nil
+
+	return userReq{user: user}, nil
 }
 
 func decodeRefresh(_ context.Context, r *http.Request) (any, error) {
@@ -354,7 +382,7 @@ func decodeSelfRegisterUser(_ context.Context, r *http.Request) (any, error) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := selfRegisterUserReq{}
+	var req selfRegisterUserReq
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
@@ -460,6 +488,24 @@ func decodePasswordChange(_ context.Context, r *http.Request) (any, error) {
 
 func decodeChangeUserStatus(_ context.Context, r *http.Request) (any, error) {
 	req := changeUserStatusReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
+func decodeAdminRole(_ context.Context, r *http.Request) (any, error) {
+	req := adminRoleReq{
+		token: apiutil.ExtractBearerToken(r),
+		id:    bone.GetValue(r, "id"),
+	}
+
+	return req, nil
+}
+
+func decodeImpersonate(_ context.Context, r *http.Request) (any, error) {
+	req := impersonateReq{
 		token: apiutil.ExtractBearerToken(r),
 		id:    bone.GetValue(r, "id"),
 	}
@@ -574,6 +620,13 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusInternalServerError)
 	case errors.Contains(err, users.ErrSelfRegisterDisabled):
 		w.WriteHeader(http.StatusForbidden)
+	case errors.Contains(err, users.ErrNotPlatformAdmin):
+		w.WriteHeader(http.StatusNotFound)
+	case errors.Contains(err, users.ErrPlatformRoleAssigned),
+		errors.Contains(err, users.ErrDisabledUser),
+		errors.Contains(err, users.ErrAlreadyEnabledUser),
+		errors.Contains(err, users.ErrAlreadyDisabledUser):
+		w.WriteHeader(http.StatusConflict)
 	default:
 		apiutil.EncodeError(err, w)
 	}

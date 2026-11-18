@@ -7,7 +7,7 @@ The Users service manages user accounts, authentication, and platform-level acce
 The service is configured using the environment variables presented in the following table. Note that any unset variables will be replaced with their default values.
 
 | Variable                         | Description                                                                | Default          |
-|----------------------------------|----------------------------------------------------------------------------|------------------|
+| -------------------------------- | -------------------------------------------------------------------------- | ---------------- |
 | `MF_USERS_LOG_LEVEL`             | Log level for Users (debug, info, warn, error)                             | error            |
 | `MF_USERS_DB_HOST`               | Database host address                                                      | localhost        |
 | `MF_USERS_DB_PORT`               | Database host port                                                         | 5432             |
@@ -24,7 +24,7 @@ The service is configured using the environment variables presented in the follo
 | `MF_USERS_SERVER_KEY`            | Path to server key in PEM format                                           |                  |
 | `MF_USERS_ADMIN_EMAIL`           | Default root admin user email, created on startup                          |                  |
 | `MF_USERS_ADMIN_PASSWORD`        | Default root admin user password, created on startup                       |                  |
-| `MF_USERS_PASS_REGEX`            | Regex pattern for validating user passwords                                | `^\S{8,}$`       |
+| `MF_USERS_PASS_MIN_LENGTH`       | Minimum password length in characters, between 8 and 128                   | 15               |
 | `MF_USERS_SELF_REGISTER_ENABLED` | Allow users to self-register. If false, only admins can create accounts    | true             |
 | `MF_AUTH_GRPC_URL`               | Auth service gRPC URL                                                      | localhost:8181   |
 | `MF_AUTH_GRPC_TIMEOUT`           | Auth service gRPC request timeout                                          | 1s               |
@@ -53,6 +53,20 @@ The service is configured using the environment variables presented in the follo
 | `MF_GITHUB_USER_EMAILS`          | GitHub API endpoint for fetching user email addresses                      |                  |
 
 > **Note:** If `MF_EMAIL_TEMPLATES_DIR` does not point to a valid directory containing the required templates, the service will start normally but email-based features (email verification, platform invites) will not work.
+
+## Password policy
+
+Passwords are checked on registration, self-registration, platform invite registration, password change and password reset. Login does not apply the policy, so existing passwords keep working.
+
+- The password is normalized to Unicode NFKC before validation and hashing.
+- Length is at least `MF_USERS_PASS_MIN_LENGTH` and at most 128 characters, counted in Unicode code points.
+- All characters are allowed, including spaces, symbols and Unicode. There are no uppercase, digit or special character requirements.
+- The password must not be on the [NCSC list of the 100,000 most used passwords](https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/100k-most-used-passwords-NCSC.txt), compared case-insensitively.
+- The password must not contain the local part of the user's e-mail address, compared case-insensitively, when the local part has at least 3 characters.
+
+`MF_USERS_ADMIN_PASSWORD` must meet the policy, otherwise the service fails to start.
+
+Passwords are hashed with Argon2id (19 MiB of memory, 2 iterations, parallelism 1) and stored in PHC string format. Passwords hashed with bcrypt by earlier versions keep working: on the next successful login, the bcrypt hash is replaced with an Argon2id hash.
 
 ## Deployment
 

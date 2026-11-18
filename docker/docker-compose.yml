@@ -15,7 +15,7 @@ volumes:
   mainfluxlabs-auth-redis-volume:
   mainfluxlabs-es-redis-volume:
   mainfluxlabs-mqtt-broker-volume:
-  mainfluxlabs-mqtt-db-volume:
+  mainfluxlabs-mqtt-adapter-db-volume:
   mainfluxlabs-timescale-db-volume:
   mainfluxlabs-filestore-db-volume:
   mainfluxlabs-filestore-volume:
@@ -27,6 +27,7 @@ volumes:
   mainfluxlabs-smpp-notifier-db-volume:
   mainfluxlabs-downlinks-db-volume:
   mainfluxlabs-shadows-db-volume:
+  mainfluxlabs-ota-db-volume:
   mainfluxlabs-modbus-db-volume:
   mainfluxlabs-alarms-db-volume:
   mainfluxlabs-rules-db-volume:
@@ -240,6 +241,7 @@ services:
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
       MF_USERS_ADMIN_EMAIL: ${MF_USERS_ADMIN_EMAIL}
       MF_USERS_ADMIN_PASSWORD: ${MF_USERS_ADMIN_PASSWORD}
+      MF_USERS_PASS_MIN_LENGTH: ${MF_USERS_PASS_MIN_LENGTH}
       MF_USERS_SELF_REGISTER_ENABLED: ${MF_USERS_SELF_REGISTER_ENABLED}
       MF_USERS_GRPC_PORT: ${MF_USERS_GRPC_PORT}
       MF_REQUIRE_EMAIL_VERIFICATION: ${MF_REQUIRE_EMAIL_VERIFICATION}
@@ -350,9 +352,9 @@ services:
       - mainfluxlabs-mqtt-broker-volume:/mosquitto/data
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
 
-  mqtt-db:
+  mqtt-adapter-db:
     image: postgres:13.3-alpine
-    container_name: mainfluxlabs-mqtt-db
+    container_name: mainfluxlabs-mqtt-adapter-db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=${MF_MQTT_ADAPTER_DB_USER}
@@ -361,7 +363,7 @@ services:
     networks:
       - mainfluxlabs-base-net
     volumes:
-      - mainfluxlabs-mqtt-db-volume:/var/lib/postgresql/data
+      - mainfluxlabs-mqtt-adapter-db-volume:/var/lib/postgresql/data
 
   mqtt-adapter:
     image: ${MF_RELEASE_PREFIX}/mqtt:${MF_RELEASE_TAG}
@@ -370,7 +372,7 @@ services:
       - mosquitto
       - things
       - broker
-      - mqtt-db
+      - mqtt-adapter-db
     restart: unless-stopped
     environment:
       MF_MQTT_ADAPTER_LOG_LEVEL: ${MF_MQTT_ADAPTER_LOG_LEVEL}
@@ -440,6 +442,9 @@ services:
     environment:
       MF_COAP_ADAPTER_LOG_LEVEL: ${MF_COAP_ADAPTER_LOG_LEVEL}
       MF_COAP_ADAPTER_PORT: ${MF_COAP_ADAPTER_PORT}
+      MF_COAP_ADAPTER_PLAIN_ENABLED: ${MF_COAP_ADAPTER_PLAIN_ENABLED}
+      MF_COAP_ADAPTER_DTLS_PORT: ${MF_COAP_ADAPTER_DTLS_PORT}
+      MF_COAP_ADAPTER_DTLS_IDLE_TIMEOUT: ${MF_COAP_ADAPTER_DTLS_IDLE_TIMEOUT}
       MF_BROKER_URL: ${MF_NATS_URL}
       MF_JAEGER_URL: ${MF_JAEGER_URL}
       MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
@@ -447,6 +452,7 @@ services:
     ports:
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/udp
       - ${MF_COAP_ADAPTER_PORT}:${MF_COAP_ADAPTER_PORT}/tcp
+      - ${MF_COAP_ADAPTER_DTLS_PORT}:${MF_COAP_ADAPTER_DTLS_PORT}/udp
     networks:
       - mainfluxlabs-base-net
 
@@ -598,7 +604,7 @@ services:
       seaweedfs-volume:
         condition: service_healthy
     restart: unless-stopped
-    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_SEAWEED_CHUNK_SIZE}"
+    command: "filer -master=seaweedfs-master:9333 -ip=seaweedfs-filer -ip.bind=0.0.0.0 -port=8888 -maxMB=${MF_FILESTORE_SEAWEED_CHUNK_MIB}"
     expose:
       - 8888
     networks:
@@ -632,7 +638,7 @@ services:
       MF_FILESTORE_DB: ${MF_FILESTORE_DB}
       MF_FILESTORE_DB_SSL_MODE: ${MF_FILESTORE_DB_SSL_MODE}
       MF_FILESTORE_DB_SSL_CERT: ${MF_FILESTORE_DB_SSL_CERT}
-      MF_FILESTORE_TLS: ${MF_FILESTORE_TLS}
+      MF_FILESTORE_CLIENT_TLS: ${MF_FILESTORE_CLIENT_TLS}
       MF_FILESTORE_HTTP_PORT: ${MF_FILESTORE_HTTP_PORT}
       MF_FILESTORE_SERVER_CERT: ${MF_FILESTORE_SERVER_CERT}
       MF_FILESTORE_SERVER_KEY: ${MF_FILESTORE_SERVER_KEY}
@@ -645,9 +651,9 @@ services:
       MF_FILESTORE_SEAWEED_URL: ${MF_FILESTORE_SEAWEED_URL}
       MF_FILESTORE_SEAWEED_PREFIX: ${MF_FILESTORE_SEAWEED_PREFIX}
       MF_FILESTORE_SEAWEED_TIMEOUT: ${MF_FILESTORE_SEAWEED_TIMEOUT}
-      MF_FILESTORE_SEAWEED_CHUNK_SIZE: ${MF_FILESTORE_SEAWEED_CHUNK_SIZE}
+      MF_FILESTORE_SEAWEED_CHUNK_MIB: ${MF_FILESTORE_SEAWEED_CHUNK_MIB}
       MF_FILESTORE_FILES_PATH: ${MF_FILESTORE_FILES_PATH}
-      MF_FILESTORE_MAX_UPLOAD_SIZE: ${MF_FILESTORE_MAX_UPLOAD_SIZE}
+      MF_FILESTORE_UPLOAD_LIMIT_MIB: ${MF_FILESTORE_UPLOAD_LIMIT_MIB}
       MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
       MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
     ports:
@@ -799,6 +805,9 @@ services:
       MF_EMAIL_FROM_NAME: ${MF_EMAIL_FROM_NAME}
       MF_EMAIL_TEMPLATES_DIR: ${MF_EMAIL_TEMPLATES_DIR}
       MF_SMTP_NOTIFIER_FROM_ADDR: ${MF_SMTP_NOTIFIER_FROM_ADDR}
+      MF_HOST: ${MF_HOST}
+      MF_SMTP_NOTIFIER_THING_PATH: ${MF_SMTP_NOTIFIER_THING_PATH}
+      MF_SMTP_NOTIFIER_RULE_PATH: ${MF_SMTP_NOTIFIER_RULE_PATH}
       MF_SMTP_NOTIFIER_DB_HOST: smtp-notifier-db
       MF_SMTP_NOTIFIER_DB_PORT: ${MF_SMTP_NOTIFIER_DB_PORT}
       MF_SMTP_NOTIFIER_DB_USER: ${MF_SMTP_NOTIFIER_DB_USER}
@@ -820,6 +829,7 @@ services:
     volumes:
       - ./templates/base.tmpl:/base.tmpl
       - ./templates/smtp/notification.tmpl:/notification.tmpl
+      - ./templates/smtp/alarm.tmpl:/alarm.tmpl
 
   downlinks-db:
     image: postgres:13.3-alpine
@@ -904,6 +914,53 @@ services:
       MF_BROKER_URL: ${MF_NATS_URL}
     ports:
       - ${MF_SHADOWS_HTTP_PORT}:${MF_SHADOWS_HTTP_PORT}
+    networks:
+      - mainfluxlabs-base-net
+
+  ota-db:
+    image: postgres:13.3-alpine
+    container_name: mainfluxlabs-ota-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${MF_OTA_DB_USER}
+      POSTGRES_PASSWORD: ${MF_OTA_DB_PASS}
+      POSTGRES_DB: ${MF_OTA_DB}
+    networks:
+      - mainfluxlabs-base-net
+    volumes:
+      - mainfluxlabs-ota-db-volume:/var/lib/postgresql/data
+
+  ota:
+    image: ${MF_RELEASE_PREFIX}/ota:${MF_RELEASE_TAG}
+    container_name: mainfluxlabs-ota
+    depends_on:
+      - things
+      - ota-db
+      - broker
+    restart: unless-stopped
+    environment:
+      MF_OTA_LOG_LEVEL: ${MF_OTA_LOG_LEVEL}
+      MF_OTA_HTTP_PORT: ${MF_OTA_HTTP_PORT}
+      MF_JAEGER_URL: ${MF_JAEGER_URL}
+      MF_OTA_DB_HOST: ota-db
+      MF_OTA_DB_PORT: ${MF_OTA_DB_PORT}
+      MF_OTA_DB_USER: ${MF_OTA_DB_USER}
+      MF_OTA_DB_PASS: ${MF_OTA_DB_PASS}
+      MF_OTA_DB: ${MF_OTA_DB}
+      MF_OTA_SERVER_CERT: ${MF_OTA_SERVER_CERT}
+      MF_OTA_SERVER_KEY: ${MF_OTA_SERVER_KEY}
+      MF_OTA_CA_CERTS: ${MF_OTA_CA_CERTS}
+      MF_OTA_CLIENT_TLS: ${MF_OTA_CLIENT_TLS}
+      MF_THINGS_AUTH_GRPC_URL: ${MF_THINGS_AUTH_GRPC_URL}
+      MF_THINGS_AUTH_GRPC_TIMEOUT: ${MF_THINGS_AUTH_GRPC_TIMEOUT}
+      MF_AUTH_GRPC_URL: ${MF_AUTH_GRPC_URL}
+      MF_AUTH_GRPC_TIMEOUT: ${MF_AUTH_GRPC_TIMEOUT}
+      MF_OTA_ES_URL: ${MF_OTA_ES_URL}
+      MF_OTA_FIRMWARE_URL: ${MF_OTA_FIRMWARE_URL}
+      MF_OTA_TIMEOUT_CHECK_INTERVAL: ${MF_OTA_TIMEOUT_CHECK_INTERVAL}
+      MF_BROKER_URL: ${MF_NATS_URL}
+    ports:
+      - ${MF_OTA_HTTP_PORT}:${MF_OTA_HTTP_PORT}
     networks:
       - mainfluxlabs-base-net
 

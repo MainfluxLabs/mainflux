@@ -1,0 +1,304 @@
+// SPDX-FileCopyrightText: 2026 The Pion community <https://pion.ly>
+// SPDX-License-Identifier: MIT
+
+package dtls
+
+import (
+	"bytes"
+	"sync"
+
+	"github.com/pion/dtls/v3/pkg/crypto/prf"
+	"github.com/pion/dtls/v3/pkg/protocol"
+	"github.com/pion/dtls/v3/pkg/protocol/handshake"
+	"github.com/pion/dtls/v3/pkg/protocol/recordlayer"
+)
+
+// Bound payload storage and metadata, including empty messages. Allow room for
+// both peers' certificate flights and the remaining transcript.
+const (
+	handshakeCacheMaxSize  = 4 * fragmentBufferMaxSize
+	handshakeCacheMaxCount = 1000
+)
+
+type handshakeCacheItem struct {
+	typ             handshake.Type
+	isClient        bool
+	epoch           uint16
+	messageSequence uint16
+	data            []byte
+}
+
+type handshakeCachePullRule struct {
+	typ      handshake.Type
+	epoch    uint16
+	isClient bool
+	optional bool
+}
+
+type handshakeCache struct {
+	cache                         []*handshakeCacheItem
+	size                          int
+	complete                      bool
+	mu                            sync.Mutex
+	clientHelloRetransmit         *fragments
+	clientHelloRetransmitSequence uint16
+}
+
+func newHandshakeCache() *handshakeCache {
+	return &handshakeCache{}
+}
+
+func (h *handshakeCache) push(data []byte, epoch, messageSequence uint16, typ handshake.Type, isClient bool) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.complete {
+		return nil
+	}
+	for _, item := range h.cache {
+		if item.epoch == epoch && item.messageSequence == messageSequence && item.isClient == isClient {
+			return nil
+		}
+	}
+	if len(h.cache) >= handshakeCacheMaxCount || len(data) > handshakeCacheMaxSize-h.size {
+		return errHandshakeCacheOverflow
+	}
+	h.size += len(data)
+	h.cache = append(h.cache, &handshakeCacheItem{
+		data:            bytes.Clone(data),
+		epoch:           epoch,
+		messageSequence: messageSequence,
+		typ:             typ,
+		isClient:        isClient,
+	})
+
+	return nil
+}
+
+// finish preserves the transcript for retransmissions without retaining new messages.
+func (h *handshakeCache) finish() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.complete = true
+	h.clientHelloRetransmit = nil
+}
+
+// returns a list handshakes that match the requested rules
+// the list will contain null entries for rules that can't be satisfied
+// multiple entries may match a rule, but only the last match is returned (ie ClientHello with cookies).
+func (h *handshakeCache) pull(rules ...handshakeCachePullRule) []*handshakeCacheItem {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	out := make([]*handshakeCacheItem, len(rules))
+	for i, r := range rules {
+		for _, c := range h.cache {
+			if c.typ == r.typ && c.isClient == r.isClient && c.epoch == r.epoch {
+				switch {
+				case out[i] == nil:
+					out[i] = c
+				case out[i].messageSequence < c.messageSequence:
+					out[i] = c
+				}
+			}
+		}
+	}
+
+	return out
+}
+
+// fullPullMap pulls all handshakes between rules[0] to rules[len(rules)-1] as map.
+//
+//nolint:cyclop
+func (h *handshakeCache) fullPullMap(
+	startSeq int,
+	cipherSuite CipherSuite,
+	rules ...handshakeCachePullRule,
+) (int, map[handshake.Type]handshake.Message, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	ci := make(map[handshake.Type]*handshakeCacheItem)
+	for _, rule := range rules {
+		var item *handshakeCacheItem
+		for _, c := range h.cache {
+			if c.typ == rule.typ && c.isClient == rule.isClient && c.epoch == rule.epoch {
+				switch {
+				case item == nil:
+					item = c
+				case item.messageSequence < c.messageSequence:
+					item = c
+				}
+			}
+		}
+		if !rule.optional && item == nil {
+			// Missing mandatory message.
+			return startSeq, nil, false
+		}
+		ci[rule.typ] = item
+	}
+	out := make(map[handshake.Type]handshake.Message)
+	seq := startSeq
+	ok := false
+	for _, r := range rules {
+		typ := r.typ
+		i := ci[typ]
+		if i == nil {
+			continue
+		}
+		var keyExchangeAlgorithm CipherSuiteKeyExchangeAlgorithm
+		if cipherSuite != nil {
+			keyExchangeAlgorithm = cipherSuite.KeyExchangeAlgorithm()
+		}
+		rawHandshake := &handshake.Handshake{
+			KeyExchangeAlgorithm: keyExchangeAlgorithm,
+		}
+		if err := rawHandshake.Unmarshal(i.data); err != nil {
+			return startSeq, nil, false
+		}
+		if uint16(seq) != rawHandshake.Header.MessageSequence { //nolint:gosec // G115
+			// There is a gap. Some messages are not arrived.
+			return startSeq, nil, false
+		}
+		seq++
+		ok = true
+		out[typ] = rawHandshake.Message
+	}
+	if !ok {
+		return seq, nil, false
+	}
+
+	return seq, out, true
+}
+
+// pullAndMerge calls pull and then merges the results, ignoring any null entries.
+func (h *handshakeCache) pullAndMerge(rules ...handshakeCachePullRule) []byte {
+	merged := []byte{}
+
+	for _, p := range h.pull(rules...) {
+		if p != nil {
+			merged = append(merged, p.data...)
+		}
+	}
+
+	return merged
+}
+
+// sessionHash returns the session hash for Extended Master Secret support
+// https://tools.ietf.org/html/draft-ietf-tls-session-hash-06#section-4
+func (h *handshakeCache) sessionHash(hf prf.HashFunc, epoch uint16, additional ...[]byte) ([]byte, error) {
+	merged := []byte{}
+
+	// Order defined by https://tools.ietf.org/html/rfc5246#section-7.3
+	handshakeBuffer := h.pull(
+		handshakeCachePullRule{handshake.TypeClientHello, epoch, true, false},
+		handshakeCachePullRule{handshake.TypeServerHello, epoch, false, false},
+		handshakeCachePullRule{handshake.TypeCertificate, epoch, false, false},
+		handshakeCachePullRule{handshake.TypeServerKeyExchange, epoch, false, false},
+		handshakeCachePullRule{handshake.TypeCertificateRequest, epoch, false, false},
+		handshakeCachePullRule{handshake.TypeServerHelloDone, epoch, false, false},
+		handshakeCachePullRule{handshake.TypeCertificate, epoch, true, false},
+		handshakeCachePullRule{handshake.TypeClientKeyExchange, epoch, true, false},
+	)
+
+	for _, p := range handshakeBuffer {
+		if p == nil {
+			continue
+		}
+
+		merged = append(merged, p.data...)
+	}
+	for _, a := range additional {
+		merged = append(merged, a...)
+	}
+
+	hash := hf()
+	if _, err := hash.Write(merged); err != nil {
+		return []byte{}, err
+	}
+
+	return hash.Sum(nil), nil
+}
+
+// isClientHelloRetransmit recognizes an unchanged copy of the most recent
+// ClientHello, including retransmissions fragmented differently from the original.
+// Partial fragments and older cookie exchanges do not trigger a response.
+func (h *handshakeCache) isClientHelloRetransmit(packet []byte) bool {
+	var record recordlayer.Header
+	if err := record.Unmarshal(packet); err != nil {
+		return false
+	}
+	if record.ContentType != protocol.ContentTypeHandshake || record.Epoch != 0 {
+		return false
+	}
+	cached := h.pull(handshakeCachePullRule{typ: handshake.TypeClientHello, epoch: 0, isClient: true})[0]
+	if cached == nil {
+		return false
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for payload := packet[recordlayer.FixedHeaderSize:]; len(payload) > 0; {
+		var header handshake.Header
+		if err := header.Unmarshal(payload); err != nil {
+			return false
+		}
+		size := handshake.HeaderLength + int(header.FragmentLength)
+		if size > len(payload) {
+			return false
+		}
+		data := payload[handshake.HeaderLength:size]
+		payload = payload[size:]
+		complete, err := h.addClientHelloRetransmit(cached, header, data)
+		if err != nil {
+			return false
+		}
+		if complete {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *handshakeCacheItem) matchesClientHelloFragment(header handshake.Header, data []byte) bool {
+	if header.Type != handshake.TypeClientHello || header.MessageSequence != c.messageSequence ||
+		int(header.Length) != len(c.data)-handshake.HeaderLength ||
+		header.FragmentOffset > header.Length || header.FragmentLength > header.Length-header.FragmentOffset {
+		return false
+	}
+	original := c.data[handshake.HeaderLength:]
+
+	return bytes.Equal(data, original[header.FragmentOffset:header.FragmentOffset+header.FragmentLength])
+}
+
+func (h *handshakeCache) addClientHelloRetransmit(
+	cached *handshakeCacheItem,
+	header handshake.Header,
+	data []byte,
+) (bool, error) {
+	if !cached.matchesClientHelloFragment(header, data) {
+		return false, nil
+	}
+	if h.clientHelloRetransmit == nil || h.clientHelloRetransmitSequence != header.MessageSequence {
+		h.clientHelloRetransmit = &fragments{}
+		h.clientHelloRetransmitSequence = header.MessageSequence
+	}
+	fragments := h.clientHelloRetransmit
+	available := fragmentBufferMaxCount - len(fragments.ranges)
+	original := cached.data[handshake.HeaderLength:]
+	fragment := original[header.FragmentOffset : header.FragmentOffset+header.FragmentLength]
+	if _, _, err := fragments.add(header.FragmentOffset, fragment, available); err != nil {
+		h.clientHelloRetransmit = nil
+
+		return false, err
+	}
+	if fragments.covered == header.Length {
+		h.clientHelloRetransmit = nil
+
+		return true, nil
+	}
+
+	return false, nil
+}

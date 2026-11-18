@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 
@@ -45,7 +46,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "clients_1",
+				Id: "clients_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS clients (
 						id            UUID PRIMARY KEY,
@@ -67,13 +68,17 @@ func migrateDB(db *sqlx.DB) error {
 				Down: []string{"DROP TABLE clients"},
 			},
 			{
-				Id: "clients_2",
+				Id: "clients_02",
 				Up: []string{
 					`ALTER TABLE clients DROP COLUMN IF EXISTS start_address`,
 					`ALTER TABLE clients DROP COLUMN IF EXISTS read_length`,
 				},
 			},
 		},
+	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
 	}
 
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)

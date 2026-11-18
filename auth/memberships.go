@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
@@ -40,6 +41,12 @@ type OrgMembershipsRepository interface {
 	// RetrieveByOrg retrieves org memberships identified by orgID.
 	RetrieveByOrg(ctx context.Context, orgID string, pm PageMetadata) (OrgMembershipsPage, error)
 
+	// RetrieveAdminsByOrg retrieves memberships with the owner or admin role in the org.
+	RetrieveAdminsByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)
+
+	// RetrieveOrgIDsByAdmin retrieves IDs of orgs where the member has the owner or admin role.
+	RetrieveOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error)
+
 	// BackupAll retrieves all memberships.
 	BackupAll(ctx context.Context) ([]OrgMembership, error)
 }
@@ -61,6 +68,15 @@ type OrgMemberships interface {
 
 	// ViewOrgMembership retrieves membership identified by memberID and orgID.
 	ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error)
+
+	// GetAdminsByOrg returns memberships with the owner or admin role in the org.
+	GetAdminsByOrg(ctx context.Context, orgID string) ([]OrgMembership, error)
+
+	// GetOrgIDsByAdmin returns IDs of orgs where the member has the owner or admin role.
+	GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error)
+
+	// GetOrgMembership returns the membership of the member in the org identified by orgID.
+	GetOrgMembership(ctx context.Context, orgID, memberID string) (OrgMembership, error)
 }
 
 func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...OrgMembership) error {
@@ -99,6 +115,26 @@ func (svc service) CreateOrgMemberships(ctx context.Context, token, orgID string
 	}
 
 	return nil
+}
+
+func (svc service) GetAdminsByOrg(ctx context.Context, orgID string) ([]OrgMembership, error) {
+	return svc.memberships.RetrieveAdminsByOrg(ctx, orgID)
+}
+
+func (svc service) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	return svc.memberships.RetrieveOrgIDsByAdmin(ctx, memberID)
+}
+
+func (svc service) GetOrgMembership(ctx context.Context, orgID, memberID string) (OrgMembership, error) {
+	role, err := svc.memberships.RetrieveRole(ctx, memberID, orgID)
+	if err != nil {
+		if errors.Contains(err, dbutil.ErrNotFound) {
+			return OrgMembership{OrgID: orgID, MemberID: memberID}, nil
+		}
+		return OrgMembership{}, err
+	}
+
+	return OrgMembership{OrgID: orgID, MemberID: memberID, Role: role}, nil
 }
 
 func (svc service) ViewOrgMembership(ctx context.Context, token, orgID, memberID string) (OrgMembership, error) {
@@ -220,6 +256,11 @@ func (svc service) UpdateOrgMemberships(ctx context.Context, token, orgID string
 
 func (svc service) RemoveOrgMemberships(ctx context.Context, token string, orgID string, memberIDs ...string) error {
 	if err := svc.canRemoveMemberships(ctx, token, orgID, memberIDs...); err != nil {
+		return err
+	}
+
+	// Group memberships are removed first, so a failure leaves the members without group access.
+	if err := svc.things.RemoveGroupMembershipsByOrg(ctx, orgID, memberIDs...); err != nil {
 		return err
 	}
 

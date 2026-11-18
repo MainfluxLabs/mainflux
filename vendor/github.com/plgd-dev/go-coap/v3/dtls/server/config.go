@@ -1,0 +1,76 @@
+package server
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/plgd-dev/go-coap/v3/message"
+	"github.com/plgd-dev/go-coap/v3/message/codes"
+	"github.com/plgd-dev/go-coap/v3/message/pool"
+	"github.com/plgd-dev/go-coap/v3/net/monitor/inactivity"
+	"github.com/plgd-dev/go-coap/v3/net/responsewriter"
+	"github.com/plgd-dev/go-coap/v3/options/config"
+	udpClient "github.com/plgd-dev/go-coap/v3/udp/client"
+)
+
+// The HandlerFunc type is an adapter to allow the use of
+// ordinary functions as COAP handlers.
+type HandlerFunc = func(*responsewriter.ResponseWriter[*udpClient.Conn], *pool.Message)
+
+type ErrorFunc = func(error)
+
+// OnNewConnFunc is the callback for new connections.
+type OnNewConnFunc = func(*udpClient.Conn)
+
+type GetMIDFunc = func() int32
+
+var DefaultConfig = func() Config {
+	opts := Config{
+		Common: config.NewCommon[*udpClient.Conn](),
+		CreateInactivityMonitor: func() udpClient.InactivityMonitor {
+			timeout := time.Second * 16
+			onInactive := func(cc *udpClient.Conn) {
+				_ = cc.Close()
+			}
+			return udpClient.DeferInactivityWhileConfirmableMessagesPending(inactivity.New(timeout, onInactive))
+		},
+		RequestMonitor: func(*udpClient.Conn, *pool.Message) (bool, error) {
+			return false, nil
+		},
+		OnNewConn: func(*udpClient.Conn) {
+			// do nothing by default
+		},
+		TransmissionNStart:                  1,
+		TransmissionAcknowledgeTimeout:      time.Second * 2,
+		TransmissionAcknowledgeRandomFactor: 1.5,
+		TransmissionMaxRetransmit:           4,
+		HandshakeTimeout:                    30 * time.Second,
+		GetMID:                              message.GetMID,
+		MTU:                                 udpClient.DefaultMTU,
+		MaxPendingMessages:                  udpClient.DefaultMaxPendingMessages,
+	}
+	opts.Handler = func(w *responsewriter.ResponseWriter[*udpClient.Conn], _ *pool.Message) {
+		if err := w.SetResponse(codes.NotFound, message.TextPlain, nil); err != nil {
+			opts.Errors(fmt.Errorf("dtls server: cannot set response: %w", err))
+		}
+	}
+	return opts
+}()
+
+type Config struct {
+	config.Common[*udpClient.Conn]
+	CreateInactivityMonitor             func() udpClient.InactivityMonitor
+	GetMID                              GetMIDFunc
+	Handler                             HandlerFunc
+	OnNewConn                           OnNewConnFunc
+	RequestMonitor                      udpClient.RequestMonitorFunc
+	TransmissionNStart                  uint32
+	TransmissionAcknowledgeTimeout      time.Duration
+	TransmissionAcknowledgeRandomFactor float64
+	TransmissionMaxRetransmit           uint32
+	HandshakeTimeout                    time.Duration
+	MTU                                 uint16
+	// MaxPendingMessages limits in-flight duplicate suppression per connection.
+	// Zero disables in-flight tracking.
+	MaxPendingMessages uint32
+}

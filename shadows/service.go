@@ -4,9 +4,12 @@
 package shadows
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
@@ -161,32 +164,42 @@ func (ss *shadowsService) publish(thingID string, delta State) error {
 
 // decodeState interprets a message payload as a flat state patch. SenML
 // payloads are flattened to one key per record (keyed by record name); JSON
-// object payloads are used as-is. Payloads that match neither shape are skipped.
+// object records are merged into one patch. Records that match neither shape are skipped.
 func decodeState(msg protomfx.Message) (State, bool) {
 	if msg.ContentType == messaging.SenMLContentType {
 		return decodeSenML(msg)
 	}
 
-	var s State
-	if err := json.Unmarshal(msg.Payload, &s); err != nil {
-		return nil, false
+	return decodeJSON(msg.Records)
+}
+
+func decodeJSON(records []*protomfx.Record) (State, bool) {
+	// Oldest first, so the latest value of a repeated key wins.
+	records = slices.Clone(records)
+	slices.SortStableFunc(records, func(a, b *protomfx.Record) int {
+		return cmp.Compare(a.Time, b.Time)
+	})
+
+	s := State{}
+	for _, record := range records {
+		var recordState State
+		if err := json.Unmarshal(record.Payload, &recordState); err != nil {
+			continue
+		}
+		maps.Copy(s, recordState)
 	}
-	return s, true
+
+	return s, len(s) > 0
 }
 
 func decodeSenML(msg protomfx.Message) (State, bool) {
-	records, err := messaging.SplitMessage(msg)
+	msgs, err := messaging.ToSenMLMessages(msg)
 	if err != nil {
 		return nil, false
 	}
 
 	s := State{}
-	for _, r := range records {
-		sm, err := messaging.ToSenMLMessage(r)
-		if err != nil {
-			continue
-		}
-
+	for _, sm := range msgs {
 		switch {
 		case sm.Value != nil:
 			s[sm.Name] = *sm.Value

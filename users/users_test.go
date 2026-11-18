@@ -16,7 +16,7 @@ import (
 
 const (
 	email    = "user@example.com"
-	password = "password"
+	password = "brave-ocean-lantern"
 
 	maxLocalLen  = 64
 	maxDomainLen = 255
@@ -139,7 +139,7 @@ func TestValidate(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		err := tc.user.Validate(passRegex)
+		err := tc.user.Validate()
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 	}
 }

@@ -28,15 +28,22 @@ type grpcClient struct {
 	issue                               endpoint.Endpoint
 	refresh                             endpoint.Endpoint
 	revokeSessions                      endpoint.Endpoint
+	revokeAPIKeys                       endpoint.Endpoint
 	identify                            endpoint.Endpoint
+	identifyRecovery                    endpoint.Endpoint
 	authorize                           endpoint.Endpoint
 	getOwnerIDByOrg                     endpoint.Endpoint
 	retrieveRole                        endpoint.Endpoint
+	retrieveRoles                       endpoint.Endpoint
 	assignRole                          endpoint.Endpoint
+	unassignRole                        endpoint.Endpoint
 	createDormantOrgInvite              endpoint.Endpoint
 	activateOrgInvite                   endpoint.Endpoint
 	getDormantOrgInviteByPlatformInvite endpoint.Endpoint
 	viewOrg                             endpoint.Endpoint
+	getAdminsByOrg                      endpoint.Endpoint
+	getOrgIDsByAdmin                    endpoint.Endpoint
+	getOrgMembership                    endpoint.Endpoint
 	timeout                             time.Duration
 }
 
@@ -59,6 +66,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
+		revokeAPIKeys: kitot.TraceClient(tracer, "revoke_api_keys")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RevokeAPIKeys",
+			encodeRevokeAPIKeysRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
 		issue: kitot.TraceClient(tracer, "issue")(kitgrpc.NewClient(
 			conn,
 			svcName,
@@ -71,6 +86,14 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			conn,
 			svcName,
 			"Identify",
+			encodeIdentifyRequest,
+			decodeIdentifyResponse,
+			protomfx.UserIdentity{},
+		).Endpoint()),
+		identifyRecovery: kitot.TraceClient(tracer, "identify_recovery")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"IdentifyRecovery",
 			encodeIdentifyRequest,
 			decodeIdentifyResponse,
 			protomfx.UserIdentity{},
@@ -99,11 +122,27 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeRetrieveRoleResponse,
 			protomfx.RetrieveRoleRes{},
 		).Endpoint()),
+		retrieveRoles: kitot.TraceClient(tracer, "retrieve_roles")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"RetrieveRoles",
+			encodeRetrieveRolesRequest,
+			decodeRetrieveRolesResponse,
+			protomfx.RetrieveRolesRes{},
+		).Endpoint()),
 		assignRole: kitot.TraceClient(tracer, "assign_role")(kitgrpc.NewClient(
 			conn,
 			svcName,
 			"AssignRole",
 			encodeAssignRoleRequest,
+			decodeEmptyResponse,
+			emptypb.Empty{},
+		).Endpoint()),
+		unassignRole: kitot.TraceClient(tracer, "unassign_role")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"UnassignRole",
+			encodeUnassignRoleRequest,
 			decodeEmptyResponse,
 			emptypb.Empty{},
 		).Endpoint()),
@@ -139,6 +178,30 @@ func NewClient(conn *grpc.ClientConn, tracer opentracing.Tracer, timeout time.Du
 			decodeOrgResponse,
 			protomfx.Org{},
 		).Endpoint()),
+		getAdminsByOrg: kitot.TraceClient(tracer, "get_admins_by_org")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetAdminsByOrg",
+			encodeGetAdminsByOrgRequest,
+			decodeGetAdminsByOrgResponse,
+			protomfx.OrgMemberships{},
+		).Endpoint()),
+		getOrgIDsByAdmin: kitot.TraceClient(tracer, "get_org_ids_by_admin")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetOrgIDsByAdmin",
+			encodeGetOrgIDsByAdminRequest,
+			decodeGetOrgIDsByAdminResponse,
+			protomfx.OrgIDs{},
+		).Endpoint()),
+		getOrgMembership: kitot.TraceClient(tracer, "get_org_membership")(kitgrpc.NewClient(
+			conn,
+			svcName,
+			"GetOrgMembership",
+			encodeGetOrgMembershipRequest,
+			decodeGetOrgMembershipResponse,
+			protomfx.OrgMembership{},
+		).Endpoint()),
 
 		timeout: timeout,
 	}
@@ -149,6 +212,27 @@ func (client grpcClient) Issue(ctx context.Context, id, email string, keyType ui
 	defer cancel()
 
 	res, err := client.issue(ctx, issueReq{id: id, email: email, keyType: keyType})
+	if err != nil {
+		return "", err
+	}
+
+	ir := res.(issueRes)
+	return ir.value, nil
+}
+
+func (client grpcClient) IssueImpersonated(ctx context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	req := issueReq{
+		id:                id,
+		email:             email,
+		keyType:           domain.LoginKey,
+		impersonatorID:    impersonator.ID,
+		impersonatorEmail: impersonator.Email,
+	}
+
+	res, err := client.issue(ctx, req)
 	if err != nil {
 		return "", err
 	}
@@ -183,6 +267,19 @@ func (client grpcClient) RevokeSessions(ctx context.Context, id string) error {
 	return er.err
 }
 
+func (client grpcClient) RevokeAPIKeys(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.revokeAPIKeys(ctx, revokeAPIKeysReq{id: id})
+	if err != nil {
+		return err
+	}
+
+	er := res.(emptyRes)
+	return er.err
+}
+
 func encodeRefreshRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(refreshReq)
 	return &protomfx.Token{Value: req.token}, nil
@@ -193,9 +290,20 @@ func encodeRevokeSessionsRequest(_ context.Context, grpcReq any) (any, error) {
 	return &protomfx.RevokeSessionsReq{Id: req.id}, nil
 }
 
+func encodeRevokeAPIKeysRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(revokeAPIKeysReq)
+	return &protomfx.RevokeAPIKeysReq{Id: req.id}, nil
+}
+
 func encodeIssueRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(issueReq)
-	return &protomfx.IssueReq{Id: req.id, Email: req.email, Type: req.keyType}, nil
+	return &protomfx.IssueReq{
+		Id:                req.id,
+		Email:             req.email,
+		Type:              req.keyType,
+		ImpersonatorId:    req.impersonatorID,
+		ImpersonatorEmail: req.impersonatorEmail,
+	}, nil
 }
 
 func decodeIssueResponse(_ context.Context, grpcRes any) (any, error) {
@@ -213,6 +321,31 @@ func (client grpcClient) Identify(ctx context.Context, token string) (domain.Ide
 	}
 
 	ir := res.(identityRes)
+	identity := domain.Identity{
+		ID:    ir.id,
+		Email: ir.email,
+	}
+
+	if ir.impersonatorID != "" {
+		identity.Impersonator = &domain.Identity{
+			ID:    ir.impersonatorID,
+			Email: ir.impersonatorEmail,
+		}
+	}
+
+	return identity, nil
+}
+
+func (client grpcClient) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.identifyRecovery(ctx, identityReq{token: token})
+	if err != nil {
+		return domain.Identity{}, err
+	}
+
+	ir := res.(identityRes)
 	return domain.Identity{ID: ir.id, Email: ir.email}, nil
 }
 
@@ -223,7 +356,14 @@ func encodeIdentifyRequest(_ context.Context, grpcReq any) (any, error) {
 
 func decodeIdentifyResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.UserIdentity)
-	return identityRes{id: res.GetId(), email: res.GetEmail()}, nil
+	ir := identityRes{
+		id:                res.GetId(),
+		email:             res.GetEmail(),
+		impersonatorID:    res.GetImpersonatorId(),
+		impersonatorEmail: res.GetImpersonatorEmail(),
+	}
+
+	return ir, nil
 }
 
 func (client grpcClient) Authorize(ctx context.Context, ar domain.AuthzReq) error {
@@ -317,6 +457,59 @@ func encodeRetrieveRoleRequest(_ context.Context, grpcReq any) (any, error) {
 func decodeRetrieveRoleResponse(_ context.Context, grpcRes any) (any, error) {
 	res := grpcRes.(*protomfx.RetrieveRoleRes)
 	return retrieveRoleRes{role: res.GetRole()}, nil
+}
+
+func (client grpcClient) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.retrieveRoles(ctx, retrieveRolesReq{ids: ids})
+	if err != nil {
+		return nil, err
+	}
+
+	rr := res.(retrieveRolesRes)
+	return rr.roles, nil
+}
+
+func encodeRetrieveRolesRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(retrieveRolesReq)
+
+	return &protomfx.RetrieveRolesReq{
+		Ids: req.ids,
+	}, nil
+}
+
+func decodeRetrieveRolesResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.RetrieveRolesRes)
+
+	roles := make(map[string]string)
+	for _, ur := range res.GetRoles() {
+		roles[ur.GetUserId()] = ur.GetRole()
+	}
+
+	return retrieveRolesRes{roles: roles}, nil
+}
+
+func (client grpcClient) UnassignRole(ctx context.Context, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.unassignRole(ctx, unassignRoleReq{id: id})
+	if err != nil {
+		return err
+	}
+
+	er := res.(emptyRes)
+	return er.err
+}
+
+func encodeUnassignRoleRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(unassignRoleReq)
+
+	return &protomfx.UnassignRoleReq{
+		Id: req.id,
+	}, nil
 }
 
 func (client grpcClient) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {
@@ -463,6 +656,83 @@ func decodeOrgResponse(_ context.Context, grpcRes any) (any, error) {
 		ownerID: res.GetOwnerId(),
 		name:    res.GetName(),
 	}, nil
+}
+
+func (client grpcClient) GetAdminsByOrg(ctx context.Context, orgID string) ([]domain.OrgMembership, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getAdminsByOrg(ctx, adminsByOrgReq{orgID: orgID})
+	if err != nil {
+		return nil, err
+	}
+
+	ar := res.(adminsByOrgRes)
+	return ar.memberships, nil
+}
+
+func encodeGetAdminsByOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(adminsByOrgReq)
+	return &protomfx.OrgID{Value: req.orgID}, nil
+}
+
+func decodeGetAdminsByOrgResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.OrgMemberships)
+	oms := make([]domain.OrgMembership, 0, len(res.GetMemberships()))
+	for _, om := range res.GetMemberships() {
+		oms = append(oms, domain.OrgMembership{
+			MemberID: om.GetMemberId(),
+			Role:     om.GetRole(),
+		})
+	}
+
+	return adminsByOrgRes{memberships: oms}, nil
+}
+
+func (client grpcClient) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getOrgIDsByAdmin(ctx, orgIDsByAdminReq{memberID: memberID})
+	if err != nil {
+		return nil, err
+	}
+
+	or := res.(orgIDsByAdminRes)
+	return or.orgIDs, nil
+}
+
+func encodeGetOrgIDsByAdminRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(orgIDsByAdminReq)
+	return &protomfx.MemberID{Value: req.memberID}, nil
+}
+
+func decodeGetOrgIDsByAdminResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.OrgIDs)
+	return orgIDsByAdminRes{orgIDs: res.GetIds()}, nil
+}
+
+func (client grpcClient) GetOrgMembership(ctx context.Context, orgID, memberID string) (domain.OrgMembership, error) {
+	ctx, cancel := context.WithTimeout(ctx, client.timeout)
+	defer cancel()
+
+	res, err := client.getOrgMembership(ctx, orgMembershipReq{orgID: orgID, memberID: memberID})
+	if err != nil {
+		return domain.OrgMembership{}, err
+	}
+
+	mr := res.(orgMembershipRes)
+	return domain.OrgMembership{OrgID: orgID, MemberID: mr.memberID, Role: mr.role}, nil
+}
+
+func encodeGetOrgMembershipRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(orgMembershipReq)
+	return &protomfx.OrgMembershipReq{OrgId: req.orgID, MemberId: req.memberID}, nil
+}
+
+func decodeGetOrgMembershipResponse(_ context.Context, grpcRes any) (any, error) {
+	res := grpcRes.(*protomfx.OrgMembership)
+	return orgMembershipRes{memberID: res.GetMemberId(), role: res.GetRole()}, nil
 }
 
 func decodeEmptyResponse(_ context.Context, _ any) (any, error) {

@@ -21,6 +21,9 @@ default values.
 | `MF_EMAIL_FROM_NAME`                | Email "from" name                                                          |                          |
 | `MF_EMAIL_TEMPLATES_DIR`            | Path to directory containing email templates                               | .                        |
 | `MF_SMTP_NOTIFIER_FROM_ADDR`        | Sender address shown in outgoing emails                                    |                          |
+| `MF_HOST`                           | Frontend URL base used in the thing and rule links of emails               | http://localhost         |
+| `MF_SMTP_NOTIFIER_THING_PATH`       | Frontend path of the thing page linked from emails, appended to `MF_HOST`  |                          |
+| `MF_SMTP_NOTIFIER_RULE_PATH`        | Frontend path of the rule page linked from emails, appended to `MF_HOST`   |                          |
 | `MF_SMTP_NOTIFIER_PORT`             | SMTP-Notifiers service HTTP port                                           | 9023                     |
 | `MF_SMTP_NOTIFIER_SERVER_CERT`      | Path to server certificate in pem format                                   |                          |
 | `MF_SMTP_NOTIFIER_SERVER_KEY`       | Path to server key in pem format                                           |                          |
@@ -39,6 +42,10 @@ default values.
 | `MF_SMTP_NOTIFIER_EVENT_CONSUMER`   | Event store consumer name                                                  | smtp-notifier            |
 | `MF_THINGS_AUTH_GRPC_URL`           | Things auth service gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`       | Things auth service gRPC request timeout in seconds                        | 1s                       |
+
+The thing and rule paths can contain the `{org_id}`, `{group_id}`, `{thing_id}` and `{rule_id}`
+placeholders, e.g. `/pages/orgs/{org_id}/groups/{group_id}/devices/{thing_id}`. When a path is empty,
+emails show the ID without a link.
 
 ## Usage
 

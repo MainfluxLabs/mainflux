@@ -35,6 +35,10 @@ func (repo singleUserRepo) Issue(ctx context.Context, id, email string, keyType 
 	return repo.token, nil
 }
 
+func (repo singleUserRepo) IssueImpersonated(ctx context.Context, id, email string, impersonator domain.Identity) (string, error) {
+	return "", errors.ErrAuthorization
+}
+
 func (repo singleUserRepo) RefreshToken(ctx context.Context, token string) (string, error) {
 	if repo.token != token {
 		return "", errors.ErrAuthentication
@@ -47,12 +51,20 @@ func (repo singleUserRepo) RevokeSessions(ctx context.Context, id string) error 
 	return errUnsupported
 }
 
+func (repo singleUserRepo) RevokeAPIKeys(ctx context.Context, id string) error {
+	return errUnsupported
+}
+
 func (repo singleUserRepo) Identify(ctx context.Context, token string) (domain.Identity, error) {
 	if repo.token != token {
 		return domain.Identity{}, errors.ErrAuthentication
 	}
 
 	return domain.Identity{ID: repo.email, Email: repo.email}, nil
+}
+
+func (repo singleUserRepo) IdentifyRecovery(ctx context.Context, token string) (domain.Identity, error) {
+	return domain.Identity{}, errUnsupported
 }
 
 func (repo singleUserRepo) Authorize(ctx context.Context, ar domain.AuthzReq) error {
@@ -71,6 +83,14 @@ func (repo singleUserRepo) RetrieveRole(ctx context.Context, id string) (string,
 	return "", errUnsupported
 }
 
+func (repo singleUserRepo) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	return nil, errUnsupported
+}
+
+func (repo singleUserRepo) UnassignRole(ctx context.Context, id string) error {
+	return errUnsupported
+}
+
 func (repo singleUserRepo) CreateDormantOrgInvite(ctx context.Context, token, orgID, inviteeRole, platformInviteID string, groupInvites []domain.GroupInvite) error {
 	panic("not implemented")
 }
@@ -85,4 +105,17 @@ func (repo singleUserRepo) GetDormantOrgInviteByPlatformInvite(ctx context.Conte
 
 func (repo singleUserRepo) ViewOrg(ctx context.Context, token, orgID string) (domain.Org, error) {
 	panic("not implemented")
+}
+
+func (repo singleUserRepo) GetAdminsByOrg(ctx context.Context, orgID string) ([]domain.OrgMembership, error) {
+	return nil, errUnsupported
+}
+
+func (repo singleUserRepo) GetOrgIDsByAdmin(ctx context.Context, memberID string) ([]string, error) {
+	// The standalone user is not a member of any org, and member listings must not fail.
+	return []string{}, nil
+}
+
+func (repo singleUserRepo) GetOrgMembership(ctx context.Context, orgID, memberID string) (domain.OrgMembership, error) {
+	return domain.OrgMembership{}, errUnsupported
 }

@@ -29,6 +29,7 @@ type (
 type Backup struct {
 	Orgs           []Org
 	OrgMemberships []OrgMembership
+	UserRoles      []UserRole
 }
 
 // Orgs specifies an API that must be fullfiled by the domain service
@@ -52,10 +53,11 @@ type Orgs interface {
 	// GetOwnerIDByOrg returns an owner ID for a given org ID.
 	GetOwnerIDByOrg(ctx context.Context, orgID string) (string, error)
 
-	// Backup retrieves all orgs and org memberships. Only accessible by admin.
+	// Backup retrieves all orgs, org memberships and user roles. Only accessible by admin.
 	Backup(ctx context.Context, token string) (Backup, error)
 
-	// Restore adds orgs and org memberships from a backup. Only accessible by admin.
+	// Restore adds orgs, org memberships and user roles from a backup.
+	// Only accessible by root admin.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 
@@ -126,7 +128,7 @@ func (svc service) CreateOrg(ctx context.Context, token string, o Org) (Org, err
 }
 
 func (svc service) ListOrgs(ctx context.Context, token string, pm PageMetadata) (OrgsPage, error) {
-	if err := svc.isAdmin(ctx, token); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return svc.orgs.RetrieveAll(ctx, pm)
 	}
 
@@ -202,13 +204,13 @@ func (svc service) GetOwnerIDByOrg(ctx context.Context, orgID string) (string, e
 }
 
 func (svc service) canAccessOrg(ctx context.Context, token, orgID, action string) error {
-	if err := svc.isAdmin(ctx, token); err == nil {
-		return nil
-	}
-
-	user, err := svc.Identify(ctx, token)
+	user, err := svc.identify(ctx, token)
 	if err != nil {
 		return err
+	}
+
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
+		return nil
 	}
 
 	role, err := svc.memberships.RetrieveRole(ctx, user.ID, orgID)

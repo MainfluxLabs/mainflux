@@ -40,6 +40,11 @@ func (msg Message) ToProtoMessage() protomfx.Message {
 		Subtopic: msg.Subtopic,
 		ThingId:  msg.ThingID,
 		Protocol: msg.Protocol,
-		Payload:  msg.Payload,
+		Records: []*protomfx.Record{
+			{
+				Payload: msg.Payload,
+				Time:    msg.Created,
+			},
+		},
 	}
 }

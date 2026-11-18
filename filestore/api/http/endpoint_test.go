@@ -29,16 +29,17 @@ import (
 )
 
 const (
-	token         = "tok"
-	groupID       = "group-1"
-	thingID       = "thing-1"
-	thingKey      = "thingkey-1"
-	fileName      = "fw.bin"
-	fileContent   = "hello mainflux"
-	largeFileName = "large.bin"
-	largeFileSize = 64 << 10
-	binariesClass = "binaries"
-	binFormat     = "bin"
+	token          = "tok"
+	groupID        = "group-1"
+	thingID        = "thing-1"
+	thingKey       = "thingkey-1"
+	fileName       = "fw.bin"
+	fileContent    = "hello mainflux"
+	largeFileName  = "large.bin"
+	largeFileSize  = 64 << 10
+	binariesClass  = "binaries"
+	binFormat      = "bin"
+	uploadLimitMiB = 1
 )
 
 func newServer(t *testing.T) *httptest.Server {
@@ -61,7 +62,7 @@ func newServer(t *testing.T) *httptest.Server {
 	large := filestore.FileInfo{Name: largeFileName, Class: binariesClass, Format: binFormat}
 	require.Nil(t, svc.SaveGroupFile(context.Background(), bytes.NewReader(make([]byte, largeFileSize)), token, groupID, large))
 
-	h := httpapi.MakeHandler(mocktracer.New(), svc, mocks.NewAuthService("", nil, nil), logger.NewMock())
+	h := httpapi.MakeHandler(mocktracer.New(), svc, mocks.NewAuthService("", nil, nil), uploadLimitMiB, logger.NewMock())
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 

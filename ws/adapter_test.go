@@ -37,7 +37,7 @@ const (
 var msg = protomfx.Message{
 	ThingId:  thingID,
 	Protocol: protocol,
-	Payload:  []byte(`[{"n":"current","t":-5,"v":1.2}]`),
+	Records:  []*protomfx.Record{{Payload: []byte(`[{"n":"current","t":-5,"v":1.2}]`)}},
 }
 
 var cmd = protomfx.Command{

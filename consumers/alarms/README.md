@@ -14,7 +14,7 @@ Alarms service consumes messages published by the Rules engine or Lua scripts an
 | `subtopic`  | string          | Message subtopic                                                                                  |
 | `protocol`  | string          | Protocol used to publish the triggering message                                                   |
 | `rule`      | JSON (optional) | Conditions and operator of the rule that triggered the alarm. Only present for rule-based alarms. |
-| `level`     | integer         | Alarm severity: 1=info, 2=warning, 3=minor, 4=major, 5=critical                                   |
+| `level`     | integer         | Alarm severity: 1=info, 2=low, 3=medium, 4=high, 5=critical                                       |
 | `status`    | string          | Alarm lifecycle status: `active` (default, set on creation), `noted`, or `cleared`                |
 | `created`   | int64           | Unix timestamp (nanoseconds) when the alarm was created                                           |
 

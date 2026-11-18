@@ -78,6 +78,10 @@ const (
 	defEmailFromName     = ""
 	defEmailTemplatesDir = "."
 
+	defHost      = "http://localhost"
+	defThingPath = ""
+	defRulePath  = ""
+
 	envLogLevel          = "MF_SMTP_NOTIFIER_LOG_LEVEL"
 	envFrom              = "MF_SMTP_NOTIFIER_FROM_ADDR"
 	envJaegerURL         = "MF_JAEGER_URL"
@@ -109,6 +113,10 @@ const (
 	envEmailFromAddress  = "MF_EMAIL_FROM_ADDRESS"
 	envEmailFromName     = "MF_EMAIL_FROM_NAME"
 	envEmailTemplatesDir = "MF_EMAIL_TEMPLATES_DIR"
+
+	envHost      = "MF_HOST"
+	envThingPath = "MF_SMTP_NOTIFIER_THING_PATH"
+	envRulePath  = "MF_SMTP_NOTIFIER_RULE_PATH"
 )
 
 type config struct {
@@ -124,6 +132,7 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
+	linksConfig       smtp.LinksConfig
 }
 
 func main() {
@@ -256,6 +265,12 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	linksConfig := smtp.LinksConfig{
+		Host:      mainflux.Env(envHost, defHost),
+		ThingPath: mainflux.Env(envThingPath, defThingPath),
+		RulePath:  mainflux.Env(envRulePath, defRulePath),
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
@@ -269,6 +284,7 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
+		linksConfig:       linksConfig,
 	}
 
 }
@@ -313,7 +329,7 @@ func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db 
 		os.Exit(1)
 	}
 
-	notifier := smtp.New(agent, c.from)
+	notifier := smtp.New(agent, c.from, c.linksConfig)
 	notifierRepo := postgres.NewNotifierRepository(database)
 	notifierRepo = tracing.NotifierRepositoryMiddleware(dbTracer, notifierRepo)
 	svc := notifiers.New(idp, notifier, notifierRepo, tc)

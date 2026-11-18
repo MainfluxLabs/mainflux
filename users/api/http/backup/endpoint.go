@@ -51,7 +51,8 @@ func buildBackupResponse(admin users.User, users []users.User, identities []user
 			Metadata: admin.Metadata,
 			Status:   admin.Status,
 		},
-		Users: []backupUserRes{},
+		Users:      []backupUserRes{},
+		Identities: []backupIdentityRes{},
 	}
 
 	for _, user := range users {

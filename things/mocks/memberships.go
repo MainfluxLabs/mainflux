@@ -150,5 +150,7 @@ func (gmr *groupMembershipsRepositoryMock) Remove(_ context.Context, groupID str
 		}
 	}
 
+	gmr.groupMemberships[groupID] = memberships
+
 	return nil
 }

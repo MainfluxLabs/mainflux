@@ -6,8 +6,10 @@ package grpc
 import "github.com/MainfluxLabs/mainflux/auth"
 
 type identityRes struct {
-	id    string
-	email string
+	id                string
+	email             string
+	impersonatorID    string
+	impersonatorEmail string
 }
 
 type issueRes struct {
@@ -22,8 +24,25 @@ type retrieveRoleRes struct {
 	role string
 }
 
+type retrieveRolesRes struct {
+	roles map[string]string
+}
+
 type ownerIDByOrgRes struct {
 	ownerID string
+}
+
+type adminsByOrgRes struct {
+	memberships []auth.OrgMembership
+}
+
+type orgIDsByAdminRes struct {
+	orgIDs []string
+}
+
+type orgMembershipRes struct {
+	memberID string
+	role     string
 }
 
 type orgRes struct {

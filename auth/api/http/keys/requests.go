@@ -25,9 +25,13 @@ func (req issueKeyReq) validate() error {
 		return apiutil.ErrBearerToken
 	}
 
-	if req.Type != auth.RecoveryKey &&
-		req.Type != auth.APIKey {
+	// Recovery keys are issued only by the users service for password reset.
+	if req.Type != auth.APIKey {
 		return apiutil.ErrInvalidAPIKey
+	}
+
+	if req.Duration <= 0 {
+		return apiutil.ErrMissingKeyDuration
 	}
 
 	return nil

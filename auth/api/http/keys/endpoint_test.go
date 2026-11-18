@@ -20,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	pkgmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/opentracing/opentracing-go/mocktracer"
@@ -37,8 +38,8 @@ const (
 )
 
 type issueRequest struct {
-	Duration time.Duration `json:"duration,omitempty"`
-	Type     uint32        `json:"type,omitempty"`
+	Duration int64  `json:"duration,omitempty"`
+	Type     uint32 `json:"type,omitempty"`
 }
 
 type testRequest struct {
@@ -90,12 +91,16 @@ func TestIssue(t *testing.T) {
 	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
+	impersonator := &domain.Identity{ID: "123e4567-e89b-12d3-a456-000000000002", Email: "root@example.com"}
+	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
 
 	lk := issueRequest{Type: auth.LoginKey}
-	ak := issueRequest{Type: auth.APIKey, Duration: time.Hour}
+	ak := issueRequest{Type: auth.APIKey, Duration: int64(time.Hour / time.Second)}
 	rk := issueRequest{Type: auth.RecoveryKey}
 
 	cases := []struct {
@@ -120,11 +125,25 @@ func TestIssue(t *testing.T) {
 			status: http.StatusCreated,
 		},
 		{
+			desc:   "issue API key from an impersonated session",
+			req:    toJSON(ak),
+			ct:     contentType,
+			token:  impersonatedSecret,
+			status: http.StatusForbidden,
+		},
+		{
 			desc:   "issue recovery key",
 			req:    toJSON(rk),
 			ct:     contentType,
 			token:  loginSecret,
-			status: http.StatusCreated,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "issue API key without duration",
+			req:    toJSON(issueRequest{Type: auth.APIKey}),
+			ct:     contentType,
+			token:  loginSecret,
+			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "issue login key wrong content type",
@@ -190,6 +209,25 @@ func TestIssue(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
 	}
+
+	ak1h := issueRequest{Type: auth.APIKey, Duration: int64(time.Hour / time.Second)}
+	expReq := testRequest{
+		client:      client,
+		method:      http.MethodPost,
+		url:         fmt.Sprintf("%s/keys", ts.URL),
+		contentType: contentType,
+		token:       loginSecret,
+		body:        strings.NewReader(toJSON(ak1h)),
+	}
+	expRes, err := expReq.make()
+	assert.Nil(t, err, fmt.Sprintf("issue API key for expiry check: unexpected error %s", err))
+	var kr struct {
+		IssuedAt  time.Time `json:"issued_at"`
+		ExpiresAt time.Time `json:"expires_at"`
+	}
+	err = json.NewDecoder(expRes.Body).Decode(&kr)
+	assert.Nil(t, err, fmt.Sprintf("decode issued key: unexpected error %s", err))
+	assert.WithinDuration(t, kr.IssuedAt.Add(time.Hour), kr.ExpiresAt, time.Second, "API key must expire the requested duration after issuance")
 }
 
 func TestRetrieve(t *testing.T) {

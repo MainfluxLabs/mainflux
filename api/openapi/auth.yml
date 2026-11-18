@@ -31,7 +31,8 @@ paths:
       summary: End every session for the user
       description: |
         Revokes every session belonging to the owner of the presented token,
-        across all of their browsers and devices.
+        across all of their browsers and devices, and every session they
+        impersonate. From an impersonated session it revokes only that session.
       tags:
         - auth
       security:
@@ -79,7 +80,9 @@ paths:
         '201':
           description: Issued new key.
         '400':
-          description: Failed due to malformed JSON.
+          description: Failed due to malformed JSON, a key type other than API key, or a missing duration.
+        '403':
+          description: API keys cannot be issued from an impersonated session.
         '409':
           description: Failed due to using already existing ID.
         '415':
@@ -533,7 +536,7 @@ paths:
       summary: Retrieves backup of orgs service.
       description: |
         Retrieves backup of the orgs service. Backup is a JSON file that contains
-        all orgs, org memberships and org groups.
+        all orgs, org memberships and platform user roles.
       tags:
         - auth
       responses:
@@ -548,7 +551,8 @@ paths:
       summary: Restores org service from backup.
       description: |
         Restores org service from backup. Backup is a JSON file that contains
-        all orgs, org memberships and org groups.
+        all orgs, org memberships and platform user roles. User roles are skipped for
+        users that already have a role. Only accessible by root admin.
       tags:
         - auth
       requestBody:
@@ -557,9 +561,11 @@ paths:
         '201':
           description: Backup restored.
         '400':
-          description: Failed due to malformed JSON.
+          description: Failed due to malformed JSON or an invalid user role.
         '401':
           description: Missing or invalid access token provided.
+        '403':
+          description: This endpoint is available only for the root administrator.
         '500':
           $ref: "#/components/responses/ServiceError"
   /health:
@@ -802,6 +808,22 @@ components:
         - role
         - created_at
         - updated_at
+    UserRoleSchema:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Unique user identifier.
+          example: "2e3f8a1c-6b4d-4f2a-9c7e-5d1b0a8f3e21"
+        role:
+          type: string
+          enum: [root, admin]
+          description: Platform role of the user.
+          example: "admin"
+      required:
+        - user_id
+        - role
     GroupResSchema:
       type: object
       properties:
@@ -879,6 +901,11 @@ components:
           uniqueItems: true
           items:
             $ref: "#/components/schemas/OrgMembershipsResSchema"
+        user_roles:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/UserRoleSchema"
       required:
         - orgs
         - org_memberships
@@ -963,7 +990,7 @@ components:
           description: The user's proposed role in the organization.
         group_invites:
           type: array
-          description: Optional list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups.
+          description: Optional list of Groups and roles within those groups. If present, upon accepting the invite, the recipient is also assigned as a member of the groups. Not allowed for the admin role, which grants access to every group of the organization.
           items:
             $ref: '#/components/schemas/GroupInvite'
 
@@ -1072,7 +1099,7 @@ components:
                 type: number
                 format: integer
                 example: 23456
-                description: Number of seconds issued token is valid for.
+                description: Number of seconds issued token is valid for. Required and must be positive for API keys.
     OrgReq:
       description: JSON-formatted document describing a request to create and update organizations.
       required: true

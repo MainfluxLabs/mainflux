@@ -7,30 +7,27 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 )
 
 type identityReq struct {
 	token string
-	kind  uint32
 }
 
 func (req identityReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
-	if req.kind != auth.LoginKey &&
-		req.kind != auth.APIKey &&
-		req.kind != auth.RecoveryKey {
-		return apiutil.ErrInvalidAuthKey
-	}
 
 	return nil
 }
 
 type issueReq struct {
-	id      string
-	email   string
-	keyType uint32
+	id                string
+	email             string
+	keyType           uint32
+	impersonatorID    string
+	impersonatorEmail string
 }
 
 func (req issueReq) validate() error {
@@ -40,6 +37,11 @@ func (req issueReq) validate() error {
 	if req.keyType != auth.LoginKey &&
 		req.keyType != auth.APIKey &&
 		req.keyType != auth.RecoveryKey {
+		return apiutil.ErrInvalidAuthKey
+	}
+
+	// Only login sessions can be impersonated.
+	if req.impersonatorID != "" && req.keyType != auth.LoginKey {
 		return apiutil.ErrInvalidAuthKey
 	}
 
@@ -63,6 +65,18 @@ type revokeSessionsReq struct {
 }
 
 func (req revokeSessionsReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
+type revokeAPIKeysReq struct {
+	id string
+}
+
+func (req revokeAPIKeysReq) validate() error {
 	if req.id == "" {
 		return apiutil.ErrMissingUserID
 	}
@@ -102,6 +116,47 @@ func (req ownerIDByOrgReq) validate() error {
 	return nil
 }
 
+type adminsByOrgReq struct {
+	orgID string
+}
+
+func (req adminsByOrgReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	return nil
+}
+
+type orgIDsByAdminReq struct {
+	memberID string
+}
+
+func (req orgIDsByAdminReq) validate() error {
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	return nil
+}
+
+type orgMembershipReq struct {
+	orgID    string
+	memberID string
+}
+
+func (req orgMembershipReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if req.memberID == "" {
+		return apiutil.ErrMissingMemberID
+	}
+
+	return nil
+}
+
 type assignRoleReq struct {
 	ID   string
 	Role string
@@ -131,6 +186,30 @@ func (req retrieveRoleReq) validate() error {
 	return nil
 }
 
+type retrieveRolesReq struct {
+	ids []string
+}
+
+func (req retrieveRolesReq) validate() error {
+	if len(req.ids) == 0 {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
+type unassignRoleReq struct {
+	id string
+}
+
+func (req unassignRoleReq) validate() error {
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+
+	return nil
+}
+
 type createDormantOrgInviteReq struct {
 	token            string
 	orgID            string
@@ -150,6 +229,11 @@ func (req createDormantOrgInviteReq) validate() error {
 
 	if req.inviteeRole == "" {
 		return apiutil.ErrMissingRole
+	}
+
+	// Org admins hold their group roles through their org role.
+	if req.inviteeRole == auth.Admin && len(req.groupInvites) > 0 {
+		return errors.ErrMalformedEntity
 	}
 
 	if req.platformInviteID == "" {

@@ -15,6 +15,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/auth/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	thmocks "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -99,6 +100,30 @@ func newServiceWithMaxSessionDuration(maxDuration time.Duration) auth.Service {
 		uuid.NewMock(), jwt.New(secret), loginDuration, maxDuration, inviteDuration)
 }
 
+// failingGroupMembershipsRemoval is a things client whose group memberships removal fails.
+type failingGroupMembershipsRemoval struct {
+	domain.ThingsClient
+}
+
+func (failingGroupMembershipsRemoval) RemoveGroupMembershipsByOrg(context.Context, string, ...string) error {
+	return dbutil.ErrRemoveEntity
+}
+
+func newServiceWithThings(tc domain.ThingsClient) auth.Service {
+	membsRepo := mocks.NewOrgMembershipsRepository()
+	orgRepo := mocks.NewOrgRepository(membsRepo)
+	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
+	keyRepo := mocks.NewKeyRepository()
+	sessionRepo := mocks.NewSessionRepository()
+	roleRepo := mocks.NewRolesRepository()
+	invitesRepo := mocks.NewInvitesRepository()
+	emailerMock := mocks.NewEmailer()
+	t := jwt.New(secret)
+
+	return auth.New(orgRepo, tc, uc, keyRepo, sessionRepo, roleRepo, membsRepo, invitesRepo,
+		emailerMock, uuid.NewMock(), t, loginDuration, maxSessionDuration, inviteDuration)
+}
+
 func TestRefreshSessionMaxDuration(t *testing.T) {
 	svc := newServiceWithMaxSessionDuration(time.Minute)
 
@@ -107,13 +132,13 @@ func TestRefreshSessionMaxDuration(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	_, err = svc.Identify(context.Background(), secret)
-	require.Nil(t, err, fmt.Sprintf("the token itself expected to still be valid: %s", err))
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("a token past the session cap expected to be rejected, got %s", err))
 
 	_, err = svc.RefreshToken(context.Background(), secret)
 	assert.True(t, errors.Contains(err, auth.ErrSessionExpired), fmt.Sprintf("expected the session cap to be enforced, got %s", err))
 
 	_, err = svc.Identify(context.Background(), secret)
-	assert.Nil(t, err, fmt.Sprintf("the capped token expected to stay usable until it expires: %s", err))
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("the capped token expected to be rejected, got %s", err))
 }
 
 func createGroups() map[string]things.Group {
@@ -135,6 +160,10 @@ func TestIssue(t *testing.T) {
 	svc := newService()
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	impersonator := &domain.Identity{ID: ownerID, Email: ownerEmail}
+	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
 
 	cases := []struct {
 		desc  string
@@ -187,6 +216,15 @@ func TestIssue(t *testing.T) {
 			},
 			token: "invalid",
 			err:   errors.ErrAuthentication,
+		},
+		{
+			desc: "issue API key with an impersonated token",
+			key: auth.Key{
+				Type:     auth.APIKey,
+				IssuedAt: time.Now(),
+			},
+			token: impersonatedSecret,
+			err:   errors.ErrAuthorization,
 		},
 		{
 			desc: "issue API key with no time",
@@ -288,7 +326,7 @@ func TestRefreshRotatesToken(t *testing.T) {
 	assert.Equal(t, email, identity.Email, fmt.Sprintf("expected email %s got %s", email, identity.Email))
 
 	_, err = svc.Identify(context.Background(), secret)
-	assert.Nil(t, err, fmt.Sprintf("the rotated-away token expected to stay usable until it expires: %s", err))
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("the rotated-away token expected to be rejected, got %s", err))
 }
 
 func TestRefreshReuseKillsSession(t *testing.T) {
@@ -304,7 +342,7 @@ func TestRefreshReuseKillsSession(t *testing.T) {
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected reuse to be detected, got %s", err))
 
 	_, err = svc.Identify(context.Background(), rotated)
-	assert.Nil(t, err, fmt.Sprintf("the killed family's token expected to stay usable until it expires: %s", err))
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("the killed family's token expected to be rejected, got %s", err))
 
 	_, err = svc.RefreshToken(context.Background(), rotated)
 	assert.True(t, errors.Contains(err, auth.ErrSessionReuse), fmt.Sprintf("expected refresh on a killed session to fail, got %s", err))
@@ -375,7 +413,10 @@ func TestLogout(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Logout expected to succeed: %s", err))
 
 	_, err = svc.Identify(context.Background(), first)
-	assert.Nil(t, err, fmt.Sprintf("the logged out token expected to stay usable until it expires: %s", err))
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("the logged out token expected to be rejected, got %s", err))
+
+	_, err = svc.Identify(context.Background(), second)
+	assert.Nil(t, err, fmt.Sprintf("the other session's token expected to survive logout: %s", err))
 
 	_, err = svc.RefreshToken(context.Background(), first)
 	assert.NotNil(t, err, "expected the logged out session to be unextendable")
@@ -397,11 +438,26 @@ func TestLogoutAll(t *testing.T) {
 
 	for _, token := range []string{first, second} {
 		_, err = svc.Identify(context.Background(), token)
-		assert.Nil(t, err, fmt.Sprintf("a logged out token expected to stay usable until it expires: %s", err))
+		assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("a logged out token expected to be rejected, got %s", err))
 
 		_, err = svc.RefreshToken(context.Background(), token)
 		assert.NotNil(t, err, "expected every session to be unextendable")
 	}
+
+	_, own, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	impersonator := &domain.Identity{ID: ownerID, Email: ownerEmail}
+	_, impersonated, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	require.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
+	err = svc.LogoutAll(context.Background(), impersonated)
+	assert.Nil(t, err, fmt.Sprintf("LogoutAll from an impersonated session expected to succeed: %s", err))
+
+	_, err = svc.Identify(context.Background(), impersonated)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("the impersonated token expected to be rejected, got %s", err))
+
+	_, err = svc.Identify(context.Background(), own)
+	assert.Nil(t, err, fmt.Sprintf("the impersonated user's own session expected to stay alive: %s", err))
 }
 
 // RevokeSessions is the path another service takes after a credential
@@ -414,11 +470,17 @@ func TestRevokeSessions(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, second, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	impersonator := &domain.Identity{ID: id, Email: email}
+	_, impersonated, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail, Impersonator: impersonator})
+	require.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
 
 	err = svc.RevokeSessions(context.Background(), id)
 	assert.Nil(t, err, fmt.Sprintf("RevokeSessions expected to succeed: %s", err))
 
-	for _, token := range []string{first, second} {
+	for _, token := range []string{first, second, impersonated} {
+		_, err = svc.Identify(context.Background(), token)
+		assert.True(t, errors.Contains(err, errors.ErrAuthentication), fmt.Sprintf("a revoked token expected to be rejected, got %s", err))
+
 		_, err = svc.RefreshToken(context.Background(), token)
 		assert.NotNil(t, err, "expected every session of the user to be unextendable")
 	}
@@ -511,6 +573,57 @@ func TestRevoke(t *testing.T) {
 	}
 }
 
+func TestRevokeAPIKeys(t *testing.T) {
+	svc := newService()
+	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	_, otherSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, apiKey, err := svc.Issue(context.Background(), secret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now()})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+	_, otherAPIKey, err := svc.Issue(context.Background(), otherSecret, auth.Key{Type: auth.APIKey, IssuedAt: time.Now()})
+	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc   string
+		userID string
+		err    error
+	}{
+		{
+			desc:   "revoke API keys",
+			userID: id,
+			err:    nil,
+		},
+		{
+			desc:   "revoke API keys of user without API keys",
+			userID: id,
+			err:    nil,
+		},
+		{
+			desc:   "revoke API keys without user id",
+			userID: "",
+			err:    apiutil.ErrMissingUserID,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RevokeAPIKeys(context.Background(), tc.userID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+
+	_, err = svc.Identify(context.Background(), apiKey)
+	msg := fmt.Sprintf("revoked API key: expected %s got %s\n", errors.ErrAuthentication, err)
+	assert.True(t, errors.Contains(err, errors.ErrAuthentication), msg)
+
+	_, err = svc.Identify(context.Background(), secret)
+	assert.Nil(t, err, fmt.Sprintf("login key of the user expected to survive: %s", err))
+
+	_, err = svc.Identify(context.Background(), otherAPIKey)
+	assert.Nil(t, err, fmt.Sprintf("API key of another user expected to survive: %s", err))
+}
+
 func TestRetrieve(t *testing.T) {
 	svc := newService()
 	_, secret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), Subject: email, IssuerID: id})
@@ -531,6 +644,12 @@ func TestRetrieve(t *testing.T) {
 
 	_, resetToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now()})
 	assert.Nil(t, err, fmt.Sprintf("Issuing reset key expected to succeed: %s", err))
+
+	_, loggedOutToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	err = svc.Logout(context.Background(), loggedOutToken)
+	assert.Nil(t, err, fmt.Sprintf("Logout expected to succeed: %s", err))
 
 	cases := []struct {
 		desc  string
@@ -568,6 +687,12 @@ func TestRetrieve(t *testing.T) {
 			token: resetToken,
 			err:   errors.ErrAuthentication,
 		},
+		{
+			desc:  "retrieve with logged out login token",
+			id:    apiKey.ID,
+			token: loggedOutToken,
+			err:   errors.ErrAuthentication,
+		},
 	}
 
 	for _, tc := range cases {
@@ -595,6 +720,24 @@ func TestIdentify(t *testing.T) {
 	invalidSecret, err := jwt.New(secret).Issue(auth.Key{Type: 22, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Signing a key of an unknown type expected to succeed: %s", err))
 
+	tokenizer := jwt.New(secret)
+
+	unknownSessionSecret, err := tokenizer.Issue(auth.Key{ID: "unknown", Type: auth.LoginKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Signing a login key without a session expected to succeed: %s", err))
+
+	loginKey, err := tokenizer.Parse(loginSecret)
+	assert.Nil(t, err, fmt.Sprintf("Parsing login key expected to succeed: %s", err))
+
+	otherUserSecret, err := tokenizer.Issue(auth.Key{ID: loginKey.ID, Type: auth.LoginKey, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute), IssuerID: ownerID, Subject: ownerEmail})
+	assert.Nil(t, err, fmt.Sprintf("Signing a login key with another user's session expected to succeed: %s", err))
+
+	impersonator := &domain.Identity{ID: ownerID, Email: ownerEmail}
+	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
+	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
+
+	refreshedImpersonatedSecret, err := svc.RefreshToken(context.Background(), impersonatedSecret)
+	assert.Nil(t, err, fmt.Sprintf("Refreshing impersonated login key expected to succeed: %s", err))
+
 	cases := []struct {
 		desc string
 		key  string
@@ -608,10 +751,28 @@ func TestIdentify(t *testing.T) {
 			err:  nil,
 		},
 		{
+			desc: "identify refreshed impersonated login key",
+			key:  refreshedImpersonatedSecret,
+			idt:  auth.Identity{ID: id, Email: email, Impersonator: impersonator},
+			err:  nil,
+		},
+		{
+			desc: "identify login key without a session",
+			key:  unknownSessionSecret,
+			idt:  auth.Identity{},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "identify login key with another user's session",
+			key:  otherUserSecret,
+			idt:  auth.Identity{},
+			err:  errors.ErrAuthentication,
+		},
+		{
 			desc: "identify recovery key",
 			key:  recoverySecret,
-			idt:  auth.Identity{ID: id, Email: email},
-			err:  nil,
+			idt:  auth.Identity{},
+			err:  errors.ErrAuthentication,
 		},
 		{
 			desc: "identify API key",
@@ -642,7 +803,58 @@ func TestIdentify(t *testing.T) {
 	for _, tc := range cases {
 		idt, err := svc.Identify(context.Background(), tc.key)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
-		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.idt, idt))
+		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %v got %v\n", tc.desc, tc.idt, idt))
+	}
+}
+
+func TestIdentifyRecovery(t *testing.T) {
+	svc := newService()
+
+	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	_, recoverySecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.RecoveryKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
+	assert.Nil(t, err, fmt.Sprintf("Issuing reset key expected to succeed: %s", err))
+
+	_, apiSecret, err := svc.Issue(context.Background(), loginSecret, auth.Key{Type: auth.APIKey, IssuerID: id, Subject: email, IssuedAt: time.Now(), ExpiresAt: time.Now().Add(time.Minute)})
+	assert.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
+
+	cases := []struct {
+		desc string
+		key  string
+		idt  auth.Identity
+		err  error
+	}{
+		{
+			desc: "identify recovery key",
+			key:  recoverySecret,
+			idt:  auth.Identity{ID: id, Email: email},
+			err:  nil,
+		},
+		{
+			desc: "identify login key",
+			key:  loginSecret,
+			idt:  auth.Identity{},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "identify API key",
+			key:  apiSecret,
+			idt:  auth.Identity{},
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc: "identify invalid key",
+			key:  "invalid",
+			idt:  auth.Identity{},
+			err:  errors.ErrAuthentication,
+		},
+	}
+
+	for _, tc := range cases {
+		idt, err := svc.IdentifyRecovery(context.Background(), tc.key)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %v got %v\n", tc.desc, tc.idt, idt))
 	}
 }
 
@@ -1246,6 +1458,36 @@ func TestRemoveOrgMemberships(t *testing.T) {
 		err := svc.RemoveOrgMemberships(context.Background(), tc.token, tc.orgID, tc.memberID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
+}
+
+func TestRemoveOrgMembershipsWithFailedGroupMembershipsRemoval(t *testing.T) {
+	tc := failingGroupMembershipsRemoval{
+		ThingsClient: thmocks.NewThingsServiceClient(nil, nil, createGroups()),
+	}
+	svc := newServiceWithThings(tc)
+
+	key := auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: ownerID,
+		Subject:  ownerEmail,
+	}
+	_, ownerToken, err := svc.Issue(context.Background(), "", key)
+	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+
+	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
+	err = svc.RemoveOrgMemberships(context.Background(), ownerToken, or.ID, viewerID)
+	msg := fmt.Sprintf("expected %s got %s\n", dbutil.ErrRemoveEntity, err)
+	assert.True(t, errors.Contains(err, dbutil.ErrRemoveEntity), msg)
+
+	om, err := svc.ViewOrgMembership(context.Background(), ownerToken, or.ID, viewerID)
+	require.Nil(t, err, fmt.Sprintf("org membership expected to remain: %s\n", err))
+	assert.Equal(t, auth.Viewer, om.Role, fmt.Sprintf("expected %s got %s\n", auth.Viewer, om.Role))
 }
 
 func TestUpdateOrgMemberships(t *testing.T) {
@@ -1973,6 +2215,7 @@ func TestBackup(t *testing.T) {
 		token             string
 		orgSize           int
 		orgMembershipSize int
+		userRoleSize      int
 		err               error
 	}{
 		{
@@ -1980,6 +2223,7 @@ func TestBackup(t *testing.T) {
 			token:             superAdminToken,
 			orgSize:           1,
 			orgMembershipSize: len(memberships) + 1,
+			userRoleSize:      1,
 			err:               nil,
 		},
 		{
@@ -2009,8 +2253,11 @@ func TestBackup(t *testing.T) {
 		page, err := svc.Backup(context.Background(), tc.token)
 		orgSize := len(page.Orgs)
 		orgMembershipSize := len(page.OrgMemberships)
+		userRoleSize := len(page.UserRoles)
 		assert.Equal(t, tc.orgSize, orgSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgSize, orgSize))
 		assert.Equal(t, tc.orgMembershipSize, orgMembershipSize, fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.orgMembershipSize, orgMembershipSize))
+		msg := fmt.Sprintf("%s expected %d got %d\n", tc.desc, tc.userRoleSize, userRoleSize)
+		assert.Equal(t, tc.userRoleSize, userRoleSize, msg)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -2022,8 +2269,18 @@ func TestRestore(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
+	platformAdminKey := auth.Key{
+		Type:     auth.LoginKey,
+		IssuedAt: time.Now(),
+		IssuerID: adminID,
+		Subject:  adminEmail,
+	}
+	_, platformAdminToken, err := svc.Issue(context.Background(), "", platformAdminKey)
+	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
+	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	var memberIDs []string
@@ -2039,9 +2296,25 @@ func TestRestore(t *testing.T) {
 		orgMemberships = append(orgMemberships, auth.OrgMembership{MemberID: memberID, OrgID: id})
 	}
 
+	userRoles := []auth.UserRole{
+		{
+			UserID: rootAdminID,
+			Role:   auth.RoleAdmin,
+		},
+		{
+			UserID: editorID,
+			Role:   auth.RoleAdmin,
+		},
+		{
+			UserID: viewerID,
+			Role:   auth.RoleRootAdmin,
+		},
+	}
+
 	backup := auth.Backup{
 		Orgs:           orgs,
 		OrgMemberships: orgMemberships,
+		UserRoles:      userRoles,
 	}
 
 	cases := []struct {
@@ -2074,10 +2347,29 @@ func TestRestore(t *testing.T) {
 			backup: backup,
 			err:    errors.ErrAuthorization,
 		},
+		{
+			desc:   "restore as platform admin",
+			token:  platformAdminToken,
+			backup: backup,
+			err:    errors.ErrAuthorization,
+		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Restore(context.Background(), tc.token, backup)
+		err := svc.Restore(context.Background(), tc.token, tc.backup)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
+	}
+
+	roles := map[string]string{
+		rootAdminID: auth.RoleRootAdmin,
+		editorID:    auth.RoleAdmin,
+		viewerID:    "",
+	}
+
+	for userID, expected := range roles {
+		role, err := svc.RetrieveRole(context.Background(), userID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		msg := fmt.Sprintf("%s: expected role %s got %s\n", userID, expected, role)
+		assert.Equal(t, expected, role, msg)
 	}
 }

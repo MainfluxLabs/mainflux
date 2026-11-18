@@ -130,6 +130,34 @@ func (mrm *orgMembershipsRepositoryMock) RetrieveByOrg(_ context.Context, orgID 
 	}, nil
 }
 
+func (mrm *orgMembershipsRepositoryMock) RetrieveAdminsByOrg(_ context.Context, orgID string) ([]auth.OrgMembership, error) {
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	var oms []auth.OrgMembership
+	for _, m := range mrm.membershipsByOrgID[orgID] {
+		if m.Role == auth.Owner || m.Role == auth.Admin {
+			oms = append(oms, m)
+		}
+	}
+
+	return oms, nil
+}
+
+func (mrm *orgMembershipsRepositoryMock) RetrieveOrgIDsByAdmin(_ context.Context, memberID string) ([]string, error) {
+	mrm.mu.Lock()
+	defer mrm.mu.Unlock()
+
+	var orgIDs []string
+	for _, m := range mrm.memberships[memberID] {
+		if m.Role == auth.Owner || m.Role == auth.Admin {
+			orgIDs = append(orgIDs, m.OrgID)
+		}
+	}
+
+	return orgIDs, nil
+}
+
 func (mrm *orgMembershipsRepositoryMock) BackupAll(_ context.Context) ([]auth.OrgMembership, error) {
 	mrm.mu.Lock()
 	defer mrm.mu.Unlock()

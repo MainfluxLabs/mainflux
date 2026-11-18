@@ -10,6 +10,9 @@ import (
 // ErrGroupMembershipExists indicates that membership already exists.
 var ErrGroupMembershipExists = errors.New("group membership already exists")
 
+// ErrMemberNotInOrg indicates that the member does not belong to the organization of the group.
+var ErrMemberNotInOrg = errors.New("member does not belong to the organization")
+
 // Domain type aliases
 type (
 	GroupMembership      = domain.GroupMembership
@@ -56,9 +59,17 @@ type GroupMemberships interface {
 
 	// RemoveGroupMemberships removes memberships from the given group.
 	RemoveGroupMemberships(ctx context.Context, token, groupID string, memberIDs ...string) error
+
+	// RemoveGroupMembershipsByOrg removes memberships of the members from all groups of the org.
+	RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error
 }
 
 func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redirectPath string, gms ...GroupMembership) error {
+	adminRolesByGroup := make(map[string]map[string]string)
+	groupByID := make(map[string]Group)
+
+	// Every membership is validated before any is saved, so a single rejected
+	// member does not leave the earlier members of the batch persisted.
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -69,31 +80,82 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 			return err
 		}
 
-		group, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+		// Org owners and org admins hold their group role through their org role.
+		adminRoles, ok := adminRolesByGroup[gm.GroupID]
+		if !ok {
+			roles, err := ts.getOrgAdminRoles(ctx, gm.GroupID)
+			if err != nil {
+				return err
+			}
+			adminRoles = roles
+			adminRolesByGroup[gm.GroupID] = roles
+		}
+
+		if _, ok := adminRoles[gm.MemberID]; ok {
+			return ErrGroupMembershipExists
+		}
+
+		group, ok := groupByID[gm.GroupID]
+		if !ok {
+			g, err := ts.groups.RetrieveByID(ctx, gm.GroupID)
+			if err != nil {
+				return err
+			}
+			group = g
+			groupByID[gm.GroupID] = g
+		}
+
+		om, err := ts.auth.GetOrgMembership(ctx, group.OrgID, gm.MemberID)
 		if err != nil {
 			return err
 		}
-
-		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
-			return err
+		if om.Role == "" {
+			return ErrMemberNotInOrg
 		}
+	}
 
+	if err := ts.groupMemberships.Save(ctx, gms...); err != nil {
+		return err
+	}
+
+	for _, gm := range gms {
 		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
+	}
 
-		org, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
+	memberIDs := make([]string, 0, len(gms))
+	for _, gm := range gms {
+		memberIDs = append(memberIDs, gm.MemberID)
+	}
 
-		if err != nil {
-			continue
+	page, err := ts.users.GetUsersByIDs(ctx, memberIDs, domain.UsersPageMetadata{})
+	if err != nil {
+		return nil
+	}
+	emailByMember := make(map[string]string, len(page.Users))
+	for _, u := range page.Users {
+		emailByMember[u.ID] = u.Email
+	}
+
+	orgByID := make(map[string]domain.Org)
+	for _, gm := range gms {
+		group := groupByID[gm.GroupID]
+
+		org, ok := orgByID[group.OrgID]
+		if !ok {
+			o, err := ts.auth.ViewOrg(ctx, token, group.OrgID)
+			if err != nil {
+				continue
+			}
+			org = o
+			orgByID[group.OrgID] = o
 		}
 
-		page, err := ts.users.GetUsersByIDs(ctx, []string{gm.MemberID}, domain.UsersPageMetadata{})
-		if err != nil {
+		recipientEmail, ok := emailByMember[gm.MemberID]
+		if !ok {
 			continue
 		}
-
-		recipientEmail := page.Users[0].Email
 
 		// Send e-mail notification
 		go func() {
@@ -105,11 +167,11 @@ func (ts *thingsService) CreateGroupMemberships(ctx context.Context, token, redi
 }
 
 func (ts *thingsService) CreateGroupMembershipsInternal(ctx context.Context, gms ...GroupMembership) error {
-	for _, gm := range gms {
-		if err := ts.groupMemberships.Save(ctx, gm); err != nil {
-			return err
-		}
+	if err := ts.groupMemberships.Save(ctx, gms...); err != nil {
+		return err
+	}
 
+	for _, gm := range gms {
 		if err := ts.groupCache.SaveGroupMembership(ctx, gm.GroupID, gm.MemberID, gm.Role); err != nil {
 			return err
 		}
@@ -129,20 +191,39 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 		return GroupMembershipsPage{}, err
 	}
 
-	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, PageMetadata{Role: pm.Role})
+	gmp, err := ts.groupMemberships.RetrieveByGroup(ctx, groupID, PageMetadata{})
 	if err != nil {
 		return GroupMembershipsPage{}, err
 	}
-	memberships := gmp.GroupMemberships
-	if len(memberships) == 0 {
-		return GroupMembershipsPage{GroupMemberships: []GroupMembership{}}, nil
+
+	adminRoles, err := ts.getOrgAdminRoles(ctx, groupID)
+	if err != nil {
+		return GroupMembershipsPage{}, err
 	}
 
-	memberIDs := make([]string, 0, len(memberships))
-	membershipByMemberID := make(map[string]GroupMembership, len(memberships))
-	for _, m := range memberships {
-		memberIDs = append(memberIDs, m.MemberID)
+	size := len(gmp.GroupMemberships) + len(adminRoles)
+	membershipByMemberID := make(map[string]GroupMembership, size)
+	for _, m := range gmp.GroupMemberships {
 		membershipByMemberID[m.MemberID] = m
+	}
+
+	// The org role of a member takes precedence over a stored group membership.
+	for memberID, role := range adminRoles {
+		membershipByMemberID[memberID] = GroupMembership{
+			MemberID: memberID,
+			Role:     role,
+		}
+	}
+
+	memberIDs := make([]string, 0, len(membershipByMemberID))
+	for memberID, m := range membershipByMemberID {
+		if pm.Role == "" || m.Role == pm.Role {
+			memberIDs = append(memberIDs, memberID)
+		}
+	}
+
+	if len(memberIDs) == 0 {
+		return GroupMembershipsPage{GroupMemberships: []GroupMembership{}}, nil
 	}
 
 	userPM := domain.UsersPageMetadata{
@@ -173,6 +254,7 @@ func (ts *thingsService) ListGroupMemberships(ctx context.Context, token, groupI
 }
 
 func (ts *thingsService) UpdateGroupMemberships(ctx context.Context, token string, gms ...GroupMembership) error {
+	adminRolesByGroup := make(map[string]map[string]string)
 	for _, gm := range gms {
 		ar := UserAccessReq{
 			Token:  token,
@@ -184,16 +266,24 @@ func (ts *thingsService) UpdateGroupMemberships(ctx context.Context, token strin
 			return err
 		}
 
-		role, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID)
-		if err != nil {
-			r, err := ts.groupMemberships.RetrieveRole(ctx, gm)
+		adminRoles, ok := adminRolesByGroup[gm.GroupID]
+		if !ok {
+			roles, err := ts.getOrgAdminRoles(ctx, gm.GroupID)
 			if err != nil {
 				return err
 			}
-			role = r
+			adminRoles = roles
+			adminRolesByGroup[gm.GroupID] = roles
 		}
-		if role == Owner {
+
+		if _, ok := adminRoles[gm.MemberID]; ok {
 			return errors.ErrAuthorization
+		}
+
+		if _, err := ts.groupCache.ViewRole(ctx, gm.GroupID, gm.MemberID); err != nil {
+			if _, err := ts.groupMemberships.RetrieveRole(ctx, gm); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -221,17 +311,24 @@ func (ts *thingsService) RemoveGroupMemberships(ctx context.Context, token, grou
 		return err
 	}
 
+	adminRoles, err := ts.getOrgAdminRoles(ctx, groupID)
+	if err != nil {
+		return err
+	}
+
 	for _, mid := range memberIDs {
-		role, err := ts.groupCache.ViewRole(ctx, groupID, mid)
-		if err != nil {
-			r, err := ts.groupMemberships.RetrieveRole(ctx, GroupMembership{GroupID: groupID, MemberID: mid})
-			if err != nil {
+		if _, ok := adminRoles[mid]; ok {
+			return errors.ErrAuthorization
+		}
+
+		if _, err := ts.groupCache.ViewRole(ctx, groupID, mid); err != nil {
+			gm := GroupMembership{
+				GroupID:  groupID,
+				MemberID: mid,
+			}
+			if _, err := ts.groupMemberships.RetrieveRole(ctx, gm); err != nil {
 				return err
 			}
-			role = r
-		}
-		if role == Owner {
-			return errors.ErrAuthorization
 		}
 	}
 
@@ -242,6 +339,28 @@ func (ts *thingsService) RemoveGroupMemberships(ctx context.Context, token, grou
 	for _, mid := range memberIDs {
 		if err := ts.groupCache.RemoveGroupMembership(ctx, groupID, mid); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (ts *thingsService) RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error {
+	for _, mid := range memberIDs {
+		grIDs, err := ts.groups.RetrieveIDsByOrgMembership(ctx, orgID, mid)
+		if err != nil {
+			return err
+		}
+
+		for _, grID := range grIDs {
+			// The cache entry is removed first because a retry reads group IDs from the database.
+			if err := ts.groupCache.RemoveGroupMembership(ctx, grID, mid); err != nil {
+				return err
+			}
+
+			if err := ts.groupMemberships.Remove(ctx, grID, mid); err != nil {
+				return err
+			}
 		}
 	}
 

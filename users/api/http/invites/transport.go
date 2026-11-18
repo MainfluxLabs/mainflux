@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"regexp"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -26,9 +25,7 @@ import (
 const stateKey = "state"
 
 // MakeHandler returns a HTTP handler for API endpoints.
-func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger, passwordRegex *regexp.Regexp) *bone.Mux {
-	userPasswordRegex = passwordRegex
-
+func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -84,9 +81,7 @@ func MakeHandler(svc users.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 }
 
 func decodePlatformInviteRegister(_ context.Context, r *http.Request) (any, error) {
-	req := registerByInviteReq{
-		inviteID: bone.GetValue(r, apiutil.IDKey),
-	}
+	req := registerByInviteReq{inviteID: bone.GetValue(r, apiutil.IDKey)}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, errors.Wrap(errors.ErrMalformedEntity, err)

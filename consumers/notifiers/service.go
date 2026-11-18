@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/MainfluxLabs/mainflux/consumers"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -62,6 +63,7 @@ type notifierService struct {
 	sender       Sender
 	notifierRepo NotifierRepository
 	things       domain.ThingsClient
+	groups       sync.Map
 }
 
 // New instantiates the subscriptions service implementation.
@@ -88,11 +90,29 @@ func (ns *notifierService) ConsumeNotification(subject string, notification prot
 		return errors.Wrap(ErrNotify, err)
 	}
 
-	if err = ns.sender.Send(notifier.Contacts, notification); err != nil {
+	group := ns.getGroup(ctx, notifier.GroupID)
+	if err = ns.sender.Send(notifier.Contacts, notification, group); err != nil {
 		return errors.Wrap(ErrNotify, err)
 	}
 
 	return nil
+}
+
+// getGroup returns the cached group, fetching it on the first lookup.
+// On failure, it returns the group without an org ID.
+func (ns *notifierService) getGroup(ctx context.Context, groupID string) domain.Group {
+	if group, ok := ns.groups.Load(groupID); ok {
+		return group.(domain.Group)
+	}
+
+	group, err := ns.things.GetGroup(ctx, groupID)
+	if err != nil {
+		return domain.Group{ID: groupID}
+	}
+
+	ns.groups.Store(groupID, group)
+
+	return group
 }
 
 func (ns *notifierService) CreateNotifiers(ctx context.Context, token, groupID string, notifiers ...Notifier) ([]Notifier, error) {
@@ -187,5 +207,7 @@ func (ns *notifierService) RemoveNotifiers(ctx context.Context, token string, id
 }
 
 func (ns *notifierService) RemoveNotifiersByGroup(ctx context.Context, groupID string) error {
+	ns.groups.Delete(groupID)
+
 	return ns.notifierRepo.RemoveByGroup(ctx, groupID)
 }

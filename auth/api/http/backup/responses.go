@@ -41,9 +41,15 @@ type viewOrgMembership struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type viewUserRole struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+}
+
 type backupRes struct {
 	Orgs           []viewOrgRes        `json:"orgs"`
 	OrgMemberships []viewOrgMembership `json:"org_memberships"`
+	UserRoles      []viewUserRole      `json:"user_roles"`
 }
 
 func (res backupRes) Code() int {

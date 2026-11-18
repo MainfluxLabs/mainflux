@@ -42,7 +42,12 @@ func NewPublisher(address string, timeout time.Duration) (Publisher, error) {
 }
 
 func (pub publisher) Publish(subject string, msg protomfx.Message) error {
-	payload, err := json.Marshal(messaging.ToJSONMessage(msg))
+	jsonMsg, err := messaging.ToJSONMessage(msg)
+	if err != nil {
+		return errors.Wrap(messaging.ErrPublishMessage, err)
+	}
+
+	payload, err := json.Marshal(jsonMsg)
 	if err != nil {
 		return errors.Wrap(messaging.ErrPublishMessage, err)
 	}

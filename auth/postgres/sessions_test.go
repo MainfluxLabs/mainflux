@@ -71,6 +71,11 @@ func TestSessionSaveAndRetrieve(t *testing.T) {
 func TestSessionRotate(t *testing.T) {
 	repo := newSessionRepo()
 	session := newSession(t)
+
+	impersonatorID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	session.ImpersonatorID = impersonatorID
+
 	require.Nil(t, repo.Save(context.Background(), session), "saving session expected to succeed")
 
 	successor := rotate(t, session)
@@ -156,10 +161,11 @@ func TestSessionRotate(t *testing.T) {
 			desc: "retrieve the successor written by the rotation",
 			jti:  successor.JTI,
 			session: auth.Session{
-				JTI:       successor.JTI,
-				UserID:    session.UserID,
-				FamilyID:  session.FamilyID,
-				StartedAt: session.StartedAt,
+				JTI:            successor.JTI,
+				UserID:         session.UserID,
+				FamilyID:       session.FamilyID,
+				ImpersonatorID: session.ImpersonatorID,
+				StartedAt:      session.StartedAt,
 			},
 			err: nil,
 		},
@@ -167,11 +173,12 @@ func TestSessionRotate(t *testing.T) {
 			desc: "retrieve the rotated session",
 			jti:  session.JTI,
 			session: auth.Session{
-				JTI:       session.JTI,
-				UserID:    session.UserID,
-				FamilyID:  session.FamilyID,
-				StartedAt: session.StartedAt,
-				RevokedAt: revokedAt,
+				JTI:            session.JTI,
+				UserID:         session.UserID,
+				FamilyID:       session.FamilyID,
+				ImpersonatorID: session.ImpersonatorID,
+				StartedAt:      session.StartedAt,
+				RevokedAt:      revokedAt,
 			},
 			err: nil,
 		},
@@ -189,6 +196,7 @@ func TestSessionRotate(t *testing.T) {
 		assert.Equal(t, tc.session.JTI, retrieved.JTI, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.JTI, retrieved.JTI))
 		assert.Equal(t, tc.session.UserID, retrieved.UserID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.UserID, retrieved.UserID))
 		assert.Equal(t, tc.session.FamilyID, retrieved.FamilyID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.FamilyID, retrieved.FamilyID))
+		assert.Equal(t, tc.session.ImpersonatorID, retrieved.ImpersonatorID, fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.ImpersonatorID, retrieved.ImpersonatorID))
 		assert.True(t, tc.session.StartedAt.Equal(retrieved.StartedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.StartedAt, retrieved.StartedAt))
 		assert.True(t, tc.session.RevokedAt.Equal(retrieved.RevokedAt), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.session.RevokedAt, retrieved.RevokedAt))
 	}
@@ -244,19 +252,21 @@ func TestSessionRevokeByUser(t *testing.T) {
 	first := newSession(t)
 	second := newSession(t)
 	second.UserID = first.UserID
+	impersonated := newSession(t)
+	impersonated.ImpersonatorID = first.UserID
 	other := newSession(t)
 
-	for _, s := range []auth.Session{first, second, other} {
+	for _, s := range []auth.Session{first, second, impersonated, other} {
 		require.Nil(t, repo.Save(context.Background(), s), "saving session expected to succeed")
 	}
 
 	at := time.Now().UTC().Round(time.Millisecond)
 	require.Nil(t, repo.RevokeByUser(context.Background(), first.UserID, at), "revoking by user expected to succeed")
 
-	for _, jti := range []string{first.JTI, second.JTI} {
+	for _, jti := range []string{first.JTI, second.JTI, impersonated.JTI} {
 		retrieved, err := repo.Retrieve(context.Background(), jti)
 		require.Nil(t, err, fmt.Sprintf("retrieving session expected to succeed: %s", err))
-		assert.True(t, retrieved.Revoked(), "expected every session of the user to be revoked")
+		assert.True(t, retrieved.Revoked(), "expected every session of the user and every session they impersonate to be revoked")
 	}
 
 	retrieved, err := repo.Retrieve(context.Background(), other.JTI)

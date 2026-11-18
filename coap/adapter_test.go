@@ -29,6 +29,7 @@ const (
 type pubsubMock struct {
 	subscribed    []string
 	cmdSubscribed []string
+	unsubscribed  []string
 	cmdHandler    messaging.CommandHandler
 }
 
@@ -51,7 +52,8 @@ func (ps *pubsubMock) SubscribeCommands(_, topic string, handler messaging.Comma
 	return nil
 }
 
-func (ps *pubsubMock) Unsubscribe(string, string) error {
+func (ps *pubsubMock) Unsubscribe(_, topic string) error {
+	ps.unsubscribed = append(ps.unsubscribed, topic)
 	return nil
 }
 
@@ -59,7 +61,9 @@ func (ps *pubsubMock) Close() error {
 	return nil
 }
 
-type clientMock struct{}
+type clientMock struct {
+	connection int
+}
 
 func (*clientMock) Done() <-chan struct{} {
 	return nil
@@ -219,4 +223,40 @@ func TestSubscribe(t *testing.T) {
 			assert.Empty(t, ps.cmdSubscribed, fmt.Sprintf("%s: expected no command subscription\n", tc.desc))
 		}
 	}
+}
+
+func TestRemoveObserver(t *testing.T) {
+	thing := domain.Thing{ID: thingID, Key: thingKey, GroupID: groupID}
+	things := mocks.NewThingsServiceClient(nil, map[string]domain.Thing{
+		thingKey: thing,
+		thingID:  thing,
+	}, nil)
+	key := domain.ThingKey{Value: thingKey, Type: domain.KeyTypeInternal}
+	subject := fmt.Sprintf("things.%s.commands.shadow", thingID)
+
+	ps := &pubsubMock{}
+	svc := coap.New(things, ps)
+
+	// The device observes on one connection, then again with the same token on a new one.
+	previous := &clientMock{connection: 1}
+	current := &clientMock{connection: 2}
+	err := svc.Subscribe(context.Background(), key, subject, previous)
+	assert.Nil(t, err, fmt.Sprintf("observe on previous connection: unexpected error %s", err))
+	err = svc.Subscribe(context.Background(), key, subject, current)
+	assert.Nil(t, err, fmt.Sprintf("observe on current connection: unexpected error %s", err))
+
+	err = svc.RemoveObserver(subject, previous)
+	assert.Nil(t, err, fmt.Sprintf("remove previous observer: unexpected error %s", err))
+	assert.Empty(t, ps.unsubscribed,
+		"remove previous observer: expected the current observation to stay")
+
+	err = svc.RemoveObserver(subject, current)
+	assert.Nil(t, err, fmt.Sprintf("remove current observer: unexpected error %s", err))
+	assert.Equal(t, []string{subject}, ps.unsubscribed,
+		"remove current observer: expected the observation to end")
+
+	err = svc.RemoveObserver(subject, current)
+	assert.Nil(t, err, fmt.Sprintf("remove current observer again: unexpected error %s", err))
+	assert.Equal(t, []string{subject}, ps.unsubscribed,
+		"remove current observer again: expected no second unsubscribe")
 }

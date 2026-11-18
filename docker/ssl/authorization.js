@@ -124,7 +124,11 @@ function parsePackage(s, data) {
 
 // Check certificate HTTPS and WSS.
 function setKey(r) {
-    var clientKey = parseCert(r.variables.ssl_client_s_dn, 'CN');
+    var clientKey = '';
+    // The subject is undefined when the client presents no certificate.
+    if (r.variables.ssl_client_s_dn && r.variables.ssl_client_verify === 'SUCCESS') {
+        clientKey = parseCert(r.variables.ssl_client_s_dn, 'CN');
+    }
 
     var auth = r.headersIn['Authorization'];
 

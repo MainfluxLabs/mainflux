@@ -4,6 +4,7 @@
 package ws
 
 import (
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/gorilla/websocket"
 )
@@ -36,5 +37,10 @@ func (c *Client) Handle(_ string, msg protomfx.Message) error {
 	if msg.GetThingId() == c.id {
 		return nil
 	}
-	return c.conn.WriteMessage(websocket.TextMessage, msg.Payload)
+	payload, err := messaging.ToPayload(msg)
+	if err != nil {
+		return err
+	}
+
+	return c.conn.WriteMessage(websocket.TextMessage, payload)
 }

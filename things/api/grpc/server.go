@@ -23,23 +23,24 @@ import (
 var _ protomfx.ThingsServiceServer = (*grpcServer)(nil)
 
 type grpcServer struct {
-	getPubConfigByKey      kitgrpc.Handler
-	getConfigByThing       kitgrpc.Handler
-	canUserAccessThing     kitgrpc.Handler
-	canUserAccessThings    kitgrpc.Handler
-	canUserAccessProfile   kitgrpc.Handler
-	canUserAccessGroup     kitgrpc.Handler
-	canThingAccessGroup    kitgrpc.Handler
-	canThingCommand        kitgrpc.Handler
-	canThingGroupCommand   kitgrpc.Handler
-	identify               kitgrpc.Handler
-	getGroupIDByThing      kitgrpc.Handler
-	getGroupIDByProfile    kitgrpc.Handler
-	getGroupIDsByOrg       kitgrpc.Handler
-	getThingIDsByProfile   kitgrpc.Handler
-	createGroupMemberships kitgrpc.Handler
-	getGroup               kitgrpc.Handler
-	getKeyByThingID        kitgrpc.Handler
+	getPubConfigByKey           kitgrpc.Handler
+	getConfigByThing            kitgrpc.Handler
+	canUserAccessThing          kitgrpc.Handler
+	canUserAccessThings         kitgrpc.Handler
+	canUserAccessProfile        kitgrpc.Handler
+	canUserAccessGroup          kitgrpc.Handler
+	canThingAccessGroup         kitgrpc.Handler
+	canThingCommand             kitgrpc.Handler
+	canThingGroupCommand        kitgrpc.Handler
+	identify                    kitgrpc.Handler
+	getGroupIDByThing           kitgrpc.Handler
+	getGroupIDByProfile         kitgrpc.Handler
+	getGroupIDsByOrg            kitgrpc.Handler
+	getThingIDsByProfile        kitgrpc.Handler
+	createGroupMemberships      kitgrpc.Handler
+	removeGroupMembershipsByOrg kitgrpc.Handler
+	getGroup                    kitgrpc.Handler
+	getKeyByThingID             kitgrpc.Handler
 }
 
 // NewServer returns new ThingsServiceServer instance.
@@ -118,6 +119,13 @@ func NewServer(tracer opentracing.Tracer, svc things.Service) protomfx.ThingsSer
 		createGroupMemberships: kitgrpc.NewServer(
 			kitot.TraceServer(tracer, "create_group_memberships")(createGroupMembershipsEndpoint(svc)),
 			decodeCreateGroupMembershipsRequest,
+			encodeEmptyResponse,
+		),
+		removeGroupMembershipsByOrg: kitgrpc.NewServer(
+			kitot.TraceServer(tracer, "remove_group_memberships_by_org")(
+				removeGroupMembershipsByOrgEndpoint(svc),
+			),
+			decodeRemoveGroupMembershipsByOrgRequest,
 			encodeEmptyResponse,
 		),
 		getGroup: kitgrpc.NewServer(
@@ -265,6 +273,15 @@ func (gs *grpcServer) CreateGroupMemberships(ctx context.Context, req *protomfx.
 	return res.(*emptypb.Empty), nil
 }
 
+func (gs *grpcServer) RemoveGroupMembershipsByOrg(ctx context.Context, req *protomfx.RemoveGroupMembershipsByOrgReq) (*emptypb.Empty, error) {
+	_, res, err := gs.removeGroupMembershipsByOrg.ServeGRPC(ctx, req)
+	if err != nil {
+		return nil, encodeError(err)
+	}
+
+	return res.(*emptypb.Empty), nil
+}
+
 func (gs *grpcServer) GetGroup(ctx context.Context, req *protomfx.GetGroupReq) (*protomfx.Group, error) {
 	_, res, err := gs.getGroup.ServeGRPC(ctx, req)
 	if err != nil {
@@ -378,6 +395,14 @@ func decodeCreateGroupMembershipsRequest(_ context.Context, grpcReq any) (any, e
 	return ret, nil
 }
 
+func decodeRemoveGroupMembershipsByOrgRequest(_ context.Context, grpcReq any) (any, error) {
+	req := grpcReq.(*protomfx.RemoveGroupMembershipsByOrgReq)
+	return removeGroupMembershipsByOrgReq{
+		orgID:     req.GetOrgId(),
+		memberIDs: req.GetMemberIds(),
+	}, nil
+}
+
 func decodeGetGroupRequest(_ context.Context, grpcReq any) (any, error) {
 	req := grpcReq.(*protomfx.GetGroupReq)
 	return getGroupReq{groupID: req.GetGroupId()}, nil
@@ -462,6 +487,8 @@ func encodeError(err error) error {
 		err == apiutil.ErrMissingThingID,
 		err == apiutil.ErrMissingProfileID,
 		err == apiutil.ErrMissingGroupID,
+		err == apiutil.ErrMissingOrgID,
+		err == apiutil.ErrMissingMemberID,
 		err == apiutil.ErrInvalidAction,
 		err == apiutil.ErrBearerToken,
 		err == apiutil.ErrBearerKey,

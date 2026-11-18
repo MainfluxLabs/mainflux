@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	swPrefix  = "filestore"
-	swTimeout = 5 * time.Second
-	swChunkMB = 4
+	swPrefix   = "filestore"
+	swTimeout  = 5 * time.Second
+	swChunkMiB = 4
 )
 
 type testFiler struct {
@@ -86,7 +86,7 @@ func newSeaweed(t *testing.T) (store.FileStore, *testFiler, *httptest.Server) {
 	t.Helper()
 	f := newTestFiler()
 	srv := httptest.NewServer(f.handler())
-	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout, swChunkMB)
+	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout, swChunkMiB)
 	require.Nil(t, err, fmt.Sprintf("new seaweedfs failed: %s", err))
 	return s, f, srv
 }
@@ -264,7 +264,7 @@ func TestSeaweedGetRangeFallback(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout, swChunkMB)
+	s, err := store.NewSeaweedFS(srv.URL, swPrefix, swTimeout, swChunkMiB)
 	require.Nil(t, err, fmt.Sprintf("new seaweedfs failed: %s", err))
 
 	rc, err := s.GetRange(context.Background(), testKey, 6, 4)

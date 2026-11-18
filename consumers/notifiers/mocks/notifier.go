@@ -10,6 +10,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/consumers/notifiers"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 )
@@ -38,7 +39,7 @@ func NewNotifierRepository() notifiers.NotifierRepository {
 	return &notifierRepositoryMock{notifiers: make(map[string]notifiers.Notifier)}
 }
 
-func (n notifier) Send(to []string, _ protomfx.Notification) error {
+func (n notifier) Send(to []string, _ protomfx.Notification, _ domain.Group) error {
 	if len(to) < 1 {
 		return notifiers.ErrNotify
 	}

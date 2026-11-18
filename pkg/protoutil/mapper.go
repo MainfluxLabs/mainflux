@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 )
+
+var errInvalidRecords = errors.New("message does not contain exactly one record")
 
 // ProtoConfigToDomain converts proto Config to domain Config.
 func ProtoConfigToDomain(c *protomfx.Config) *domain.ProfileConfig {
@@ -95,16 +98,25 @@ func JSONMapMessageToProto(msg map[string]any) *protomfx.Message {
 	return &protomfx.Message{
 		ThingId:  thingID,
 		Subtopic: subtopic,
-		Payload:  payload,
 		Protocol: protocol,
 		Created:  created,
+		Records: []*protomfx.Record{
+			{
+				Payload: payload,
+				Time:    created,
+			},
+		},
 	}
 }
 
 // Map a *protomfx.Message representing a JSON message to a map[string]any with a decoded payload.
 func ProtoJSONMessageToMap(msg *protomfx.Message) (map[string]any, error) {
+	if len(msg.GetRecords()) != 1 {
+		return nil, errInvalidRecords
+	}
+
 	var payload map[string]any
-	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+	if err := json.Unmarshal(msg.GetRecords()[0].GetPayload(), &payload); err != nil {
 		return nil, err
 	}
 

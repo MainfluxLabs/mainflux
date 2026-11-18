@@ -116,6 +116,70 @@ func TestKeyRetrieve(t *testing.T) {
 	}
 }
 
+func TestKeyRemoveAPIKeys(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repo := postgres.New(dbMiddleware)
+
+	issuerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+	var keys []auth.Key
+	for _, keyType := range []uint32{auth.APIKey, auth.APIKey, auth.RecoveryKey} {
+		keyID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+
+		key := auth.Key{
+			ID:        keyID,
+			Type:      keyType,
+			IssuerID:  issuerID,
+			Subject:   email,
+			IssuedAt:  time.Now(),
+			ExpiresAt: expTime,
+		}
+		_, err = repo.Save(context.Background(), key)
+		require.Nil(t, err, fmt.Sprintf("Storing Key expected to succeed: %s", err))
+		keys = append(keys, key)
+	}
+
+	cases := []struct {
+		desc     string
+		issuerID string
+		err      error
+	}{
+		{
+			desc:     "remove API keys",
+			issuerID: issuerID,
+			err:      nil,
+		},
+		{
+			desc:     "remove API keys of issuer without API keys",
+			issuerID: issuerID,
+			err:      nil,
+		},
+		{
+			desc:     "remove API keys with invalid issuer id",
+			issuerID: "invalid",
+			err:      dbutil.ErrRemoveEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		err := repo.RemoveAPIKeys(context.Background(), tc.issuerID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+	}
+
+	for _, key := range keys {
+		_, err := repo.Retrieve(context.Background(), issuerID, key.ID)
+		if key.Type == auth.APIKey {
+			msg := fmt.Sprintf("removed API key: expected %s got %s\n", dbutil.ErrNotFound, err)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), msg)
+			continue
+		}
+		assert.Nil(t, err, fmt.Sprintf("key of another type expected to survive: %s", err))
+	}
+}
+
 func TestKeyRemove(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.New(dbMiddleware)

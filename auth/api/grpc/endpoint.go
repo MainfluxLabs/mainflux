@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -23,6 +24,13 @@ func issueEndpoint(svc auth.Service) endpoint.Endpoint {
 			Subject:  req.email,
 			IssuerID: req.id,
 			IssuedAt: time.Now().UTC(),
+		}
+
+		if req.impersonatorID != "" {
+			key.Impersonator = &domain.Identity{
+				ID:    req.impersonatorID,
+				Email: req.impersonatorEmail,
+			}
 		}
 
 		_, secret, err := svc.Issue(ctx, "", key)
@@ -50,6 +58,21 @@ func refreshEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func revokeAPIKeysEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(revokeAPIKeysReq)
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		if err := svc.RevokeAPIKeys(ctx, req.id); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
+	}
+}
+
 func revokeSessionsEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(revokeSessionsReq)
@@ -73,6 +96,32 @@ func identifyEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		id, err := svc.Identify(ctx, req.token)
+		if err != nil {
+			return identityRes{}, err
+		}
+
+		ret := identityRes{
+			id:    id.ID,
+			email: id.Email,
+		}
+
+		if id.Impersonator != nil {
+			ret.impersonatorID = id.Impersonator.ID
+			ret.impersonatorEmail = id.Impersonator.Email
+		}
+
+		return ret, nil
+	}
+}
+
+func identifyRecoveryEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(identityReq)
+		if err := req.validate(); err != nil {
+			return identityRes{}, err
+		}
+
+		id, err := svc.IdentifyRecovery(ctx, req.token)
 		if err != nil {
 			return identityRes{}, err
 		}
@@ -125,6 +174,54 @@ func getOwnerIDByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
 	}
 }
 
+func getAdminsByOrgEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(adminsByOrgReq)
+		if err := req.validate(); err != nil {
+			return adminsByOrgRes{}, err
+		}
+
+		oms, err := svc.GetAdminsByOrg(ctx, req.orgID)
+		if err != nil {
+			return adminsByOrgRes{}, err
+		}
+
+		return adminsByOrgRes{memberships: oms}, nil
+	}
+}
+
+func getOrgIDsByAdminEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgIDsByAdminReq)
+		if err := req.validate(); err != nil {
+			return orgIDsByAdminRes{}, err
+		}
+
+		orgIDs, err := svc.GetOrgIDsByAdmin(ctx, req.memberID)
+		if err != nil {
+			return orgIDsByAdminRes{}, err
+		}
+
+		return orgIDsByAdminRes{orgIDs: orgIDs}, nil
+	}
+}
+
+func getOrgMembershipEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(orgMembershipReq)
+		if err := req.validate(); err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		om, err := svc.GetOrgMembership(ctx, req.orgID, req.memberID)
+		if err != nil {
+			return orgMembershipRes{}, err
+		}
+
+		return orgMembershipRes{memberID: om.MemberID, role: om.Role}, nil
+	}
+}
+
 func assignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
 		req := request.(assignRoleReq)
@@ -158,6 +255,43 @@ func retrieveRoleEndpoint(svc auth.Service) endpoint.Endpoint {
 		}
 
 		return res, nil
+	}
+}
+
+func retrieveRolesEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(retrieveRolesReq)
+
+		if err := req.validate(); err != nil {
+			return retrieveRolesRes{}, err
+		}
+
+		roles, err := svc.RetrieveRoles(ctx, req.ids)
+		if err != nil {
+			return retrieveRolesRes{}, err
+		}
+
+		res := retrieveRolesRes{
+			roles: roles,
+		}
+
+		return res, nil
+	}
+}
+
+func unassignRoleEndpoint(svc auth.Service) endpoint.Endpoint {
+	return func(ctx context.Context, request any) (any, error) {
+		req := request.(unassignRoleReq)
+
+		if err := req.validate(); err != nil {
+			return emptyRes{}, err
+		}
+
+		if err := svc.UnassignRole(ctx, req.id); err != nil {
+			return emptyRes{}, err
+		}
+
+		return emptyRes{}, nil
 	}
 }
 

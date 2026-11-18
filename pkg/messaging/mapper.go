@@ -23,27 +23,65 @@ const (
 // ErrInvalidContentType indicates an invalid Content-Type
 var ErrInvalidContentType = errors.New("invalid content type")
 
+// FormatMessage assigns the thing identifier and the timestamp to msg
+// and transforms its records according to the profile configuration.
 func FormatMessage(pc domain.PubConfigInfo, msg *protomfx.Message) error {
 	msg.ThingId = pc.ThingID
 	msg.Created = time.Now().UnixNano()
-
-	if pc.ProfileConfig != nil {
-		msg.ContentType = pc.ProfileConfig.ContentType
-		switch msg.ContentType {
-		case JSONContentType:
-			if err := mfjson.TransformPayload(pc.ProfileConfig.Transformer, msg); err != nil {
-				return err
-			}
-		case SenMLContentType:
-			if err := senml.TransformPayload(msg); err != nil {
-				return err
-			}
-		default:
-			return ErrInvalidContentType
+	for _, record := range msg.Records {
+		if record.Time == 0 {
+			record.Time = msg.Created
 		}
 	}
 
+	if pc.ProfileConfig == nil {
+		return nil
+	}
+
+	msg.ContentType = pc.ProfileConfig.ContentType
+	var records []*protomfx.Record
+	for _, record := range msg.Records {
+		transformed, err := transformRecord(pc.ProfileConfig, record)
+		if err != nil {
+			return err
+		}
+		records = append(records, transformed...)
+	}
+	msg.Records = records
+
+	// A single JSON record carries the device time of the message.
+	if msg.ContentType == JSONContentType && len(msg.Records) == 1 {
+		msg.Created = msg.Records[0].Time
+	}
+
 	return nil
+}
+
+// transformRecord converts a record into the records of the profile content type.
+func transformRecord(config *domain.ProfileConfig, record *protomfx.Record) ([]*protomfx.Record, error) {
+	switch config.ContentType {
+	case JSONContentType:
+		return mfjson.TransformPayload(config.Transformer, record.Payload, record.Time)
+	case SenMLContentType:
+		return senml.TransformPayload(senml.JSON, record.Payload, record.Time)
+	default:
+		return nil, ErrInvalidContentType
+	}
+}
+
+// ToPayload returns the payload of a single non-SenML record unchanged
+// and encodes the payloads of all other records as a JSON array.
+func ToPayload(message protomfx.Message) ([]byte, error) {
+	if message.ContentType != SenMLContentType && len(message.Records) == 1 {
+		return message.Records[0].Payload, nil
+	}
+
+	payloads := make([]json.RawMessage, 0, len(message.Records))
+	for _, record := range message.Records {
+		payloads = append(payloads, record.Payload)
+	}
+
+	return json.Marshal(payloads)
 }
 
 func PayloadHash(payload []byte) int32 {
@@ -52,83 +90,62 @@ func PayloadHash(payload []byte) int32 {
 	return int32(h.Sum32())
 }
 
-func ToJSONMessage(message protomfx.Message) mfjson.Message {
-	created, payload := extractCreated(message.Payload, message.Created)
+func ToJSONMessage(message protomfx.Message) (mfjson.Message, error) {
+	payload, err := ToPayload(message)
+	if err != nil {
+		return mfjson.Message{}, err
+	}
 
 	return mfjson.Message{
-		Created:  created,
+		Created:  message.Created,
 		Subtopic: message.Subtopic,
 		ThingID:  message.ThingId,
 		Protocol: message.Protocol,
 		Payload:  payload,
+	}, nil
+}
+
+// ToJSONMessages converts each record of message into a JSON message.
+func ToJSONMessages(message protomfx.Message) []mfjson.Message {
+	var msgs []mfjson.Message
+	for _, record := range message.Records {
+		msgs = append(msgs, mfjson.Message{
+			Created:  record.Time,
+			Subtopic: message.Subtopic,
+			ThingID:  message.ThingId,
+			Protocol: message.Protocol,
+			Payload:  record.Payload,
+		})
 	}
+
+	return msgs
 }
 
 func ToJSONCommand(cmd protomfx.Command) mfjson.Command {
-	created, payload := extractCreated(cmd.Payload, cmd.Created)
-
 	return mfjson.Command{
-		Created:     created,
+		Created:     cmd.Created,
 		Subtopic:    cmd.Subtopic,
 		ThingID:     cmd.ThingId,
 		RecipientID: cmd.RecipientId,
 		Protocol:    cmd.Protocol,
-		Payload:     payload,
+		Payload:     cmd.Payload,
 	}
 }
 
-// extractCreated unwraps a "Created" field embedded in the payload itself,
-// preferring it over the proto-level Created timestamp.
-func extractCreated(payload []byte, created int64) (int64, []byte) {
-	if len(payload) == 0 {
-		return created, payload
-	}
-
-	var p map[string]any
-	if err := json.Unmarshal(payload, &p); err == nil {
-		if payloadCreated, ok := p["Created"].(float64); ok {
-			created = int64(payloadCreated)
-			delete(p, "Created")
-
-			payload, _ = json.Marshal(p)
+// ToSenMLMessages converts each record of message into a SenML message.
+func ToSenMLMessages(message protomfx.Message) ([]senml.Message, error) {
+	var msgs []senml.Message
+	for _, record := range message.Records {
+		var msg senml.Message
+		if err := json.Unmarshal(record.Payload, &msg); err != nil {
+			return nil, err
 		}
+
+		msg.ThingID = message.ThingId
+		msg.Subtopic = message.Subtopic
+		msg.Protocol = message.Protocol
+		msgs = append(msgs, msg)
 	}
 
-	return created, payload
-}
-
-func ToSenMLMessage(message protomfx.Message) (senml.Message, error) {
-	var msg senml.Message
-	if err := json.Unmarshal(message.Payload, &msg); err != nil {
-		return senml.Message{}, err
-	}
-
-	msg.ThingID = message.ThingId
-	msg.Subtopic = message.Subtopic
-	msg.Protocol = message.Protocol
-
-	return msg, nil
-}
-
-func SplitMessage(message protomfx.Message) ([]protomfx.Message, error) {
-	var payload any
-	if err := json.Unmarshal(message.Payload, &payload); err != nil {
-		return nil, err
-	}
-
-	if pyds, ok := payload.([]any); ok {
-		var messages []protomfx.Message
-		for _, pyd := range pyds {
-			data, err := json.Marshal(pyd)
-			if err != nil {
-				return nil, err
-			}
-			newMsg := message
-			newMsg.Payload = data
-			messages = append(messages, newMsg)
-		}
-		return messages, nil
-	}
-
-	return []protomfx.Message{message}, nil
+	return msgs, nil
 }

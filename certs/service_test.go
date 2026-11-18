@@ -13,6 +13,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -686,6 +688,33 @@ func TestRenewCert(t *testing.T) {
 	}
 }
 
+func TestGenerateCRLFile(t *testing.T) {
+	tlsCert, caCert, err := loadCertificates(caPath, caKeyPath)
+	require.Nil(t, err, fmt.Sprintf("unexpected CA loading error: %s\n", err))
+
+	pkiAgent, err := pki.NewAgent(tlsCert)
+	require.Nil(t, err, fmt.Sprintf("unexpected PKI agent creation error: %s\n", err))
+
+	crlPath := filepath.Join(t.TempDir(), "crl.pem")
+	err = certs.GenerateCRLFile(context.Background(), mocks.NewCertsRepository(), pkiAgent, crlPath)
+	require.Nil(t, err, fmt.Sprintf("unexpected CRL generation error: %s\n", err))
+
+	crlPEM, err := os.ReadFile(crlPath)
+	require.Nil(t, err, fmt.Sprintf("unexpected CRL read error: %s\n", err))
+
+	block, _ := pem.Decode(crlPEM)
+	require.NotNil(t, block, "expected PEM encoded CRL")
+
+	crl, err := x509.ParseRevocationList(block.Bytes)
+	require.Nil(t, err, fmt.Sprintf("unexpected CRL parsing error: %s\n", err))
+
+	err = crl.CheckSignatureFrom(caCert)
+	assert.Nil(t, err, fmt.Sprintf("expected CRL signed by the CA, got %s\n", err))
+	validity := crl.NextUpdate.Sub(crl.ThisUpdate)
+	assert.Equal(t, pki.CRLValidity, validity,
+		fmt.Sprintf("expected CRL validity %s got %s\n", pki.CRLValidity, validity))
+}
+
 func loadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certificate, error) {
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -700,7 +729,7 @@ func loadCertificates(caPath, caKeyPath string) (tls.Certificate, *x509.Certific
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
 		IsCA:                  true,

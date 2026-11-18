@@ -30,6 +30,10 @@ var (
 	Subtopic string = ""
 	// RawOutput raw output mode
 	RawOutput bool = false
+	// HTTPAdapterURL HTTP adapter base URL
+	HTTPAdapterURL string = ""
+	// TLSVerification TLS certificate verification mode
+	TLSVerification bool = false
 	// ThingID query parameter
 	ThingID string = ""
 	// Protocol query parameter

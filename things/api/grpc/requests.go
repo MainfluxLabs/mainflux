@@ -219,6 +219,29 @@ func (req createGroupMembershipsReq) validate() error {
 	return nil
 }
 
+type removeGroupMembershipsByOrgReq struct {
+	orgID     string
+	memberIDs []string
+}
+
+func (req removeGroupMembershipsByOrgReq) validate() error {
+	if req.orgID == "" {
+		return apiutil.ErrMissingOrgID
+	}
+
+	if len(req.memberIDs) == 0 {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, memberID := range req.memberIDs {
+		if memberID == "" {
+			return apiutil.ErrMissingMemberID
+		}
+	}
+
+	return nil
+}
+
 type getGroupReq struct {
 	groupID string
 }

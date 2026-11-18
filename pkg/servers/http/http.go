@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
@@ -15,7 +16,11 @@ import (
 func Start(ctx context.Context, handler http.Handler, cfg servers.Config, logger logger.Logger) error {
 	p := fmt.Sprintf(":%s", cfg.Port)
 	errCh := make(chan error)
-	server := &http.Server{Addr: p, Handler: handler}
+	server := &http.Server{
+		Addr:              p,
+		Handler:           handler,
+		ReadHeaderTimeout: time.Minute,
+	}
 
 	switch {
 	case cfg.ServerCert != "" || cfg.ServerKey != "":

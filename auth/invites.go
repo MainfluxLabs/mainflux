@@ -336,7 +336,7 @@ func (svc service) ViewOrgInvite(ctx context.Context, token, inviteID string) (O
 		return OrgInvite{}, err
 	}
 
-	if err := svc.isAdmin(ctx, token); err == nil {
+	if err := svc.canAccessPlatform(ctx, token); err == nil {
 		return invite, nil
 	}
 
@@ -412,7 +412,7 @@ func (svc service) ListOrgInvitesByOrg(ctx context.Context, token, orgID string,
 }
 
 func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, userID string, pm PageMetadata) (OrgInvitesPage, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		if err != errors.ErrAuthorization {
 			return OrgInvitesPage{}, err
 		}

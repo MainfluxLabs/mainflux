@@ -4,10 +4,9 @@
 package users
 
 import (
-	"regexp"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
@@ -19,14 +18,20 @@ const (
 	maxEmailSize = 254
 )
 
-var userPasswordRegex *regexp.Regexp
-
 type userReq struct {
 	user users.User
 }
 
 func (req userReq) validate() error {
-	return req.user.Validate(userPasswordRegex)
+	if !email.IsEmail(req.user.Email) {
+		return errors.ErrMalformedEntity
+	}
+
+	if req.user.Password == "" {
+		return apiutil.ErrMissingPass
+	}
+
+	return nil
 }
 
 type selfRegisterUserReq struct {
@@ -39,7 +44,11 @@ func (req selfRegisterUserReq) validate() error {
 		return apiutil.ErrMissingRedirectPath
 	}
 
-	return req.User.Validate(userPasswordRegex)
+	if req.User.Password == "" {
+		return apiutil.ErrMissingPass
+	}
+
+	return req.User.Validate()
 }
 
 type oauthLoginReq struct {
@@ -102,7 +111,12 @@ func (req registerUserReq) validate() error {
 	if req.token == "" {
 		return errors.ErrAuthorization
 	}
-	return req.user.Validate(userPasswordRegex)
+
+	if req.user.Password == "" {
+		return apiutil.ErrMissingPass
+	}
+
+	return req.user.Validate()
 }
 
 type refreshReq struct {
@@ -185,10 +199,6 @@ func (req resetTokenReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
-	if !userPasswordRegex.MatchString(req.Password) {
-		return errors.ErrPasswordFormat
-	}
-
 	if req.ConfPass == "" {
 		return apiutil.ErrMissingConfPass
 	}
@@ -219,10 +229,25 @@ func (req passwChangeReq) validate() error {
 		return apiutil.ErrMissingPass
 	}
 
-	if !userPasswordRegex.MatchString(req.Password) {
-		return errors.ErrPasswordFormat
+	if req.Password == "" {
+		return apiutil.ErrMissingPass
 	}
 
+	return nil
+}
+
+type impersonateReq struct {
+	token string
+	id    string
+}
+
+func (req impersonateReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
 	return nil
 }
 
@@ -232,6 +257,21 @@ type changeUserStatusReq struct {
 }
 
 func (req changeUserStatusReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+	if req.id == "" {
+		return apiutil.ErrMissingUserID
+	}
+	return nil
+}
+
+type adminRoleReq struct {
+	token string
+	id    string
+}
+
+func (req adminRoleReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}

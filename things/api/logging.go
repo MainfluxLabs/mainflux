@@ -727,6 +727,20 @@ func (lm *loggingMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 	return lm.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
 
+func (lm *loggingMiddleware) RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) (err error) {
+	defer func(begin time.Time) {
+		message := fmt.Sprintf("Method remove_group_memberships_by_org for org id %s and "+
+			"member ids %v took %s to complete", orgID, memberIDs, time.Since(begin))
+		if err != nil {
+			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
+			return
+		}
+		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
+	}(time.Now())
+
+	return lm.svc.RemoveGroupMembershipsByOrg(ctx, orgID, memberIDs...)
+}
+
 func (lm *loggingMiddleware) UpdateExternalKey(ctx context.Context, token, key, thingID string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)

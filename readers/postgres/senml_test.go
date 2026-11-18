@@ -122,7 +122,7 @@ func TestListSenMLMessages(t *testing.T) {
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
-			Payload:     payload,
+			Records:     []*protomfx.Record{{Payload: payload}},
 		}
 
 		err = writer.ConsumeMessage(subject, pm)
@@ -484,7 +484,7 @@ func TestSenMLAggregation(t *testing.T) {
 			ThingId:     thingID,
 			Protocol:    mqttProt,
 			ContentType: senml.JSON,
-			Payload:     payload,
+			Records:     []*protomfx.Record{{Payload: payload}},
 		})
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
@@ -604,7 +604,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 			Subtopic:    m.Subtopic,
 			Protocol:    m.Protocol,
 			ContentType: senml.JSON,
-			Payload:     payload,
+			Records:     []*protomfx.Record{{Payload: payload}},
 		}
 
 		err = writer.ConsumeMessage(subject, pm)
@@ -722,7 +722,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 				Subtopic:    m.Subtopic,
 				Protocol:    m.Protocol,
 				ContentType: senml.JSON,
-				Payload:     payload,
+				Records:     []*protomfx.Record{{Payload: payload}},
 			}
 
 			err = writer.ConsumeMessage(subject, pm)

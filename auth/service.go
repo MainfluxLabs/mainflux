@@ -145,7 +145,7 @@ func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
 	case RootSub:
-		return svc.isAdmin(ctx, ar.Token)
+		return svc.canAccessPlatform(ctx, ar.Token)
 	case OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
 	default:
@@ -168,14 +168,18 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 	}
 
 	switch key.Type {
-	case RecoveryKey:
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
 	case LoginKey:
-		if key.ID == "" {
-			return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+		if _, err := svc.checkSession(ctx, key); err != nil {
+			return Identity{}, errors.Wrap(errIdentify, err)
 		}
 
-		return Identity{ID: key.IssuerID, Email: key.Subject}, nil
+		identity := Identity{
+			ID:           key.IssuerID,
+			Email:        key.Subject,
+			Impersonator: key.Impersonator,
+		}
+
+		return identity, nil
 	case APIKey:
 		_, err := svc.keys.Retrieve(context.TODO(), key.IssuerID, key.ID)
 		if err != nil {
@@ -185,6 +189,20 @@ func (svc service) identify(ctx context.Context, token string) (Identity, error)
 	default:
 		return Identity{}, errors.ErrAuthentication
 	}
+}
+
+func (svc service) IdentifyRecovery(ctx context.Context, token string) (Identity, error) {
+	key, err := svc.tokenizer.Parse(token)
+	if err != nil {
+		return Identity{}, errors.Wrap(errIdentify, err)
+	}
+
+	// Recovery keys are only valid for resetting a password.
+	if key.Type != RecoveryKey || key.IssuerID == "" {
+		return Identity{}, errors.Wrap(errIdentify, errors.ErrAuthentication)
+	}
+
+	return Identity{ID: key.IssuerID, Email: key.Subject}, nil
 }
 
 func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) {
@@ -197,14 +215,18 @@ func (svc service) tmpKey(duration time.Duration, key Key) (Key, string, error) 
 	return key, secret, nil
 }
 
-func (svc service) login(token string) (string, string, error) {
+func (svc service) login(ctx context.Context, token string) (string, string, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err != nil {
 		return "", "", err
 	}
 	// Only login key token is valid for login.
-	if key.Type != LoginKey || key.IssuerID == "" {
+	if key.Type != LoginKey {
 		return "", "", errors.ErrAuthentication
+	}
+
+	if _, err := svc.checkSession(ctx, key); err != nil {
+		return "", "", err
 	}
 
 	return key.IssuerID, key.Subject, nil
@@ -215,7 +237,7 @@ func getTimestamp() time.Time {
 }
 
 func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	if err := svc.canAccessPlatform(ctx, token); err != nil {
 		return Backup{}, err
 	}
 
@@ -229,16 +251,23 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 		return Backup{}, err
 	}
 
+	urs, err := svc.roles.BackupAll(ctx)
+	if err != nil {
+		return Backup{}, err
+	}
+
 	backup := Backup{
 		Orgs:           orgs,
 		OrgMemberships: mrs,
+		UserRoles:      urs,
 	}
 
 	return backup, nil
 }
 
 func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
-	if err := svc.isAdmin(ctx, token); err != nil {
+	// Restoring platform roles is restricted to the root admin to prevent privilege escalation.
+	if err := svc.canAccessAsRoot(ctx, token); err != nil {
 		return err
 	}
 
@@ -250,16 +279,23 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	return nil
-}
+	// The root role belongs only to the configured root admin.
+	var urs []UserRole
+	for _, ur := range backup.UserRoles {
+		if ur.Role != RoleRootAdmin {
+			urs = append(urs, ur)
+		}
+	}
 
-func (svc service) isAdmin(ctx context.Context, token string) error {
-	user, err := svc.identify(ctx, token)
-	if err != nil {
+	if err := svc.roles.RestoreAll(ctx, urs...); err != nil {
 		return err
 	}
 
-	role, err := svc.roles.RetrieveRole(ctx, user.ID)
+	return nil
+}
+
+func (svc service) canAccessPlatform(ctx context.Context, token string) error {
+	role, err := svc.retrieveCallerRole(ctx, token)
 	if err != nil {
 		return err
 	}
@@ -269,4 +305,26 @@ func (svc service) isAdmin(ctx context.Context, token string) error {
 	}
 
 	return nil
+}
+
+func (svc service) canAccessAsRoot(ctx context.Context, token string) error {
+	role, err := svc.retrieveCallerRole(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	if role != RoleRootAdmin {
+		return errors.ErrAuthorization
+	}
+
+	return nil
+}
+
+func (svc service) retrieveCallerRole(ctx context.Context, token string) (string, error) {
+	user, err := svc.identify(ctx, token)
+	if err != nil {
+		return "", err
+	}
+
+	return svc.roles.RetrieveRole(ctx, user.ID)
 }

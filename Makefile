@@ -5,12 +5,14 @@ MF_DOCKER_IMAGE_NAME_PREFIX ?= mainfluxlabs
 BUILD_DIR = build
 SERVICES = users things http coap ws postgres-writer postgres-reader timescale-writer timescale-reader cli \
 	auth mqtt certs smtp-notifier smpp-notifier alarms rules filestore downlinks modbus \
-	uiconfigs converters webhooks audit shadows pyscripts
+	uiconfigs converters webhooks audit shadows ota pyscripts
+
 GENERIC_SERVICES = $(filter-out pyscripts,$(SERVICES))
 DOCKERS = $(addprefix docker_,$(GENERIC_SERVICES))
 DOCKERS_DEV = $(addprefix docker_dev_,$(GENERIC_SERVICES))
 CGO_ENABLED ?= 0
-GOARCH ?= amd64
+GOOS ?= linux
+GOARCH ?= $(shell go env GOARCH)
 VERSION ?= $(shell git describe --abbrev=0 --tags)
 COMMIT ?= $(shell git rev-parse HEAD)
 TIME ?= $(shell date +%F_%T)

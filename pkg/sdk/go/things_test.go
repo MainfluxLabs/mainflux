@@ -876,7 +876,7 @@ func TestIdentifyThing(t *testing.T) {
 	thing, err := mainfluxSDK.GetThing(th.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 
 	err = mainfluxSDK.UpdateExternalThingKey(externalKey, thing.ID, token)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

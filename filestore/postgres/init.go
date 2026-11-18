@@ -3,6 +3,7 @@ package postgres
 import (
 	"fmt"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	migrate "github.com/rubenv/sql-migrate"
@@ -43,7 +44,7 @@ func migrateDB(db *sqlx.DB) error {
 	migrations := &migrate.MemoryMigrationSource{
 		Migrations: []*migrate.Migration{
 			{
-				Id: "filestore_1",
+				Id: "filestore_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS things_files (
 							file_name   VARCHAR(1024) NOT NULL,
@@ -70,7 +71,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "filestore_2",
+				Id: "filestore_02",
 				Up: []string{
 					`ALTER TABLE things_files ADD COLUMN group_id UUID;`,
 				},
@@ -79,7 +80,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "filestore_3",
+				Id: "filestore_03",
 				Up: []string{
 					`ALTER TABLE groups_files ADD COLUMN checksum TEXT NOT NULL DEFAULT '';`,
 					`ALTER TABLE things_files ADD COLUMN checksum TEXT NOT NULL DEFAULT '';`,
@@ -92,7 +93,7 @@ func migrateDB(db *sqlx.DB) error {
 				},
 			},
 			{
-				Id: "filestore_4",
+				Id: "filestore_04",
 				Up: []string{
 					`ALTER TABLE groups_files ADD COLUMN size BIGINT NOT NULL DEFAULT 0;`,
 					`ALTER TABLE things_files ADD COLUMN size BIGINT NOT NULL DEFAULT 0;`,
@@ -104,6 +105,11 @@ func migrateDB(db *sqlx.DB) error {
 			},
 		},
 	}
+
+	if err := dbutil.PadMigrationIDs(db.DB, migrations.Migrations); err != nil {
+		return err
+	}
+
 	_, err := migrate.Exec(db.DB, "postgres", migrations, migrate.Up)
 	return err
 }

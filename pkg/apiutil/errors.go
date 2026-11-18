@@ -84,6 +84,9 @@ var (
 	// ErrNameSize indicates that name size exceeds the max.
 	ErrNameSize = errors.New("invalid name size")
 
+	// ErrExternalKeySize indicates that the external thing key size is out of the allowed range.
+	ErrExternalKeySize = errors.New("invalid external key size")
+
 	// ErrEmailSize indicates that email size exceeds the max.
 	ErrEmailSize = errors.New("invalid email size")
 
@@ -143,6 +146,9 @@ var (
 
 	// ErrInvalidAPIKey indicates an invalid API key type.
 	ErrInvalidAPIKey = errors.New("invalid api key type")
+
+	// ErrMissingKeyDuration indicates a missing API key duration.
+	ErrMissingKeyDuration = errors.New("missing api key duration")
 
 	// ErrUnsupportedContentType indicates unacceptable or lack of Content-Type
 	ErrUnsupportedContentType = errors.New("unsupported content type")
@@ -206,6 +212,9 @@ var (
 
 	// ErrInvalidThingType indicates an invalid or missing thing type
 	ErrInvalidThingType = errors.New("missing or invalid thing type")
+
+	// ErrInvalidContentType indicates an invalid profile configuration content type.
+	ErrInvalidContentType = errors.New("invalid profile content type")
 
 	// ErrMissingAuth indicates that neither a thing key nor a user token was provided.
 	ErrMissingAuth = errors.New("missing thing key or bearer token")

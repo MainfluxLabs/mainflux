@@ -44,7 +44,8 @@ const (
 	unauthEmail = "unauth@example.com"
 	unauthToken = unauthEmail
 
-	orgID = "9325aef3-5a2b-448c-bae1-5d45f86ba2aa"
+	orgID       = "9325aef3-5a2b-448c-bae1-5d45f86ba2aa"
+	secondOrgID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 
 	thingID      = "fe6b4e92-cc98-425e-b0aa-000000000001"
 	otherThingID = "fe6b4e92-cc98-425e-b0aa-000000000002"
@@ -62,12 +63,17 @@ func newService() uiconfigs.Service {
 
 	usersList := []domain.User{
 		{ID: adminID, Email: adminEmail},
-		{ID: editorID, Email: editorEmail, Role: domain.OrgEditor},
-		{ID: viewerID, Email: viewerEmail, Role: domain.OrgViewer},
+		{ID: editorID, Email: editorEmail},
+		{ID: viewerID, Email: viewerEmail},
 		{ID: otherID, Email: otherEmail},
 		{ID: unauthID, Email: unauthEmail},
 	}
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil)
+	orgMemberships := []domain.OrgMembership{
+		{OrgID: orgID, MemberID: editorID, Role: domain.OrgEditor},
+		{OrgID: secondOrgID, MemberID: editorID, Role: domain.OrgEditor},
+		{OrgID: orgID, MemberID: viewerID, Role: domain.OrgViewer},
+	}
+	authClient := pkgmocks.NewAuthService(adminID, usersList, nil, orgMemberships...)
 
 	things := map[string]domain.Thing{
 		editorToken:  {ID: thingID, GroupID: groupID},
@@ -111,6 +117,12 @@ func TestViewOrgConfig(t *testing.T) {
 			desc:  "view org config as unauthorized user",
 			token: unauthToken,
 			orgID: orgID,
+			err:   errors.ErrAuthorization,
+		},
+		{
+			desc:  "view org config as viewer of another org",
+			token: viewerToken,
+			orgID: secondOrgID,
 			err:   errors.ErrAuthorization,
 		},
 	}
@@ -169,7 +181,6 @@ func TestUpdateOrgConfig(t *testing.T) {
 func TestListOrgsConfigs(t *testing.T) {
 	svc := newService()
 
-	secondOrgID := "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	for _, id := range []string{orgID, secondOrgID} {
 		err := svc.UpdateOrgConfig(context.Background(), editorToken, uiconfigs.OrgConfig{OrgID: id, Config: testConfig})
 		require.Nil(t, err)

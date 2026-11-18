@@ -489,6 +489,16 @@ func (ms *metricsMiddleware) RemoveGroupMemberships(ctx context.Context, token, 
 	return ms.svc.RemoveGroupMemberships(ctx, token, groupID, memberIDs...)
 }
 
+func (ms *metricsMiddleware) RemoveGroupMembershipsByOrg(ctx context.Context, orgID string, memberIDs ...string) error {
+	defer func(begin time.Time) {
+		method := "remove_group_memberships_by_org"
+		ms.counter.With("method", method).Add(1)
+		ms.latency.With("method", method).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+
+	return ms.svc.RemoveGroupMembershipsByOrg(ctx, orgID, memberIDs...)
+}
+
 func (ms *metricsMiddleware) UpdateExternalKey(ctx context.Context, token, key, thingID string) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "update_external_key").Add(1)

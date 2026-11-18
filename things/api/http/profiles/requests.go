@@ -6,6 +6,7 @@ package profiles
 import (
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/api"
 )
@@ -51,6 +52,12 @@ func (req createProfilesReq) validate() error {
 		if profile.Name == "" || len(profile.Name) > maxNameSize {
 			return apiutil.ErrNameSize
 		}
+
+		if profile.Config != nil {
+			if err := validateContentType(profile.Config.ContentType); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -77,7 +84,22 @@ func (req updateProfileReq) validate() error {
 		return apiutil.ErrNameSize
 	}
 
+	if req.Config != nil {
+		if err := validateContentType(req.Config.ContentType); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func validateContentType(contentType string) error {
+	switch contentType {
+	case messaging.SenMLContentType, messaging.JSONContentType:
+		return nil
+	default:
+		return apiutil.ErrInvalidContentType
+	}
 }
 
 type viewByThingReq struct {

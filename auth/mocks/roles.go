@@ -23,6 +23,11 @@ func (rrm *rolesRepositoryMock) SaveRole(ctx context.Context, id, role string) e
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
+	// The roles table allows a single role per user.
+	if _, ok := rrm.roles[id]; ok {
+		return dbutil.ErrConflict
+	}
+
 	rrm.roles[id] = role
 
 	return nil
@@ -37,6 +42,20 @@ func (rrm *rolesRepositoryMock) RetrieveRole(ctx context.Context, id string) (st
 	}
 
 	return "", nil
+}
+
+func (rrm *rolesRepositoryMock) RetrieveRoles(ctx context.Context, ids []string) (map[string]string, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	roles := make(map[string]string)
+	for _, id := range ids {
+		if role, ok := rrm.roles[id]; ok {
+			roles[id] = role
+		}
+	}
+
+	return roles, nil
 }
 
 func (rrm *rolesRepositoryMock) UpdateRole(ctx context.Context, id, role string) error {
@@ -61,6 +80,42 @@ func (rrm *rolesRepositoryMock) RemoveRole(ctx context.Context, id string) error
 	}
 
 	delete(rrm.roles, id)
+
+	return nil
+}
+
+func (rrm *rolesRepositoryMock) BackupAll(_ context.Context) ([]auth.UserRole, error) {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	var urs []auth.UserRole
+	for id, role := range rrm.roles {
+		urs = append(urs, auth.UserRole{
+			UserID: id,
+			Role:   role,
+		})
+	}
+
+	return urs, nil
+}
+
+func (rrm *rolesRepositoryMock) RestoreAll(_ context.Context, urs ...auth.UserRole) error {
+	rrm.mu.Lock()
+	defer rrm.mu.Unlock()
+
+	for _, ur := range urs {
+		if ur.Role != auth.RoleRootAdmin && ur.Role != auth.RoleAdmin {
+			return dbutil.ErrMalformedEntity
+		}
+	}
+
+	for _, ur := range urs {
+		if _, ok := rrm.roles[ur.UserID]; ok {
+			continue
+		}
+
+		rrm.roles[ur.UserID] = ur.Role
+	}
 
 	return nil
 }

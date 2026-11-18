@@ -3,6 +3,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -528,5 +529,76 @@ func testSortGroups(t *testing.T, pm things.PageMetadata, grs []things.Group) {
 		}
 	default:
 		break
+	}
+}
+
+func TestRetrieveIDsByOrgs(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	groupRepo := postgres.NewGroupRepository(dbMiddleware)
+
+	orgID := generateUUID(t)
+	otherOrgID := generateUUID(t)
+	emptyOrgID := generateUUID(t)
+
+	grIDsByOrg := map[string][]string{}
+	for i, oid := range []string{orgID, orgID, otherOrgID} {
+		creationTime := time.Now().UTC()
+		group := things.Group{
+			ID:        generateUUID(t),
+			Name:      fmt.Sprintf("%s-%d", groupName, i),
+			OrgID:     oid,
+			CreatedAt: creationTime,
+			UpdatedAt: creationTime,
+		}
+
+		_, err := groupRepo.Save(context.Background(), group)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		grIDsByOrg[oid] = append(grIDsByOrg[oid], group.ID)
+	}
+
+	cases := []struct {
+		desc   string
+		orgIDs []string
+		grIDs  []string
+		err    error
+	}{
+		{
+			desc:   "retrieve group ids by org",
+			orgIDs: []string{orgID},
+			grIDs:  grIDsByOrg[orgID],
+			err:    nil,
+		},
+		{
+			desc:   "retrieve group ids by orgs",
+			orgIDs: []string{orgID, otherOrgID},
+			grIDs:  append(slices.Clone(grIDsByOrg[orgID]), grIDsByOrg[otherOrgID]...),
+			err:    nil,
+		},
+		{
+			desc:   "retrieve group ids by org without groups",
+			orgIDs: []string{emptyOrgID},
+			grIDs:  nil,
+			err:    nil,
+		},
+		{
+			desc:   "retrieve group ids without orgs",
+			orgIDs: []string{},
+			grIDs:  nil,
+			err:    nil,
+		},
+		{
+			desc:   "retrieve group ids by malformed org id",
+			orgIDs: []string{invalidID},
+			grIDs:  nil,
+			err:    dbutil.ErrMalformedEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		grIDs, err := groupRepo.RetrieveIDsByOrgs(context.Background(), tc.orgIDs)
+		msg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.grIDs, grIDs)
+		assert.ElementsMatch(t, tc.grIDs, grIDs, msg)
+		msg = fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 }

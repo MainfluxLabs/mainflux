@@ -328,17 +328,20 @@ components:
 
   requestBodies:
     CreateWebhooksReq:
-      description: JSON-formatted document describing the new webhooks.
+      description: JSON-formatted array of webhooks to create.
       required: true
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              webhooks:
-                type: array
-                items:
-                  $ref: "#/components/schemas/WebhookReqSchema"
+            type: array
+            items:
+              $ref: "#/components/schemas/WebhookReqSchema"
+            minItems: 1
+          example:
+            - name: "Test Webhook"
+              url: "https://test.webhook.com"
+              headers:
+                Authorization: "Bearer token"
     SearchWebhooksReq:
       description: JSON-formatted document describing webhook search parameters.
       required: false

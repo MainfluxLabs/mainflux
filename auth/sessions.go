@@ -33,7 +33,7 @@ type SessionRepository interface {
 	RevokeFamily(ctx context.Context, familyID string, at time.Time) error
 
 	// RevokeByUser marks every token belonging to a user dead, across all of
-	// their sessions. Used by "log out everywhere".
+	// their sessions and the sessions they impersonate. Used by "log out everywhere".
 	RevokeByUser(ctx context.Context, userID string, at time.Time) error
 
 	// RemoveExpired deletes rows whose session began before the provided
@@ -53,12 +53,12 @@ type Sessions interface {
 	Logout(ctx context.Context, token string) error
 
 	// LogoutAll ends every session belonging to the owner of the provided
-	// token.
+	// token. From an impersonated session it ends only that session.
 	LogoutAll(ctx context.Context, token string) error
 
-	// RevokeSessions ends every session belonging to the identified user.
-	// It is the path another service takes after a credential change, so
-	// unlike LogoutAll it works from a user ID alone, with no token of that
-	// user's in hand.
+	// RevokeSessions ends every session belonging to the identified user,
+	// including the sessions they impersonate. It is the path another service
+	// takes after a credential change, so unlike LogoutAll it works from a user
+	// ID alone, with no token of that user's in hand.
 	RevokeSessions(ctx context.Context, userID string) error
 }

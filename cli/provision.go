@@ -4,6 +4,8 @@
 package cli
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -22,23 +24,21 @@ import (
 const jsonExt = ".json"
 const csvExt = ".csv"
 
-const csvThingsFieldCount = 4
+const csvThingsFieldCount = 3
 
 // These constants define the order of the CSV columns (fields) of records containing Things to be provisioned
 const (
 	thingID = iota
 	thingName
-	thingGroupID
-	thingProfileID
+	thingType
 )
 
-const csvProfilesFieldCount = 10
+const csvProfilesFieldCount = 9
 
 // These constants define the order of the CSV columns (fields) of records containing Profiles to be provisioned
 const (
 	profileID = iota
 	profileName
-	profileGroupID
 	contentType
 	confWrite
 	confTransformerDataFilters
@@ -122,10 +122,16 @@ var cmdProvision = []cobra.Command{
 
 			un := fmt.Sprintf("%s@email.com", namesgenerator.GetRandomName(0))
 
+			password, err := randomPassword()
+			if err != nil {
+				logError(err)
+				return
+			}
+
 			// Create test User
 			user := mfxsdk.User{
 				Email:    un,
-				Password: "12345678",
+				Password: password,
 			}
 			if _, err := sdk.RegisterUser(user); err != nil {
 				logError(err)
@@ -245,10 +251,9 @@ func thingsFromFile(path string) ([]mfxsdk.Thing, error) {
 			}
 
 			thing := mfxsdk.Thing{
-				Name:      record[thingName],
-				ID:        record[thingID],
-				ProfileID: record[thingProfileID],
-				GroupID:   record[thingGroupID],
+				Name: record[thingName],
+				ID:   record[thingID],
+				Type: record[thingType],
 			}
 
 			recordMetadata := record[csvThingsFieldCount:]
@@ -313,9 +318,8 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			}
 
 			profile := mfxsdk.Profile{
-				Name:    record[profileName],
-				ID:      record[profileID],
-				GroupID: record[profileGroupID],
+				Name: record[profileName],
+				ID:   record[profileID],
 			}
 
 			// Populate profile's config object
@@ -326,7 +330,7 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 			if err != nil {
 				return []mfxsdk.Profile{}, err
 			}
-			profile.Config["write"] = writeBool
+			profile.Config["write_enabled"] = writeBool
 
 			profile.Config["transformer"] = map[string]any{}
 			transformer := profile.Config["transformer"].(map[string]any)
@@ -366,4 +370,13 @@ func profilesFromFile(path string) ([]mfxsdk.Profile, error) {
 	}
 
 	return profiles, nil
+}
+
+// randomPassword returns a 64-character random password.
+func randomPassword() (string, error) {
+	buf := make([]byte, 48)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }

@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -24,7 +25,6 @@ import (
 )
 
 const (
-	defPass      = "12345678"
 	defReaderURL = "http://localhost:8905"
 )
 
@@ -77,7 +77,11 @@ func Provision(conf Config) {
 
 	if user.Email == "" {
 		user.Email = fmt.Sprintf("%s@email.com", namesgenerator.GetRandomName(0))
-		user.Password = defPass
+		password, err := randomPassword()
+		if err != nil {
+			log.Fatalf("Unable to generate password: %s", err.Error())
+		}
+		user.Password = password
 	}
 
 	// Create new user
@@ -249,4 +253,13 @@ func pemBlockForKey(priv any) *pem.Block {
 	default:
 		return nil
 	}
+}
+
+// randomPassword returns a 64-character random password.
+func randomPassword() (string, error) {
+	buf := make([]byte, 48)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }

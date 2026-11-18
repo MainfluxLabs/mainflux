@@ -185,6 +185,25 @@ func (gr groupRepository) RetrieveIDsByOrg(ctx context.Context, orgID string) ([
 	return gr.retrieveIDs(ctx, q, params)
 }
 
+func (gr groupRepository) RetrieveIDsByOrgs(ctx context.Context, orgIDs []string) ([]string, error) {
+	if len(orgIDs) == 0 {
+		return []string{}, nil
+	}
+
+	q := `SELECT id FROM groups WHERE org_id = ANY($1::uuid[]);`
+
+	var ids []string
+	if err := gr.db.SelectContext(ctx, &ids, q, orgIDs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok && pgerrcode.InvalidTextRepresentation == pgErr.Code {
+			return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+		}
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return ids, nil
+}
+
 func (gr groupRepository) RetrieveIDsByOrgMembership(ctx context.Context, orgID, memberID string) ([]string, error) {
 	q := `SELECT g.id FROM groups g
           JOIN group_memberships gm ON g.id = gm.group_id

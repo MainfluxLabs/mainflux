@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -19,6 +18,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -38,7 +38,7 @@ const (
 	validEmail       = "user@example.com"
 	adminEmail       = "admin@example.com"
 	invalidEmail     = "userexample.com"
-	validPass        = "password"
+	validPass        = "brave-ocean-lantern"
 	invalidToken     = "invalid"
 	invalidPass      = "wrong"
 	prefix           = "fe6b4e92-cc98-425e-b0aa-"
@@ -65,13 +65,14 @@ const (
 
 var (
 	user                  = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled", Role: "root"}
+	platformAdmin         = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: validPass, Status: "enabled", Role: domain.RoleAdmin}
 	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
 	usersList             = []users.User{admin, user}
 	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
-	weakPassword          = toJSON(apiutil.ErrorRes{Err: errors.ErrPasswordFormat.Error()})
+	weakPassword          = toJSON(apiutil.ErrorRes{Err: users.ErrPasswordTooShort.Error()})
 	malformedRes          = toJSON(apiutil.ErrorRes{Err: errors.ErrMalformedEntity.Error()})
 	unsupportedRes        = toJSON(apiutil.ErrorRes{Err: apiutil.ErrUnsupportedContentType.Error()})
 	missingTokRes         = toJSON(apiutil.ErrorRes{Err: apiutil.ErrBearerToken.Error()})
@@ -80,11 +81,10 @@ var (
 	invalidRestPassRes    = toJSON(apiutil.ErrorRes{Err: apiutil.ErrInvalidResetPass.Error()})
 	invalidCurrentPassRes = toJSON(apiutil.ErrorRes{Err: errors.ErrInvalidPassword.Error()})
 	idProvider            = uuid.New()
-	passRegex             = regexp.MustCompile(`^\S{8,}$`)
 	invalidEmailData      = fmt.Sprintf(`{"limit":5,"offset":0,"email":"%s"}`, strings.Repeat("a", maxEmailSize+1)+"@example.com")
 
 	verification = users.EmailVerification{
-		User:      users.User{Email: "example@verify.com", Password: "12345678"},
+		User:      users.User{Email: "example@verify.com", Password: validPass},
 		Token:     "697463fd-2708-4ca9-bf3f-c4d5d8da18f5",
 		CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		ExpiresAt: time.Now().Add(1 * time.Hour),
@@ -143,12 +143,16 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() users.Service {
-	usersRepo := usmocks.NewUserRepository(usersList)
+	return newServiceWithUsers(usersList)
+}
+
+func newServiceWithUsers(userList []users.User) users.Service {
+	usersRepo := usmocks.NewUserRepository(userList)
 	verificationsRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
 	hasher := usmocks.NewHasher()
-	auth := mocks.NewAuthService(admin.ID, usersList, nil)
+	auth := mocks.NewAuthService(admin.ID, userList, nil)
 	email := usmocks.NewEmailer()
 	oauthGoogleCfg := oauth2.Config{}
 	oauthGithubCfg := oauth2.Config{}
@@ -161,12 +165,12 @@ func newService() users.Service {
 		GitHubOAuth:         oauthGithubCfg,
 		URLs:                cfgURLs,
 	}
-	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, auth, email, idProvider, c)
+	return users.New(usersRepo, verificationsRepo, invitesRepo, identityRepo, hasher, usmocks.NewLegacyHasher(), auth, email, idProvider, logger.NewMock(), c)
 }
 
 func newServer(svc users.Service) *httptest.Server {
 	ac := mocks.NewAuthService(admin.ID, usersList, nil)
-	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock(), passRegex)
+	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
 
@@ -332,6 +336,10 @@ func TestLogin(t *testing.T) {
 		Email:    "non-existentuser@example.com",
 		Password: validPass,
 	})
+	belowPolicyPassData := toJSON(users.User{
+		Email:    validEmail,
+		Password: "short",
+	})
 
 	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token for user got unexpected error: %s", err))
@@ -346,6 +354,7 @@ func TestLogin(t *testing.T) {
 	}{
 		{"login with valid credentials", data, contentType, http.StatusCreated, tokenData},
 		{"login with invalid credentials", invalidData, contentType, http.StatusUnauthorized, unauthRes},
+		{"login with password below register policy", belowPolicyPassData, contentType, http.StatusUnauthorized, unauthRes},
 		{"login with invalid email address", invalidEmailData, contentType, http.StatusBadRequest, malformedRes},
 		{"login non-existent user", nonexistentData, contentType, http.StatusUnauthorized, unauthRes},
 		{"login with invalid request format", "{", contentType, http.StatusBadRequest, malformedRes},
@@ -454,6 +463,48 @@ func TestUser(t *testing.T) {
 	}
 }
 
+func TestImpersonate(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	disabledUserID, err := svc.Register(context.Background(), admin.Email, newUser)
+	require.Nil(t, err, fmt.Sprintf("registering user expected to succeed: %s", err))
+	err = svc.DisableUser(context.Background(), admin.Email, disabledUserID)
+	require.Nil(t, err, fmt.Sprintf("disabling user expected to succeed: %s", err))
+
+	impersonatedToken, err := svc.Impersonate(context.Background(), admin.Email, user.ID)
+	require.Nil(t, err, fmt.Sprintf("impersonating user expected to succeed: %s", err))
+
+	cases := []struct {
+		desc   string
+		token  string
+		id     string
+		status int
+	}{
+		{"impersonate user as root admin", admin.Email, user.ID, http.StatusCreated},
+		{"impersonate user as non-root user", user.Email, admin.ID, http.StatusForbidden},
+		{"impersonate user without token", emptyValue, user.ID, http.StatusUnauthorized},
+		{"impersonate non-existing user as root admin", admin.Email, wrongValue, http.StatusNotFound},
+		{"impersonate self as root admin", admin.Email, admin.ID, http.StatusForbidden},
+		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusConflict},
+		{"impersonate user from an impersonated session", impersonatedToken, user.ID, http.StatusForbidden},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/impersonate", ts.URL, tc.id),
+			token:  tc.token,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+	}
+}
+
 func TestListUsers(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -464,20 +515,23 @@ func TestListUsers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
-	data = append(data, viewUserRes{admin.ID, admin.Email}, viewUserRes{user.ID, user.Email})
+	data = append(data,
+		viewUserRes{admin.ID, admin.Email, domain.RoleRootAdmin},
+		viewUserRes{user.ID, user.Email, ""},
+	)
 	for i := 1; i < userNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i)
 		email := fmt.Sprintf("users%d@example.com", i)
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "password",
+			Password: validPass,
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		data = append(data, viewUserRes{usersList, email})
+		data = append(data, viewUserRes{usersList, email, ""})
 	}
 
 	sort.Slice(data, func(i, j int) bool {
@@ -656,20 +710,23 @@ func TestSearchUsers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
-	data = append(data, viewUserRes{admin.ID, admin.Email}, viewUserRes{user.ID, user.Email})
+	data = append(data,
+		viewUserRes{admin.ID, admin.Email, domain.RoleRootAdmin},
+		viewUserRes{user.ID, user.Email, ""},
+	)
 	for i := 1; i < userNum; i++ {
 		id := fmt.Sprintf("%s%012d", prefix, i)
 		email := fmt.Sprintf("users%d@example.com", i)
 		user := users.User{
 			ID:       id,
 			Email:    email,
-			Password: "password",
+			Password: validPass,
 			Status:   "enabled",
 		}
 		usersList, err := svc.Register(context.Background(), token, user)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		data = append(data, viewUserRes{usersList, email})
+		data = append(data, viewUserRes{usersList, email, ""})
 	}
 
 	sort.Slice(data, func(i, j int) bool {
@@ -865,6 +922,155 @@ func TestUpdateUser(t *testing.T) {
 
 }
 
+func TestEnableUser(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	err = svc.DisableUser(context.Background(), adminToken, user.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	alreadyEnabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyEnabledUser.Error()})
+
+	cases := []struct {
+		desc   string
+		id     string
+		token  string
+		status int
+		res    string
+	}{
+		{
+			desc:   "enable user with invalid token",
+			id:     user.ID,
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    unauthRes,
+		},
+		{
+			desc:   "enable non-existing user",
+			id:     wrongValue,
+			token:  adminToken,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
+		},
+		{
+			desc:   "enable disabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusNoContent,
+			res:    emptyValue,
+		},
+		{
+			desc:   "enable already enabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    alreadyEnabledRes,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/enable", ts.URL, tc.id),
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		msg := fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode)
+		assert.Equal(t, tc.status, res.StatusCode, msg)
+		msg = fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data)
+		assert.Equal(t, tc.res, data, msg)
+	}
+}
+
+func TestDisableUser(t *testing.T) {
+	svc := newService()
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	alreadyDisabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyDisabledUser.Error()})
+	platformRoleRes := toJSON(apiutil.ErrorRes{Err: users.ErrPlatformRoleAssigned.Error()})
+
+	cases := []struct {
+		desc   string
+		id     string
+		token  string
+		status int
+		res    string
+	}{
+		{
+			desc:   "disable user with platform role",
+			id:     admin.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    platformRoleRes,
+		},
+		{
+			desc:   "disable user with invalid token",
+			id:     user.ID,
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    unauthRes,
+		},
+		{
+			desc:   "disable non-existing user",
+			id:     wrongValue,
+			token:  adminToken,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
+		},
+		{
+			desc:   "disable enabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusNoContent,
+			res:    emptyValue,
+		},
+		{
+			desc:   "disable already disabled user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    alreadyDisabledRes,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/disable", ts.URL, tc.id),
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		msg := fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode)
+		assert.Equal(t, tc.status, res.StatusCode, msg)
+		msg = fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data)
+		assert.Equal(t, tc.res, data, msg)
+	}
+}
+
 func TestPasswordResetRequest(t *testing.T) {
 	svc := newService()
 	ts := newServer(svc)
@@ -934,7 +1140,7 @@ func TestPasswordReset(t *testing.T) {
 
 	auth := mocks.NewAuthService("", usersList, nil)
 
-	token, err := auth.Issue(context.Background(), user.ID, user.Email, 0)
+	token, err := auth.Issue(context.Background(), user.ID, user.Email, domain.RecoveryKey)
 	require.Nil(t, err, fmt.Sprintf("issue user token error: %s", err))
 
 	reqData.Password = user.Password
@@ -1061,9 +1267,202 @@ func TestPasswordChange(t *testing.T) {
 	}
 }
 
+func TestAssignAdminRole(t *testing.T) {
+	rootAdmin := admin
+	rootAdmin.Role = domain.RoleRootAdmin
+	disabledUser := users.User{
+		ID:       "574106f7-030e-4881-8ab0-151195c29f98",
+		Email:    "disabled-user@example.com",
+		Password: "password",
+		Status:   users.DisabledStatusKey,
+	}
+	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin, disabledUser})
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	platformAdminToken, err := svc.Login(context.Background(), platformAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	forbiddenRes := toJSON(apiutil.ErrorRes{Err: errors.ErrAuthorization.Error()})
+	conflictRes := toJSON(apiutil.ErrorRes{Err: users.ErrPlatformRoleAssigned.Error()})
+	disabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrDisabledUser.Error()})
+
+	cases := []struct {
+		desc   string
+		id     string
+		token  string
+		status int
+		res    string
+	}{
+		{
+			desc:   "assign admin role as platform admin",
+			id:     user.ID,
+			token:  platformAdminToken,
+			status: http.StatusForbidden,
+			res:    forbiddenRes,
+		},
+		{
+			desc:   "assign admin role with invalid token",
+			id:     user.ID,
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    unauthRes,
+		},
+		{
+			desc:   "assign admin role with empty token",
+			id:     user.ID,
+			token:  emptyValue,
+			status: http.StatusUnauthorized,
+			res:    missingTokRes,
+		},
+		{
+			desc:   "assign admin role to non-existing user",
+			id:     wrongValue,
+			token:  adminToken,
+			status: http.StatusNotFound,
+			res:    notFoundRes,
+		},
+		{
+			desc:   "assign admin role to disabled user",
+			id:     disabledUser.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    disabledRes,
+		},
+		{
+			desc:   "assign admin role to root admin",
+			id:     admin.ID,
+			token:  adminToken,
+			status: http.StatusConflict,
+			res:    conflictRes,
+		},
+		{
+			desc:   "assign admin role as root admin",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusNoContent,
+			res:    emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodPost,
+			url:    fmt.Sprintf("%s/users/%s/admin", ts.URL, tc.id),
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		msg := fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode)
+		assert.Equal(t, tc.status, res.StatusCode, msg)
+		msg = fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data)
+		assert.Equal(t, tc.res, data, msg)
+	}
+}
+
+func TestUnassignAdminRole(t *testing.T) {
+	rootAdmin := admin
+	rootAdmin.Role = domain.RoleRootAdmin
+	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin})
+	ts := newServer(svc)
+	defer ts.Close()
+	client := ts.Client()
+
+	adminToken, err := svc.Login(context.Background(), admin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	platformAdminToken, err := svc.Login(context.Background(), platformAdmin)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	forbiddenRes := toJSON(apiutil.ErrorRes{Err: errors.ErrAuthorization.Error()})
+	notAdminRes := toJSON(apiutil.ErrorRes{Err: users.ErrNotPlatformAdmin.Error()})
+
+	cases := []struct {
+		desc   string
+		id     string
+		token  string
+		status int
+		res    string
+	}{
+		{
+			desc:   "unassign admin role as platform admin",
+			id:     platformAdmin.ID,
+			token:  platformAdminToken,
+			status: http.StatusForbidden,
+			res:    forbiddenRes,
+		},
+		{
+			desc:   "unassign admin role with invalid token",
+			id:     platformAdmin.ID,
+			token:  invalidToken,
+			status: http.StatusUnauthorized,
+			res:    unauthRes,
+		},
+		{
+			desc:   "unassign admin role with empty token",
+			id:     platformAdmin.ID,
+			token:  emptyValue,
+			status: http.StatusUnauthorized,
+			res:    missingTokRes,
+		},
+		{
+			desc:   "unassign admin role from root admin",
+			id:     admin.ID,
+			token:  adminToken,
+			status: http.StatusForbidden,
+			res:    forbiddenRes,
+		},
+		{
+			desc:   "unassign admin role from regular user",
+			id:     user.ID,
+			token:  adminToken,
+			status: http.StatusNotFound,
+			res:    notAdminRes,
+		},
+		{
+			desc:   "unassign admin role as root admin",
+			id:     platformAdmin.ID,
+			token:  adminToken,
+			status: http.StatusNoContent,
+			res:    emptyValue,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: client,
+			method: http.MethodDelete,
+			url:    fmt.Sprintf("%s/users/%s/admin", ts.URL, tc.id),
+			token:  tc.token,
+		}
+
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		body, err := io.ReadAll(res.Body)
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
+		data := strings.Trim(string(body), "\n")
+
+		msg := fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode)
+		assert.Equal(t, tc.status, res.StatusCode, msg)
+		msg = fmt.Sprintf("%s: expected body %s got %s", tc.desc, tc.res, data)
+		assert.Equal(t, tc.res, data, msg)
+	}
+}
+
 type viewUserRes struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
+	Role  string `json:"role,omitempty"`
 }
 
 type pageRes struct {

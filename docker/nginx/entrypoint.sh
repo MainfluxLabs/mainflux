@@ -26,7 +26,7 @@ envsubst '
     ${MF_DOWNLINKS_HTTP_PORT}
     ${MF_CONVERTERS_PORT}
     ${MF_FILESTORE_HTTP_PORT}
-    ${MF_FILESTORE_MAX_UPLOAD_SIZE}
+    ${MF_FILESTORE_UPLOAD_LIMIT_MIB}
     ${MF_ALARMS_HTTP_PORT}
     ${MF_RULES_HTTP_PORT}
     ${MF_CERTS_HTTP_PORT}
@@ -34,6 +34,7 @@ envsubst '
     ${MF_UI_CONFIGS_HTTP_PORT}
     ${MF_AUDIT_HTTP_PORT}
     ${MF_SHADOWS_HTTP_PORT}
+    ${MF_OTA_HTTP_PORT}'
     ${MF_PYSCRIPTS_HTTP_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 

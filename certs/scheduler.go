@@ -67,6 +67,7 @@ func (cs *CertScheduler) Start(ctx context.Context, schedule mfcron.Scheduler) e
 
 	task := func() {
 		cs.rotateCerts(ctx)
+		cs.refreshCRL(ctx)
 	}
 
 	// Run once immediately on startup.
@@ -83,6 +84,18 @@ func (cs *CertScheduler) Start(ctx context.Context, schedule mfcron.Scheduler) e
 	cs.sm.Stop()
 	cs.logger.Info("Certificate rotation scheduler stopped")
 	return nil
+}
+
+// refreshCRL reissues the CRL before it expires, because the proxy rejects every client
+// certificate once the CRL expires.
+func (cs *CertScheduler) refreshCRL(ctx context.Context) {
+	if cs.crlPath == "" || cs.pki == nil {
+		return
+	}
+
+	if err := GenerateCRLFile(ctx, cs.repo, cs.pki, cs.crlPath); err != nil {
+		cs.logger.Error(fmt.Sprintf("Failed to refresh CRL: %s", err.Error()))
+	}
 }
 
 func (cs *CertScheduler) rotateCerts(ctx context.Context) {

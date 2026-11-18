@@ -70,12 +70,13 @@ var (
 		Metadata: metadata,
 	}
 
-	user            = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password, Role: auth.Owner}
-	otherUser       = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password, Role: auth.Editor}
+	user            = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
+	otherUser       = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
 	admin           = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
 	usersList       = []users.User{admin, user, otherUser}
 	group           = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
+	orgMemberships  = []auth.OrgMembership{{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Editor}}
 	metadata        = map[string]any{"test": "data"}
 	invalidName     = strings.Repeat("m", maxNameSize+1)
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, invalidName)
@@ -109,7 +110,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
+	auth := mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
@@ -1957,7 +1958,7 @@ func TestUpdateExternalKey(t *testing.T) {
 	}{
 		{
 			"update external key",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			token,
@@ -1965,7 +1966,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key with invalid auth token",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			wrongValue,
@@ -1973,7 +1974,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key with empty auth token",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			emptyValue,
@@ -1981,7 +1982,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key as unauthorized user",
-			`{"key": "abcd123"}`,
+			`{"key": "abcd1234"}`,
 			createdThing.ID,
 			contentTypeJSON,
 			otherToken,
@@ -1989,7 +1990,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key to nonexistent thing",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			"nonexistent",
 			contentTypeJSON,
 			token,
@@ -2013,7 +2014,7 @@ func TestUpdateExternalKey(t *testing.T) {
 		},
 		{
 			"update external key without content type",
-			`{"key": "abc123"}`,
+			`{"key": "abc12345"}`,
 			createdThing.ID,
 			emptyValue,
 			token,
@@ -2054,7 +2055,7 @@ func TestRemoveExternalKey(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	createdThing := createdThings[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, createdThing.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
@@ -2274,7 +2275,7 @@ func TestIdentify(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("failed to create thing: %s", err))
 	th := ths[0]
 
-	externalKey := "abc123"
+	externalKey := "abc12345"
 	err = svc.UpdateExternalKey(context.Background(), token, externalKey, th.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 

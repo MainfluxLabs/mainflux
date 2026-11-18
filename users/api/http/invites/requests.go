@@ -4,10 +4,9 @@
 package invites
 
 import (
-	"regexp"
-
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/users"
 	"github.com/MainfluxLabs/mainflux/users/api"
 )
@@ -16,8 +15,6 @@ const (
 	maxLimitSize = 200
 	maxEmailSize = 254
 )
-
-var userPasswordRegex *regexp.Regexp
 
 type registerByInviteReq struct {
 	User         users.User `json:"user"`
@@ -30,8 +27,12 @@ func (req registerByInviteReq) validate() error {
 		return apiutil.ErrMissingInviteID
 	}
 
-	if err := req.User.Validate(userPasswordRegex); err != nil {
+	if err := req.User.Validate(); err != nil {
 		return err
+	}
+
+	if req.User.Password == "" {
+		return apiutil.ErrMissingPass
 	}
 
 	if req.RedirectPath == "" {
@@ -95,6 +96,11 @@ func (req createPlatformInviteRequest) validate() error {
 	if req.OrgID != "" {
 		if err := apiutil.ValidateOrgInviteeRole(req.Role); err != nil {
 			return err
+		}
+
+		// Org admins hold their group roles through their org role.
+		if req.Role == domain.OrgAdmin && len(req.GroupInvites) > 0 {
+			return errors.ErrMalformedEntity
 		}
 	}
 

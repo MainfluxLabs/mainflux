@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/users"
+	"github.com/MainfluxLabs/mainflux/users/argon2"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -383,4 +384,32 @@ func TestUpdateUser(t *testing.T) {
 		err := userRepo.UpdateUserMetadata(context.Background(), tc.user)
 		assert.Nil(t, err, fmt.Sprintf("%s: expected no error got %d\n", desc, err))
 	}
+}
+
+func TestArgon2idHashStorage(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repo := postgres.NewUserRepo(dbMiddleware)
+
+	hash, err := argon2.New().Hash(password)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	updatedHash, err := argon2.New().Hash("another long passphrase")
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	uid, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	user := users.User{ID: uid, Email: "argon2-user@example.com", Password: hash, Status: users.EnabledStatusKey}
+
+	_, err = repo.Save(context.Background(), user)
+	require.Nil(t, err, fmt.Sprintf("save user with Argon2id hash: unexpected error: %s", err))
+
+	saved, err := repo.RetrieveByEmail(context.Background(), user.Email)
+	require.Nil(t, err, fmt.Sprintf("retrieve user: unexpected error: %s", err))
+	assert.Equal(t, hash, saved.Password, "retrieved hash expected to equal the saved hash")
+
+	err = repo.UpdatePassword(context.Background(), user.Email, updatedHash)
+	require.Nil(t, err, fmt.Sprintf("update password with Argon2id hash: unexpected error: %s", err))
+
+	updated, err := repo.RetrieveByEmail(context.Background(), user.Email)
+	require.Nil(t, err, fmt.Sprintf("retrieve user: unexpected error: %s", err))
+	assert.Equal(t, updatedHash, updated.Password, "retrieved hash expected to equal the updated hash")
 }
