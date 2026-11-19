@@ -153,6 +153,10 @@ func main() {
 	})
 
 	g.Go(func() error {
+		return subscribeToES(ctx, svc, cfg, mfevents.UsersStream, logger)
+	})
+
+	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {
 			cancel()
 			logger.Info(fmt.Sprintf("Audit service shutdown by signal: %s", sig))

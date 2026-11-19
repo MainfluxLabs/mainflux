@@ -179,7 +179,13 @@ func TestIssue(t *testing.T) {
 				IssuerID: ownerID,
 				Subject:  ownerEmail,
 			},
-			event: nil,
+			event: map[string]any{
+				"operation":               events.UserLogin,
+				"jwt_identity_user_id":    ownerID,
+				"jwt_identity_user_email": ownerEmail,
+				"evt_org_id":              "",
+				"evt_group_id":            "",
+			},
 		},
 		{
 			desc: "issue impersonated login key",

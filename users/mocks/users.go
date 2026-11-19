@@ -5,6 +5,7 @@ package mocks
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -126,6 +127,9 @@ func (urm *userRepositoryMock) RetrieveByIDs(ctx context.Context, ids []string, 
 
 	allUsers := make([]users.User, 0, len(urm.usersByEmail))
 	for _, u := range urm.usersByEmail {
+		if len(ids) > 0 && !slices.Contains(ids, u.ID) {
+			continue
+		}
 		allUsers = append(allUsers, u)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/MainfluxLabs/mainflux/auth"
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 )
 
@@ -33,6 +34,16 @@ func (es eventStore) Issue(ctx context.Context, token string, key auth.Key) (aut
 			Action: events.APIKeyIssued{
 				ID:        issuedKey.ID,
 				ExpiresAt: issuedKey.ExpiresAt,
+			},
+		})
+	}
+
+	if key.Type == auth.LoginKey && key.Impersonator == nil {
+		es.pub.Publish(ctx, events.Event{
+			Action: events.UserLoggedIn{},
+			JWTUserIdentity: domain.Identity{
+				ID:    key.IssuerID,
+				Email: key.Subject,
 			},
 		})
 	}
