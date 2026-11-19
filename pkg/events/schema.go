@@ -123,7 +123,7 @@ func decodeEvent(re redisEvent) (Event, error) {
 	case APIKeyRevoke:
 		action = decodeAPIKeyRevoked(re)
 	case SessionLogoutAll:
-		action = SessionLoggedOutAll{}
+		action = decodeSessionLoggedOutAll(re)
 	case UserImpersonate:
 		action = decodeUserImpersonated(re)
 	default:
@@ -909,6 +909,10 @@ func (e SessionLoggedOutAll) Operation() string {
 
 func (e SessionLoggedOutAll) Encode() map[string]any {
 	return redisEvent{}
+}
+
+func decodeSessionLoggedOutAll(_ redisEvent) SessionLoggedOutAll {
+	return SessionLoggedOutAll{}
 }
 
 // OrgRemoved signals that an organization has been removed.
