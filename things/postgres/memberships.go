@@ -155,17 +155,16 @@ func (mr groupMembershipsRepository) RetrieveGroupIDsByMember(ctx context.Contex
 }
 
 func (mr groupMembershipsRepository) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
-	q := `DELETE FROM group_memberships WHERE member_id = :member_id AND group_id = :group_id;`
+	q := `DELETE FROM group_memberships
+		  WHERE group_id = :group_id AND member_id = ANY(:member_ids);`
 
-	for _, memberID := range memberIDs {
-		dbgm := dbGroupMembership{
-			MemberID: memberID,
-			GroupID:  groupID,
-		}
+	params := map[string]any{
+		"group_id":   groupID,
+		"member_ids": memberIDs,
+	}
 
-		if _, err := mr.db.NamedExecContext(ctx, q, dbgm); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	if _, err := mr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 	return nil
 }

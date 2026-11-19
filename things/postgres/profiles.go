@@ -209,22 +209,20 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 }
 
 func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbpr := dbProfile{
-			ID: id,
-		}
-		q := `DELETE FROM profiles WHERE id = :id`
-		_, err := pr.db.NamedExecContext(ctx, q, dbpr)
-		if err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				if pgErr.Code == pgerrcode.ForeignKeyViolation {
-					return errors.Wrap(things.ErrProfileAssigned, err)
-				}
-			}
+	q := `DELETE FROM profiles WHERE id = ANY(:ids);`
+	params := map[string]any{
+		"ids": ids,
+	}
 
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	if _, err := pr.db.NamedExecContext(ctx, q, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			if pgErr.Code == pgerrcode.ForeignKeyViolation {
+				return errors.Wrap(things.ErrProfileAssigned, err)
+			}
 		}
+
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

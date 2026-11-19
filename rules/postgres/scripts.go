@@ -171,14 +171,15 @@ func (rr ruleRepository) UpdateScript(ctx context.Context, script rules.LuaScrip
 func (rr ruleRepository) RemoveScripts(ctx context.Context, ids ...string) error {
 	query := `
 		DELETE FROM lua_scripts
-		WHERE id = :id
+		WHERE id = ANY(:ids)
 	`
 
-	for _, id := range ids {
-		dbr := dbLuaScript{ID: id}
-		if _, err := rr.db.NamedExecContext(ctx, query, dbr); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -274,14 +275,15 @@ func (rr ruleRepository) RetrieveScriptRunByID(ctx context.Context, id string) (
 func (rr ruleRepository) RemoveScriptRuns(ctx context.Context, ids ...string) error {
 	query := `
 		DELETE FROM lua_script_runs
-		WHERE id = :id
+		WHERE id = ANY(:ids)
 	`
 
-	for _, id := range ids {
-		dbRun := dbScriptRun{ID: id}
-		if _, err := rr.db.NamedExecContext(ctx, query, dbRun); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

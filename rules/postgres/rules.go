@@ -227,13 +227,14 @@ func (rr ruleRepository) Update(ctx context.Context, r rules.Rule) error {
 }
 
 func (rr ruleRepository) Remove(ctx context.Context, ids ...string) error {
-	q := `DELETE FROM rules WHERE id = :id;`
+	q := `DELETE FROM rules WHERE id = ANY(:ids);`
 
-	for _, id := range ids {
-		dbr := dbRule{ID: id}
-		if _, err := rr.db.NamedExecContext(ctx, q, dbr); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -283,15 +284,15 @@ func (rr ruleRepository) AssignThings(ctx context.Context, ruleID string, thingI
 }
 
 func (rr ruleRepository) UnassignThings(ctx context.Context, ruleID string, thingIDs ...string) error {
-	q := `DELETE FROM rules_things WHERE rule_id = :rule_id AND thing_id = :thing_id;`
+	q := `DELETE FROM rules_things WHERE rule_id = :rule_id AND thing_id = ANY(:thing_ids);`
 
-	for _, thingID := range thingIDs {
-		if _, err := rr.db.NamedExecContext(ctx, q, map[string]any{
-			"rule_id":  ruleID,
-			"thing_id": thingID,
-		}); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"rule_id":   ruleID,
+		"thing_ids": thingIDs,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

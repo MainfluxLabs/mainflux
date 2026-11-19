@@ -302,13 +302,14 @@ func (cr clientRepository) Update(ctx context.Context, c modbus.Client) error {
 }
 
 func (cr clientRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbCl := dbClient{ID: id}
-		q := `DELETE FROM clients WHERE id = :id;`
+	q := `DELETE FROM clients WHERE id = ANY(:ids);`
 
-		if _, err := cr.db.NamedExecContext(ctx, q, dbCl); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := cr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

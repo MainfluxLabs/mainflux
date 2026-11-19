@@ -165,36 +165,24 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 }
 
 func (omr orgMembershipsRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
-	tx, err := omr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(auth.ErrRemoveOrgMembership, err)
+	qDel := `DELETE FROM org_memberships WHERE org_id = :org_id AND member_id = ANY(:member_ids);`
+
+	params := map[string]any{
+		"org_id":     orgID,
+		"member_ids": ids,
 	}
 
-	qDel := `DELETE from org_memberships WHERE org_id = :org_id AND member_id = :member_id`
-
-	for _, id := range ids {
-		om := auth.OrgMembership{
-			OrgID:    orgID,
-			MemberID: id,
-		}
-		dbom := toDBOrgMembership(om)
-
-		if _, err := tx.NamedExecContext(ctx, qDel, dbom); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
+	if _, err := omr.db.NamedExecContext(ctx, qDel, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
 			}
-
-			return errors.Wrap(auth.ErrRemoveOrgMembership, err)
 		}
-	}
 
-	if err = tx.Commit(); err != nil {
 		return errors.Wrap(auth.ErrRemoveOrgMembership, err)
 	}
 
