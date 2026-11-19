@@ -34,7 +34,7 @@ CREATE TABLE orgs (
 );
 
 CREATE TABLE users_roles (
-    role       VARCHAR(12) CHECK (role IN ('root', 'admin')),
+    role       VARCHAR(14) CHECK (role IN ('platform_owner', 'platform_admin')),
     user_id    UUID NOT NULL,
     CONSTRAINT users_roles_pkey PRIMARY KEY (user_id),
 );

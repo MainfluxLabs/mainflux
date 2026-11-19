@@ -28,10 +28,10 @@ type restoreIdentityReq struct {
 }
 
 type restoreReq struct {
-	token      string
-	Users      []restoreUserReq     `json:"users"`
-	Admin      restoreUserReq       `json:"admin"`
-	Identities []restoreIdentityReq `json:"identities"`
+	token         string
+	Users         []restoreUserReq     `json:"users"`
+	PlatformOwner restoreUserReq       `json:"platform_owner"`
+	Identities    []restoreIdentityReq `json:"identities"`
 }
 
 func (req restoreReq) validate() error {
@@ -43,7 +43,7 @@ func (req restoreReq) validate() error {
 		return apiutil.ErrEmptyList
 	}
 
-	if req.Admin.ID == "" {
+	if req.PlatformOwner.ID == "" {
 		return apiutil.ErrMissingUserID
 	}
 

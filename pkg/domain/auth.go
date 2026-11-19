@@ -10,8 +10,8 @@ import (
 
 // Subject type constants for authorization.
 const (
-	RootSub = "root"
-	OrgSub  = "org"
+	PlatformSub = "platform"
+	OrgSub      = "org"
 )
 
 // Org role constants.
@@ -24,10 +24,10 @@ const (
 
 // Platform role constants.
 const (
-	// RoleRootAdmin is the super admin role.
-	RoleRootAdmin = "root"
-	// RoleAdmin is the admin role.
-	RoleAdmin = "admin"
+	// PlatformOwner is the platform owner role.
+	PlatformOwner = "platform_owner"
+	// PlatformAdmin is the platform admin role.
+	PlatformAdmin = "platform_admin"
 )
 
 // Key type constants.

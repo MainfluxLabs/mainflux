@@ -33,42 +33,42 @@ import (
 )
 
 const (
-	contentType      = "application/json"
-	path             = "http://localhost"
-	validEmail       = "user@example.com"
-	adminEmail       = "admin@example.com"
-	invalidEmail     = "userexample.com"
-	validPass        = "brave-ocean-lantern"
-	invalidToken     = "invalid"
-	invalidPass      = "wrong"
-	prefix           = "fe6b4e92-cc98-425e-b0aa-"
-	userNum          = 101
-	emailKey         = "email"
-	idKey            = "id"
-	ascKey           = "asc"
-	descKey          = "desc"
-	wrongValue       = "wrong_value"
-	maxEmailSize     = 1024
-	emptyValue       = ""
-	emptyJson        = "{}"
-	validData        = `{"limit":5,"offset":0}`
-	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"email"}`
-	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"email"}`
-	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData    = `{"limit":0,"offset":0}`
-	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData = `{"limit":210,"offset":0}`
-	invalidData      = `{"limit": "invalid"}`
+	contentType        = "application/json"
+	path               = "http://localhost"
+	validEmail         = "user@example.com"
+	platformOwnerEmail = "admin@example.com"
+	invalidEmail       = "userexample.com"
+	validPass          = "brave-ocean-lantern"
+	invalidToken       = "invalid"
+	invalidPass        = "wrong"
+	prefix             = "fe6b4e92-cc98-425e-b0aa-"
+	userNum            = 101
+	emailKey           = "email"
+	idKey              = "id"
+	ascKey             = "asc"
+	descKey            = "desc"
+	wrongValue         = "wrong_value"
+	maxEmailSize       = 1024
+	emptyValue         = ""
+	emptyJson          = "{}"
+	validData          = `{"limit":5,"offset":0}`
+	descData           = `{"limit":5,"offset":0,"dir":"desc","order":"email"}`
+	ascData            = `{"limit":5,"offset":0,"dir":"asc","order":"email"}`
+	invalidOrderData   = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData      = `{"limit":0,"offset":0}`
+	invalidDirData     = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData   = `{"limit":210,"offset":0}`
+	invalidData        = `{"limit": "invalid"}`
 
 	inviteDuration = 7 * 24 * time.Hour
 )
 
 var (
 	user                  = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin                 = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled", Role: "root"}
-	platformAdmin         = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: validPass, Status: "enabled", Role: domain.RoleAdmin}
+	platformOwner         = users.User{Email: platformOwnerEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled", Role: domain.PlatformOwner}
+	platformAdmin         = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Password: validPass, Status: "enabled", Role: domain.PlatformAdmin}
 	newUser               = users.User{Email: "newuser@example.com", Password: validPass, Status: "enabled"}
-	usersList             = []users.User{admin, user}
+	usersList             = []users.User{platformOwner, user}
 	metadata              = map[string]any{"key": "value"}
 	notFoundRes           = toJSON(apiutil.ErrorRes{Err: dbutil.ErrNotFound.Error()})
 	unauthRes             = toJSON(apiutil.ErrorRes{Err: errors.ErrAuthentication.Error()})
@@ -152,7 +152,7 @@ func newServiceWithUsers(userList []users.User) users.Service {
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
 	hasher := usmocks.NewHasher()
-	auth := mocks.NewAuthService(admin.ID, userList, nil)
+	auth := mocks.NewAuthService(platformOwner.ID, userList, nil)
 	email := usmocks.NewEmailer()
 	oauthGoogleCfg := oauth2.Config{}
 	oauthGithubCfg := oauth2.Config{}
@@ -169,7 +169,7 @@ func newServiceWithUsers(userList []users.User) users.Service {
 }
 
 func newServer(svc users.Service) *httptest.Server {
-	ac := mocks.NewAuthService(admin.ID, usersList, nil)
+	ac := mocks.NewAuthService(platformOwner.ID, usersList, nil)
 	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
@@ -286,18 +286,18 @@ func TestRegister(t *testing.T) {
 		status      int
 		token       string
 	}{
-		{"create new user", data, contentType, http.StatusCreated, admin.Email},
+		{"create new user", data, contentType, http.StatusCreated, platformOwner.Email},
 		{"create user with empty token", data, contentType, http.StatusForbidden, ""},
-		{"create existing user", data, contentType, http.StatusConflict, admin.Email},
-		{"create user with invalid email address", invalidData, contentType, http.StatusBadRequest, admin.Email},
-		{"create user with weak password", invalidPasswordData, contentType, http.StatusBadRequest, admin.Email},
+		{"create existing user", data, contentType, http.StatusConflict, platformOwner.Email},
+		{"create user with invalid email address", invalidData, contentType, http.StatusBadRequest, platformOwner.Email},
+		{"create user with weak password", invalidPasswordData, contentType, http.StatusBadRequest, platformOwner.Email},
 		{"create new user with unauthorized access", data, contentType, http.StatusUnauthorized, "wrong"},
 		{"create existing user with unauthorized access", data, contentType, http.StatusUnauthorized, "wrong"},
-		{"create user with invalid request format", "{", contentType, http.StatusBadRequest, admin.Email},
-		{"create user with empty JSON request", "{}", contentType, http.StatusBadRequest, admin.Email},
-		{"create user with empty request", "", contentType, http.StatusBadRequest, admin.Email},
-		{"create user with invalid field name", invalidFieldData, contentType, http.StatusBadRequest, admin.Email},
-		{"create user with missing content type", data, "", http.StatusUnsupportedMediaType, admin.Email},
+		{"create user with invalid request format", "{", contentType, http.StatusBadRequest, platformOwner.Email},
+		{"create user with empty JSON request", "{}", contentType, http.StatusBadRequest, platformOwner.Email},
+		{"create user with empty request", "", contentType, http.StatusBadRequest, platformOwner.Email},
+		{"create user with invalid field name", invalidFieldData, contentType, http.StatusBadRequest, platformOwner.Email},
+		{"create user with missing content type", data, "", http.StatusUnsupportedMediaType, platformOwner.Email},
 	}
 
 	for _, tc := range cases {
@@ -469,12 +469,12 @@ func TestImpersonate(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	disabledUserID, err := svc.Register(context.Background(), admin.Email, newUser)
+	disabledUserID, err := svc.Register(context.Background(), platformOwner.Email, newUser)
 	require.Nil(t, err, fmt.Sprintf("registering user expected to succeed: %s", err))
-	err = svc.DisableUser(context.Background(), admin.Email, disabledUserID)
+	err = svc.DisableUser(context.Background(), platformOwner.Email, disabledUserID)
 	require.Nil(t, err, fmt.Sprintf("disabling user expected to succeed: %s", err))
 
-	impersonatedToken, err := svc.Impersonate(context.Background(), admin.Email, user.ID)
+	impersonatedToken, err := svc.Impersonate(context.Background(), platformOwner.Email, user.ID)
 	require.Nil(t, err, fmt.Sprintf("impersonating user expected to succeed: %s", err))
 
 	cases := []struct {
@@ -483,12 +483,12 @@ func TestImpersonate(t *testing.T) {
 		id     string
 		status int
 	}{
-		{"impersonate user as root admin", admin.Email, user.ID, http.StatusCreated},
-		{"impersonate user as non-root user", user.Email, admin.ID, http.StatusForbidden},
+		{"impersonate user as platform owner", platformOwner.Email, user.ID, http.StatusCreated},
+		{"impersonate user as regular user", user.Email, platformOwner.ID, http.StatusForbidden},
 		{"impersonate user without token", emptyValue, user.ID, http.StatusUnauthorized},
-		{"impersonate non-existing user as root admin", admin.Email, wrongValue, http.StatusNotFound},
-		{"impersonate self as root admin", admin.Email, admin.ID, http.StatusForbidden},
-		{"impersonate disabled user as root admin", admin.Email, disabledUserID, http.StatusConflict},
+		{"impersonate non-existing user as platform owner", platformOwner.Email, wrongValue, http.StatusNotFound},
+		{"impersonate self as platform owner", platformOwner.Email, platformOwner.ID, http.StatusForbidden},
+		{"impersonate disabled user as platform owner", platformOwner.Email, disabledUserID, http.StatusConflict},
 		{"impersonate user from an impersonated session", impersonatedToken, user.ID, http.StatusForbidden},
 	}
 
@@ -511,12 +511,12 @@ func TestListUsers(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	token, err := svc.Login(context.Background(), admin)
+	token, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
 	data = append(data,
-		viewUserRes{admin.ID, admin.Email, domain.RoleRootAdmin},
+		viewUserRes{platformOwner.ID, platformOwner.Email, domain.PlatformOwner},
 		viewUserRes{user.ID, user.Email, ""},
 	)
 	for i := 1; i < userNum; i++ {
@@ -706,12 +706,12 @@ func TestSearchUsers(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	token, err := svc.Login(context.Background(), admin)
+	token, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	var data []viewUserRes
 	data = append(data,
-		viewUserRes{admin.ID, admin.Email, domain.RoleRootAdmin},
+		viewUserRes{platformOwner.ID, platformOwner.Email, domain.PlatformOwner},
 		viewUserRes{user.ID, user.Email, ""},
 	)
 	for i := 1; i < userNum; i++ {
@@ -928,10 +928,10 @@ func TestEnableUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	platformOwnerToken, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = svc.DisableUser(context.Background(), adminToken, user.ID)
+	err = svc.DisableUser(context.Background(), platformOwnerToken, user.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	alreadyEnabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyEnabledUser.Error()})
@@ -953,21 +953,21 @@ func TestEnableUser(t *testing.T) {
 		{
 			desc:   "enable non-existing user",
 			id:     wrongValue,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNotFound,
 			res:    notFoundRes,
 		},
 		{
 			desc:   "enable disabled user",
 			id:     user.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNoContent,
 			res:    emptyValue,
 		},
 		{
 			desc:   "enable already enabled user",
 			id:     user.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusConflict,
 			res:    alreadyEnabledRes,
 		},
@@ -1000,7 +1000,7 @@ func TestDisableUser(t *testing.T) {
 	defer ts.Close()
 	client := ts.Client()
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	platformOwnerToken, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	alreadyDisabledRes := toJSON(apiutil.ErrorRes{Err: users.ErrAlreadyDisabledUser.Error()})
@@ -1015,8 +1015,8 @@ func TestDisableUser(t *testing.T) {
 	}{
 		{
 			desc:   "disable user with platform role",
-			id:     admin.ID,
-			token:  adminToken,
+			id:     platformOwner.ID,
+			token:  platformOwnerToken,
 			status: http.StatusConflict,
 			res:    platformRoleRes,
 		},
@@ -1030,21 +1030,21 @@ func TestDisableUser(t *testing.T) {
 		{
 			desc:   "disable non-existing user",
 			id:     wrongValue,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNotFound,
 			res:    notFoundRes,
 		},
 		{
 			desc:   "disable enabled user",
 			id:     user.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNoContent,
 			res:    emptyValue,
 		},
 		{
 			desc:   "disable already disabled user",
 			id:     user.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusConflict,
 			res:    alreadyDisabledRes,
 		},
@@ -1268,20 +1268,18 @@ func TestPasswordChange(t *testing.T) {
 }
 
 func TestAssignAdminRole(t *testing.T) {
-	rootAdmin := admin
-	rootAdmin.Role = domain.RoleRootAdmin
 	disabledUser := users.User{
 		ID:       "574106f7-030e-4881-8ab0-151195c29f98",
 		Email:    "disabled-user@example.com",
 		Password: "password",
 		Status:   users.DisabledStatusKey,
 	}
-	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin, disabledUser})
+	svc := newServiceWithUsers([]users.User{platformOwner, user, platformAdmin, disabledUser})
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	platformOwnerToken, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	platformAdminToken, err := svc.Login(context.Background(), platformAdmin)
@@ -1322,28 +1320,28 @@ func TestAssignAdminRole(t *testing.T) {
 		{
 			desc:   "assign admin role to non-existing user",
 			id:     wrongValue,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNotFound,
 			res:    notFoundRes,
 		},
 		{
 			desc:   "assign admin role to disabled user",
 			id:     disabledUser.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusConflict,
 			res:    disabledRes,
 		},
 		{
-			desc:   "assign admin role to root admin",
-			id:     admin.ID,
-			token:  adminToken,
+			desc:   "assign admin role to platform owner",
+			id:     platformOwner.ID,
+			token:  platformOwnerToken,
 			status: http.StatusConflict,
 			res:    conflictRes,
 		},
 		{
-			desc:   "assign admin role as root admin",
+			desc:   "assign admin role as platform owner",
 			id:     user.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNoContent,
 			res:    emptyValue,
 		},
@@ -1371,14 +1369,12 @@ func TestAssignAdminRole(t *testing.T) {
 }
 
 func TestUnassignAdminRole(t *testing.T) {
-	rootAdmin := admin
-	rootAdmin.Role = domain.RoleRootAdmin
-	svc := newServiceWithUsers([]users.User{rootAdmin, user, platformAdmin})
+	svc := newServiceWithUsers([]users.User{platformOwner, user, platformAdmin})
 	ts := newServer(svc)
 	defer ts.Close()
 	client := ts.Client()
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	platformOwnerToken, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	platformAdminToken, err := svc.Login(context.Background(), platformAdmin)
@@ -1416,23 +1412,23 @@ func TestUnassignAdminRole(t *testing.T) {
 			res:    missingTokRes,
 		},
 		{
-			desc:   "unassign admin role from root admin",
-			id:     admin.ID,
-			token:  adminToken,
+			desc:   "unassign admin role from platform owner",
+			id:     platformOwner.ID,
+			token:  platformOwnerToken,
 			status: http.StatusForbidden,
 			res:    forbiddenRes,
 		},
 		{
 			desc:   "unassign admin role from regular user",
 			id:     user.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNotFound,
 			res:    notAdminRes,
 		},
 		{
-			desc:   "unassign admin role as root admin",
+			desc:   "unassign admin role as platform owner",
 			id:     platformAdmin.ID,
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNoContent,
 			res:    emptyValue,
 		},

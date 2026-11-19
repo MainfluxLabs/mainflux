@@ -40,19 +40,19 @@ const (
 )
 
 var (
-	admin           = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root", Password: password}
-	noPasswordAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: "root"}
-	unauthUser      = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: password}
-	selfRegister    = users.User{Email: "self-register@example.com", Password: password}
-	registerUser    = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: password}
-	user            = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: password}
-	noPasswordUser  = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
-	backupRootAdmin = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f9a", Role: "root"}
-	formerAdmin     = users.User{Email: "former-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: password}
-	nonExistingUser = users.User{Email: "non-ex-user@example.com", Password: password}
-	platformAdmin   = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Role: domain.RoleAdmin, Password: password}
-	usersList       = []users.User{admin, registerUser, user, unauthUser, platformAdmin}
-	host            = "example.com"
+	platformOwner                 = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: domain.PlatformOwner, Password: password}
+	noPasswordPlatformOwner       = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f94", Role: domain.PlatformOwner}
+	unauthUser                    = users.User{Email: "unauth-user@example.com", ID: "6a32810a-4451-4ae8-bf7f-4b1752856eef", Password: password}
+	selfRegister                  = users.User{Email: "self-register@example.com", Password: password}
+	registerUser                  = users.User{Email: "register-user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f95", Password: password}
+	user                          = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96", Password: password}
+	noPasswordUser                = users.User{Email: "user@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f96"}
+	backupPlatformOwnerOtherID    = users.User{Email: "admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f9a", Role: domain.PlatformOwner}
+	backupPlatformOwnerOtherEmail = users.User{Email: "former-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f98", Password: password}
+	nonExistingUser               = users.User{Email: "non-ex-user@example.com", Password: password}
+	platformAdmin                 = users.User{Email: "platform-admin@example.com", ID: "574106f7-030e-4881-8ab0-151195c29f97", Role: domain.PlatformAdmin, Password: password}
+	usersList                     = []users.User{platformOwner, registerUser, user, unauthUser, platformAdmin}
+	host                          = "example.com"
 
 	verification = users.EmailVerification{
 		User:      users.User{Email: "example@verify.com", Password: password},
@@ -106,7 +106,7 @@ func newService(srv ...*httptest.Server) users.Service {
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
-	authSvc := mocks.NewAuthService(admin.ID, allUsers, nil)
+	authSvc := mocks.NewAuthService(platformOwner.ID, allUsers, nil)
 	e := usmocks.NewEmailer()
 	c := users.Config{
 		InviteDuration:      inviteDuration,
@@ -143,7 +143,7 @@ func TestSelfRegister(t *testing.T) {
 		{
 			desc:  "self register existing user",
 			user:  registerUser,
-			token: admin.Email,
+			token: platformOwner.Email,
 			err:   dbutil.ErrConflict,
 		},
 	}
@@ -154,12 +154,12 @@ func TestSelfRegister(t *testing.T) {
 	}
 }
 
-func TestRegisterAdmin(t *testing.T) {
+func TestRegisterPlatformOwner(t *testing.T) {
 	userRepo := usmocks.NewUserRepository(usersList)
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
-	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	authSvc := mocks.NewAuthService(platformOwner.ID, usersList, nil)
 	config := users.Config{
 		PassMinLength: users.MinPasswordLength,
 	}
@@ -169,49 +169,49 @@ func TestRegisterAdmin(t *testing.T) {
 		user users.User
 		err  error
 	}{
-		"create admin with valid credentials": {
+		"create platform owner with valid credentials": {
 			user: users.User{
 				Email:    "new-admin@example.com",
 				Password: password,
 			},
 			err: nil,
 		},
-		"create admin with empty password": {
+		"create platform owner with empty password": {
 			user: users.User{
 				Email: "empty-password-admin@example.com",
 			},
 			err: errors.ErrPasswordFormat,
 		},
-		"create admin with password that is too short": {
+		"create platform owner with password that is too short": {
 			user: users.User{
 				Email:    "short-password-admin@example.com",
 				Password: "short",
 			},
 			err: errors.ErrPasswordFormat,
 		},
-		"create admin with common password": {
+		"create platform owner with common password": {
 			user: users.User{
 				Email:    "common-password-admin@example.com",
 				Password: "Password1!",
 			},
 			err: errors.ErrPasswordFormat,
 		},
-		"create admin with invalid e-mail": {
+		"create platform owner with invalid e-mail": {
 			user: users.User{
 				Email:    wrong,
 				Password: password,
 			},
 			err: errors.ErrMalformedEntity,
 		},
-		"create admin with empty e-mail": {
+		"create platform owner with empty e-mail": {
 			user: users.User{
 				Password: password,
 			},
 			err: errors.ErrMalformedEntity,
 		},
-		"existing admin with empty password": {
+		"existing platform owner with empty password": {
 			user: users.User{
-				Email: admin.Email,
+				Email: platformOwner.Email,
 			},
 			err: nil,
 		},
@@ -230,13 +230,13 @@ func TestRegisterAdmin(t *testing.T) {
 	}
 
 	for desc, tc := range cases {
-		err := svc.RegisterAdmin(context.Background(), tc.user)
+		err := svc.RegisterPlatformOwner(context.Background(), tc.user)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
 
 		savedUser, retrieveErr := userRepo.RetrieveByEmail(context.Background(), tc.user.Email)
 
 		if tc.err != nil {
-			assert.True(t, errors.Contains(err, users.ErrInvalidAdminCredentials), fmt.Sprintf("%s: expected %s got %s\n", desc, users.ErrInvalidAdminCredentials, err))
+			assert.True(t, errors.Contains(err, users.ErrInvalidPlatformOwnerCredentials), fmt.Sprintf("%s: expected %s got %s\n", desc, users.ErrInvalidPlatformOwnerCredentials, err))
 			assert.True(t, errors.Contains(retrieveErr, dbutil.ErrNotFound), fmt.Sprintf("%s: expected %s got %s\n", desc, dbutil.ErrNotFound, retrieveErr))
 			continue
 		}
@@ -245,7 +245,7 @@ func TestRegisterAdmin(t *testing.T) {
 
 		role, err := authSvc.RetrieveRole(context.Background(), savedUser.ID)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error retrieving role: %s\n", desc, err))
-		assert.Equal(t, domain.RoleRootAdmin, role, fmt.Sprintf("%s: expected role %s got %s\n", desc, domain.RoleRootAdmin, role))
+		assert.Equal(t, domain.PlatformOwner, role, fmt.Sprintf("%s: expected role %s got %s\n", desc, domain.PlatformOwner, role))
 	}
 }
 
@@ -332,7 +332,7 @@ func TestLoginPasswordForms(t *testing.T) {
 	unicodeUser := users.User{Email: "unicode@example.com", Password: composed}
 
 	userRepo := usmocks.NewUserRepository([]users.User{legacyUser, legacyDecomposedUser, oauthUser})
-	authSvc := mocks.NewAuthService(admin.ID, []users.User{legacyUser, legacyDecomposedUser, oauthUser, unicodeUser}, nil)
+	authSvc := mocks.NewAuthService(platformOwner.ID, []users.User{legacyUser, legacyDecomposedUser, oauthUser, unicodeUser}, nil)
 	svc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), usmocks.NewIdentityRepository(), usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), users.Config{SelfRegisterEnabled: true})
 
 	_, err := svc.SelfRegister(context.Background(), unicodeUser, "")
@@ -440,7 +440,7 @@ func TestViewUser(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	platformOwnerToken, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := map[string]struct {
@@ -449,13 +449,13 @@ func TestViewUser(t *testing.T) {
 		userID string
 		err    error
 	}{
-		"view platform admin as root admin": {
+		"view platform admin as platform owner": {
 			user: users.User{
 				ID:    platformAdmin.ID,
 				Email: platformAdmin.Email,
-				Role:  domain.RoleAdmin,
+				Role:  domain.PlatformAdmin,
 			},
-			token:  adminToken,
+			token:  platformOwnerToken,
 			userID: platformAdmin.ID,
 			err:    nil,
 		},
@@ -492,7 +492,7 @@ func TestViewProfile(t *testing.T) {
 	token, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	adminToken, err := svc.Login(context.Background(), admin)
+	platformOwnerToken, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	platformAdminToken, err := svc.Login(context.Background(), platformAdmin)
@@ -508,16 +508,16 @@ func TestViewProfile(t *testing.T) {
 			token: token,
 			err:   nil,
 		},
-		"valid token's admin info": {
-			user:  noPasswordAdmin,
-			token: adminToken,
+		"valid token's platform owner info": {
+			user:  noPasswordPlatformOwner,
+			token: platformOwnerToken,
 			err:   nil,
 		},
 		"valid token's platform admin info": {
 			user: users.User{
 				Email: platformAdmin.Email,
 				ID:    platformAdmin.ID,
-				Role:  domain.RoleAdmin,
+				Role:  domain.PlatformAdmin,
 			},
 			token: platformAdminToken,
 			err:   nil,
@@ -546,7 +546,7 @@ func (unauthenticatedAuth) Authorize(context.Context, domain.AuthzReq) error {
 }
 
 func TestListUsersWithUnauthenticatedToken(t *testing.T) {
-	authSvc := unauthenticatedAuth{mocks.NewAuthService(admin.ID, usersList, nil)}
+	authSvc := unauthenticatedAuth{mocks.NewAuthService(platformOwner.ID, usersList, nil)}
 	c := users.Config{PassMinLength: users.MinPasswordLength}
 	svc := users.New(
 		usmocks.NewUserRepository(usersList),
@@ -573,7 +573,7 @@ func TestListUsersWithUnauthenticatedToken(t *testing.T) {
 func TestListUsers(t *testing.T) {
 	svc := newService()
 
-	token, err := svc.Login(context.Background(), admin)
+	token, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	unauthUserToken, err := svc.Login(context.Background(), unauthUser)
@@ -672,8 +672,8 @@ func TestListUsers(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	expected := map[string]string{
-		admin.ID:         domain.RoleRootAdmin,
-		platformAdmin.ID: domain.RoleAdmin,
+		platformOwner.ID: domain.PlatformOwner,
+		platformAdmin.ID: domain.PlatformAdmin,
 		user.ID:          "",
 	}
 
@@ -742,10 +742,10 @@ func TestGenerateResetToken(t *testing.T) {
 func TestChangePassword(t *testing.T) {
 	svc := newService()
 	userToken, _ := svc.Login(context.Background(), registerUser)
-	adminToken, _ := svc.Login(context.Background(), admin)
+	platformOwnerToken, _ := svc.Login(context.Background(), platformOwner)
 	platformAdminToken, _ := svc.Login(context.Background(), platformAdmin)
 
-	err := svc.AssignAdminRole(context.Background(), adminToken, registerUser.ID)
+	err := svc.AssignAdminRole(context.Background(), platformOwnerToken, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
 	cases := []struct {
@@ -757,9 +757,9 @@ func TestChangePassword(t *testing.T) {
 		err         error
 	}{
 		{
-			desc:        "platform admin change root admin password",
+			desc:        "platform admin change platform owner password",
 			token:       platformAdminToken,
-			email:       admin.Email,
+			email:       platformOwner.Email,
 			password:    newPassword,
 			oldPassword: "",
 			err:         errors.ErrAuthorization,
@@ -805,23 +805,23 @@ func TestChangePassword(t *testing.T) {
 			err:         errors.ErrAuthentication,
 		},
 		{
-			desc:        "valid admin change user password",
-			token:       adminToken,
+			desc:        "valid platform owner change user password",
+			token:       platformOwnerToken,
 			email:       registerUser.Email,
 			password:    newPassword,
 			oldPassword: "",
 			err:         nil,
 		},
 		{
-			desc:        "valid admin change password with wrong email",
-			token:       adminToken,
+			desc:        "valid platform owner change password with wrong email",
+			token:       platformOwnerToken,
 			email:       "wrongemail@example.com",
 			password:    newPassword,
 			oldPassword: "",
 			err:         dbutil.ErrNotFound,
 		},
 		{
-			desc:        "valid admin change password invalid token",
+			desc:        "valid platform owner change password invalid token",
 			token:       "",
 			email:       registerUser.Email,
 			password:    newPassword,
@@ -829,8 +829,8 @@ func TestChangePassword(t *testing.T) {
 			err:         errors.ErrAuthentication,
 		},
 		{
-			desc:        "valid admin change user password to common password",
-			token:       adminToken,
+			desc:        "valid platform owner change user password to common password",
+			token:       platformOwnerToken,
 			email:       registerUser.Email,
 			password:    "1q2w3e4r5t6y7u8i",
 			oldPassword: "",
@@ -917,7 +917,7 @@ func TestSendPasswordReset(t *testing.T) {
 func TestEnableUser(t *testing.T) {
 	svc := newService()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenUser, err := svc.Login(context.Background(), user)
@@ -926,10 +926,10 @@ func TestEnableUser(t *testing.T) {
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignAdminRole(context.Background(), tokenAdmin, unauthUser.ID)
+	err = svc.AssignAdminRole(context.Background(), tokenPlatformOwner, unauthUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
-	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
+	err = svc.DisableUser(context.Background(), tokenPlatformOwner, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
 
 	// Rejected cases run first, so enabling as admin proves they left the user disabled.
@@ -940,12 +940,12 @@ func TestEnableUser(t *testing.T) {
 		err   error
 	}{
 		{"enable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
-		{"enable root as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
+		{"enable platform owner as platform admin", tokenPlatformAdmin, platformOwner.ID, errors.ErrAuthorization},
 		{"enable platform admin as platform admin", tokenPlatformAdmin, unauthUser.ID, errors.ErrAuthorization},
 		{"enable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
-		{"enable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
-		{"enable user as admin", tokenAdmin, registerUser.ID, nil},
-		{"enable already enabled user as admin", tokenAdmin, registerUser.ID, users.ErrAlreadyEnabledUser},
+		{"enable non-existing user as platform owner", tokenPlatformOwner, wrong, dbutil.ErrNotFound},
+		{"enable user as platform owner", tokenPlatformOwner, registerUser.ID, nil},
+		{"enable already enabled user as platform owner", tokenPlatformOwner, registerUser.ID, users.ErrAlreadyEnabledUser},
 	}
 
 	for _, tc := range cases {
@@ -955,7 +955,7 @@ func TestEnableUser(t *testing.T) {
 }
 
 func TestDisableUser(t *testing.T) {
-	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	authSvc := mocks.NewAuthService(platformOwner.ID, usersList, nil)
 	c := users.Config{PassMinLength: users.MinPasswordLength}
 	svc := users.New(
 		usmocks.NewUserRepository(usersList),
@@ -971,7 +971,7 @@ func TestDisableUser(t *testing.T) {
 		c,
 	)
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenUser, err := svc.Login(context.Background(), user)
@@ -980,7 +980,7 @@ func TestDisableUser(t *testing.T) {
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignAdminRole(context.Background(), tokenAdmin, registerUser.ID)
+	err = svc.AssignAdminRole(context.Background(), tokenPlatformOwner, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
 	disabledUserKey, err := authSvc.Issue(
@@ -998,16 +998,16 @@ func TestDisableUser(t *testing.T) {
 		id    string
 		err   error
 	}{
-		{"disable admin as non-admin user", tokenUser, admin.ID, errors.ErrAuthorization},
-		{"disable root as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
+		{"disable admin as non-admin user", tokenUser, platformOwner.ID, errors.ErrAuthorization},
+		{"disable platform owner as platform admin", tokenPlatformAdmin, platformOwner.ID, errors.ErrAuthorization},
 		{"disable platform admin as platform admin", tokenPlatformAdmin, registerUser.ID, errors.ErrAuthorization},
 		{"disable user as non-admin user", tokenUser, registerUser.ID, errors.ErrAuthorization},
 		{"disable user with invalid token", wrong, registerUser.ID, errors.ErrAuthentication},
-		{"disable non-existing user as admin", tokenAdmin, wrong, dbutil.ErrNotFound},
-		{"disable platform admin as root admin", tokenAdmin, registerUser.ID, users.ErrPlatformRoleAssigned},
-		{"disable root as root admin", tokenAdmin, admin.ID, users.ErrPlatformRoleAssigned},
-		{"disable user as admin", tokenAdmin, unauthUser.ID, nil},
-		{"disable already disabled user as admin", tokenAdmin, unauthUser.ID, users.ErrAlreadyDisabledUser},
+		{"disable non-existing user as platform owner", tokenPlatformOwner, wrong, dbutil.ErrNotFound},
+		{"disable platform admin as platform owner", tokenPlatformOwner, registerUser.ID, users.ErrPlatformRoleAssigned},
+		{"disable self as platform owner", tokenPlatformOwner, platformOwner.ID, users.ErrPlatformRoleAssigned},
+		{"disable user as platform owner", tokenPlatformOwner, unauthUser.ID, nil},
+		{"disable already disabled user as platform owner", tokenPlatformOwner, unauthUser.ID, users.ErrAlreadyDisabledUser},
 		{"disable user as platform admin", tokenPlatformAdmin, user.ID, nil},
 	}
 
@@ -1020,7 +1020,7 @@ func TestDisableUser(t *testing.T) {
 	remainingKey, err := authSvc.Issue(context.Background(), user.ID, user.Email, domain.APIKey)
 	require.Nil(t, err, fmt.Sprintf("Issuing API key expected to succeed: %s", err))
 
-	err = svc.DisableUser(context.Background(), tokenAdmin, user.ID)
+	err = svc.DisableUser(context.Background(), tokenPlatformOwner, user.ID)
 	msg := fmt.Sprintf(
 		"disable already disabled user with API key: expected %s got %s\n",
 		users.ErrAlreadyDisabledUser,
@@ -1042,7 +1042,7 @@ func TestDisableUser(t *testing.T) {
 func TestImpersonate(t *testing.T) {
 	svc := newService()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
@@ -1051,13 +1051,13 @@ func TestImpersonate(t *testing.T) {
 	tokenUser, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.DisableUser(context.Background(), tokenAdmin, registerUser.ID)
+	err = svc.DisableUser(context.Background(), tokenPlatformOwner, registerUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
 
-	err = svc.AssignAdminRole(context.Background(), tokenAdmin, unauthUser.ID)
+	err = svc.AssignAdminRole(context.Background(), tokenPlatformOwner, unauthUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
-	impersonatedToken, err := svc.Impersonate(context.Background(), tokenAdmin, user.ID)
+	impersonatedToken, err := svc.Impersonate(context.Background(), tokenPlatformOwner, user.ID)
 	require.Nil(t, err, fmt.Sprintf("Impersonating user expected to succeed: %s", err))
 
 	cases := []struct {
@@ -1066,17 +1066,17 @@ func TestImpersonate(t *testing.T) {
 		id    string
 		err   error
 	}{
-		{"impersonate user as root admin", tokenAdmin, user.ID, nil},
-		{"impersonate user as non-root user", tokenUser, unauthUser.ID, errors.ErrAuthorization},
+		{"impersonate user as platform owner", tokenPlatformOwner, user.ID, nil},
+		{"impersonate user as regular user", tokenUser, unauthUser.ID, errors.ErrAuthorization},
 		{"impersonate user with invalid token", wrong, user.ID, errors.ErrAuthentication},
-		{"impersonate self as root admin", tokenAdmin, admin.ID, errors.ErrAuthorization},
-		{"impersonate non-existing user as root admin", tokenAdmin, wrong, dbutil.ErrNotFound},
-		{"impersonate disabled user as root admin", tokenAdmin, registerUser.ID, users.ErrDisabledUser},
+		{"impersonate self as platform owner", tokenPlatformOwner, platformOwner.ID, errors.ErrAuthorization},
+		{"impersonate non-existing user as platform owner", tokenPlatformOwner, wrong, dbutil.ErrNotFound},
+		{"impersonate disabled user as platform owner", tokenPlatformOwner, registerUser.ID, users.ErrDisabledUser},
 		{"impersonate user from an impersonated session", impersonatedToken, unauthUser.ID, errors.ErrAuthorization},
 		{"impersonate user as platform admin", tokenPlatformAdmin, user.ID, nil},
-		{"impersonate root admin as platform admin", tokenPlatformAdmin, admin.ID, errors.ErrAuthorization},
+		{"impersonate platform owner as platform admin", tokenPlatformAdmin, platformOwner.ID, errors.ErrAuthorization},
 		{"impersonate platform admin as platform admin", tokenPlatformAdmin, unauthUser.ID, errors.ErrAuthorization},
-		{"impersonate platform admin as root admin", tokenAdmin, unauthUser.ID, nil},
+		{"impersonate platform admin as platform owner", tokenPlatformOwner, unauthUser.ID, nil},
 	}
 
 	for _, tc := range cases {
@@ -1095,7 +1095,7 @@ func TestImpersonate(t *testing.T) {
 func TestAssignAdminRole(t *testing.T) {
 	svc := newService()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
@@ -1104,7 +1104,7 @@ func TestAssignAdminRole(t *testing.T) {
 	tokenUser, err := svc.Login(context.Background(), user)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.DisableUser(context.Background(), tokenAdmin, unauthUser.ID)
+	err = svc.DisableUser(context.Background(), tokenPlatformOwner, unauthUser.ID)
 	require.Nil(t, err, fmt.Sprintf("Disabling user expected to succeed: %s", err))
 
 	cases := []struct {
@@ -1133,31 +1133,31 @@ func TestAssignAdminRole(t *testing.T) {
 		},
 		{
 			desc:  "assign admin role to non-existing user",
-			token: tokenAdmin,
+			token: tokenPlatformOwner,
 			id:    wrong,
 			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "assign admin role to disabled user",
-			token: tokenAdmin,
+			token: tokenPlatformOwner,
 			id:    unauthUser.ID,
 			err:   users.ErrDisabledUser,
 		},
 		{
-			desc:  "assign admin role to root admin",
-			token: tokenAdmin,
-			id:    admin.ID,
+			desc:  "assign admin role to platform owner",
+			token: tokenPlatformOwner,
+			id:    platformOwner.ID,
 			err:   users.ErrPlatformRoleAssigned,
 		},
 		{
-			desc:  "assign admin role as root admin",
-			token: tokenAdmin,
+			desc:  "assign admin role as platform owner",
+			token: tokenPlatformOwner,
 			id:    registerUser.ID,
 			err:   nil,
 		},
 		{
 			desc:  "assign admin role to platform admin",
-			token: tokenAdmin,
+			token: tokenPlatformOwner,
 			id:    registerUser.ID,
 			err:   users.ErrPlatformRoleAssigned,
 		},
@@ -1174,8 +1174,8 @@ func TestAssignAdminRole(t *testing.T) {
 
 	u, err := svc.ViewProfile(context.Background(), tokenRegisterUser)
 	require.Nil(t, err, fmt.Sprintf("Viewing profile expected to succeed: %s", err))
-	msg := fmt.Sprintf("expected role %s got %s\n", domain.RoleAdmin, u.Role)
-	assert.Equal(t, domain.RoleAdmin, u.Role, msg)
+	msg := fmt.Sprintf("expected role %s got %s\n", domain.PlatformAdmin, u.Role)
+	assert.Equal(t, domain.PlatformAdmin, u.Role, msg)
 
 	err = svc.DisableUser(context.Background(), tokenRegisterUser, user.ID)
 	msg = fmt.Sprintf("disable user as assigned platform admin: unexpected error %s\n", err)
@@ -1185,7 +1185,7 @@ func TestAssignAdminRole(t *testing.T) {
 func TestUnassignAdminRole(t *testing.T) {
 	svc := newService()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
@@ -1222,26 +1222,26 @@ func TestUnassignAdminRole(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "unassign admin role from root admin",
-			token: tokenAdmin,
-			id:    admin.ID,
+			desc:  "unassign admin role from platform owner",
+			token: tokenPlatformOwner,
+			id:    platformOwner.ID,
 			err:   errors.ErrAuthorization,
 		},
 		{
 			desc:  "unassign admin role from regular user",
-			token: tokenAdmin,
+			token: tokenPlatformOwner,
 			id:    user.ID,
 			err:   users.ErrNotPlatformAdmin,
 		},
 		{
-			desc:  "unassign admin role as root admin",
-			token: tokenAdmin,
+			desc:  "unassign admin role as platform owner",
+			token: tokenPlatformOwner,
 			id:    platformAdmin.ID,
 			err:   nil,
 		},
 		{
 			desc:  "unassign already unassigned admin role",
-			token: tokenAdmin,
+			token: tokenPlatformOwner,
 			id:    platformAdmin.ID,
 			err:   users.ErrNotPlatformAdmin,
 		},
@@ -1273,7 +1273,7 @@ func TestUnassignAdminRole(t *testing.T) {
 func TestBackup(t *testing.T) {
 	svc := newService()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
@@ -1295,8 +1295,8 @@ func TestBackup(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "backup as root admin",
-			token: tokenAdmin,
+			desc:  "backup as platform owner",
+			token: tokenPlatformOwner,
 			err:   nil,
 		},
 	}
@@ -1313,7 +1313,7 @@ func TestRestore(t *testing.T) {
 	verificationRepo := usmocks.NewEmailVerificationRepository(verificationsList)
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
-	authSvc := mocks.NewAuthService(admin.ID, usersList, nil)
+	authSvc := mocks.NewAuthService(platformOwner.ID, usersList, nil)
 	config := users.Config{
 		PassMinLength: users.MinPasswordLength,
 	}
@@ -1331,7 +1331,7 @@ func TestRestore(t *testing.T) {
 		config,
 	)
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenPlatformAdmin, err := svc.Login(context.Background(), platformAdmin)
@@ -1341,16 +1341,16 @@ func TestRestore(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	cases := []struct {
-		desc  string
-		token string
-		admin users.User
-		err   error
+		desc          string
+		token         string
+		platformOwner users.User
+		err           error
 	}{
 		{
-			desc:  "restore as non-admin user",
-			token: tokenUser,
-			admin: noPasswordAdmin,
-			err:   errors.ErrAuthorization,
+			desc:          "restore as non-admin user",
+			token:         tokenUser,
+			platformOwner: noPasswordPlatformOwner,
+			err:           errors.ErrAuthorization,
 		},
 		{
 			desc:  "restore as platform admin",
@@ -1358,55 +1358,55 @@ func TestRestore(t *testing.T) {
 			err:   errors.ErrAuthorization,
 		},
 		{
-			desc:  "restore with invalid token",
-			token: wrong,
-			admin: noPasswordAdmin,
-			err:   errors.ErrAuthentication,
+			desc:          "restore with invalid token",
+			token:         wrong,
+			platformOwner: noPasswordPlatformOwner,
+			err:           errors.ErrAuthentication,
 		},
 		{
-			desc:  "restore backup of existing root admin",
-			token: tokenAdmin,
-			admin: noPasswordAdmin,
-			err:   nil,
+			desc:          "restore backup of existing platform owner",
+			token:         tokenPlatformOwner,
+			platformOwner: noPasswordPlatformOwner,
+			err:           nil,
 		},
 		{
-			desc:  "restore backup of root admin with another email",
-			token: tokenAdmin,
-			admin: formerAdmin,
-			err:   nil,
+			desc:          "restore backup of platform owner with another email",
+			token:         tokenPlatformOwner,
+			platformOwner: backupPlatformOwnerOtherEmail,
+			err:           nil,
 		},
 		{
-			desc:  "restore backup of already restored root admin with another email",
-			token: tokenAdmin,
-			admin: formerAdmin,
-			err:   dbutil.ErrConflict,
+			desc:          "restore backup of already restored platform owner with another email",
+			token:         tokenPlatformOwner,
+			platformOwner: backupPlatformOwnerOtherEmail,
+			err:           dbutil.ErrConflict,
 		},
 	}
 
 	for _, tc := range cases {
-		err := svc.Restore(context.Background(), tc.token, tc.admin, nil, nil)
+		err := svc.Restore(context.Background(), tc.token, tc.platformOwner, nil, nil)
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 	}
 
-	adminProfile, err := svc.ViewProfile(context.Background(), tokenAdmin)
+	platformOwnerProfile, err := svc.ViewProfile(context.Background(), tokenPlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("Viewing profile expected to succeed: %s", err))
-	msg := fmt.Sprintf("expected role %s got %s\n", domain.RoleRootAdmin, adminProfile.Role)
-	assert.Equal(t, domain.RoleRootAdmin, adminProfile.Role, msg)
+	msg := fmt.Sprintf("expected role %s got %s\n", domain.PlatformOwner, platformOwnerProfile.Role)
+	assert.Equal(t, domain.PlatformOwner, platformOwnerProfile.Role, msg)
 
-	_, err = userRepo.RetrieveByID(context.Background(), formerAdmin.ID)
-	assert.Nil(t, err, fmt.Sprintf("retrieve restored former admin: unexpected error %s\n", err))
+	_, err = userRepo.RetrieveByID(context.Background(), backupPlatformOwnerOtherEmail.ID)
+	assert.Nil(t, err, fmt.Sprintf("retrieve restored platform owner with another email: unexpected error %s\n", err))
 
-	role, err := authSvc.RetrieveRole(context.Background(), formerAdmin.ID)
+	role, err := authSvc.RetrieveRole(context.Background(), backupPlatformOwnerOtherEmail.ID)
 	require.Nil(t, err, fmt.Sprintf("Retrieving role expected to succeed: %s", err))
 	assert.Equal(t, "", role, fmt.Sprintf("expected empty role got %s\n", role))
 
-	err = svc.Restore(context.Background(), tokenAdmin, backupRootAdmin, nil, nil)
-	require.Nil(t, err, fmt.Sprintf("Restoring backup of root admin with another ID expected to succeed: %s", err))
+	err = svc.Restore(context.Background(), tokenPlatformOwner, backupPlatformOwnerOtherID, nil, nil)
+	require.Nil(t, err, fmt.Sprintf("Restoring backup of platform owner with another ID expected to succeed: %s", err))
 
 	roles := map[string]string{
-		admin.ID:           "",
-		backupRootAdmin.ID: domain.RoleRootAdmin,
+		platformOwner.ID:              "",
+		backupPlatformOwnerOtherID.ID: domain.PlatformOwner,
 	}
 
 	for id, expected := range roles {
@@ -1418,13 +1418,13 @@ func TestRestore(t *testing.T) {
 
 func TestCreatePlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenUser, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	existingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "existingUser@example.com", auth.OrgInvite{})
+	existingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "existingUser@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
 	cases := map[string]struct {
@@ -1432,9 +1432,9 @@ func TestCreatePlatformInvite(t *testing.T) {
 		email string
 		err   error
 	}{
-		"create valid platform invite":                               {tokenAdmin, "newUser@example.com", nil},
-		"create platform invite towards reigstered user to platform": {tokenAdmin, existingInvite.InviteeEmail, dbutil.ErrConflict},
-		"create platform invite as non-root-admin user":              {tokenUser, "brandNewUser@example.com", errors.ErrAuthorization},
+		"create valid platform invite":                               {tokenPlatformOwner, "newUser@example.com", nil},
+		"create platform invite towards reigstered user to platform": {tokenPlatformOwner, existingInvite.InviteeEmail, dbutil.ErrConflict},
+		"create platform invite as regular user":                     {tokenUser, "brandNewUser@example.com", errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {
@@ -1445,16 +1445,16 @@ func TestCreatePlatformInvite(t *testing.T) {
 
 func TestRevokePlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenUser, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
+	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
-	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test2@example.com", auth.OrgInvite{})
+	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test2@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	err = svc.ValidatePlatformInvite(context.Background(), acceptedInvite.ID, acceptedInvite.InviteeEmail)
 	assert.Nil(t, err, fmt.Sprintf("Validating platform invite expected to succeed: %s", err))
@@ -1464,9 +1464,9 @@ func TestRevokePlatformInvite(t *testing.T) {
 		inviteID string
 		err      error
 	}{
-		"revoke pending platform invite":                {tokenAdmin, pendingInvite.ID, nil},
-		"revoke already accepted platform invite":       {tokenAdmin, acceptedInvite.ID, apiutil.ErrInvalidInviteState},
-		"revoke platform invite as non-root-admin user": {tokenUser, pendingInvite.ID, errors.ErrAuthorization},
+		"revoke pending platform invite":          {tokenPlatformOwner, pendingInvite.ID, nil},
+		"revoke already accepted platform invite": {tokenPlatformOwner, acceptedInvite.ID, apiutil.ErrInvalidInviteState},
+		"revoke platform invite as regular user":  {tokenUser, pendingInvite.ID, errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {
@@ -1477,10 +1477,10 @@ func TestRevokePlatformInvite(t *testing.T) {
 
 func TestViewPlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
+	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
 	cases := map[string]struct {
@@ -1499,7 +1499,7 @@ func TestViewPlatformInvite(t *testing.T) {
 
 func TestListPlatformInvites(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	tokenUser, err := svc.Login(context.Background(), user)
@@ -1508,7 +1508,7 @@ func TestListPlatformInvites(t *testing.T) {
 	n := uint64(10)
 
 	for i := uint64(0); i < n; i++ {
-		_, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, fmt.Sprintf("test%d@example.com", i), auth.OrgInvite{})
+		_, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, fmt.Sprintf("test%d@example.com", i), auth.OrgInvite{})
 		assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	}
 
@@ -1518,10 +1518,10 @@ func TestListPlatformInvites(t *testing.T) {
 		size  uint64
 		err   error
 	}{
-		"list platform invites":                        {tokenAdmin, users.PageMetadata{Limit: n}, n, nil},
-		"list half platform invites":                   {tokenAdmin, users.PageMetadata{Limit: n / 2}, n / 2, nil},
-		"list last platform invite":                    {tokenAdmin, users.PageMetadata{Limit: 1, Offset: n - 1}, 1, nil},
-		"list platform invites as non-root-admin user": {tokenUser, users.PageMetadata{}, 0, errors.ErrAuthorization},
+		"list platform invites":                 {tokenPlatformOwner, users.PageMetadata{Limit: n}, n, nil},
+		"list half platform invites":            {tokenPlatformOwner, users.PageMetadata{Limit: n / 2}, n / 2, nil},
+		"list last platform invite":             {tokenPlatformOwner, users.PageMetadata{Limit: 1, Offset: n - 1}, 1, nil},
+		"list platform invites as regular user": {tokenUser, users.PageMetadata{}, 0, errors.ErrAuthorization},
 	}
 
 	for desc, tc := range cases {
@@ -1533,21 +1533,21 @@ func TestListPlatformInvites(t *testing.T) {
 
 func TestValidatePlatformInvite(t *testing.T) {
 	svc := newService()
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
+	pendingInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test1@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
-	pendingInvite2, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test11@example.com", auth.OrgInvite{})
+	pendingInvite2, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test11@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 
-	revokedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test2@example.com", auth.OrgInvite{})
+	revokedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test2@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
-	err = svc.RevokePlatformInvite(context.Background(), tokenAdmin, revokedInvite.ID)
+	err = svc.RevokePlatformInvite(context.Background(), tokenPlatformOwner, revokedInvite.ID)
 	assert.Nil(t, err, fmt.Sprintf("Revoking platform invite expected to succeed: %s", err))
 
-	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "test3@example.com", auth.OrgInvite{})
+	acceptedInvite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "test3@example.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Creating platform invite expected to succeed: %s", err))
 	err = svc.ValidatePlatformInvite(context.Background(), acceptedInvite.ID, acceptedInvite.InviteeEmail)
 	assert.Nil(t, err, fmt.Sprintf("Validating platform invite expected to succeed: %s", err))

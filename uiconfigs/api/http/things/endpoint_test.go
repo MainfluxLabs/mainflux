@@ -30,9 +30,9 @@ const (
 	contentType = "application/json"
 	wrongValue  = "wrong-value"
 
-	adminID    = "admin-id"
-	adminEmail = "admin@example.com"
-	adminToken = adminEmail
+	platformOwnerID    = "admin-id"
+	platformOwnerEmail = "admin@example.com"
+	platformOwnerToken = platformOwnerEmail
 
 	editorID    = "editor-id"
 	editorEmail = "editor@example.com"
@@ -50,7 +50,7 @@ const (
 )
 
 var usersList = []domain.User{
-	{ID: adminID, Email: adminEmail},
+	{ID: platformOwnerID, Email: platformOwnerEmail},
 	{ID: editorID, Email: editorEmail},
 	{ID: otherID, Email: otherEmail},
 }
@@ -86,7 +86,7 @@ func newService() uiconfigs.Service {
 	thingConfigs := uimocks.NewThingConfigRepository()
 	groupConfigs := uimocks.NewGroupConfigRepository()
 
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil)
+	authClient := pkgmocks.NewAuthService(platformOwnerID, usersList, nil)
 
 	things := map[string]domain.Thing{
 		editorToken:  {ID: thingID, GroupID: groupID},
@@ -101,7 +101,7 @@ func newService() uiconfigs.Service {
 
 func newServer(svc uiconfigs.Service) *httptest.Server {
 	log := logger.NewMock()
-	ac := pkgmocks.NewAuthService(adminID, usersList, nil)
+	ac := pkgmocks.NewAuthService(platformOwnerID, usersList, nil)
 	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, log)
 	return httptest.NewServer(mux)
 }
@@ -296,7 +296,7 @@ func TestListThingsConfigs(t *testing.T) {
 	}{
 		{
 			desc:   "list thing configs with valid token",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			url:    fmt.Sprintf("%s/things/configs", ts.URL),
 			status: http.StatusOK,
 		},
@@ -308,7 +308,7 @@ func TestListThingsConfigs(t *testing.T) {
 		},
 		{
 			desc:   "list thing configs with invalid limit",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			url:    fmt.Sprintf("%s/things/configs?limit=%s", ts.URL, "abc"),
 			status: http.StatusBadRequest,
 		},
@@ -330,7 +330,7 @@ func TestListThingsConfigs(t *testing.T) {
 		client: client,
 		method: http.MethodGet,
 		url:    fmt.Sprintf("%s/things/configs", ts.URL),
-		token:  adminToken,
+		token:  platformOwnerToken,
 	}
 	res, err := req.make()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

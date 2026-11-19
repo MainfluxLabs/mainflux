@@ -484,5 +484,5 @@ func (ds *downlinksService) Restore(ctx context.Context, token string, dls []Dow
 }
 
 func (ds *downlinksService) canAccessPlatform(ctx context.Context, token string) error {
-	return ds.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub})
+	return ds.auth.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.PlatformSub})
 }

@@ -30,9 +30,9 @@ const (
 	octetStream = "application/octet-stream"
 	wrongValue  = "wrong-value"
 
-	adminID    = "admin-id"
-	adminEmail = "admin@example.com"
-	adminToken = adminEmail
+	platformOwnerID    = "admin-id"
+	platformOwnerEmail = "admin@example.com"
+	platformOwnerToken = platformOwnerEmail
 
 	editorID    = "editor-id"
 	editorEmail = "editor@example.com"
@@ -48,7 +48,7 @@ const (
 )
 
 var usersList = []domain.User{
-	{ID: adminID, Email: adminEmail},
+	{ID: platformOwnerID, Email: platformOwnerEmail},
 	{ID: editorID, Email: editorEmail},
 	{ID: unauthID, Email: unauthEmail},
 }
@@ -87,7 +87,7 @@ func newService() uiconfigs.Service {
 	orgMemberships := []domain.OrgMembership{
 		{OrgID: orgID, MemberID: editorID, Role: domain.OrgEditor},
 	}
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil, orgMemberships...)
+	authClient := pkgmocks.NewAuthService(platformOwnerID, usersList, nil, orgMemberships...)
 
 	things := map[string]domain.Thing{
 		editorToken: {ID: thingID, GroupID: groupID},
@@ -103,7 +103,7 @@ func newService() uiconfigs.Service {
 
 func newServer(svc uiconfigs.Service) *httptest.Server {
 	log := logger.NewMock()
-	ac := pkgmocks.NewAuthService(adminID, usersList, nil)
+	ac := pkgmocks.NewAuthService(platformOwnerID, usersList, nil)
 	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, log)
 	return httptest.NewServer(mux)
 }
@@ -155,8 +155,8 @@ func TestBackup(t *testing.T) {
 		size   int
 	}{
 		{
-			desc:   "backup with admin token",
-			token:  adminToken,
+			desc:   "backup with platform owner token",
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			size:   1,
 		},
@@ -244,28 +244,28 @@ func TestRestore(t *testing.T) {
 		},
 		{
 			desc:   "restore without content type",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			req:    data,
 			ct:     "",
 			status: http.StatusUnsupportedMediaType,
 		},
 		{
 			desc:   "restore with malformed body",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			req:    "{",
 			ct:     octetStream,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "restore with empty body",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			req:    toJSON(backupRes{}),
 			ct:     octetStream,
 			status: http.StatusBadRequest,
 		},
 		{
-			desc:   "restore with admin token",
-			token:  adminToken,
+			desc:   "restore with platform owner token",
+			token:  platformOwnerToken,
 			req:    data,
 			ct:     octetStream,
 			status: http.StatusCreated,

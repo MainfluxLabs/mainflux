@@ -30,13 +30,13 @@ const (
 	contentTypeJSON        = "application/json"
 	contentTypeOctetStream = "application/octet-stream"
 	userEmail              = "user@example.com"
-	adminEmail             = "admin@example.com"
+	platformOwnerEmail     = "admin@example.com"
 	viewerEmail            = "viewer@gmail.com"
 	editorEmail            = "editor@gmail.com"
 	otherUserEmail         = "other_user@example.com"
 	token                  = userEmail
 	otherToken             = otherUserEmail
-	adminToken             = adminEmail
+	platformOwnerToken     = platformOwnerEmail
 	viewerToken            = viewerEmail
 	editorToken            = editorEmail
 	wrongValue             = "wrong_value"
@@ -53,10 +53,10 @@ const (
 var (
 	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
 	otherUser     = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
-	admin         = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
+	platformOwner = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: platformOwnerEmail, Password: password, Role: auth.PlatformOwner}
 	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerToken, Password: password}
 	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorToken, Password: password}
-	usersList     = []users.User{admin, user, otherUser}
+	usersList     = []users.User{platformOwner, user, otherUser}
 	usersByEmails = map[string]users.User{userEmail: {ID: user.ID, Email: user.Email}, otherUserEmail: {ID: otherUser.ID, Email: otherUser.Email}, viewerEmail: {ID: viewer.ID, Email: viewer.Email},
 		editorEmail: {ID: editor.ID, Email: editor.Email}}
 	usersByIDs = map[string]users.User{user.ID: {ID: user.ID, Email: user.Email}, otherUser.ID: {ID: otherUser.ID, Email: otherUser.Email}, viewer.ID: {ID: viewer.ID, Email: viewer.Email},
@@ -103,7 +103,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
+	auth := mocks.NewAuthService(platformOwner.ID, usersList, orgsList, orgMemberships...)
 	uc := thmocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
@@ -120,7 +120,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(platformOwner.ID, usersList, orgsList, orgMemberships...), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
