@@ -159,9 +159,12 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 
 func (svc service) identify(ctx context.Context, token string) (Identity, error) {
 	key, err := svc.tokenizer.Parse(token)
-	if err == ErrAPIKeyExpired {
-		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
-		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+	if errors.Contains(err, ErrAPIKeyExpired) {
+		if err := svc.keys.Remove(ctx, key.IssuerID, key.ID); err != nil {
+			return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+		}
+
+		return Identity{}, err
 	}
 	if err != nil {
 		return Identity{}, errors.Wrap(errIdentify, err)
