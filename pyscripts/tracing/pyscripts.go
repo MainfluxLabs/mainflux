@@ -12,16 +12,18 @@ import (
 )
 
 const (
-	saveScripts            = "save_scripts"
-	retrieveScriptByID     = "retrieve_script_by_id"
-	retrieveScriptsByGroup = "retrieve_scripts_by_group"
-	updateScript           = "update_script"
-	removeScripts          = "remove_scripts"
-	removeScriptsByGroup   = "remove_scripts_by_group"
-	saveRuns               = "save_runs"
-	retrieveRunByID        = "retrieve_run_by_id"
-	retrieveRunsByScript   = "retrieve_runs_by_script"
-	removeRuns             = "remove_runs"
+	saveScripts               = "save_scripts"
+	retrieveScriptByID        = "retrieve_script_by_id"
+	retrieveGroupIDsByScripts = "retrieve_group_ids_by_scripts"
+	retrieveScriptsByGroup    = "retrieve_scripts_by_group"
+	updateScript              = "update_script"
+	removeScripts             = "remove_scripts"
+	removeScriptsByGroup      = "remove_scripts_by_group"
+	saveRuns                  = "save_runs"
+	retrieveRunByID           = "retrieve_run_by_id"
+	retrieveGroupIDsByRuns    = "retrieve_group_ids_by_runs"
+	retrieveRunsByScript      = "retrieve_runs_by_script"
+	removeRuns                = "remove_runs"
 )
 
 var _ pyscripts.ScriptRepository = (*scriptRepositoryMiddleware)(nil)
@@ -50,6 +52,14 @@ func (srm scriptRepositoryMiddleware) RetrieveScriptByID(ctx context.Context, id
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return srm.repo.RetrieveScriptByID(ctx, id)
+}
+
+func (srm scriptRepositoryMiddleware) RetrieveGroupIDsByScripts(ctx context.Context, ids ...string) ([]string, error) {
+	span := dbutil.CreateSpan(ctx, srm.tracer, retrieveGroupIDsByScripts)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return srm.repo.RetrieveGroupIDsByScripts(ctx, ids...)
 }
 
 func (srm scriptRepositoryMiddleware) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm pyscripts.PageMetadata) (pyscripts.ScriptsPage, error) {
@@ -98,6 +108,14 @@ func (srm scriptRepositoryMiddleware) RetrieveRunByID(ctx context.Context, id st
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return srm.repo.RetrieveRunByID(ctx, id)
+}
+
+func (srm scriptRepositoryMiddleware) RetrieveGroupIDsByRuns(ctx context.Context, ids ...string) ([]string, error) {
+	span := dbutil.CreateSpan(ctx, srm.tracer, retrieveGroupIDsByRuns)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return srm.repo.RetrieveGroupIDsByRuns(ctx, ids...)
 }
 
 func (srm scriptRepositoryMiddleware) RetrieveRunsByScript(ctx context.Context, scriptID string, pm pyscripts.PageMetadata) (pyscripts.ScriptRunsPage, error) {

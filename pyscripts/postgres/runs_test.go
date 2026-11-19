@@ -259,6 +259,65 @@ func TestRetrieveRunsByScript(t *testing.T) {
 	}
 }
 
+func TestRetrieveGroupIDsByRuns(t *testing.T) {
+	cleanUp(t)
+	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))
+	ctx := context.Background()
+
+	a := saveScriptFixture(t, repo)
+	b := saveScriptFixture(t, repo)
+	missingID, err := idp.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected id error: %s", err))
+
+	a1 := newRun(t, a.ID, pyscripts.ScriptRunStatusSuccess, float64(1), nil)
+	a2 := newRun(t, a.ID, pyscripts.ScriptRunStatusSuccess, float64(1), nil)
+	b1 := newRun(t, b.ID, pyscripts.ScriptRunStatusSuccess, float64(1), nil)
+	_, err = repo.SaveRuns(ctx, a1, a2, b1)
+	require.Nil(t, err, fmt.Sprintf("unexpected save error: %s", err))
+
+	cases := []struct {
+		desc     string
+		ids      []string
+		groupIDs []string
+		err      error
+	}{
+		{
+			desc:     "retrieve group ids of runs in one group",
+			ids:      []string{a1.ID, a2.ID},
+			groupIDs: []string{a.GroupID},
+			err:      nil,
+		},
+		{
+			desc:     "retrieve group ids of runs in two groups",
+			ids:      []string{a1.ID, b1.ID, a2.ID},
+			groupIDs: []string{a.GroupID, b.GroupID},
+			err:      nil,
+		},
+		{
+			desc:     "retrieve group ids with a repeated run id",
+			ids:      []string{b1.ID, b1.ID},
+			groupIDs: []string{b.GroupID},
+			err:      nil,
+		},
+		{
+			desc: "retrieve group ids when one run does not exist",
+			ids:  []string{a1.ID, missingID},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "retrieve group ids with a malformed run id",
+			ids:  []string{a1.ID, "not-a-uuid"},
+			err:  dbutil.ErrMalformedEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		groupIDs, err := repo.RetrieveGroupIDsByRuns(ctx, tc.ids...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		assert.ElementsMatch(t, tc.groupIDs, groupIDs, fmt.Sprintf("%s: unexpected group ids", tc.desc))
+	}
+}
+
 func TestRemoveRuns(t *testing.T) {
 	cleanUp(t)
 	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))

@@ -87,6 +87,42 @@ func (sr scriptRepository) RetrieveScriptByID(ctx context.Context, id string) (p
 	return toScript(dbs), nil
 }
 
+func (sr scriptRepository) RetrieveGroupIDsByScripts(ctx context.Context, ids ...string) ([]string, error) {
+	query := `SELECT id, group_id FROM scripts WHERE id = ANY($1::uuid[]);`
+
+	return sr.retrieveGroupIDs(ctx, query, ids)
+}
+
+func (sr scriptRepository) retrieveGroupIDs(ctx context.Context, query string, ids []string) ([]string, error) {
+	var rows []struct {
+		ID      string `db:"id"`
+		GroupID string `db:"group_id"`
+	}
+	if err := sr.db.SelectContext(ctx, &rows, query, ids); err != nil {
+		return nil, handlePgError(err, dbutil.ErrRetrieveEntity)
+	}
+
+	requested := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		requested[id] = struct{}{}
+	}
+
+	if len(rows) != len(requested) {
+		return nil, dbutil.ErrNotFound
+	}
+
+	seen := make(map[string]struct{}, len(rows))
+	groupIDs := []string{}
+	for _, r := range rows {
+		if _, ok := seen[r.GroupID]; !ok {
+			seen[r.GroupID] = struct{}{}
+			groupIDs = append(groupIDs, r.GroupID)
+		}
+	}
+
+	return groupIDs, nil
+}
+
 func (sr scriptRepository) RetrieveScriptsByGroup(ctx context.Context, groupID string, pm pyscripts.PageMetadata) (pyscripts.ScriptsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order, pyscripts.ScriptOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)

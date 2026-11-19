@@ -238,6 +238,67 @@ func TestUpdateScript(t *testing.T) {
 	}
 }
 
+func TestRetrieveGroupIDsByScripts(t *testing.T) {
+	cleanUp(t)
+	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))
+	ctx := context.Background()
+
+	groupA, err := idp.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected id error: %s", err))
+	groupB, err := idp.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected id error: %s", err))
+	missingID, err := idp.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected id error: %s", err))
+
+	a1 := newScript(t, groupA, "a1", "1 + 1")
+	a2 := newScript(t, groupA, "a2", "1 + 1")
+	b1 := newScript(t, groupB, "b1", "1 + 1")
+	_, err = repo.SaveScripts(ctx, a1, a2, b1)
+	require.Nil(t, err, fmt.Sprintf("unexpected save error: %s", err))
+
+	cases := []struct {
+		desc     string
+		ids      []string
+		groupIDs []string
+		err      error
+	}{
+		{
+			desc:     "retrieve group ids of scripts in one group",
+			ids:      []string{a1.ID, a2.ID},
+			groupIDs: []string{groupA},
+			err:      nil,
+		},
+		{
+			desc:     "retrieve group ids of scripts in two groups",
+			ids:      []string{a1.ID, b1.ID, a2.ID},
+			groupIDs: []string{groupA, groupB},
+			err:      nil,
+		},
+		{
+			desc:     "retrieve group ids with a repeated script id",
+			ids:      []string{b1.ID, b1.ID},
+			groupIDs: []string{groupB},
+			err:      nil,
+		},
+		{
+			desc: "retrieve group ids when one script does not exist",
+			ids:  []string{a1.ID, missingID},
+			err:  dbutil.ErrNotFound,
+		},
+		{
+			desc: "retrieve group ids with a malformed script id",
+			ids:  []string{a1.ID, "not-a-uuid"},
+			err:  dbutil.ErrMalformedEntity,
+		},
+	}
+
+	for _, tc := range cases {
+		groupIDs, err := repo.RetrieveGroupIDsByScripts(ctx, tc.ids...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		assert.ElementsMatch(t, tc.groupIDs, groupIDs, fmt.Sprintf("%s: unexpected group ids", tc.desc))
+	}
+}
+
 func TestRemoveScripts(t *testing.T) {
 	cleanUp(t)
 	repo := postgres.NewScriptRepository(dbutil.NewDatabase(db))

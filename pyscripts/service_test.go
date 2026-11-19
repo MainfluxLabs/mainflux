@@ -33,18 +33,33 @@ const (
 	maxScriptSize = 1024
 )
 
+type countingThings struct {
+	domain.ThingsClient
+	groupChecks int
+}
+
+func (ct *countingThings) CanUserAccessGroup(ctx context.Context, req domain.UserAccessReq) error {
+	ct.groupChecks++
+	return ct.ThingsClient.CanUserAccessGroup(ctx, req)
+}
+
 func newService() (pyscripts.Service, *psmocks.Runner) {
-	things := pkgmocks.NewThingsServiceClient(
+	svc, run, _ := newCountingService()
+	return svc, run
+}
+
+func newCountingService() (pyscripts.Service, *psmocks.Runner, *countingThings) {
+	things := &countingThings{ThingsClient: pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]domain.Thing{token: {ID: "thing", GroupID: groupID}},
 		map[string]domain.Group{token: {ID: groupID}},
-	)
+	)}
 	repo := psmocks.NewScriptRepository()
 	run := psmocks.NewRunner()
 	run.Invalid[badSource] = "invalid syntax"
 	idp := uuid.NewMock()
 
-	return pyscripts.New(repo, run, things, idp, logger.NewMock(), maxScriptSize), run
+	return pyscripts.New(repo, run, things, idp, logger.NewMock(), maxScriptSize), run, things
 }
 
 func script(name, source string) pyscripts.Script {
@@ -284,43 +299,65 @@ func TestUpdateScript(t *testing.T) {
 }
 
 func TestRemoveScripts(t *testing.T) {
-	svc, _ := newService()
+	svc, _, things := newCountingService()
 
-	saved, err := svc.CreateScripts(context.Background(), token, groupID, script("a", validSource), script("b", validSource))
+	saved, err := svc.CreateScripts(context.Background(), token, groupID, script("a", validSource), script("b", validSource), script("c", validSource))
 	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
 
 	cases := []struct {
-		desc  string
-		token string
-		ids   []string
-		err   error
+		desc   string
+		token  string
+		ids    []string
+		checks int
+		err    error
 	}{
 		{
-			desc:  "remove script with empty token",
-			token: "",
-			ids:   []string{saved[0].ID},
-			err:   errors.ErrAuthentication,
+			desc:   "remove script with empty token",
+			token:  "",
+			ids:    []string{saved[0].ID},
+			checks: 1,
+			err:    errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove non-existent script",
-			token: token,
-			ids:   []string{wrongID},
-			err:   dbutil.ErrNotFound,
+			desc:   "remove non-existent script",
+			token:  token,
+			ids:    []string{wrongID},
+			checks: 0,
+			err:    dbutil.ErrNotFound,
 		},
 		{
-			desc:  "remove script with valid token",
-			token: token,
-			ids:   []string{saved[0].ID},
-			err:   nil,
+			desc:   "remove scripts when one of them does not exist",
+			token:  token,
+			ids:    []string{saved[0].ID, wrongID},
+			checks: 0,
+			err:    dbutil.ErrNotFound,
+		},
+		{
+			desc:   "remove script with valid token",
+			token:  token,
+			ids:    []string{saved[0].ID},
+			checks: 1,
+			err:    nil,
+		},
+		{
+			desc:   "remove scripts of one group with a single access check",
+			token:  token,
+			ids:    []string{saved[1].ID, saved[2].ID, saved[1].ID},
+			checks: 1,
+			err:    nil,
 		},
 	}
 
 	for _, tc := range cases {
+		things.groupChecks = 0
 		err := svc.RemoveScripts(context.Background(), tc.token, tc.ids...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		assert.Equal(t, tc.checks, things.groupChecks, fmt.Sprintf("%s: expected %d access checks got %d", tc.desc, tc.checks, things.groupChecks))
 		if tc.err == nil {
-			_, err := svc.ViewScript(context.Background(), token, tc.ids[0])
-			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: expected script to be gone", tc.desc))
+			for _, id := range tc.ids {
+				_, err := svc.ViewScript(context.Background(), token, id)
+				assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: expected script to be gone", tc.desc))
+			}
 		}
 	}
 }
@@ -471,46 +508,73 @@ func TestListRunsByScript(t *testing.T) {
 }
 
 func TestRemoveRuns(t *testing.T) {
-	svc, run := newService()
+	svc, run, things := newCountingService()
 
-	saved, err := svc.CreateScripts(context.Background(), token, groupID, script("a", validSource))
+	saved, err := svc.CreateScripts(context.Background(), token, groupID, script("a", validSource), script("b", validSource))
 	require.Nil(t, err, fmt.Sprintf("unexpected create error: %s", err))
-	id := saved[0].ID
 
 	run.Result = pyscripts.Result{Value: float64(1)}
-	r, err := svc.RunScript(context.Background(), token, id, pyscripts.Input{})
-	require.Nil(t, err, fmt.Sprintf("unexpected run error: %s", err))
+	var runIDs []string
+	for _, s := range []pyscripts.Script{saved[0], saved[1], saved[1]} {
+		r, err := svc.RunScript(context.Background(), token, s.ID, pyscripts.Input{})
+		require.Nil(t, err, fmt.Sprintf("unexpected run error: %s", err))
+		runIDs = append(runIDs, r.ID)
+	}
 
 	cases := []struct {
-		desc  string
-		token string
-		ids   []string
-		err   error
+		desc   string
+		token  string
+		ids    []string
+		checks int
+		err    error
 	}{
 		{
-			desc:  "remove run with empty token",
-			token: "",
-			ids:   []string{r.ID},
-			err:   errors.ErrAuthentication,
+			desc:   "remove run with empty token",
+			token:  "",
+			ids:    []string{runIDs[0]},
+			checks: 1,
+			err:    errors.ErrAuthentication,
 		},
 		{
-			desc:  "remove non-existent run",
-			token: token,
-			ids:   []string{wrongID},
-			err:   dbutil.ErrNotFound,
+			desc:   "remove non-existent run",
+			token:  token,
+			ids:    []string{wrongID},
+			checks: 0,
+			err:    dbutil.ErrNotFound,
 		},
 		{
-			desc:  "remove run with valid token",
-			token: token,
-			ids:   []string{r.ID},
-			err:   nil,
+			desc:   "remove runs when one of them does not exist",
+			token:  token,
+			ids:    []string{runIDs[0], wrongID},
+			checks: 0,
+			err:    dbutil.ErrNotFound,
+		},
+		{
+			desc:   "remove run with valid token",
+			token:  token,
+			ids:    []string{runIDs[0]},
+			checks: 1,
+			err:    nil,
+		},
+		{
+			desc:   "remove runs of one group with a single access check",
+			token:  token,
+			ids:    []string{runIDs[1], runIDs[2], runIDs[1]},
+			checks: 1,
+			err:    nil,
 		},
 	}
 
 	for _, tc := range cases {
+		things.groupChecks = 0
 		err := svc.RemoveRuns(context.Background(), tc.token, tc.ids...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		assert.Equal(t, tc.checks, things.groupChecks, fmt.Sprintf("%s: expected %d access checks got %d", tc.desc, tc.checks, things.groupChecks))
 	}
+
+	page, err := svc.ListRunsByScript(context.Background(), token, saved[1].ID, pyscripts.PageMetadata{Limit: 10})
+	require.Nil(t, err, fmt.Sprintf("unexpected list error: %s", err))
+	assert.Empty(t, page.Runs, "expected the removed runs to be gone")
 }
 
 func TestRunScriptRateLimit(t *testing.T) {

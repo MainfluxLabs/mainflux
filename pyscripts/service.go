@@ -201,15 +201,13 @@ func (ps *pyscriptsService) UpdateScript(ctx context.Context, token string, scri
 }
 
 func (ps *pyscriptsService) RemoveScripts(ctx context.Context, token string, ids ...string) error {
-	for _, id := range ids {
-		script, err := ps.scripts.RetrieveScriptByID(ctx, id)
-		if err != nil {
-			return err
-		}
+	groupIDs, err := ps.scripts.RetrieveGroupIDsByScripts(ctx, ids...)
+	if err != nil {
+		return err
+	}
 
-		if err := ps.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: script.GroupID, Action: domain.GroupEditor}); err != nil {
-			return err
-		}
+	if err := ps.canEditGroups(ctx, token, groupIDs); err != nil {
+		return err
 	}
 
 	return ps.scripts.RemoveScripts(ctx, ids...)
@@ -290,23 +288,26 @@ func (ps *pyscriptsService) ListRunsByScript(ctx context.Context, token, scriptI
 }
 
 func (ps *pyscriptsService) RemoveRuns(ctx context.Context, token string, ids ...string) error {
-	for _, id := range ids {
-		run, err := ps.scripts.RetrieveRunByID(ctx, id)
-		if err != nil {
-			return err
-		}
+	groupIDs, err := ps.scripts.RetrieveGroupIDsByRuns(ctx, ids...)
+	if err != nil {
+		return err
+	}
 
-		script, err := ps.scripts.RetrieveScriptByID(ctx, run.ScriptID)
-		if err != nil {
-			return err
-		}
+	if err := ps.canEditGroups(ctx, token, groupIDs); err != nil {
+		return err
+	}
 
-		if err := ps.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: script.GroupID, Action: domain.GroupEditor}); err != nil {
+	return ps.scripts.RemoveRuns(ctx, ids...)
+}
+
+func (ps *pyscriptsService) canEditGroups(ctx context.Context, token string, groupIDs []string) error {
+	for _, groupID := range groupIDs {
+		if err := ps.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: groupID, Action: domain.GroupEditor}); err != nil {
 			return err
 		}
 	}
 
-	return ps.scripts.RemoveRuns(ctx, ids...)
+	return nil
 }
 
 // validateSource enforces the size cap and rejects source that does not compile.

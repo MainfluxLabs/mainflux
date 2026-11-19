@@ -105,6 +105,17 @@ func (sr scriptRepository) RetrieveRunByID(ctx context.Context, id string) (pysc
 	return run, nil
 }
 
+func (sr scriptRepository) RetrieveGroupIDsByRuns(ctx context.Context, ids ...string) ([]string, error) {
+	query := `
+		SELECT r.id, s.group_id
+		FROM script_runs r
+		JOIN scripts s ON s.id = r.script_id
+		WHERE r.id = ANY($1::uuid[]);
+	`
+
+	return sr.retrieveGroupIDs(ctx, query, ids)
+}
+
 func (sr scriptRepository) RetrieveRunsByScript(ctx context.Context, scriptID string, pm pyscripts.PageMetadata) (pyscripts.ScriptRunsPage, error) {
 	oq := dbutil.GetOrderQuery(pm.Order, pyscripts.ScriptRunOrderFields)
 	dq := dbutil.GetDirQuery(pm.Dir)

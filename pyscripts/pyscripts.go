@@ -124,6 +124,9 @@ type ScriptRepository interface {
 	// RetrieveScriptByID retrieves a single Script denoted by ID.
 	RetrieveScriptByID(ctx context.Context, id string) (Script, error)
 
+	// RetrieveGroupIDsByScripts retrieves the distinct IDs of the Groups the Scripts denoted by the provided IDs belong to.
+	RetrieveGroupIDsByScripts(ctx context.Context, ids ...string) ([]string, error)
+
 	// RetrieveScriptsByGroup retrieves a list of Scripts belonging to a specific Group, without their source.
 	RetrieveScriptsByGroup(ctx context.Context, groupID string, pm PageMetadata) (ScriptsPage, error)
 
@@ -141,6 +144,9 @@ type ScriptRepository interface {
 
 	// RetrieveRunByID retrieves a single Run denoted by ID.
 	RetrieveRunByID(ctx context.Context, id string) (ScriptRun, error)
+
+	// RetrieveGroupIDsByRuns retrieves the distinct IDs of the Groups the Runs denoted by the provided IDs belong to.
+	RetrieveGroupIDsByRuns(ctx context.Context, ids ...string) ([]string, error)
 
 	// RetrieveRunsByScript retrieves a list of Runs belonging to a specific Script.
 	RetrieveRunsByScript(ctx context.Context, scriptID string, pm PageMetadata) (ScriptRunsPage, error)

@@ -63,6 +63,22 @@ func (srm *scriptRepositoryMock) RetrieveScriptByID(_ context.Context, id string
 	return s, nil
 }
 
+func (srm *scriptRepositoryMock) RetrieveGroupIDsByScripts(_ context.Context, ids ...string) ([]string, error) {
+	srm.mu.Lock()
+	defer srm.mu.Unlock()
+
+	var scripts []pyscripts.Script
+	for _, id := range ids {
+		s, ok := srm.scripts[id]
+		if !ok {
+			return nil, dbutil.ErrNotFound
+		}
+		scripts = append(scripts, s)
+	}
+
+	return groupIDsOf(scripts), nil
+}
+
 func (srm *scriptRepositoryMock) RetrieveScriptsByGroup(_ context.Context, groupID string, pm pyscripts.PageMetadata) (pyscripts.ScriptsPage, error) {
 	srm.mu.Lock()
 	defer srm.mu.Unlock()
@@ -170,6 +186,39 @@ func (srm *scriptRepositoryMock) RetrieveRunByID(_ context.Context, id string) (
 	}
 
 	return r, nil
+}
+
+func (srm *scriptRepositoryMock) RetrieveGroupIDsByRuns(_ context.Context, ids ...string) ([]string, error) {
+	srm.mu.Lock()
+	defer srm.mu.Unlock()
+
+	var scripts []pyscripts.Script
+	for _, id := range ids {
+		r, ok := srm.runs[id]
+		if !ok {
+			return nil, dbutil.ErrNotFound
+		}
+		s, ok := srm.scripts[r.ScriptID]
+		if !ok {
+			return nil, dbutil.ErrNotFound
+		}
+		scripts = append(scripts, s)
+	}
+
+	return groupIDsOf(scripts), nil
+}
+
+func groupIDsOf(scripts []pyscripts.Script) []string {
+	seen := make(map[string]struct{}, len(scripts))
+	groupIDs := []string{}
+	for _, s := range scripts {
+		if _, ok := seen[s.GroupID]; !ok {
+			seen[s.GroupID] = struct{}{}
+			groupIDs = append(groupIDs, s.GroupID)
+		}
+	}
+
+	return groupIDs
 }
 
 func (srm *scriptRepositoryMock) RetrieveRunsByScript(_ context.Context, scriptID string, pm pyscripts.PageMetadata) (pyscripts.ScriptRunsPage, error) {

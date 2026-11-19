@@ -21,9 +21,9 @@ const (
 	// compile occupies a worker, so an unbounded batch starves every other caller.
 	maxBatchSize = 32
 
-	// maxRemoveBatch bounds a delete batch. The service authorizes each id with a
-	// retrieve plus a gRPC call, so an unbounded list is cheap request
-	// amplification against things and auth.
+	// maxRemoveBatch bounds a delete batch. The service looks the ids up in one
+	// query and authorizes each of their groups with a gRPC call, so an unbounded
+	// list is cheap request amplification against postgres, things and auth.
 	maxRemoveBatch = 100
 
 	// maxPayloadSize bounds the input payload of a run. It is checked here, on
