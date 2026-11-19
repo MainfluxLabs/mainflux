@@ -481,11 +481,17 @@ func adjustStats(ctx context.Context, tx *sqlx.Tx, oldStatuses []dbOldStatus, ne
 		WHERE id = ANY(:update_ids)
 		ORDER BY id
 		FOR UPDATE;`
-	qStore := `UPDATE updates
-		SET status = :status, targets = :targets, pending_count = :pending_count,
-		downloading_count = :downloading_count, installing_count = :installing_count,
-		succeeded_count = :succeeded_count, failed_count = :failed_count
-		WHERE id = :id;`
+	qStore := `UPDATE updates u
+		SET status = s.status, targets = s.targets, pending_count = s.pending_count,
+		downloading_count = s.downloading_count, installing_count = s.installing_count,
+		succeeded_count = s.succeeded_count, failed_count = s.failed_count
+		FROM unnest(CAST(:ids AS uuid[]), CAST(:statuses AS varchar[]),
+			CAST(:targets AS bigint[]), CAST(:pending_counts AS bigint[]),
+			CAST(:downloading_counts AS bigint[]), CAST(:installing_counts AS bigint[]),
+			CAST(:succeeded_counts AS bigint[]), CAST(:failed_counts AS bigint[]))
+			AS s (id, status, targets, pending_count, downloading_count, installing_count,
+			succeeded_count, failed_count)
+		WHERE u.id = s.id;`
 
 	var dbus []dbUpdate
 	if err := namedSelect(ctx, tx, &dbus, qLock, map[string]any{"update_ids": updateIDs}); err != nil {
@@ -509,11 +515,32 @@ func adjustStats(ctx context.Context, tx *sqlx.Tx, oldStatuses []dbOldStatus, ne
 		updates[old.UpdateID] = u
 	}
 
-	for _, u := range updates {
-		u.Status = u.Stats.Status()
-		if _, err := tx.NamedExecContext(ctx, qStore, toDBUpdate(u)); err != nil {
-			return err
-		}
+	var ids, statuses []string
+	var targets, pendingCounts, downloadingCounts, installingCounts []uint64
+	var succeededCounts, failedCounts []uint64
+	for id, u := range updates {
+		ids = append(ids, id)
+		statuses = append(statuses, u.Stats.Status())
+		targets = append(targets, u.Stats.Targets)
+		pendingCounts = append(pendingCounts, u.Stats.Pending)
+		downloadingCounts = append(downloadingCounts, u.Stats.Downloading)
+		installingCounts = append(installingCounts, u.Stats.Installing)
+		succeededCounts = append(succeededCounts, u.Stats.Succeeded)
+		failedCounts = append(failedCounts, u.Stats.Failed)
+	}
+
+	params := map[string]any{
+		"ids":                ids,
+		"statuses":           statuses,
+		"targets":            targets,
+		"pending_counts":     pendingCounts,
+		"downloading_counts": downloadingCounts,
+		"installing_counts":  installingCounts,
+		"succeeded_counts":   succeededCounts,
+		"failed_counts":      failedCounts,
+	}
+	if _, err := tx.NamedExecContext(ctx, qStore, params); err != nil {
+		return err
 	}
 
 	return nil

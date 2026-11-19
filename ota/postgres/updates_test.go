@@ -105,6 +105,23 @@ func TestSaveSupersedes(t *testing.T) {
 	assertStoredStats(t, repo, second.ID)
 }
 
+func TestSaveSupersedesMany(t *testing.T) {
+	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
+	groupID, thingID, otherThingID := newID(t), newID(t), newID(t)
+	now := time.Now().UTC().Truncate(time.Millisecond)
+
+	first := saveUpdate(t, repo, groupID, now, thingID)
+	second := saveUpdate(t, repo, groupID, now.Add(time.Second), otherThingID)
+	saveUpdate(t, repo, groupID, now.Add(2*time.Second), thingID, otherThingID)
+
+	for _, id := range []string{first.ID, second.ID} {
+		u, err := repo.RetrieveByID(context.Background(), id)
+		require.Nil(t, err, fmt.Sprintf("retrieving update failed: %s", err))
+		assert.Equal(t, ota.UpdateStats{Targets: 1, Failed: 1}, u.Stats, "superseded update stats mismatch")
+		assert.Equal(t, ota.UpdateStatusCompletedWithFailures, u.Status, "superseded update status mismatch")
+	}
+}
+
 func TestRetrieveByID(t *testing.T) {
 	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
 	groupID := newID(t)
