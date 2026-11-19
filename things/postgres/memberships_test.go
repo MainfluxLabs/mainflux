@@ -69,10 +69,13 @@ func TestSave(t *testing.T) {
 		},
 	}
 
+	newGm := things.GroupMembership{MemberID: generateUUID(t), GroupID: gr.ID, Role: things.Viewer}
+
 	cases := []struct {
-		desc string
-		gms  []things.GroupMembership
-		err  error
+		desc       string
+		gms        []things.GroupMembership
+		unsavedIDs []string
+		err        error
 	}{
 		{
 			desc: "save group memberships",
@@ -94,11 +97,23 @@ func TestSave(t *testing.T) {
 			gms:  gmsWithoutMemberIDs,
 			err:  dbutil.ErrMalformedEntity,
 		},
+		{
+			desc:       "save group memberships with a missing member id among valid ones",
+			gms:        []things.GroupMembership{newGm, gmsWithoutMemberIDs[0]},
+			unsavedIDs: []string{newGm.MemberID},
+			err:        dbutil.ErrMalformedEntity,
+		},
 	}
 
 	for _, tc := range cases {
 		err := groupMembershipsRepo.Save(context.Background(), tc.gms...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.unsavedIDs {
+			gm := things.GroupMembership{GroupID: gr.ID, MemberID: id}
+			_, err := groupMembershipsRepo.RetrieveRole(context.Background(), gm)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", tc.desc, err))
+		}
 	}
 }
 

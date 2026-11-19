@@ -14,6 +14,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const inviteExpiryTime = 24 * 7 * time.Hour
@@ -112,6 +113,33 @@ func TestSaveInvite(t *testing.T) {
 		State:       auth.InviteStatePending,
 	}
 
+	var groupInvites []auth.OrgInvite
+	for i := 0; i < 2; i++ {
+		invID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		inviteeID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		grID1, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		grID2, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		groupInvites = append(groupInvites, auth.OrgInvite{
+			ID:          invID,
+			InviteeID:   inviteeID,
+			InviterID:   ownerID,
+			OrgID:       org.ID,
+			InviteeRole: auth.Viewer,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(inviteExpiryTime),
+			State:       auth.InviteStatePending,
+			GroupInvites: []auth.GroupInvite{
+				{GroupID: grID1, MemberRole: auth.Viewer},
+				{GroupID: grID2, MemberRole: auth.Editor},
+			},
+		})
+	}
+
 	cases := []struct {
 		desc    string
 		invites []auth.OrgInvite
@@ -147,12 +175,80 @@ func TestSaveInvite(t *testing.T) {
 			invites: []auth.OrgInvite{reinviteExpiredInvite},
 			err:     nil,
 		},
+		{
+			desc:    "save invites with group invites",
+			invites: groupInvites,
+			err:     nil,
+		},
 	}
 
 	for _, tc := range cases {
 		err := repoInvites.SaveOrgInvite(context.Background(), tc.invites...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 	}
+
+	for _, inv := range groupInvites {
+		saved, err := repoInvites.RetrieveOrgInviteByID(context.Background(), inv.ID)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		assert.ElementsMatch(t, inv.GroupInvites, saved.GroupInvites,
+			fmt.Sprintf("expected group invites %v got %v", inv.GroupInvites, saved.GroupInvites))
+	}
+}
+
+func TestSaveInviteKeepsDormantInvites(t *testing.T) {
+	dbMiddleware := dbutil.NewDatabase(db)
+	repoInvites := postgres.NewOrgInvitesRepo(dbMiddleware)
+	repoOrgs := postgres.NewOrgRepo(dbMiddleware)
+
+	orgID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	ownerID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	org := auth.Org{
+		ID:          orgID,
+		OwnerID:     ownerID,
+		Name:        "org",
+		Description: "org",
+	}
+	err = repoOrgs.Save(context.Background(), org)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	dormantID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	dormantInvite := auth.OrgInvite{
+		ID:          dormantID,
+		InviterID:   ownerID,
+		OrgID:       org.ID,
+		InviteeRole: auth.Viewer,
+		CreatedAt:   time.Now().Add(-2 * inviteExpiryTime),
+		ExpiresAt:   time.Now().Add(-1 * inviteExpiryTime),
+		State:       auth.InviteStatePending,
+	}
+	err = repoInvites.SaveOrgInvite(context.Background(), dormantInvite)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	invID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	inviteeID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	invite := auth.OrgInvite{
+		ID:          invID,
+		InviteeID:   inviteeID,
+		InviterID:   ownerID,
+		OrgID:       org.ID,
+		InviteeRole: auth.Viewer,
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(inviteExpiryTime),
+		State:       auth.InviteStatePending,
+	}
+	err = repoInvites.SaveOrgInvite(context.Background(), invite)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	saved, err := repoInvites.RetrieveOrgInviteByID(context.Background(), dormantID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	assert.Equal(t, auth.InviteStatePending, saved.State,
+		fmt.Sprintf("dormant invite: expected state %s got %s", auth.InviteStatePending, saved.State))
 }
 
 func TestRetrieveInviteByID(t *testing.T) {

@@ -67,10 +67,20 @@ func TestSaveThings(t *testing.T) {
 	thkey := ths[0].Key
 	thID := ths[0].ID
 
+	newTh := things.Thing{
+		ID:        generateUUID(t),
+		GroupID:   group.ID,
+		ProfileID: prID,
+		Name:      thingName,
+		Key:       generateUUID(t),
+	}
+	invalidTh := things.Thing{ID: "invalid", GroupID: group.ID, ProfileID: prID, Key: generateUUID(t)}
+
 	cases := []struct {
-		desc   string
-		things []things.Thing
-		err    error
+		desc       string
+		things     []things.Thing
+		unsavedIDs []string
+		err        error
 	}{
 		{
 			desc:   "save new things",
@@ -108,11 +118,22 @@ func TestSaveThings(t *testing.T) {
 			things: ths,
 			err:    dbutil.ErrConflict,
 		},
+		{
+			desc:       "save things with an invalid ID",
+			things:     []things.Thing{newTh, invalidTh},
+			unsavedIDs: []string{newTh.ID},
+			err:        dbutil.ErrMalformedEntity,
+		},
 	}
 
 	for _, tc := range cases {
 		_, err := thingRepo.Save(context.Background(), tc.things...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.unsavedIDs {
+			_, err := thingRepo.RetrieveByID(context.Background(), id)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", tc.desc, err))
+		}
 	}
 }
 

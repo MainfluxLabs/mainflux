@@ -41,10 +41,14 @@ func TestSaveProfiles(t *testing.T) {
 	prs = append(prs, things.Profile{ID: id2, GroupID: group.ID, Name: ""})
 	id := prs[0].ID
 
+	newPr := things.Profile{ID: generateUUID(t), GroupID: group.ID, Name: profileName}
+	invalidPr := things.Profile{ID: "invalid", GroupID: group.ID, Name: profileName + "-invalid"}
+
 	cases := []struct {
-		desc     string
-		profiles []things.Profile
-		err      error
+		desc       string
+		profiles   []things.Profile
+		unsavedIDs []string
+		err        error
 	}{
 		{
 			desc:     "save new profiles",
@@ -70,11 +74,22 @@ func TestSaveProfiles(t *testing.T) {
 			},
 			err: dbutil.ErrMalformedEntity,
 		},
+		{
+			desc:       "save profiles with an invalid ID",
+			profiles:   []things.Profile{newPr, invalidPr},
+			unsavedIDs: []string{newPr.ID},
+			err:        dbutil.ErrMalformedEntity,
+		},
 	}
 
 	for _, cc := range cases {
 		_, err := profileRepo.Save(context.Background(), cc.profiles...)
 		assert.True(t, errors.Contains(err, cc.err), fmt.Sprintf("%s: expected %s got %s\n", cc.desc, cc.err, err))
+
+		for _, id := range cc.unsavedIDs {
+			_, err := profileRepo.RetrieveByID(context.Background(), id)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", cc.desc, err))
+		}
 	}
 }
 

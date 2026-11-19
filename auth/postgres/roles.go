@@ -136,20 +136,22 @@ func (rr rolesRepository) RestoreAll(ctx context.Context, urs ...auth.UserRole) 
 	q := `INSERT INTO users_roles (user_id, role) VALUES (:user_id, :role)
 	      ON CONFLICT (user_id) DO NOTHING;`
 
+	dburs := make([]dbUserRole, 0, len(urs))
 	for _, ur := range urs {
 		dbur := toDBUsersRole(ur.UserID, ur.Role)
+		dburs = append(dburs, dbur)
+	}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbur); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation, pgerrcode.CheckViolation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dburs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation, pgerrcode.CheckViolation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
-
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err := tx.Commit(); err != nil {

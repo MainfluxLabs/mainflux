@@ -38,30 +38,32 @@ func (or orgRepository) Save(ctx context.Context, orgs ...auth.Org) error {
 	q := `INSERT INTO orgs (name, description, id, owner_id, metadata, created_at, updated_at)
 		  VALUES (:name, :description, :id, :owner_id, :metadata, :created_at, :updated_at)`
 
+	dbos := make([]dbOrg, 0, len(orgs))
 	for _, org := range orgs {
 		dbo, err := toDBOrg(org)
 		if err != nil {
 			return err
 		}
 
-		_, err = or.db.NamedExecContext(ctx, q, dbo)
-		if err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(dbutil.ErrCreateEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbos = append(dbos, dbo)
+	}
 
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, or.db, q, dbos); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrCreateEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	return nil

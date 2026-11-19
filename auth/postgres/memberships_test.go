@@ -79,9 +79,18 @@ func TestSaveOrgMemberships(t *testing.T) {
 		invalidMembershipData = append(invalidMembershipData, m)
 	}
 
+	newMemberID, err := idProvider.ID()
+	require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
+	newOm := auth.OrgMembership{
+		OrgID:    orgID,
+		MemberID: newMemberID,
+		Role:     auth.Viewer,
+	}
+
 	cases := []struct {
 		desc           string
 		orgMemberships []auth.OrgMembership
+		unsavedIDs     []string
 		err            error
 	}{
 		{
@@ -114,11 +123,22 @@ func TestSaveOrgMemberships(t *testing.T) {
 			orgMemberships: invalidMembershipData,
 			err:            dbutil.ErrMalformedEntity,
 		},
+		{
+			desc:           "create org memberships with an invalid member id among valid ones",
+			orgMemberships: []auth.OrgMembership{newOm, invalidMembershipData[0]},
+			unsavedIDs:     []string{newMemberID},
+			err:            dbutil.ErrMalformedEntity,
+		},
 	}
 
 	for _, tc := range cases {
 		err := repoMembs.Save(context.Background(), tc.orgMemberships...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.unsavedIDs {
+			_, err := repoMembs.RetrieveRole(context.Background(), id, orgID)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", tc.desc, err))
+		}
 	}
 }
 

@@ -34,22 +34,25 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 
 	q := `INSERT INTO group_memberships (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
+	dbgms := make([]dbGroupMembership, 0, len(gms))
 	for _, g := range gms {
 		dbgm := toDBGroupMembership(g)
-		if _, err := tx.NamedExecContext(ctx, q, dbgm); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(things.ErrGroupMembershipExists, errors.New(pgErr.Detail))
-				}
+		dbgms = append(dbgms, dbgm)
+	}
+
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbgms); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(things.ErrGroupMembershipExists, errors.New(pgErr.Detail))
 			}
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
