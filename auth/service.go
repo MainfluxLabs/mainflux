@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -160,8 +161,11 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 func (svc service) identify(ctx context.Context, token string) (Identity, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err == ErrAPIKeyExpired {
-		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
-		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+		if err := svc.keys.Remove(ctx, key.IssuerID, key.ID); err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
+			return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+		}
+
+		return Identity{}, ErrAPIKeyExpired
 	}
 	if err != nil {
 		return Identity{}, errors.Wrap(errIdentify, err)

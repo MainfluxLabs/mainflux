@@ -426,6 +426,12 @@ func TestRevokeAPIKey(t *testing.T) {
 				"evt_group_id": "",
 			},
 		},
+		{
+			desc:  "revoke already revoked API key",
+			token: ownerToken,
+			err:   dbutil.ErrNotFound,
+			event: nil,
+		},
 	}
 
 	lastID := "0"
@@ -685,6 +691,60 @@ func TestCreateOrgInvite(t *testing.T) {
 	lastID := "0"
 	for _, tc := range cases {
 		invite, err := svc.CreateOrgInvite(context.Background(), tc.token, oi, "")
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+		if tc.event != nil {
+			tc.event["id"] = invite.ID
+		}
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestCreateDormantOrgInvite(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	ownerToken, o := setupOrg(t, svc)
+	svc = withEventStore(t, svc)
+
+	oi := auth.OrgInvite{OrgID: o.ID, InviteeRole: auth.Viewer}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "create dormant org invite successfully",
+			token: ownerToken,
+			err:   nil,
+			event: map[string]any{
+				"invitee_id":              "",
+				"invitee_email":           "",
+				"invitee_role":            auth.Viewer,
+				"operation":               events.OrgInviteCreate,
+				"jwt_identity_user_id":    ownerID,
+				"jwt_identity_user_email": ownerEmail,
+				"evt_org_id":              o.ID,
+				"evt_group_id":            "",
+			},
+		},
+		{
+			desc:  "create dormant org invite with invalid credentials",
+			token: "invalid",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		invite, err := svc.CreateDormantOrgInvite(context.Background(), tc.token, oi, "platform-invite-id")
 		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
 		assert.True(t, errors.Contains(err, tc.err), msg)
 		if tc.event != nil {

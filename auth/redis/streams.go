@@ -176,6 +176,31 @@ func (es eventStore) CreateOrgInvite(ctx context.Context, token string, oi auth.
 	return invite, nil
 }
 
+func (es eventStore) CreateDormantOrgInvite(ctx context.Context, token string, oi auth.OrgInvite, platformInviteID string) (auth.OrgInvite, error) {
+	invite, err := es.Service.CreateDormantOrgInvite(ctx, token, oi, platformInviteID)
+	if err != nil {
+		return invite, err
+	}
+
+	// Called over gRPC, so the context carries no identity for the actor.
+	inviter, err := es.Service.Identify(ctx, token)
+	if err != nil {
+		return invite, err
+	}
+
+	es.pub.Publish(ctx, events.Event{
+		Action: events.OrgInviteCreated{
+			ID:           invite.ID,
+			InviteeRole:  invite.InviteeRole,
+			GroupInvites: invite.GroupInvites,
+		},
+		OrgID:           invite.OrgID,
+		JWTUserIdentity: inviter,
+	})
+
+	return invite, nil
+}
+
 func (es eventStore) RevokeOrgInvite(ctx context.Context, token, inviteID string) (auth.OrgInvite, error) {
 	invite, err := es.Service.RevokeOrgInvite(ctx, token, inviteID)
 	if err != nil {

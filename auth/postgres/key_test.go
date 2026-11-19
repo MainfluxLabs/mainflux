@@ -148,7 +148,7 @@ func TestKeyRemove(t *testing.T) {
 			desc:  "remove key that does not exist",
 			id:    key.ID,
 			owner: key.IssuerID,
-			err:   nil,
+			err:   dbutil.ErrNotFound,
 		},
 	}
 

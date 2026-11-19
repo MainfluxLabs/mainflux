@@ -557,7 +557,7 @@ func TestRevoke(t *testing.T) {
 			desc:  "revoke non-existing login key",
 			id:    newKey.ID,
 			token: secret,
-			err:   nil,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "revoke with empty login key",
@@ -754,6 +754,11 @@ func TestIdentify(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %v got %v\n", tc.desc, tc.idt, idt))
 	}
+
+	// The first use of the expired API key already removed it.
+	_, err = svc.Identify(context.Background(), expSecret)
+	assert.True(t, errors.Contains(err, auth.ErrAPIKeyExpired), fmt.Sprintf("expected %s got %s\n", auth.ErrAPIKeyExpired, err))
+	assert.False(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected no %s got %s\n", dbutil.ErrNotFound, err))
 }
 
 func TestIdentifyRecovery(t *testing.T) {

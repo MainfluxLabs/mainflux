@@ -311,7 +311,7 @@ func TestRevoke(t *testing.T) {
 			desc:   "revoke a non-existing key",
 			id:     "non-existing",
 			token:  loginSecret,
-			status: http.StatusNoContent,
+			status: http.StatusNotFound,
 		},
 		{
 			desc:   "revoke key with invalid token",
