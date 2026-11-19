@@ -67,7 +67,7 @@ func migrateDB(db *sqlx.DB) error {
 						installing  BIGINT NOT NULL DEFAULT 0,
 						succeeded   BIGINT NOT NULL DEFAULT 0,
 						failed      BIGINT NOT NULL DEFAULT 0,
-						status      VARCHAR(32) NOT NULL DEFAULT 'completed'
+						status      VARCHAR(32) NOT NULL
 					)`,
 					`CREATE INDEX IF NOT EXISTS idx_updates_group_id_status
 						ON updates (group_id, status)`,

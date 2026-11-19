@@ -50,6 +50,7 @@ func (urm *updateRepositoryMock) Save(_ context.Context, u ota.Update, thingIDs 
 	for _, thingID := range thingIDs {
 		for k, old := range urm.thingUpdates {
 			if old.ThingID == thingID && isActive(old.Status) {
+				urm.changeStats(old.UpdateID, old.Status, ota.StatusFailed)
 				old.Status = ota.StatusFailed
 				old.Error = fmt.Sprintf(ota.ErrMsgSuperseded, u.ID)
 				old.UpdatedAt = u.CreatedAt
@@ -58,6 +59,8 @@ func (urm *updateRepositoryMock) Save(_ context.Context, u ota.Update, thingIDs 
 		}
 	}
 
+	u.Stats = ota.UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))}
+	u.Status = u.Stats.Status()
 	urm.updates[u.ID] = u
 	for _, thingID := range thingIDs {
 		urm.thingUpdates[thingUpdateKey(u.ID, thingID)] = ota.ThingUpdate{
@@ -79,8 +82,6 @@ func (urm *updateRepositoryMock) RetrieveByID(_ context.Context, id string) (ota
 	if !ok {
 		return ota.Update{}, dbutil.ErrNotFound
 	}
-	u.Stats = urm.stats(id)
-	u.Status = u.Stats.Status()
 
 	return u, nil
 }
@@ -94,8 +95,6 @@ func (urm *updateRepositoryMock) RetrieveByGroup(_ context.Context, groupID stri
 		if u.GroupID != groupID {
 			continue
 		}
-		u.Stats = urm.stats(u.ID)
-		u.Status = u.Stats.Status()
 		if pm.Status != "" && u.Status != pm.Status {
 			continue
 		}
@@ -211,6 +210,7 @@ func (urm *updateRepositoryMock) UpdateThingUpdate(_ context.Context, tu ota.Thi
 	if !ok || !slices.Contains(ota.ActiveStatuses, current.Status) {
 		return dbutil.ErrNotFound
 	}
+	urm.changeStats(tu.UpdateID, current.Status, tu.Status)
 	urm.thingUpdates[k] = tu
 
 	return nil
@@ -240,6 +240,7 @@ func (urm *updateRepositoryMock) RetryFailed(_ context.Context, updateID string,
 			tu.Status != ota.StatusFailed || urm.hasNewerUpdate(tu) {
 			continue
 		}
+		urm.changeStats(tu.UpdateID, tu.Status, ota.StatusPending)
 		tu.Status = ota.StatusPending
 		tu.Error = ""
 		tu.UpdatedAt = time.Now().UTC()
@@ -256,6 +257,7 @@ func (urm *updateRepositoryMock) FailTimedOut(_ context.Context, now time.Time) 
 
 	for k, tu := range urm.thingUpdates {
 		if isActive(tu.Status) && tu.UpdatedAt.Add(urm.updates[tu.UpdateID].Timeout).Before(now) {
+			urm.changeStats(tu.UpdateID, tu.Status, ota.StatusFailed)
 			tu.Status = ota.StatusFailed
 			tu.Error = ota.ErrMsgTimedOut
 			tu.UpdatedAt = now
@@ -272,6 +274,7 @@ func (urm *updateRepositoryMock) RemoveThingUpdatesByThing(_ context.Context, th
 
 	for k, tu := range urm.thingUpdates {
 		if tu.ThingID == thingID {
+			urm.changeStats(tu.UpdateID, tu.Status, "")
 			delete(urm.thingUpdates, k)
 		}
 	}
@@ -290,28 +293,14 @@ func (urm *updateRepositoryMock) hasNewerUpdate(tu ota.ThingUpdate) bool {
 	return false
 }
 
-func (urm *updateRepositoryMock) stats(updateID string) ota.UpdateStats {
-	var s ota.UpdateStats
-	for _, tu := range urm.thingUpdates {
-		if tu.UpdateID != updateID {
-			continue
-		}
-		s.Targets++
-		switch tu.Status {
-		case ota.StatusPending:
-			s.Pending++
-		case ota.StatusDownloading:
-			s.Downloading++
-		case ota.StatusInstalling:
-			s.Installing++
-		case ota.StatusSucceeded:
-			s.Succeeded++
-		case ota.StatusFailed:
-			s.Failed++
-		}
+func (urm *updateRepositoryMock) changeStats(updateID, oldStatus, newStatus string) {
+	u := urm.updates[updateID]
+	u.Stats.Remove(oldStatus)
+	if newStatus != "" {
+		u.Stats.Add(newStatus)
 	}
-
-	return s
+	u.Status = u.Stats.Status()
+	urm.updates[updateID] = u
 }
 
 func pageBounds(total uint64, pm ota.PageMetadata) (uint64, uint64) {

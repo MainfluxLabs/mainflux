@@ -17,11 +17,7 @@ CREATE TABLE IF NOT EXISTS updates (
     installing  BIGINT NOT NULL DEFAULT 0,
     succeeded   BIGINT NOT NULL DEFAULT 0,
     failed      BIGINT NOT NULL DEFAULT 0,
-    status      VARCHAR(32) GENERATED ALWAYS AS (CASE
-        WHEN pending + downloading + installing > 0 THEN 'in_progress'
-        WHEN failed > 0 THEN 'completed_with_failures'
-        ELSE 'completed'
-    END) STORED
+    status      VARCHAR(32) NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_updates_group_id_status ON updates (group_id, status);

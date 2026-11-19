@@ -79,6 +79,39 @@ func (s UpdateStats) Status() string {
 	}
 }
 
+// Add counts a thing with the given status.
+func (s *UpdateStats) Add(status string) {
+	s.Targets++
+	if counter := s.counter(status); counter != nil {
+		*counter++
+	}
+}
+
+// Remove stops counting a thing with the given status.
+func (s *UpdateStats) Remove(status string) {
+	s.Targets--
+	if counter := s.counter(status); counter != nil {
+		*counter--
+	}
+}
+
+func (s *UpdateStats) counter(status string) *uint64 {
+	switch status {
+	case StatusPending:
+		return &s.Pending
+	case StatusDownloading:
+		return &s.Downloading
+	case StatusInstalling:
+		return &s.Installing
+	case StatusSucceeded:
+		return &s.Succeeded
+	case StatusFailed:
+		return &s.Failed
+	default:
+		return nil
+	}
+}
+
 // ThingUpdate is the progress of one thing within an update.
 type ThingUpdate struct {
 	UpdateID        string
