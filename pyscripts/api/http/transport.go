@@ -327,5 +327,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		apiutil.EncodeError(err, w)
 	}
 
-	apiutil.WriteErrorResponse(err, w)
+	switch {
+	case errors.Contains(err, pyscripts.ErrScriptSyntax):
+		json.NewEncoder(w).Encode(apiutil.ErrorRes{Err: err.Error()})
+	default:
+		apiutil.WriteErrorResponse(err, w)
+	}
 }

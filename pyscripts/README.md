@@ -14,7 +14,7 @@ The Pyscripts service stores Python scripts, runs them on demand against a messa
 
 Scripts are group-scoped and authorized through the Things service: group viewers can read scripts and runs, group editors can create, update, remove and run them. Running is an editor action because it executes code inside the service.
 
-Source is checked when it is saved: `POST /groups/:id/scripts` and `PUT /scripts/:id` reject a script that is larger than `MF_PYSCRIPTS_MAX_SCRIPT_SIZE` or does not compile with `400 Bad Request`. One create request accepts at most 32 scripts.
+Source is checked when it is saved: `POST /groups/:id/scripts` and `PUT /scripts/:id` reject a script that is larger than `MF_PYSCRIPTS_MAX_SCRIPT_SIZE` or does not compile with `400 Bad Request`; for a syntax error, the response's `error` carries Python's message with the line number. One create request accepts at most 32 scripts.
 
 When a group is removed, its scripts and their runs are removed with it.
 

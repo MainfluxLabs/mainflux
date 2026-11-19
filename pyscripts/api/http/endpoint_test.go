@@ -36,6 +36,8 @@ const (
 	groupID       = "574106f7-030e-4881-8ab0-151195c29f94"
 	wrongID       = "wrong-id"
 	validSource   = "1 + 1"
+	badSource     = "def (:"
+	syntaxMsg     = "invalid syntax (script.py, line 1)"
 	maxScriptSize = 1024
 )
 
@@ -87,6 +89,7 @@ func newService() pyscripts.Service {
 	)
 	repo := psmocks.NewScriptRepository()
 	run := psmocks.NewRunner()
+	run.Invalid[badSource] = syntaxMsg
 	idp := uuid.NewMock()
 
 	return pyscripts.New(repo, run, things, idp, logger.NewMock(), maxScriptSize)
@@ -118,6 +121,7 @@ func TestCreateScripts(t *testing.T) {
 		contentType string
 		token       string
 		status      int
+		err         string
 	}{
 		{
 			desc:        "create scripts with valid request",
@@ -176,6 +180,15 @@ func TestCreateScripts(t *testing.T) {
 			status:      http.StatusBadRequest,
 		},
 		{
+			desc:        "create scripts with a syntax error",
+			body:        toJSON(map[string]any{"scripts": []map[string]any{{"name": "a", "source": badSource}}}),
+			groupID:     groupID,
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+			err:         pyscripts.ErrScriptSyntax.Error() + " : " + syntaxMsg,
+		},
+		{
 			desc:        "create scripts with empty token",
 			body:        valid,
 			groupID:     groupID,
@@ -205,6 +218,11 @@ func TestCreateScripts(t *testing.T) {
 		res, err := req.make()
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+		if tc.err != "" {
+			var body apiutil.ErrorRes
+			require.Nil(t, json.NewDecoder(res.Body).Decode(&body), fmt.Sprintf("%s: unexpected error decoding the body", tc.desc))
+			assert.Equal(t, tc.err, body.Err, fmt.Sprintf("%s: expected error %q got %q", tc.desc, tc.err, body.Err))
+		}
 		res.Body.Close()
 	}
 }
@@ -318,6 +336,7 @@ func TestUpdateScript(t *testing.T) {
 		contentType string
 		token       string
 		status      int
+		err         string
 	}{
 		{
 			desc:        "update script with valid request",
@@ -342,6 +361,15 @@ func TestUpdateScript(t *testing.T) {
 			contentType: contentType,
 			token:       token,
 			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "update script with a syntax error",
+			id:          s.ID,
+			body:        toJSON(map[string]any{"name": "a", "source": badSource}),
+			contentType: contentType,
+			token:       token,
+			status:      http.StatusBadRequest,
+			err:         pyscripts.ErrScriptSyntax.Error() + " : " + syntaxMsg,
 		},
 		{
 			desc:        "update non-existent script",
@@ -373,6 +401,11 @@ func TestUpdateScript(t *testing.T) {
 		res, err := req.make()
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d", tc.desc, tc.status, res.StatusCode))
+		if tc.err != "" {
+			var body apiutil.ErrorRes
+			require.Nil(t, json.NewDecoder(res.Body).Decode(&body), fmt.Sprintf("%s: unexpected error decoding the body", tc.desc))
+			assert.Equal(t, tc.err, body.Err, fmt.Sprintf("%s: expected error %q got %q", tc.desc, tc.err, body.Err))
+		}
 		res.Body.Close()
 	}
 }
