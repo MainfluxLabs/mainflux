@@ -38,74 +38,90 @@ func TestSaveGroup(t *testing.T) {
 	orgID := generateUUID(t)
 	grID := generateUUID(t)
 
+	grs := []things.Group{
+		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-1"},
+		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-2"},
+	}
+	grIDs := []string{grs[0].ID, grs[1].ID}
+	invalidGr := things.Group{ID: generateUUID(t), OrgID: orgID, Name: invalidName}
+
 	cases := []struct {
-		desc  string
-		group things.Group
-		err   error
+		desc       string
+		groups     []things.Group
+		unsavedIDs []string
+		err        error
 	}{
 		{
 			desc: "save new group",
-			group: things.Group{
-				ID:    grID,
-				OrgID: orgID,
-				Name:  groupName,
+			groups: []things.Group{
+				{
+					ID:    grID,
+					OrgID: orgID,
+					Name:  groupName,
+				},
 			},
 			err: nil,
 		},
 		{
 			desc: "save new group with existing name",
-			group: things.Group{
-				ID:    grID,
-				OrgID: orgID,
-				Name:  groupName,
+			groups: []things.Group{
+				{
+					ID:    grID,
+					OrgID: orgID,
+					Name:  groupName,
+				},
 			},
 			err: dbutil.ErrConflict,
 		},
 		{
 			desc: "save group with invalid name",
-			group: things.Group{
-				ID:    grID,
-				OrgID: orgID,
-				Name:  invalidName,
+			groups: []things.Group{
+				{
+					ID:    grID,
+					OrgID: orgID,
+					Name:  invalidName,
+				},
 			},
 			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save group with invalid description",
-			group: things.Group{
-				ID:          grID,
-				OrgID:       orgID,
-				Name:        groupName,
-				Description: invalidDesc,
+			groups: []things.Group{
+				{
+					ID:          grID,
+					OrgID:       orgID,
+					Name:        groupName,
+					Description: invalidDesc,
+				},
 			},
 			err: dbutil.ErrMalformedEntity,
+		},
+		{
+			desc:       "save new groups with an invalid name",
+			groups:     append(grs, invalidGr),
+			unsavedIDs: grIDs,
+			err:        dbutil.ErrMalformedEntity,
+		},
+		{
+			desc:   "save new groups",
+			groups: grs,
+			err:    nil,
 		},
 	}
 
 	for _, tc := range cases {
-		_, err := groupRepo.Save(context.Background(), tc.group)
+		_, err := groupRepo.Save(context.Background(), tc.groups...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.unsavedIDs {
+			_, err := groupRepo.RetrieveByID(context.Background(), id)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", tc.desc, err))
+		}
 	}
 
-	grs := []things.Group{
-		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-1"},
-		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-2"},
-	}
-	invalidGr := things.Group{ID: generateUUID(t), OrgID: orgID, Name: invalidName}
-	_, err := groupRepo.Save(context.Background(), append(grs, invalidGr)...)
-	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
-		fmt.Sprintf("unexpected error: %s\n", err))
-	for _, gr := range grs {
-		_, err := groupRepo.RetrieveByID(context.Background(), gr.ID)
-		assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
-			fmt.Sprintf("unexpected error: %s\n", err))
-	}
-
-	_, err = groupRepo.Save(context.Background(), grs...)
-	assert.Nil(t, err, fmt.Sprintf("save new groups: expected no error got %s\n", err))
-	for _, gr := range grs {
-		_, err := groupRepo.RetrieveByID(context.Background(), gr.ID)
-		assert.Nil(t, err, fmt.Sprintf("expected no error got %s\n", err))
+	for _, id := range grIDs {
+		_, err := groupRepo.RetrieveByID(context.Background(), id)
+		assert.Nil(t, err, fmt.Sprintf("%s: %s\n", id, err))
 	}
 }
 

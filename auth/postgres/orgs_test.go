@@ -54,64 +54,72 @@ func TestSave(t *testing.T) {
 		Description: orgDesc,
 	}
 
-	cases := []struct {
-		desc string
-		org  auth.Org
-		err  error
-	}{
-		{
-			desc: "save org with invalid owner id",
-			org:  invalidOwnerOrg,
-			err:  dbutil.ErrMalformedEntity,
-		},
-		{
-			desc: "save org with invalid org id",
-			org:  invalidIDOrg,
-			err:  dbutil.ErrMalformedEntity,
-		},
-		{
-			desc: "save empty org",
-			org:  auth.Org{},
-			err:  dbutil.ErrMalformedEntity,
-		},
-		{
-			desc: "save org",
-			org:  org,
-			err:  nil,
-		},
-		{
-			desc: "save existing org",
-			org:  org,
-			err:  dbutil.ErrConflict,
-		},
-	}
-
-	for _, tc := range cases {
-		err := repo.Save(context.Background(), tc.org)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
-	}
-
 	var orgs []auth.Org
+	var orgIDs []string
 	for i := 0; i < 2; i++ {
 		orgID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("got unexpected error: %s", err))
 		orgs = append(orgs, auth.Org{ID: orgID, OwnerID: ownerID, Name: fmt.Sprintf("%s-%d", orgName, i)})
+		orgIDs = append(orgIDs, orgID)
 	}
 
-	err = repo.Save(context.Background(), append(orgs, invalidIDOrg)...)
-	assert.True(t, errors.Contains(err, dbutil.ErrMalformedEntity),
-		fmt.Sprintf("unexpected error: %s\n", err))
-	for _, o := range orgs {
-		_, err := repo.RetrieveByID(context.Background(), o.ID)
-		assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
-			fmt.Sprintf("unexpected error: %s\n", err))
+	cases := []struct {
+		desc       string
+		orgs       []auth.Org
+		unsavedIDs []string
+		err        error
+	}{
+		{
+			desc: "save org with invalid owner id",
+			orgs: []auth.Org{invalidOwnerOrg},
+			err:  dbutil.ErrMalformedEntity,
+		},
+		{
+			desc: "save org with invalid org id",
+			orgs: []auth.Org{invalidIDOrg},
+			err:  dbutil.ErrMalformedEntity,
+		},
+		{
+			desc: "save empty org",
+			orgs: []auth.Org{{}},
+			err:  dbutil.ErrMalformedEntity,
+		},
+		{
+			desc: "save org",
+			orgs: []auth.Org{org},
+			err:  nil,
+		},
+		{
+			desc: "save existing org",
+			orgs: []auth.Org{org},
+			err:  dbutil.ErrConflict,
+		},
+		{
+			desc:       "save orgs with an invalid org id",
+			orgs:       append(orgs, invalidIDOrg),
+			unsavedIDs: orgIDs,
+			err:        dbutil.ErrMalformedEntity,
+		},
+		{
+			desc: "save orgs",
+			orgs: orgs,
+			err:  nil,
+		},
 	}
 
-	err = repo.Save(context.Background(), orgs...)
-	assert.Nil(t, err, fmt.Sprintf("save orgs: unexpected error: %s\n", err))
-	for _, o := range orgs {
-		_, err := repo.RetrieveByID(context.Background(), o.ID)
-		assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	for _, tc := range cases {
+		err := repo.Save(context.Background(), tc.orgs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.unsavedIDs {
+			_, err := repo.RetrieveByID(context.Background(), id)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", tc.desc, err))
+		}
+	}
+
+	for _, id := range orgIDs {
+		_, err := repo.RetrieveByID(context.Background(), id)
+		assert.Nil(t, err, fmt.Sprintf("%s: %s\n", id, err))
 	}
 }
 

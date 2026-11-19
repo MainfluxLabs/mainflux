@@ -113,6 +113,33 @@ func TestSaveInvite(t *testing.T) {
 		State:       auth.InviteStatePending,
 	}
 
+	var groupInvites []auth.OrgInvite
+	for i := 0; i < 2; i++ {
+		invID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		inviteeID, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		grID1, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		grID2, err := idProvider.ID()
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+		groupInvites = append(groupInvites, auth.OrgInvite{
+			ID:          invID,
+			InviteeID:   inviteeID,
+			InviterID:   ownerID,
+			OrgID:       org.ID,
+			InviteeRole: auth.Viewer,
+			CreatedAt:   time.Now(),
+			ExpiresAt:   time.Now().Add(inviteExpiryTime),
+			State:       auth.InviteStatePending,
+			GroupInvites: []auth.GroupInvite{
+				{GroupID: grID1, MemberRole: auth.Viewer},
+				{GroupID: grID2, MemberRole: auth.Editor},
+			},
+		})
+	}
+
 	cases := []struct {
 		desc    string
 		invites []auth.OrgInvite
@@ -148,6 +175,11 @@ func TestSaveInvite(t *testing.T) {
 			invites: []auth.OrgInvite{reinviteExpiredInvite},
 			err:     nil,
 		},
+		{
+			desc:    "save invites with group invites",
+			invites: groupInvites,
+			err:     nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -155,35 +187,6 @@ func TestSaveInvite(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s, got %s\n", tc.desc, tc.err, err))
 	}
 
-	var groupInvites []auth.OrgInvite
-	for i := 0; i < 2; i++ {
-		invID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		inviteeID, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		grID1, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-		grID2, err := idProvider.ID()
-		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-
-		groupInvites = append(groupInvites, auth.OrgInvite{
-			ID:          invID,
-			InviteeID:   inviteeID,
-			InviterID:   ownerID,
-			OrgID:       org.ID,
-			InviteeRole: auth.Viewer,
-			CreatedAt:   time.Now(),
-			ExpiresAt:   time.Now().Add(inviteExpiryTime),
-			State:       auth.InviteStatePending,
-			GroupInvites: []auth.GroupInvite{
-				{GroupID: grID1, MemberRole: auth.Viewer},
-				{GroupID: grID2, MemberRole: auth.Editor},
-			},
-		})
-	}
-
-	err = repoInvites.SaveOrgInvite(context.Background(), groupInvites...)
-	require.Nil(t, err, fmt.Sprintf("save invites with group invites: unexpected error: %s", err))
 	for _, inv := range groupInvites {
 		saved, err := repoInvites.RetrieveOrgInviteByID(context.Background(), inv.ID)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
