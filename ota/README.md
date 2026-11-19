@@ -42,7 +42,9 @@ pending ─► downloading ─► installing ─► succeeded
 ### Update status
 
 The update stores its `stats` and `status`, and every change of its things updates them in the
-same transaction. Use `status` to filter the updates list with `?status=`.
+same transaction. Use `status` to filter the updates list with `?status=`, and `status` or a
+`stats` count (`targets`, `pending`, `downloading`, `installing`, `succeeded`, `failed`) to
+sort it with `?order=`.
 
 | Status                    | Meaning                                                  |
 | ------------------------- | -------------------------------------------------------- |

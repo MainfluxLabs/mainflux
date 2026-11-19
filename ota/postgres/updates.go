@@ -485,7 +485,7 @@ func adjustStats(ctx context.Context, tx *sqlx.Tx, oldStatuses []dbOldStatus, ne
 		SET status = s.status, targets = s.targets, pending_count = s.pending_count,
 		downloading_count = s.downloading_count, installing_count = s.installing_count,
 		succeeded_count = s.succeeded_count, failed_count = s.failed_count
-		FROM unnest(CAST(:ids AS uuid[]), CAST(:statuses AS varchar[]),
+		FROM unnest(CAST(:update_ids AS uuid[]), CAST(:statuses AS varchar[]),
 			CAST(:targets AS bigint[]), CAST(:pending_counts AS bigint[]),
 			CAST(:downloading_counts AS bigint[]), CAST(:installing_counts AS bigint[]),
 			CAST(:succeeded_counts AS bigint[]), CAST(:failed_counts AS bigint[]))
@@ -515,31 +515,7 @@ func adjustStats(ctx context.Context, tx *sqlx.Tx, oldStatuses []dbOldStatus, ne
 		updates[old.UpdateID] = u
 	}
 
-	var ids, statuses []string
-	var targets, pendingCounts, downloadingCounts, installingCounts []uint64
-	var succeededCounts, failedCounts []uint64
-	for id, u := range updates {
-		ids = append(ids, id)
-		statuses = append(statuses, u.Stats.Status())
-		targets = append(targets, u.Stats.Targets)
-		pendingCounts = append(pendingCounts, u.Stats.Pending)
-		downloadingCounts = append(downloadingCounts, u.Stats.Downloading)
-		installingCounts = append(installingCounts, u.Stats.Installing)
-		succeededCounts = append(succeededCounts, u.Stats.Succeeded)
-		failedCounts = append(failedCounts, u.Stats.Failed)
-	}
-
-	params := map[string]any{
-		"ids":                ids,
-		"statuses":           statuses,
-		"targets":            targets,
-		"pending_counts":     pendingCounts,
-		"downloading_counts": downloadingCounts,
-		"installing_counts":  installingCounts,
-		"succeeded_counts":   succeededCounts,
-		"failed_counts":      failedCounts,
-	}
-	if _, err := tx.NamedExecContext(ctx, qStore, params); err != nil {
+	if _, err := tx.NamedExecContext(ctx, qStore, toDBUpdateStats(updates)); err != nil {
 		return err
 	}
 
@@ -638,6 +614,34 @@ func toUpdate(dbu dbUpdate) ota.Update {
 			Failed:      dbu.FailedCount,
 		},
 	}
+}
+
+// dbUpdateStats holds the stats and status of several updates as parallel columns for unnest.
+type dbUpdateStats struct {
+	UpdateIDs         []string `db:"update_ids"`
+	Statuses          []string `db:"statuses"`
+	Targets           []uint64 `db:"targets"`
+	PendingCounts     []uint64 `db:"pending_counts"`
+	DownloadingCounts []uint64 `db:"downloading_counts"`
+	InstallingCounts  []uint64 `db:"installing_counts"`
+	SucceededCounts   []uint64 `db:"succeeded_counts"`
+	FailedCounts      []uint64 `db:"failed_counts"`
+}
+
+func toDBUpdateStats(updates map[string]ota.Update) dbUpdateStats {
+	var dbus dbUpdateStats
+	for _, u := range updates {
+		dbus.UpdateIDs = append(dbus.UpdateIDs, u.ID)
+		dbus.Statuses = append(dbus.Statuses, u.Stats.Status())
+		dbus.Targets = append(dbus.Targets, u.Stats.Targets)
+		dbus.PendingCounts = append(dbus.PendingCounts, u.Stats.Pending)
+		dbus.DownloadingCounts = append(dbus.DownloadingCounts, u.Stats.Downloading)
+		dbus.InstallingCounts = append(dbus.InstallingCounts, u.Stats.Installing)
+		dbus.SucceededCounts = append(dbus.SucceededCounts, u.Stats.Succeeded)
+		dbus.FailedCounts = append(dbus.FailedCounts, u.Stats.Failed)
+	}
+
+	return dbus
 }
 
 // dbOldStatus is the status a thing update of an update had before it changed.

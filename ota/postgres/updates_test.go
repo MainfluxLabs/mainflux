@@ -300,6 +300,24 @@ func TestRetrieveByGroupStatus(t *testing.T) {
 			ids:   []string{withFailures.ID},
 			total: 1,
 		},
+		{
+			desc:  "retrieve first update ordered by status",
+			pm:    ota.PageMetadata{Limit: 1, Order: "status", Dir: "desc"},
+			ids:   []string{inProgress.ID},
+			total: 4,
+		},
+		{
+			desc:  "retrieve first update ordered by pending count",
+			pm:    ota.PageMetadata{Limit: 1, Order: "pending", Dir: "desc"},
+			ids:   []string{inProgress.ID},
+			total: 4,
+		},
+		{
+			desc:  "retrieve first update ordered by failed count",
+			pm:    ota.PageMetadata{Limit: 1, Order: "failed", Dir: "desc"},
+			ids:   []string{withFailures.ID},
+			total: 4,
+		},
 	}
 
 	for _, tc := range cases {

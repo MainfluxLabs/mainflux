@@ -350,6 +350,20 @@ func TestListUpdates(t *testing.T) {
 			status: http.StatusBadRequest,
 		},
 		{
+			desc:   "list updates ordered by status",
+			query:  "?order=status",
+			token:  token,
+			status: http.StatusOK,
+			size:   3,
+		},
+		{
+			desc:   "list updates ordered by failed count",
+			query:  "?order=failed&dir=desc",
+			token:  token,
+			status: http.StatusOK,
+			size:   3,
+		},
+		{
 			desc:   "list updates with invalid order",
 			query:  "?order=wrong",
 			token:  token,

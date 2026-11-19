@@ -136,9 +136,16 @@ type ThingUpdatesPage struct {
 
 // UpdateOrderFields maps API-facing order keys to SQL column expressions for the updates table.
 var UpdateOrderFields = map[string]string{
-	"id":         "id",
-	"created_at": "created_at",
-	"version":    "version",
+	"id":          "id",
+	"created_at":  "created_at",
+	"version":     "version",
+	"status":      "status",
+	"targets":     "targets",
+	"pending":     "pending_count",
+	"downloading": "downloading_count",
+	"installing":  "installing_count",
+	"succeeded":   "succeeded_count",
+	"failed":      "failed_count",
 }
 
 // ThingUpdateOrderFields maps API order keys to SQL column expressions of the thing_updates table.

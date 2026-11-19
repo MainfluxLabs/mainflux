@@ -437,12 +437,24 @@ components:
       required: false
     UpdateOrder:
       name: order
-      description: Order the updates by the given field.
+      description: |
+        Order the updates by the given field. `targets`, `pending`, `downloading`,
+        `installing`, `succeeded` and `failed` order by the matching `stats` count.
       in: query
       schema:
         type: string
         default: id
-        enum: [id, created_at, version]
+        enum:
+          - id
+          - created_at
+          - version
+          - status
+          - targets
+          - pending
+          - downloading
+          - installing
+          - succeeded
+          - failed
       required: false
     ThingUpdateOrder:
       name: order
