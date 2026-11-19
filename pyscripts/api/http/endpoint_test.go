@@ -513,6 +513,7 @@ func TestRunScriptRateLimited(t *testing.T) {
 	body := toJSON(map[string]any{"payload": map[string]any{"x": 1}})
 
 	var statuses []int
+	var lastBody string
 	for range 15 {
 		req := testRequest{
 			client:      ts.Client(),
@@ -524,12 +525,16 @@ func TestRunScriptRateLimited(t *testing.T) {
 		}
 		res, err := req.make()
 		require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
+		b, err := io.ReadAll(res.Body)
+		require.Nil(t, err, fmt.Sprintf("unexpected error %s", err))
 		res.Body.Close()
 		statuses = append(statuses, res.StatusCode)
+		lastBody = strings.TrimSpace(string(b))
 	}
 
 	assert.Equal(t, http.StatusOK, statuses[0], fmt.Sprintf("expected the first run to succeed, got statuses %v", statuses))
 	assert.Equal(t, http.StatusTooManyRequests, statuses[len(statuses)-1], fmt.Sprintf("expected runs beyond the group burst to be rejected, got statuses %v", statuses))
+	assert.Equal(t, `{"error":"too many requests, retry later"}`, lastBody, fmt.Sprintf("expected a rate limit message that does not blame the group, got %s", lastBody))
 }
 
 func TestRunScriptLargeInteger(t *testing.T) {
