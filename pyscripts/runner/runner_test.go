@@ -449,6 +449,21 @@ func TestRunSandboxed(t *testing.T) {
 			code: "import os\nos.write(3, b'\\xff\\xff\\xff\\xff' + b'x' * 100)",
 		},
 		{
+			desc:  "return a result within the output limit",
+			code:  "'x' * (900 << 10)",
+			value: strings.Repeat("x", 900<<10),
+		},
+		{
+			desc: "name the limit for a result over the output limit",
+			code: "'x' * (2 << 20)",
+			err:  "result cannot be returned: 2097154 bytes exceeds the",
+		},
+		{
+			desc: "count logs against the result limit",
+			code: "for _ in range(80): print('x' * 8000)\n'x' * (600 << 10)",
+			err:  "result cannot be returned: 614402 bytes exceeds the",
+		},
+		{
 			desc: "stop a script that floods its output",
 			code: "while True: print('x' * 4096)",
 			err:  "output limit exceeded",

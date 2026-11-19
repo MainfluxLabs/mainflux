@@ -61,12 +61,15 @@ const pyFraming = `
 def send(fd, obj):
     b = json.dumps(obj, allow_nan=False).encode()
     os.write(fd, struct.pack(">I", len(b)) + b)
+    return len(b)
 
 SEQ = 0
+SENT = 0
 
 def send_data(obj):
+    global SENT
     obj["seq"] = SEQ
-    send(DATA, obj)
+    SENT += send(DATA, obj)
 
 def recv(fd):
     hdr = b""
@@ -401,10 +404,12 @@ def execute(job, code):
             send_data({"kind": "result", "value": None,
                         "error": "result cannot be returned: %s" % exc})
             return
-        if len(encoded) > MAX_RESULT:
+        envelope = len(json.dumps({"kind": "result", "value": None, "error": None, "seq": SEQ})) - len("null")
+        limit = max(0, min(MAX_RESULT, job.get("max_output", MAX_RESULT) - SENT - envelope))
+        if len(encoded) > limit:
             send_data({"kind": "result", "value": None,
                         "error": "result cannot be returned: %d bytes exceeds the %d byte limit"
-                                 % (len(encoded), MAX_RESULT)})
+                                 % (len(encoded), limit)})
             return
         send_data({"kind": "result", "value": value, "error": None})
     except BaseException as e:

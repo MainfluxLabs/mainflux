@@ -30,7 +30,7 @@ sum(readings) / len(readings)
 
 - `message["payload"]` is always present. `subtopic`, `created` and `thing_id` are present when the caller supplies them.
 - If the last statement is an expression, its value is the run's result. Otherwise the result is `null`.
-- The result must be JSON-serializable and at most 4 MiB. NumPy scalars, arrays, DataFrames, `NaN` and `Infinity` fail the run with `result cannot be returned: ...`; convert them with `.tolist()` or `float()` first.
+- The result must be JSON-serializable and fit, together with the run's logs, within `MF_PYSCRIPTS_MAX_OUTPUT_SIZE` (1 MiB by default). It is never allowed to exceed 4 MiB. NumPy scalars, arrays, DataFrames, `NaN` and `Infinity` fail the run with `result cannot be returned: ...`; convert them with `.tolist()` or `float()` first.
 - `print()` and writes to `sys.stderr` are recorded as the run's logs, up to `MF_PYSCRIPTS_MAX_LOG_LINES` lines.
 - An exception fails the run, and its traceback is recorded as the run's error.
 - `numpy` and `pandas` are available. No other packages can be installed.
@@ -98,7 +98,7 @@ The service is configured using the environment variables from the following tab
 | `MF_PYSCRIPTS_ACQUIRE_TIMEOUT`   | How long a request waits for a free worker before failing with 503               | 5s                       |
 | `MF_PYSCRIPTS_START_TIMEOUT`     | How long a worker may take to start                                              | 60s                      |
 | `MF_PYSCRIPTS_MAX_SCRIPT_SIZE`   | Maximum script source size in bytes                                              | 65535                    |
-| `MF_PYSCRIPTS_MAX_OUTPUT_SIZE`   | Maximum output a run may produce, in bytes                                       | 1048576                  |
+| `MF_PYSCRIPTS_MAX_OUTPUT_SIZE`   | Maximum output a run may produce, logs and result together, in bytes             | 1048576                  |
 | `MF_PYSCRIPTS_MAX_LOG_LINES`     | Maximum number of log lines kept per run                                         | 256                      |
 | `MF_PYSCRIPTS_MAX_CPU_SECONDS`   | CPU time limit of one run (`RLIMIT_CPU`), in seconds                             | 5                        |
 | `MF_PYSCRIPTS_MAX_MEMORY`        | Memory one run may allocate on top of the worker's own (`RLIMIT_DATA`), in bytes | 268435456                |

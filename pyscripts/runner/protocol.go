@@ -32,6 +32,7 @@ type jobFrame struct {
 	Code      string `json:"code,omitempty"`
 	Input     Input  `json:"input"`
 	Limits    Limits `json:"limits"`
+	MaxOutput int64  `json:"max_output,omitempty"`
 }
 
 func writeJob(w io.Writer, job jobFrame) error {
