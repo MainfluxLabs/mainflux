@@ -6,6 +6,7 @@ package postgres_test
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -43,12 +44,44 @@ func saveUpdate(t *testing.T, repo ota.UpdateRepository, groupID string, created
 		Checksum:  "9f2c4a0e7b1d3c5f6a8e9b0c2d4f6a8b0c2e4f6a8b0c2d4e6f8a0b2c4d6ea71e",
 		Timeout:   time.Hour,
 		CreatedAt: createdAt,
+		Stats:     ota.UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))},
 	}
+	u.Status = u.Stats.Status()
 
 	err := repo.Save(context.Background(), u, thingIDs...)
 	require.Nil(t, err, fmt.Sprintf("saving update failed: %s", err))
 
 	return u
+}
+
+// assertStoredStats compares the stored stats and status of an update with a recount of its things.
+func assertStoredStats(t *testing.T, repo ota.UpdateRepository, updateID string) {
+	t.Helper()
+
+	q := `SELECT COUNT(*) AS targets,
+		COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+		COUNT(*) FILTER (WHERE status = 'downloading') AS downloading,
+		COUNT(*) FILTER (WHERE status = 'installing') AS installing,
+		COUNT(*) FILTER (WHERE status = 'succeeded') AS succeeded,
+		COUNT(*) FILTER (WHERE status = 'failed') AS failed
+		FROM thing_updates
+		WHERE update_id = $1;`
+
+	var counted struct {
+		Targets     uint64 `db:"targets"`
+		Pending     uint64 `db:"pending"`
+		Downloading uint64 `db:"downloading"`
+		Installing  uint64 `db:"installing"`
+		Succeeded   uint64 `db:"succeeded"`
+		Failed      uint64 `db:"failed"`
+	}
+	err := db.Get(&counted, q, updateID)
+	require.Nil(t, err, fmt.Sprintf("counting thing updates failed: %s", err))
+
+	u, err := repo.RetrieveByID(context.Background(), updateID)
+	require.Nil(t, err, fmt.Sprintf("retrieving update failed: %s", err))
+	assert.Equal(t, ota.UpdateStats(counted), u.Stats, "stored stats must match the thing updates")
+	assert.Equal(t, u.Stats.Status(), u.Status, "stored status must match the stats")
 }
 
 func TestSaveSupersedes(t *testing.T) {
@@ -67,6 +100,9 @@ func TestSaveSupersedes(t *testing.T) {
 	active, err := repo.RetrieveActiveThingUpdate(context.Background(), thingID)
 	require.Nil(t, err, fmt.Sprintf("retrieving active thing update failed: %s", err))
 	assert.Equal(t, second.ID, active.UpdateID, "active thing update must belong to the newest update")
+
+	assertStoredStats(t, repo, first.ID)
+	assertStoredStats(t, repo, second.ID)
 }
 
 func TestRetrieveByID(t *testing.T) {
@@ -368,7 +404,46 @@ func TestUpdateThingUpdate(t *testing.T) {
 		tu, err := repo.RetrieveThingUpdate(context.Background(), updateID, thingID)
 		require.Nil(t, err, fmt.Sprintf("%s: retrieving thing update failed: %s", tc.desc, err))
 		assert.Equal(t, tc.status, tu.Status, fmt.Sprintf("%s: status mismatch", tc.desc))
+		assertStoredStats(t, repo, updateID)
 	}
+}
+
+func TestConcurrentStats(t *testing.T) {
+	repo := postgres.NewUpdateRepository(dbutil.NewDatabase(db))
+
+	thingIDs := make([]string, 20)
+	for i := range thingIDs {
+		thingIDs[i] = newID(t)
+	}
+	u := saveUpdate(t, repo, newID(t), time.Now().UTC(), thingIDs...)
+
+	var wg sync.WaitGroup
+	errs := make(chan error, len(thingIDs))
+	for _, thingID := range thingIDs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tu := ota.ThingUpdate{
+				UpdateID:  u.ID,
+				ThingID:   thingID,
+				Status:    ota.StatusSucceeded,
+				UpdatedAt: time.Now().UTC(),
+			}
+			errs <- repo.UpdateThingUpdate(context.Background(), tu)
+		}()
+	}
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.Nil(t, err, fmt.Sprintf("updating thing update failed: %s", err))
+	}
+
+	got, err := repo.RetrieveByID(context.Background(), u.ID)
+	require.Nil(t, err, fmt.Sprintf("retrieving update failed: %s", err))
+	expected := ota.UpdateStats{Targets: uint64(len(thingIDs)), Succeeded: uint64(len(thingIDs))}
+	assert.Equal(t, expected, got.Stats, "concurrent reports must all be counted")
+	assert.Equal(t, ota.UpdateStatusCompleted, got.Status, "status mismatch")
 }
 
 func TestRetryFailed(t *testing.T) {
@@ -432,6 +507,7 @@ func TestRetryFailed(t *testing.T) {
 		assert.Equal(t, ota.StatusPending, tu.Status, fmt.Sprintf("%s: retried thing update must be pending", tc.desc))
 		assert.Empty(t, tu.Error, fmt.Sprintf("%s: retry must clear the error", tc.desc))
 		assert.False(t, tu.UpdatedAt.Before(before.Truncate(time.Millisecond)), fmt.Sprintf("%s: retry must restart the timeout clock", tc.desc))
+		assertStoredStats(t, repo, u.ID)
 	}
 }
 
@@ -476,6 +552,7 @@ func TestFailTimedOut(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("retrieving thing update failed: %s", err))
 	assert.Equal(t, ota.StatusFailed, tu.Status, "expired thing update must fail")
 	assert.Equal(t, ota.ErrMsgTimedOut, tu.Error, "error mismatch")
+	assertStoredStats(t, repo, u.ID)
 }
 
 func TestRemove(t *testing.T) {
@@ -508,4 +585,5 @@ func TestRemoveThingUpdatesByThing(t *testing.T) {
 	got, err := repo.RetrieveByID(context.Background(), u.ID)
 	require.Nil(t, err, fmt.Sprintf("retrieving update failed: %s", err))
 	assert.Equal(t, uint64(1), got.Stats.Targets, "removed thing must not be counted")
+	assertStoredStats(t, repo, u.ID)
 }

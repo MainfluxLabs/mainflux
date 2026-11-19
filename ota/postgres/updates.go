@@ -63,11 +63,11 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 	}
 
 	qInsUpdate := `INSERT INTO updates (id, group_id, file_name, version, file_size, checksum,
-		description, timeout, created_at, status, targets, pending)
+		description, timeout, created_at, status, targets, pending_count, downloading_count,
+		installing_count, succeeded_count, failed_count)
 		VALUES (:id, :group_id, :file_name, :version, :file_size, :checksum,
-		:description, :timeout, :created_at, :status, :targets, :pending);`
-	u.Stats = ota.UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))}
-	u.Status = u.Stats.Status()
+		:description, :timeout, :created_at, :status, :targets, :pending_count, :downloading_count,
+		:installing_count, :succeeded_count, :failed_count);`
 	if _, err := tx.NamedExecContext(ctx, qInsUpdate, toDBUpdate(u)); err != nil {
 		tx.Rollback()
 		return createErr(err)
@@ -100,7 +100,8 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 
 func (ur updateRepository) RetrieveByID(ctx context.Context, id string) (ota.Update, error) {
 	q := `SELECT id, group_id, file_name, version, file_size, checksum, description,
-		timeout, created_at, status, targets, pending, downloading, installing, succeeded, failed
+		timeout, created_at, status, targets, pending_count, downloading_count, installing_count,
+		succeeded_count, failed_count
 		FROM updates
 		WHERE id = $1;`
 
@@ -130,7 +131,8 @@ func (ur updateRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	whereClause := dbutil.BuildWhereClause("group_id = :group_id", sq)
 
 	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum, description,
-		timeout, created_at, status, targets, pending, downloading, installing, succeeded, failed
+		timeout, created_at, status, targets, pending_count, downloading_count, installing_count,
+		succeeded_count, failed_count
 		FROM updates
 		%s
 		ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
@@ -473,14 +475,16 @@ func adjustStats(ctx context.Context, tx *sqlx.Tx, oldStatuses []dbOldStatus, ne
 	}
 
 	// The lock orders changes of the same update, so each one counts into the latest stats.
-	qLock := `SELECT id, targets, pending, downloading, installing, succeeded, failed
+	qLock := `SELECT id, targets, pending_count, downloading_count, installing_count,
+		succeeded_count, failed_count
 		FROM updates
 		WHERE id = ANY(:update_ids)
 		ORDER BY id
 		FOR UPDATE;`
 	qStore := `UPDATE updates
-		SET status = :status, targets = :targets, pending = :pending, downloading = :downloading,
-		installing = :installing, succeeded = :succeeded, failed = :failed
+		SET status = :status, targets = :targets, pending_count = :pending_count,
+		downloading_count = :downloading_count, installing_count = :installing_count,
+		succeeded_count = :succeeded_count, failed_count = :failed_count
 		WHERE id = :id;`
 
 	var dbus []dbUpdate
@@ -547,42 +551,42 @@ func createErr(err error) error {
 }
 
 type dbUpdate struct {
-	ID          string    `db:"id"`
-	GroupID     string    `db:"group_id"`
-	FileName    string    `db:"file_name"`
-	Version     string    `db:"version"`
-	FileSize    int64     `db:"file_size"`
-	Checksum    string    `db:"checksum"`
-	Description string    `db:"description"`
-	Timeout     int64     `db:"timeout"`
-	CreatedAt   time.Time `db:"created_at"`
-	Status      string    `db:"status"`
-	Targets     uint64    `db:"targets"`
-	Pending     uint64    `db:"pending"`
-	Downloading uint64    `db:"downloading"`
-	Installing  uint64    `db:"installing"`
-	Succeeded   uint64    `db:"succeeded"`
-	Failed      uint64    `db:"failed"`
+	ID               string    `db:"id"`
+	GroupID          string    `db:"group_id"`
+	FileName         string    `db:"file_name"`
+	Version          string    `db:"version"`
+	FileSize         int64     `db:"file_size"`
+	Checksum         string    `db:"checksum"`
+	Description      string    `db:"description"`
+	Timeout          int64     `db:"timeout"`
+	CreatedAt        time.Time `db:"created_at"`
+	Status           string    `db:"status"`
+	Targets          uint64    `db:"targets"`
+	PendingCount     uint64    `db:"pending_count"`
+	DownloadingCount uint64    `db:"downloading_count"`
+	InstallingCount  uint64    `db:"installing_count"`
+	SucceededCount   uint64    `db:"succeeded_count"`
+	FailedCount      uint64    `db:"failed_count"`
 }
 
 func toDBUpdate(u ota.Update) dbUpdate {
 	return dbUpdate{
-		ID:          u.ID,
-		GroupID:     u.GroupID,
-		FileName:    u.FileName,
-		Version:     u.Version,
-		FileSize:    u.FileSize,
-		Checksum:    u.Checksum,
-		Description: u.Description,
-		Timeout:     int64(u.Timeout / time.Second),
-		CreatedAt:   u.CreatedAt,
-		Status:      u.Status,
-		Targets:     u.Stats.Targets,
-		Pending:     u.Stats.Pending,
-		Downloading: u.Stats.Downloading,
-		Installing:  u.Stats.Installing,
-		Succeeded:   u.Stats.Succeeded,
-		Failed:      u.Stats.Failed,
+		ID:               u.ID,
+		GroupID:          u.GroupID,
+		FileName:         u.FileName,
+		Version:          u.Version,
+		FileSize:         u.FileSize,
+		Checksum:         u.Checksum,
+		Description:      u.Description,
+		Timeout:          int64(u.Timeout / time.Second),
+		CreatedAt:        u.CreatedAt,
+		Status:           u.Status,
+		Targets:          u.Stats.Targets,
+		PendingCount:     u.Stats.Pending,
+		DownloadingCount: u.Stats.Downloading,
+		InstallingCount:  u.Stats.Installing,
+		SucceededCount:   u.Stats.Succeeded,
+		FailedCount:      u.Stats.Failed,
 	}
 }
 
@@ -600,11 +604,11 @@ func toUpdate(dbu dbUpdate) ota.Update {
 		Status:      dbu.Status,
 		Stats: ota.UpdateStats{
 			Targets:     dbu.Targets,
-			Pending:     dbu.Pending,
-			Downloading: dbu.Downloading,
-			Installing:  dbu.Installing,
-			Succeeded:   dbu.Succeeded,
-			Failed:      dbu.Failed,
+			Pending:     dbu.PendingCount,
+			Downloading: dbu.DownloadingCount,
+			Installing:  dbu.InstallingCount,
+			Succeeded:   dbu.SucceededCount,
+			Failed:      dbu.FailedCount,
 		},
 	}
 }

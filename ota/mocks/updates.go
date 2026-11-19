@@ -59,8 +59,6 @@ func (urm *updateRepositoryMock) Save(_ context.Context, u ota.Update, thingIDs 
 		}
 	}
 
-	u.Stats = ota.UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))}
-	u.Status = u.Stats.Status()
 	urm.updates[u.ID] = u
 	for _, thingID := range thingIDs {
 		urm.thingUpdates[thingUpdateKey(u.ID, thingID)] = ota.ThingUpdate{
