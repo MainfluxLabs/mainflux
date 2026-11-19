@@ -34,7 +34,7 @@ envsubst '
     ${MF_UI_CONFIGS_HTTP_PORT}
     ${MF_AUDIT_HTTP_PORT}
     ${MF_SHADOWS_HTTP_PORT}
-    ${MF_OTA_HTTP_PORT}'
+    ${MF_OTA_HTTP_PORT}
     ${MF_PYSCRIPTS_HTTP_PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 
