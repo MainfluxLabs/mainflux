@@ -83,7 +83,7 @@ The service is configured using the environment variables from the following tab
 | `MF_PYSCRIPTS_DB_SSL_ROOT_CERT`  | Path to the PEM encoded root certificate file                                    |                          |
 | `MF_PYSCRIPTS_CLIENT_TLS`        | Flag that indicates if TLS should be turned on                                   | false                    |
 | `MF_PYSCRIPTS_CA_CERTS`          | Path to trusted CAs in PEM format                                                |                          |
-| `MF_PYSCRIPTS_HTTP_PORT`         | Pyscripts service HTTP port                                                      | 9032                     |
+| `MF_PYSCRIPTS_HTTP_PORT`         | Pyscripts service HTTP port                                                      | 9033                     |
 | `MF_PYSCRIPTS_SERVER_CERT`       | Path to server certificate in pem format                                         |                          |
 | `MF_PYSCRIPTS_SERVER_KEY`        | Path to server key in pem format                                                 |                          |
 | `MF_JAEGER_URL`                  | Jaeger server URL for distributed tracing. Leave empty to disable tracing.       |                          |

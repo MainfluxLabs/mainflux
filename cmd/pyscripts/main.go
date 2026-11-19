@@ -55,7 +55,7 @@ const (
 	defDBSSLRootCert     = ""
 	defClientTLS         = "false"
 	defCACerts           = ""
-	defHTTPPort          = "9032"
+	defHTTPPort          = "9033"
 	defJaegerURL         = ""
 	defServerCert        = ""
 	defServerKey         = ""
