@@ -45,6 +45,7 @@ type updateRes struct {
 	Description string    `json:"description,omitempty"`
 	Timeout     int64     `json:"timeout"`
 	CreatedAt   time.Time `json:"created_at"`
+	Status      string    `json:"status"`
 	Stats       statsRes  `json:"stats"`
 	created     bool
 }
@@ -67,6 +68,7 @@ func (res updateRes) Empty() bool {
 
 type updatesPageRes struct {
 	pageRes
+	Status  string      `json:"status,omitempty"`
 	Updates []updateRes `json:"updates"`
 }
 
@@ -140,6 +142,7 @@ func buildUpdateRes(u ota.Update, created bool) updateRes {
 		Description: u.Description,
 		Timeout:     int64(u.Timeout / time.Second),
 		CreatedAt:   u.CreatedAt,
+		Status:      u.Status,
 		Stats: statsRes{
 			Targets:     u.Stats.Targets,
 			Pending:     u.Stats.Pending,
@@ -161,6 +164,7 @@ func buildUpdatesPageRes(page ota.UpdatesPage, pm ota.PageMetadata) updatesPageR
 			Order:  pm.Order,
 			Dir:    pm.Dir,
 		},
+		Status:  pm.Status,
 		Updates: []updateRes{},
 	}
 

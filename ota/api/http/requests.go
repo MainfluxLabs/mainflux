@@ -149,6 +149,13 @@ func (req listUpdatesReq) validate() error {
 		return apiutil.ErrMissingGroupID
 	}
 
+	switch req.pageMetadata.Status {
+	case "", ota.UpdateStatusInProgress, ota.UpdateStatusCompleted,
+		ota.UpdateStatusCompletedWithFailures:
+	default:
+		return ota.ErrInvalidStatus
+	}
+
 	return validatePageMetadata(req.pageMetadata, ota.UpdateOrderFields)
 }
 

@@ -230,8 +230,13 @@ func TestCreateUpdate(t *testing.T) {
 		}
 		res, err := req.make()
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error %s", tc.desc, err))
-		res.Body.Close()
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status code %d got %d", tc.desc, tc.status, res.StatusCode))
+		if tc.status == http.StatusCreated {
+			var body map[string]any
+			require.Nil(t, json.NewDecoder(res.Body).Decode(&body), fmt.Sprintf("%s: invalid response body", tc.desc))
+			assert.Equal(t, ota.UpdateStatusInProgress, body["status"], fmt.Sprintf("%s: status mismatch", tc.desc))
+		}
+		res.Body.Close()
 	}
 }
 
@@ -282,6 +287,7 @@ func TestViewUpdate(t *testing.T) {
 			require.Nil(t, json.NewDecoder(res.Body).Decode(&body), fmt.Sprintf("%s: invalid response body", tc.desc))
 			assert.Equal(t, fwVersion, body["version"], fmt.Sprintf("%s: version mismatch", tc.desc))
 			assert.Equal(t, float64(3600), body["timeout"], fmt.Sprintf("%s: timeout must be in seconds", tc.desc))
+			assert.Equal(t, ota.UpdateStatusInProgress, body["status"], fmt.Sprintf("%s: status mismatch", tc.desc))
 		}
 		res.Body.Close()
 	}
@@ -315,6 +321,47 @@ func TestListUpdates(t *testing.T) {
 			token:  token,
 			status: http.StatusOK,
 			size:   2,
+		},
+		{
+			desc:   "list in progress updates",
+			query:  "?status=in_progress",
+			token:  token,
+			status: http.StatusOK,
+			size:   1,
+		},
+		{
+			desc:   "list updates completed with failures",
+			query:  "?status=completed_with_failures",
+			token:  token,
+			status: http.StatusOK,
+			size:   2,
+		},
+		{
+			desc:   "list completed updates",
+			query:  "?status=completed",
+			token:  token,
+			status: http.StatusOK,
+			size:   0,
+		},
+		{
+			desc:   "list updates with invalid status",
+			query:  "?status=wrong",
+			token:  token,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "list updates ordered by status",
+			query:  "?order=status",
+			token:  token,
+			status: http.StatusOK,
+			size:   3,
+		},
+		{
+			desc:   "list updates ordered by failed count",
+			query:  "?order=failed&dir=desc",
+			token:  token,
+			status: http.StatusOK,
+			size:   3,
 		},
 		{
 			desc:   "list updates with invalid order",
