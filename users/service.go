@@ -960,11 +960,11 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		userID = u.ID
 
 	case oldPassword != "" && email == "":
-		u := User{
-			Email:    ir.email,
-			Password: oldPassword,
+		dbUser, err := svc.users.RetrieveByEmail(ctx, ir.email)
+		if err != nil || dbUser.Password == "" {
+			return errors.ErrInvalidPassword
 		}
-		if _, err := svc.Login(ctx, u); err != nil {
+		if err := svc.comparePassword(ctx, dbUser, oldPassword); err != nil {
 			return errors.ErrInvalidPassword
 		}
 		userEmail = ir.email
