@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/authn"
+	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-zoo/bone"
@@ -19,7 +20,7 @@ import (
 )
 
 // MakeHandler returns a HTTP handler for session endpoints.
-func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
+func MakeHandler(svc auth.Service, ac auth.Authn, mux *bone.Mux, tracer opentracing.Tracer, logger logger.Logger) *bone.Mux {
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
@@ -33,7 +34,10 @@ func MakeHandler(svc auth.Service, mux *bone.Mux, tracer opentracing.Tracer, log
 	))
 
 	mux.Post("/sessions/logout-all", kithttp.NewServer(
-		kitot.TraceServer(tracer, "logout_all")(logoutAllEndpoint(svc)),
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "logout_all"),
+			authn.IdentityMiddleware(ac, logger),
+		)(logoutAllEndpoint(svc)),
 		decodeSession,
 		encodeResponse,
 		opts...,

@@ -44,6 +44,10 @@ var (
 	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
 	orgsList  = []auth.Org{{ID: "374106f7-030e-4881-8ab0-151195c29f92", OwnerID: user.ID}}
 	profile   = things.Profile{Name: "test-profile"}
+
+	orgMembership = auth.OrgMembership{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Viewer}
+	usersByIDs    = map[string]users.User{user.ID: user, otherUser.ID: otherUser}
+	usersByEmails = map[string]users.User{email: user, otherUserEmail: otherUser}
 )
 
 // withEventStore wraps svc in the event-store middleware backed by a fresh
@@ -65,7 +69,8 @@ func withEventStore(t *testing.T, svc things.Service) things.Service {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService("", usersList, orgsList)
+	auth := mocks.NewAuthService("", usersList, orgsList, orgMembership)
+	uc := thmocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
@@ -76,7 +81,19 @@ func newService() things.Service {
 	idProvider := uuid.NewMock()
 	emailerMock := thmocks.NewEmailer()
 
-	return things.New(auth, nil, thingsRepo, profilesRepo, groupsRepo, groupMembershipsRepo, profileCache, thingCache, groupCache, idProvider, emailerMock)
+	return things.New(
+		auth,
+		uc,
+		thingsRepo,
+		profilesRepo,
+		groupsRepo,
+		groupMembershipsRepo,
+		profileCache,
+		thingCache,
+		groupCache,
+		idProvider,
+		emailerMock,
+	)
 }
 
 func TestCreateThings(t *testing.T) {
@@ -457,11 +474,12 @@ func TestCreateProfiles(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
 
 	svc := newService()
-	svc = withEventStore(t, svc)
 	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
 
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr := grs[0]
+
+	svc = withEventStore(t, svc)
 
 	cases := []struct {
 		desc    string
@@ -728,5 +746,457 @@ func TestRemoveProfile(t *testing.T) {
 		}
 
 		assert.Equal(t, tc.event, event, fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event))
+	}
+}
+
+// nextEvent reads the event after lastID from the things stream, without its occurred_at field.
+func nextEvent(t *testing.T, desc, lastID string) (map[string]any, string) {
+	t.Helper()
+	streams := redisClient.XRead(context.Background(), &r.XReadArgs{
+		Streams: []string{mfevents.ThingsStream, lastID},
+		Count:   1,
+		Block:   time.Second,
+	}).Val()
+
+	if len(streams) == 0 || len(streams[0].Messages) == 0 {
+		return nil, lastID
+	}
+
+	msg := streams[0].Messages[0]
+	assert.NotEmpty(t, msg.Values["occurred_at"], desc)
+	delete(msg.Values, "occurred_at")
+
+	return msg.Values, msg.ID
+}
+
+// setupThing creates a group, a profile and a thing without sending events.
+func setupThing(t *testing.T, svc things.Service) (string, things.Thing) {
+	t.Helper()
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, profile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	th := things.Thing{Name: "a", Metadata: map[string]any{"test": "test"}}
+	ths, err := svc.CreateThings(context.Background(), token, prs[0].ID, th)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	return grID, ths[0]
+}
+
+func TestUpdateThingsMetadata(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grID, th := setupThing(t, svc)
+	svc = withEventStore(t, svc)
+
+	update := things.Thing{
+		ID:       th.ID,
+		Metadata: map[string]any{"new": "value"},
+	}
+
+	cases := []struct {
+		desc  string
+		thing things.Thing
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "update things metadata successfully",
+			thing: update,
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"id":           th.ID,
+				"metadata":     "{\"new\":\"value\"}",
+				"operation":    mfevents.ThingUpdateMetadata,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+		{
+			desc:  "update things metadata with invalid credentials",
+			thing: update,
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.UpdateThingsMetadata(context.Background(), tc.token, tc.thing)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestUpdateExternalKey(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grID, th := setupThing(t, svc)
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "update external key successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"id":           th.ID,
+				"operation":    mfevents.ThingUpdateExternalKey,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+		{
+			desc:  "update external key with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.UpdateExternalKey(context.Background(), tc.token, "external-key", th.ID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestRemoveExternalKey(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grID, th := setupThing(t, svc)
+	err := svc.UpdateExternalKey(context.Background(), token, "external-key", th.ID)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "remove external key successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"id":           th.ID,
+				"operation":    mfevents.ThingRemoveExternalKey,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+		{
+			desc:  "remove external key with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.RemoveExternalKey(context.Background(), tc.token, th.ID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestCreateGroups(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := withEventStore(t, newService())
+
+	gr := things.Group{
+		Name:        "test-group",
+		Description: "test-group-desc",
+		Metadata:    map[string]any{"test": "test"},
+	}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "create groups successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"name":        gr.Name,
+				"description": gr.Description,
+				"metadata":    "{\"test\":\"test\"}",
+				"operation":   mfevents.GroupCreate,
+				"evt_org_id":  orgID,
+			},
+		},
+		{
+			desc:  "create groups with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		grs, err := svc.CreateGroups(context.Background(), tc.token, orgID, gr)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+		if len(grs) > 0 {
+			tc.event["id"] = grs[0].ID
+			tc.event["evt_group_id"] = grs[0].ID
+		}
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestUpdateGroup(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+	svc = withEventStore(t, svc)
+
+	update := things.Group{
+		ID:          grID,
+		Name:        "updated-group",
+		Description: "updated-group-desc",
+		Metadata:    map[string]any{"test": "updated"},
+	}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "update group successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"id":           grID,
+				"name":         update.Name,
+				"description":  update.Description,
+				"metadata":     "{\"test\":\"updated\"}",
+				"operation":    mfevents.GroupUpdate,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+		{
+			desc:  "update group with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		_, err := svc.UpdateGroup(context.Background(), tc.token, update)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestCreateGroupMemberships(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+	svc = withEventStore(t, svc)
+
+	gm := things.GroupMembership{GroupID: grID, MemberID: otherUser.ID, Role: things.Viewer}
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "create group memberships with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+		{
+			desc:  "create group memberships successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"group_id":     grID,
+				"member_id":    otherUser.ID,
+				"role":         things.Viewer,
+				"operation":    mfevents.GroupMembershipCreate,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.CreateGroupMemberships(context.Background(), tc.token, "", gm)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestUpdateGroupMemberships(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	gm := things.GroupMembership{GroupID: grID, MemberID: otherUser.ID, Role: things.Viewer}
+	err = svc.CreateGroupMemberships(context.Background(), token, "", gm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	gm.Role = things.Editor
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "update group memberships successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"group_id":     grID,
+				"member_id":    otherUser.ID,
+				"role":         things.Editor,
+				"operation":    mfevents.GroupMembershipUpdate,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+		{
+			desc:  "update group memberships with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.UpdateGroupMemberships(context.Background(), tc.token, gm)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
+	}
+}
+
+func TestRemoveGroupMemberships(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	svc := newService()
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, group)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	gm := things.GroupMembership{GroupID: grID, MemberID: otherUser.ID, Role: things.Viewer}
+	err = svc.CreateGroupMemberships(context.Background(), token, "", gm)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	svc = withEventStore(t, svc)
+
+	cases := []struct {
+		desc  string
+		token string
+		err   error
+		event map[string]any
+	}{
+		{
+			desc:  "remove group memberships with invalid credentials",
+			token: "",
+			err:   errors.ErrAuthentication,
+			event: nil,
+		},
+		{
+			desc:  "remove group memberships successfully",
+			token: token,
+			err:   nil,
+			event: map[string]any{
+				"group_id":     grID,
+				"member_id":    otherUser.ID,
+				"operation":    mfevents.GroupMembershipRemove,
+				"evt_org_id":   orgID,
+				"evt_group_id": grID,
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		err := svc.RemoveGroupMemberships(context.Background(), tc.token, grID, otherUser.ID)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.event, event)
+		assert.Equal(t, tc.event, event, msg)
 	}
 }

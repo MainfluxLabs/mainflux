@@ -557,7 +557,7 @@ func TestRevoke(t *testing.T) {
 			desc:  "revoke non-existing login key",
 			id:    newKey.ID,
 			token: secret,
-			err:   nil,
+			err:   dbutil.ErrNotFound,
 		},
 		{
 			desc:  "revoke with empty login key",
@@ -805,6 +805,11 @@ func TestIdentify(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 		assert.Equal(t, tc.idt, idt, fmt.Sprintf("%s expected %v got %v\n", tc.desc, tc.idt, idt))
 	}
+
+	// The first use of the expired API key already removed it.
+	_, err = svc.Identify(context.Background(), expSecret)
+	assert.True(t, errors.Contains(err, auth.ErrAPIKeyExpired), fmt.Sprintf("expected %s got %s\n", auth.ErrAPIKeyExpired, err))
+	assert.False(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("expected no %s got %s\n", dbutil.ErrNotFound, err))
 }
 
 func TestIdentifyRecovery(t *testing.T) {
@@ -1014,7 +1019,7 @@ func TestRemoveOrg(t *testing.T) {
 	res, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, res.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, res.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -1100,7 +1105,7 @@ func TestUpdateOrg(t *testing.T) {
 	res, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, res.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, res.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	upOrg := auth.Org{
@@ -1182,7 +1187,7 @@ func TestViewOrg(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
@@ -1365,8 +1370,9 @@ func TestCreateOrgMemberships(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
 	for _, tc := range cases {
-		err := svc.CreateOrgMemberships(context.Background(), tc.token, tc.orgID, tc.memberships...)
+		_, err := svc.CreateOrgMemberships(ctx, tc.token, tc.orgID, tc.memberships...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1386,7 +1392,7 @@ func TestRemoveOrgMemberships(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -1478,7 +1484,7 @@ func TestRemoveOrgMembershipsWithFailedGroupMembershipsRemoval(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.RemoveOrgMemberships(context.Background(), ownerToken, or.ID, viewerID)
@@ -1505,7 +1511,7 @@ func TestUpdateOrgMemberships(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	orgOwner := auth.OrgMembership{Email: ownerEmail, Role: auth.Owner}
@@ -1583,7 +1589,7 @@ func TestUpdateOrgMemberships(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.UpdateOrgMemberships(context.Background(), tc.token, tc.orgID, tc.membership)
+		_, err := svc.UpdateOrgMemberships(context.Background(), tc.token, tc.orgID, tc.membership)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1605,7 +1611,7 @@ func TestListOrgMemberships(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	var n uint64 = 4
 
@@ -1748,7 +1754,7 @@ func TestCreateOrgInvite(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
@@ -1893,7 +1899,7 @@ func TestRevokeInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RevokeOrgInvite(context.Background(), tc.token, testInviteID)
+		_, err := svc.RevokeOrgInvite(context.Background(), tc.token, testInviteID)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s expected %s got %s\n", tc.desc, tc.err, err))
 	}
 
@@ -1960,7 +1966,7 @@ func TestRespondInvite(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept)
+		_, err := svc.RespondOrgInvite(context.Background(), tc.token, tc.inviteID, tc.accept)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected: %s, got: %s\n", tc.desc, tc.err, err))
 	}
 }
@@ -1992,11 +1998,12 @@ func TestViewInvite(t *testing.T) {
 	_, unauthToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: "example3", Subject: "example3@email.com"})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, testOrg.ID, auth.OrgMembership{
+	inviterMembership := auth.OrgMembership{
 		MemberID: inviter.ID,
 		Email:    inviter.Email,
 		Role:     auth.RoleAdmin,
-	})
+	}
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, testOrg.ID, inviterMembership)
 
 	assert.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
@@ -2204,7 +2211,7 @@ func TestBackup(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)

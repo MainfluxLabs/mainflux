@@ -120,6 +120,8 @@ paths:
           description: Key revoked.
         '401':
           description: Missing or invalid access token provided.
+        '404':
+          description: Key does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs:

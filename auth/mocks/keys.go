@@ -51,9 +51,12 @@ func (krm *keyRepositoryMock) Retrieve(ctx context.Context, issuerID, id string)
 func (krm *keyRepositoryMock) Remove(ctx context.Context, issuerID, id string) error {
 	krm.mu.Lock()
 	defer krm.mu.Unlock()
-	if key, ok := krm.keys[id]; ok && key.IssuerID == issuerID {
-		delete(krm.keys, id)
+	key, ok := krm.keys[id]
+	if !ok || key.IssuerID != issuerID {
+		return dbutil.ErrNotFound
 	}
+
+	delete(krm.keys, id)
 	return nil
 }
 

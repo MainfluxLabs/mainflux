@@ -127,7 +127,7 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	memberships := []auth.OrgMembership{viewer, editor, admin}
-	err = svc.CreateOrgMemberships(context.Background(), adminToken, o.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), adminToken, o.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
