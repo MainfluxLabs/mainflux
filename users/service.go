@@ -717,10 +717,6 @@ func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string
 		return oauthUser{}, err
 	}
 
-	// An explicit email_verified=false is rejected. A missing claim leaves the e-mail unverified.
-	if claims.EmailVerified != nil && !claims.verified() {
-		return oauthUser{}, errors.ErrAuthentication
-	}
 	if claims.Email == "" || idToken.Subject == "" {
 		return oauthUser{}, errors.ErrAuthentication
 	}

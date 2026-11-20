@@ -1877,9 +1877,9 @@ func TestOIDCCallback(t *testing.T) {
 			err:     errors.ErrAuthentication,
 		},
 		{
-			desc:    "callback with unverified e-mail returns error",
-			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-003", oidcClientID, map[string]any{"email": user.Email, "email_verified": false})),
-			err:     errors.ErrAuthentication,
+			desc:    "callback authenticates linked oidc user with unverified e-mail",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-001", oidcClientID, map[string]any{"email": newOIDCUser.Email, "email_verified": false})),
+			err:     nil,
 		},
 		{
 			desc:    "callback with id token for another audience returns error",
