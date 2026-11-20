@@ -25,7 +25,7 @@ const (
 	retiredHold = 2 * time.Second
 )
 
-type groupRateLimiter struct {
+type workerLimiter struct {
 	limiters sync.Map // groupID -> *rate.Limiter
 	busy     sync.Map // groupID or "user:"+subject -> struct{} while it holds a worker
 }
@@ -35,7 +35,7 @@ type groupRateLimiter struct {
 // group nor a user with many groups can occupy the pool shared with everyone.
 // The token has already been verified by the group access check, so its
 // subject identifies the user.
-func (g *groupRateLimiter) allow(groupID, token string) (func(), bool) {
+func (wl *workerLimiter) allow(groupID, token string) (func(), bool) {
 	keys := []string{groupID}
 	if user := authn.EmailFromToken(token); user != "" {
 		keys = append(keys, "user:"+user)
@@ -43,18 +43,18 @@ func (g *groupRateLimiter) allow(groupID, token string) (func(), bool) {
 
 	release := func(keys []string) {
 		for _, k := range keys {
-			g.busy.Delete(k)
+			wl.busy.Delete(k)
 		}
 	}
 
 	for i, k := range keys {
-		if _, held := g.busy.LoadOrStore(k, struct{}{}); held {
+		if _, held := wl.busy.LoadOrStore(k, struct{}{}); held {
 			release(keys[:i])
 			return nil, false
 		}
 	}
 
-	l, _ := g.limiters.LoadOrStore(groupID, rate.NewLimiter(groupRate, groupBurst))
+	l, _ := wl.limiters.LoadOrStore(groupID, rate.NewLimiter(groupRate, groupBurst))
 	if !l.(*rate.Limiter).Allow() {
 		release(keys)
 		return nil, false
@@ -63,8 +63,8 @@ func (g *groupRateLimiter) allow(groupID, token string) (func(), bool) {
 	return func() { release(keys) }, true
 }
 
-func (g *groupRateLimiter) remove(groupID string) {
-	g.limiters.Delete(groupID)
+func (wl *workerLimiter) remove(groupID string) {
+	wl.limiters.Delete(groupID)
 }
 
 // Service specifies an API that must be fulfilled by the domain service
@@ -107,7 +107,7 @@ type pyscriptsService struct {
 	things        domain.ThingsClient
 	idProvider    uuid.IDProvider
 	logger        logger.Logger
-	groupLimiter  groupRateLimiter
+	workerLimiter workerLimiter
 }
 
 var _ Service = (*pyscriptsService)(nil)
@@ -129,7 +129,7 @@ func (ps *pyscriptsService) CreateScripts(ctx context.Context, token, groupID st
 		return []Script{}, err
 	}
 
-	done, ok := ps.groupLimiter.allow(groupID, token)
+	done, ok := ps.workerLimiter.allow(groupID, token)
 	if !ok {
 		return []Script{}, ErrRateLimited
 	}
@@ -184,7 +184,7 @@ func (ps *pyscriptsService) UpdateScript(ctx context.Context, token string, scri
 		return err
 	}
 
-	done, ok := ps.groupLimiter.allow(existing.GroupID, token)
+	done, ok := ps.workerLimiter.allow(existing.GroupID, token)
 	if !ok {
 		return ErrRateLimited
 	}
@@ -221,7 +221,7 @@ func (ps *pyscriptsService) RemoveScriptsByGroup(ctx context.Context, groupID st
 	// The group is gone, so drop its rate-limiter entry rather than leaking it for
 	// the process lifetime. This runs on the GroupRemoved event, which is how a
 	// deleted group's scripts are cleaned up too.
-	ps.groupLimiter.remove(groupID)
+	ps.workerLimiter.remove(groupID)
 
 	return nil
 }
@@ -238,7 +238,7 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 		return ScriptRun{}, err
 	}
 
-	done, ok := ps.groupLimiter.allow(script.GroupID, token)
+	done, ok := ps.workerLimiter.allow(script.GroupID, token)
 	if !ok {
 		return ScriptRun{}, ErrRateLimited
 	}
