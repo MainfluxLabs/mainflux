@@ -45,7 +45,7 @@ var (
 	admin = users.User{
 		ID:    "874106f7-030e-4881-8ab0-151195c29f97",
 		Email: email,
-		Role:  auth.RootSub,
+		Role:  auth.PlatformOwner,
 	}
 	usersList = []users.User{admin}
 )
