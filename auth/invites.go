@@ -76,7 +76,7 @@ type Invites interface {
 
 	// ViewOrgInvite retrieves a single Invite denoted by its ID.  A specific Org Invite can be retrieved
 	// by any user with admin privileges within the Org to which the invite belongs,
-	// the Invitee towards who it is directed, or the platform Root Admin.
+	// the Invitee towards who it is directed, the Platform Owner, or a Platform Admin.
 	ViewOrgInvite(ctx context.Context, token, inviteID string) (OrgInvite, error)
 
 	// ListOrgInvitesByUser retrieves a list of invites either directed towards a specific Invitee,
@@ -423,7 +423,8 @@ func (svc service) ListOrgInvitesByUser(ctx context.Context, token, userType, us
 			return OrgInvitesPage{}, err
 		}
 
-		// Current User is not Root Admin - must be either the Invitee or Inviter
+		// Current User is neither the Platform Owner nor a Platform Admin -
+		// must be either the Invitee or Inviter
 		user, err := svc.identify(ctx, token)
 		if err != nil {
 			return OrgInvitesPage{}, err

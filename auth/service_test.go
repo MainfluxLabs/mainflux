@@ -28,24 +28,24 @@ import (
 const (
 	redirectPathInvite = "/view-invite"
 
-	secret            = "secret"
-	email             = "test@example.com"
-	superAdminEmail   = "admin@example.com"
-	ownerEmail        = "owner@test.com"
-	viewerEmail       = "viewer@test.com"
-	editorEmail       = "editor@test.com"
-	adminEmail        = "admin@test.com"
-	unregisteredEmail = "unregistered@test.com"
-	id                = "testID"
-	ownerID           = "ownerID"
-	adminID           = "adminID"
-	editorID          = "editorID"
-	viewerID          = "viewerID"
-	rootAdminID       = "rootAdminID"
-	description       = "description"
-	name              = "name"
-	invalid           = "invalid"
-	n                 = 10
+	secret             = "secret"
+	email              = "test@example.com"
+	platformOwnerEmail = "admin@example.com"
+	ownerEmail         = "owner@test.com"
+	viewerEmail        = "viewer@test.com"
+	editorEmail        = "editor@test.com"
+	adminEmail         = "admin@test.com"
+	unregisteredEmail  = "unregistered@test.com"
+	id                 = "testID"
+	ownerID            = "ownerID"
+	adminID            = "adminID"
+	editorID           = "editorID"
+	viewerID           = "viewerID"
+	platformOwnerID    = "platformOwnerID"
+	description        = "description"
+	name               = "name"
+	invalid            = "invalid"
+	n                  = 10
 
 	loginDuration      = 30 * time.Minute
 	maxSessionDuration = 168 * time.Hour
@@ -869,10 +869,10 @@ func TestAuthorize(t *testing.T) {
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), adminID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
-	pr := auth.AuthzReq{Token: adminToken, Subject: auth.RootSub}
+	pr := auth.AuthzReq{Token: adminToken, Subject: auth.PlatformSub}
 	err = svc.Authorize(context.Background(), pr)
 	require.Nil(t, err, fmt.Sprintf("authorizing initial %v authz request expected to succeed: %s", pr, err))
 }
@@ -925,7 +925,7 @@ func TestListOrgs(t *testing.T) {
 
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	for i := 0; i < n; i++ {
@@ -935,7 +935,7 @@ func TestListOrgs(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	}
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
@@ -956,7 +956,7 @@ func TestListOrgs(t *testing.T) {
 			err:  nil,
 		}, {
 			desc:  "list orgs as system admin",
-			token: superAdminToken,
+			token: platformOwnerToken,
 			meta: auth.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -1181,7 +1181,7 @@ func TestViewOrg(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
@@ -1190,7 +1190,7 @@ func TestViewOrg(t *testing.T) {
 	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	orgRes := auth.Org{
@@ -1237,7 +1237,7 @@ func TestViewOrg(t *testing.T) {
 		},
 		{
 			desc:  "view org as system admin",
-			token: superAdminToken,
+			token: platformOwnerToken,
 			orgID: or.ID,
 			org:   orgRes,
 			err:   nil,
@@ -1605,7 +1605,7 @@ func TestListOrgMemberships(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
@@ -1615,7 +1615,7 @@ func TestListOrgMemberships(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	var n uint64 = 4
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
@@ -1672,7 +1672,7 @@ func TestListOrgMemberships(t *testing.T) {
 		},
 		{
 			desc:  "list org memberships as system admin",
-			token: superAdminToken,
+			token: platformOwnerToken,
 			orgID: or.ID,
 			meta: auth.PageMetadata{
 				Offset: 0,
@@ -1748,7 +1748,7 @@ func TestCreateOrgInvite(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
@@ -1757,7 +1757,7 @@ func TestCreateOrgInvite(t *testing.T) {
 	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
@@ -1768,8 +1768,8 @@ func TestCreateOrgInvite(t *testing.T) {
 		err        error
 	}{
 		{
-			desc:  "create org invite as root admin",
-			token: superAdminToken,
+			desc:  "create org invite as platform owner",
+			token: platformOwnerToken,
 			orgID: or.ID,
 			membership: auth.OrgMembership{
 				Role:  auth.Viewer,
@@ -1977,10 +1977,10 @@ func TestViewInvite(t *testing.T) {
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, rootAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	testOrg, err := svc.CreateOrg(context.Background(), ownerToken, org)
@@ -2001,7 +2001,7 @@ func TestViewInvite(t *testing.T) {
 	inviterMembership := auth.OrgMembership{
 		MemberID: inviter.ID,
 		Email:    inviter.Email,
-		Role:     auth.RoleAdmin,
+		Role:     auth.Admin,
 	}
 	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, testOrg.ID, inviterMembership)
 
@@ -2031,8 +2031,8 @@ func TestViewInvite(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc:  "view invite as root admin",
-			token: rootAdminToken,
+			desc:  "view invite as platform owner",
+			token: platformOwnerToken,
 			err:   nil,
 		},
 		{
@@ -2055,10 +2055,10 @@ func TestListInvitesByUser(t *testing.T) {
 	_, ownerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: ownerID, Subject: ownerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	_, rootAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	invitee := usersByEmails["example1@test.com"]
@@ -2106,8 +2106,8 @@ func TestListInvitesByUser(t *testing.T) {
 			err:      nil,
 		},
 		{
-			desc:     "list all pending invites as root admin",
-			token:    rootAdminToken,
+			desc:     "list all pending invites as platform owner",
+			token:    platformOwnerToken,
 			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   invitee.ID,
 			userType: auth.UserTypeInvitee,
@@ -2151,8 +2151,8 @@ func TestListInvitesByUser(t *testing.T) {
 			err:      nil,
 		},
 		{
-			desc:     "list all sent invites as root admin",
-			token:    rootAdminToken,
+			desc:     "list all sent invites as platform owner",
+			token:    platformOwnerToken,
 			pm:       auth.PageMetadata{Limit: n, Offset: 0},
 			userID:   ownerID,
 			userType: auth.UserTypeInviter,
@@ -2205,7 +2205,7 @@ func TestBackup(t *testing.T) {
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
 	or, err := svc.CreateOrg(context.Background(), ownerToken, org)
@@ -2214,7 +2214,7 @@ func TestBackup(t *testing.T) {
 	_, err = svc.CreateOrgMemberships(context.Background(), ownerToken, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	cases := []struct {
@@ -2227,7 +2227,7 @@ func TestBackup(t *testing.T) {
 	}{
 		{
 			desc:              "backup all orgs, org memberships and org groups",
-			token:             superAdminToken,
+			token:             platformOwnerToken,
 			orgSize:           1,
 			orgMembershipSize: len(memberships) + 1,
 			userRoleSize:      1,
@@ -2272,7 +2272,7 @@ func TestBackup(t *testing.T) {
 func TestRestore(t *testing.T) {
 	svc := newService()
 
-	_, superAdminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: rootAdminID, Subject: superAdminEmail})
+	_, platformOwnerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: platformOwnerID, Subject: platformOwnerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
@@ -2285,9 +2285,9 @@ func TestRestore(t *testing.T) {
 	_, platformAdminToken, err := svc.Issue(context.Background(), "", platformAdminKey)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), rootAdminID, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
-	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), adminID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("saving role expected to succeed: %s", err))
 
 	var memberIDs []string
@@ -2305,16 +2305,16 @@ func TestRestore(t *testing.T) {
 
 	userRoles := []auth.UserRole{
 		{
-			UserID: rootAdminID,
-			Role:   auth.RoleAdmin,
+			UserID: platformOwnerID,
+			Role:   auth.PlatformAdmin,
 		},
 		{
 			UserID: editorID,
-			Role:   auth.RoleAdmin,
+			Role:   auth.PlatformAdmin,
 		},
 		{
 			UserID: viewerID,
-			Role:   auth.RoleRootAdmin,
+			Role:   auth.PlatformOwner,
 		},
 	}
 
@@ -2332,7 +2332,7 @@ func TestRestore(t *testing.T) {
 	}{
 		{
 			desc:   "restore all orgs, org memberships and org groups",
-			token:  superAdminToken,
+			token:  platformOwnerToken,
 			backup: backup,
 			err:    nil,
 		},
@@ -2368,9 +2368,9 @@ func TestRestore(t *testing.T) {
 	}
 
 	roles := map[string]string{
-		rootAdminID: auth.RoleRootAdmin,
-		editorID:    auth.RoleAdmin,
-		viewerID:    "",
+		platformOwnerID: auth.PlatformOwner,
+		editorID:        auth.PlatformAdmin,
+		viewerID:        "",
 	}
 
 	for userID, expected := range roles {

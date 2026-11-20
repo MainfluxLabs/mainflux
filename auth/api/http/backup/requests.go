@@ -39,7 +39,7 @@ func (req restoreReq) validate() error {
 			return apiutil.ErrMissingUserID
 		}
 
-		if ur.Role != auth.RoleRootAdmin && ur.Role != auth.RoleAdmin {
+		if ur.Role != auth.PlatformOwner && ur.Role != auth.PlatformAdmin {
 			return apiutil.ErrInvalidRole
 		}
 	}

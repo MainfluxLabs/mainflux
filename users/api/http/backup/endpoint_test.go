@@ -14,9 +14,9 @@ import (
 )
 
 func TestBuildBackupResponse(t *testing.T) {
-	admin := users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: "admin@example.com"}
+	platformOwner := users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: "platform-owner@example.com"}
 
-	res := buildBackupResponse(admin, nil, nil)
+	res := buildBackupResponse(platformOwner, nil, nil)
 
 	data, err := json.Marshal(res)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

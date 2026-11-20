@@ -69,7 +69,7 @@ type Service interface {
 	RecordEvent(ctx context.Context, e events.Event) error
 
 	// ListEvents retrieves a list of audit events across all organizations.
-	// The user authenticated by `token` must be a platform (root) admin.
+	// The user authenticated by `token` must be the platform owner or a platform admin.
 	ListEvents(ctx context.Context, token string, pm PageMetadata) (EventsPage, error)
 
 	// ListEventsByOrg retrieves a list of audit events occurred in a specific organization denoted by its ID.
@@ -122,10 +122,10 @@ func (s *auditService) RecordEvent(ctx context.Context, e events.Event) error {
 }
 
 func (svc auditService) ListEvents(ctx context.Context, token string, pm PageMetadata) (EventsPage, error) {
-	// Ensure that the authenticated user is the platform (root) admin
+	// Ensure that the authenticated user is the platform owner or a platform admin.
 	if err := svc.auth.Authorize(ctx, domain.AuthzReq{
 		Token:   token,
-		Subject: domain.RootSub,
+		Subject: domain.PlatformSub,
 	}); err != nil {
 		return EventsPage{}, err
 	}

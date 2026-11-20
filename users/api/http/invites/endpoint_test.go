@@ -29,20 +29,20 @@ import (
 )
 
 const (
-	contentType = "application/json"
-	validEmail  = "user@example.com"
-	adminEmail  = "admin@example.com"
-	validPass   = "brave-ocean-lantern"
+	contentType        = "application/json"
+	validEmail         = "user@example.com"
+	platformOwnerEmail = "admin@example.com"
+	validPass          = "brave-ocean-lantern"
 
 	inviteDuration     = 7 * 24 * time.Hour
 	inviteRedirectPath = "/register/invite"
 )
 
 var (
-	user       = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
-	admin      = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
-	usersList  = []users.User{admin, user}
-	idProvider = uuid.New()
+	user          = users.User{Email: validEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass, Status: "enabled"}
+	platformOwner = users.User{Email: platformOwnerEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Status: "enabled"}
+	usersList     = []users.User{platformOwner, user}
+	idProvider    = uuid.New()
 
 	verification = users.EmailVerification{
 		User:      users.User{Email: "example@verify.com", Password: validPass},
@@ -107,7 +107,7 @@ func newService() users.Service {
 	invitesRepo := usmocks.NewPlatformInvitesRepository()
 	identityRepo := usmocks.NewIdentityRepository()
 	hasher := usmocks.NewHasher()
-	auth := mocks.NewAuthService(admin.ID, usersList, nil)
+	auth := mocks.NewAuthService(platformOwner.ID, usersList, nil)
 	email := usmocks.NewEmailer()
 	oauthGoogleCfg := oauth2.Config{}
 	oauthGithubCfg := oauth2.Config{}
@@ -124,7 +124,7 @@ func newService() users.Service {
 }
 
 func newServer(svc users.Service) *httptest.Server {
-	ac := mocks.NewAuthService(admin.ID, usersList, nil)
+	ac := mocks.NewAuthService(platformOwner.ID, usersList, nil)
 	mux := httpapi.MakeHandler(svc, ac, mocktracer.New(), logger.NewMock())
 	return httptest.NewServer(mux)
 }
@@ -141,7 +141,7 @@ func TestCreatePlatformInvite(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	tokenRegular, err := svc.Login(context.Background(), user)
@@ -159,10 +159,10 @@ func TestCreatePlatformInvite(t *testing.T) {
 			toJSON(platformInviteReq{Email: "new@user.com", RedirectPath: inviteRedirectPath}),
 			contentType,
 			http.StatusCreated,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
-			"create platform invite as non-root-admin user",
+			"create platform invite as regular user",
 			toJSON(platformInviteReq{Email: "new@user.com", RedirectPath: inviteRedirectPath}),
 			contentType,
 			http.StatusForbidden,
@@ -191,21 +191,21 @@ func TestCreatePlatformInvite(t *testing.T) {
 			}),
 			contentType,
 			http.StatusBadRequest,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
 			"create platform invite with empty redirect path",
 			toJSON(platformInviteReq{Email: "new@user.com", RedirectPath: ""}),
 			contentType,
 			http.StatusBadRequest,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
 			"create platform invite with empty email",
 			toJSON(platformInviteReq{Email: "", RedirectPath: inviteRedirectPath}),
 			contentType,
 			http.StatusBadRequest,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
 			"create platform invite with empty auth token",
@@ -219,14 +219,14 @@ func TestCreatePlatformInvite(t *testing.T) {
 			"",
 			contentType,
 			http.StatusBadRequest,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
 			"create platform invite with invalid request fromat",
 			"{,",
 			contentType,
 			http.StatusBadRequest,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 	}
 
@@ -254,10 +254,10 @@ func TestViewPlatformInvite(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
+	invite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
 	cases := []struct {
@@ -298,16 +298,16 @@ func TestListPlatformInvites(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
+	_, err = svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
-	_, err = svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new1@user.com", auth.OrgInvite{})
+	_, err = svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "new1@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
 	cases := []struct {
@@ -318,10 +318,10 @@ func TestListPlatformInvites(t *testing.T) {
 		{
 			"view platform invites",
 			http.StatusOK,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
-			"view platform invites as non-root-admin user",
+			"view platform invites as regular user",
 			http.StatusForbidden,
 			tokenRegular,
 		},
@@ -359,13 +359,13 @@ func TestRevokePlatformInvite(t *testing.T) {
 
 	client := ts.Client()
 
-	tokenAdmin, err := svc.Login(context.Background(), admin)
+	tokenPlatformOwner, err := svc.Login(context.Background(), platformOwner)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
 	tokenRegular, err := svc.Login(context.Background(), user)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s\n", err))
 
-	invite, err := svc.CreatePlatformInvite(context.Background(), tokenAdmin, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
+	invite, err := svc.CreatePlatformInvite(context.Background(), tokenPlatformOwner, inviteRedirectPath, "new@user.com", auth.OrgInvite{})
 	assert.Nil(t, err, fmt.Sprintf("Inviting platform member expected to succeed: %s\n", err))
 
 	cases := []struct {
@@ -378,10 +378,10 @@ func TestRevokePlatformInvite(t *testing.T) {
 			"revoke platform invite",
 			invite.ID,
 			http.StatusNoContent,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
-			"revoke platform invite as non-root-admin user",
+			"revoke platform invite as regular user",
 			invite.ID,
 			http.StatusForbidden,
 			tokenRegular,
@@ -390,7 +390,7 @@ func TestRevokePlatformInvite(t *testing.T) {
 			"revoke platform invite with invalid invite id",
 			"invalid123",
 			http.StatusNotFound,
-			tokenAdmin,
+			tokenPlatformOwner,
 		},
 		{
 			"revoke platform invite with empty invalid auth token",

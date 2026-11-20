@@ -201,8 +201,8 @@ func TestImpersonatedEventIsDecoded(t *testing.T) {
 		ID:    "user-id",
 		Email: "user@example.com",
 		Impersonator: &domain.Identity{
-			ID:    "root-id",
-			Email: "root@example.com",
+			ID:    "platform-owner-id",
+			Email: "platform-owner@example.com",
 		},
 	}
 	event := events.Event{

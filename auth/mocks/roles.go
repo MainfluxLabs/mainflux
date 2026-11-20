@@ -104,7 +104,7 @@ func (rrm *rolesRepositoryMock) RestoreAll(_ context.Context, urs ...auth.UserRo
 	defer rrm.mu.Unlock()
 
 	for _, ur := range urs {
-		if ur.Role != auth.RoleRootAdmin && ur.Role != auth.RoleAdmin {
+		if ur.Role != auth.PlatformOwner && ur.Role != auth.PlatformAdmin {
 			return dbutil.ErrMalformedEntity
 		}
 	}

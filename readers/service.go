@@ -230,7 +230,7 @@ func (rs *readersService) RemoveMessagesByThing(ctx context.Context, thingID str
 }
 
 func (rs *readersService) canAccessPlatform(ctx context.Context, token string) error {
-	if err := rs.authc.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.RootSub}); err != nil {
+	if err := rs.authc.Authorize(ctx, domain.AuthzReq{Token: token, Subject: domain.PlatformSub}); err != nil {
 		return err
 	}
 

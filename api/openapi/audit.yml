@@ -10,8 +10,8 @@ paths:
       summary: List all audit events
       description: >-
         Retrieves a list of audit events across all organizations, including
-        events that are not tied to any organization. Restricted to platform
-        administrators.
+        events that are not tied to any organization. Restricted to the platform
+        owner and platform admins.
       tags:
         - audit
       parameters:
@@ -32,7 +32,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: Caller is not a platform administrator.
+          description: Caller is neither the platform owner nor a platform admin.
         '422':
           description: Database can't process request.
         '500':

@@ -24,9 +24,9 @@ import (
 const (
 	wrongValue = "wrong-value"
 
-	adminID    = "admin-id"
-	adminEmail = "admin@example.com"
-	adminToken = adminEmail
+	platformOwnerID    = "admin-id"
+	platformOwnerEmail = "admin@example.com"
+	platformOwnerToken = platformOwnerEmail
 
 	editorID    = "editor-id"
 	editorEmail = "editor@example.com"
@@ -62,7 +62,7 @@ func newService() uiconfigs.Service {
 	groupConfigs := mocks.NewGroupConfigRepository()
 
 	usersList := []domain.User{
-		{ID: adminID, Email: adminEmail},
+		{ID: platformOwnerID, Email: platformOwnerEmail},
 		{ID: editorID, Email: editorEmail},
 		{ID: viewerID, Email: viewerEmail},
 		{ID: otherID, Email: otherEmail},
@@ -73,7 +73,7 @@ func newService() uiconfigs.Service {
 		{OrgID: secondOrgID, MemberID: editorID, Role: domain.OrgEditor},
 		{OrgID: orgID, MemberID: viewerID, Role: domain.OrgViewer},
 	}
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil, orgMemberships...)
+	authClient := pkgmocks.NewAuthService(platformOwnerID, usersList, nil, orgMemberships...)
 
 	things := map[string]domain.Thing{
 		editorToken:  {ID: thingID, GroupID: groupID},
@@ -194,8 +194,8 @@ func TestListOrgsConfigs(t *testing.T) {
 		size  int
 	}{
 		{
-			desc:  "admin lists all org configs",
-			token: adminToken,
+			desc:  "platform owner lists all org configs",
+			token: platformOwnerToken,
 			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 2,
 			size:  2,
@@ -215,8 +215,8 @@ func TestListOrgsConfigs(t *testing.T) {
 			size:  0,
 		},
 		{
-			desc:  "admin lists org configs with offset beyond available",
-			token: adminToken,
+			desc:  "platform owner lists org configs with offset beyond available",
+			token: platformOwnerToken,
 			pm:    apiutil.PageMetadata{Limit: 20, Offset: 10},
 			total: 2,
 			size:  0,
@@ -345,8 +345,8 @@ func TestListThingsConfigs(t *testing.T) {
 		size  int
 	}{
 		{
-			desc:  "admin lists all thing configs",
-			token: adminToken,
+			desc:  "platform owner lists all thing configs",
+			token: platformOwnerToken,
 			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 2,
 			size:  2,
@@ -366,8 +366,8 @@ func TestListThingsConfigs(t *testing.T) {
 			size:  0,
 		},
 		{
-			desc:  "admin lists thing configs with offset beyond available",
-			token: adminToken,
+			desc:  "platform owner lists thing configs with offset beyond available",
+			token: platformOwnerToken,
 			pm:    apiutil.PageMetadata{Limit: 20, Offset: 10},
 			total: 2,
 			size:  0,
@@ -514,8 +514,8 @@ func TestListGroupsConfigs(t *testing.T) {
 		size  int
 	}{
 		{
-			desc:  "admin lists all group configs",
-			token: adminToken,
+			desc:  "platform owner lists all group configs",
+			token: platformOwnerToken,
 			pm:    apiutil.PageMetadata{Limit: 10},
 			total: 2,
 			size:  2,
@@ -535,8 +535,8 @@ func TestListGroupsConfigs(t *testing.T) {
 			size:  0,
 		},
 		{
-			desc:  "admin lists group configs with offset beyond available",
-			token: adminToken,
+			desc:  "platform owner lists group configs with offset beyond available",
+			token: platformOwnerToken,
 			pm:    apiutil.PageMetadata{Limit: 20, Offset: 10},
 			total: 2,
 			size:  0,
@@ -577,7 +577,7 @@ func TestBackup(t *testing.T) {
 	err = svc.UpdateGroupConfig(context.Background(), editorToken, uiconfigs.GroupConfig{GroupID: groupID, Config: testConfig})
 	require.Nil(t, err)
 
-	backup, err := svc.Backup(context.Background(), adminToken)
+	backup, err := svc.Backup(context.Background(), platformOwnerToken)
 	require.Nil(t, err)
 	assert.Len(t, backup.OrgsConfigs, 1)
 	assert.Len(t, backup.ThingsConfigs, 1)
@@ -612,8 +612,8 @@ func TestRestore(t *testing.T) {
 			err:   errors.ErrAuthentication,
 		},
 		{
-			desc:  "restore with admin token",
-			token: adminToken,
+			desc:  "restore with platform owner token",
+			token: platformOwnerToken,
 			err:   nil,
 		},
 	}
@@ -635,6 +635,6 @@ func TestRestore(t *testing.T) {
 	require.Nil(t, err)
 	assert.Equal(t, testConfig, gc.Config)
 
-	err = svc.Restore(context.Background(), adminToken, backup)
+	err = svc.Restore(context.Background(), platformOwnerToken, backup)
 	assert.True(t, errors.Contains(err, dbutil.ErrConflict), fmt.Sprintf("expected %s got %s", dbutil.ErrConflict, err))
 }
