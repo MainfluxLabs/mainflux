@@ -26,7 +26,7 @@ func LoggingMiddleware(svc pyscripts.Service, logger log.Logger) pyscripts.Servi
 	return &loggingMiddleware{logger, svc}
 }
 
-func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...pyscripts.Script) (saved []pyscripts.Script, err error) {
+func (lm loggingMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...pyscripts.Script) (_ []pyscripts.Script, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method create_scripts by user %s, group id %s took %s to complete", email, groupID, time.Since(begin))

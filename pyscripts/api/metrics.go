@@ -28,7 +28,7 @@ func MetricsMiddleware(svc pyscripts.Service, counter metrics.Counter, latency m
 	}
 }
 
-func (ms *metricsMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...pyscripts.Script) (saved []pyscripts.Script, err error) {
+func (ms *metricsMiddleware) CreateScripts(ctx context.Context, token, groupID string, scripts ...pyscripts.Script) (_ []pyscripts.Script, err error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "create_scripts").Add(1)
 		ms.latency.With("method", "create_scripts").Observe(time.Since(begin).Seconds())
