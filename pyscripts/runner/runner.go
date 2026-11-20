@@ -577,11 +577,20 @@ type worker struct {
 }
 
 func (w *worker) check(ctx context.Context, code string, cfg Config) (outcome, error) {
-	return w.exchange(ctx, jobFrame{jobHeader: jobHeader{Check: true}, Code: code, Limits: cfg.Limits}, cfg)
+	return w.exchange(ctx, jobFrame{
+		jobHeader: jobHeader{Check: true},
+		Code:      code,
+		Limits:    cfg.Limits},
+		cfg)
 }
 
 func (w *worker) run(ctx context.Context, code string, in Input, cfg Config) (outcome, error) {
-	return w.exchange(ctx, jobFrame{Input: in, Limits: cfg.Limits, MaxOutput: cfg.MaxOutput, Code: code}, cfg)
+	return w.exchange(ctx, jobFrame{
+		Input:     in,
+		Limits:    cfg.Limits,
+		MaxOutput: cfg.MaxOutput,
+		Code:      code},
+		cfg)
 }
 
 // exchange runs one job to completion: hand it over, wait for the worker to
