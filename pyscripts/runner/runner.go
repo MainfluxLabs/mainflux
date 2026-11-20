@@ -272,13 +272,14 @@ func (p *pool) onWorker(ctx context.Context, job func(*worker, context.Context) 
 				p.logger.Warn(fmt.Sprintf("dropped %d undecodable python data frame(s): a script wrote to its result channel by hand", n))
 			}
 
-			if w.dirty {
+			retired := w.dirty
+			if retired {
 				p.discard(w)
 			} else {
 				p.release(w)
 			}
 
-			res.Retired = w.dirty
+			res.Retired = retired
 			return res, nil
 		}
 
