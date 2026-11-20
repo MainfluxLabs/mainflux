@@ -43,24 +43,25 @@ func (pr profileRepository) Save(ctx context.Context, profiles ...things.Profile
 	q := `INSERT INTO profiles (id, group_id, name, metadata, config)
 		  VALUES (:id, :group_id, :name, :metadata, :config);`
 
+	dbprs := make([]dbProfile, 0, len(profiles))
 	for _, profile := range profiles {
 		dbpr := toDBProfile(profile)
+		dbprs = append(dbprs, dbpr)
+	}
 
-		_, err = tx.NamedExecContext(ctx, q, dbpr)
-		if err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []things.Profile{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []things.Profile{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return []things.Profile{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbprs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []things.Profile{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []things.Profile{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return []things.Profile{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
-			return []things.Profile{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+		return []things.Profile{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -209,22 +210,20 @@ func (pr profileRepository) RetrieveByThing(ctx context.Context, thID string) (t
 }
 
 func (pr profileRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbpr := dbProfile{
-			ID: id,
-		}
-		q := `DELETE FROM profiles WHERE id = :id`
-		_, err := pr.db.NamedExecContext(ctx, q, dbpr)
-		if err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				if pgErr.Code == pgerrcode.ForeignKeyViolation {
-					return errors.Wrap(things.ErrProfileAssigned, err)
-				}
-			}
+	q := `DELETE FROM profiles WHERE id = ANY(:ids);`
+	params := map[string]any{
+		"ids": ids,
+	}
 
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	if _, err := pr.db.NamedExecContext(ctx, q, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			if pgErr.Code == pgerrcode.ForeignKeyViolation {
+				return errors.Wrap(things.ErrProfileAssigned, err)
+			}
 		}
+
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

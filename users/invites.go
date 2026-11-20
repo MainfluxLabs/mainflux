@@ -44,14 +44,16 @@ type PlatformInvites interface {
 	// temp:orgid, role, gis
 	CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (PlatformInvite, error)
 
-	// RevokePlatformInvite revokes a specific pending PlatformInvite. Only usable by the platform Root Admin.
+	// RevokePlatformInvite revokes a specific pending PlatformInvite.
+	// Only usable by the Platform Owner or a Platform Admin.
 	RevokePlatformInvite(ctx context.Context, token, inviteID string) error
 
 	// ViewPlatformInvite retrieves a single PlatformInvite denoted by its ID.
 	// This endpoint is public - the invite UUID acts as the access secret.
 	ViewPlatformInvite(ctx context.Context, inviteID string) (PlatformInvite, error)
 
-	// ListPlatformInvites retrieves a list of platform invites. Only usable by the platform Root Admin.
+	// ListPlatformInvites retrieves a list of platform invites.
+	// Only usable by the Platform Owner or a Platform Admin.
 	ListPlatformInvites(ctx context.Context, token string, pm PageMetadata) (PlatformInvitesPage, error)
 
 	// ValidatePlatformInvite checks if there exists a valid, pending, non-expired platform invite in the database that matches

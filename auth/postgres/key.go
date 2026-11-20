@@ -64,8 +64,18 @@ func (kr repo) Remove(ctx context.Context, issuerID, id string) error {
 		ID:       id,
 		IssuerID: issuerID,
 	}
-	if _, err := kr.db.NamedExecContext(ctx, q, key); err != nil {
+	res, err := kr.db.NamedExecContext(ctx, q, key)
+	if err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if cnt != 1 {
+		return dbutil.ErrNotFound
 	}
 
 	return nil

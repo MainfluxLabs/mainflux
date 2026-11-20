@@ -221,7 +221,7 @@ func TestRemoveOrgMemberships(t *testing.T) {
 
 	memberships := []auth.OrgMembership{editor, viewer}
 
-	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	data := toJSON(removeOrgMembershipsReq{MemberIDs: []string{viewer.MemberID, editor.MemberID}})
@@ -317,7 +317,7 @@ func TestUpdateOrgMemberships(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, viewer)
+	_, err = svc.CreateOrgMemberships(context.Background(), token, or.ID, viewer)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	viewerData := toJSON(orgMembershipsReq{OrgMemberships: []auth.OrgMembership{editor}})
@@ -417,7 +417,7 @@ func TestListOrgMemberships(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), token, or.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	var data []viewOrgMembershipRes

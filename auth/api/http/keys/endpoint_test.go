@@ -91,7 +91,7 @@ func TestIssue(t *testing.T) {
 	_, loginSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email})
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	impersonator := &domain.Identity{ID: "123e4567-e89b-12d3-a456-000000000002", Email: "root@example.com"}
+	impersonator := &domain.Identity{ID: "123e4567-e89b-12d3-a456-000000000002", Email: "platform-owner@example.com"}
 	_, impersonatedSecret, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: id, Subject: email, Impersonator: impersonator})
 	assert.Nil(t, err, fmt.Sprintf("Issuing impersonated login key expected to succeed: %s", err))
 
@@ -311,7 +311,7 @@ func TestRevoke(t *testing.T) {
 			desc:   "revoke a non-existing key",
 			id:     "non-existing",
 			token:  loginSecret,
-			status: http.StatusNoContent,
+			status: http.StatusNotFound,
 		},
 		{
 			desc:   "revoke key with invalid token",

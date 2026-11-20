@@ -31,18 +31,18 @@ import (
 )
 
 const (
-	svcName       = "test-service"
-	userEmail     = "test@example.com"
-	adminEmail    = "admin@example.com"
-	invalid       = "invalid"
-	numOfMessages = 101
-	valueFields   = 5
-	subtopic      = "topic"
-	mqttProt      = "mqtt"
-	httpProt      = "http"
-	msgName       = "temperature"
-	validPass     = "password"
-	adminID       = "1"
+	svcName            = "test-service"
+	userEmail          = "test@example.com"
+	platformOwnerEmail = "admin@example.com"
+	invalid            = "invalid"
+	numOfMessages      = 101
+	valueFields        = 5
+	subtopic           = "topic"
+	mqttProt           = "mqtt"
+	httpProt           = "http"
+	msgName            = "temperature"
+	validPass          = "password"
+	platformOwnerID    = "1"
 )
 
 var (
@@ -54,9 +54,9 @@ var (
 
 	idProvider = uuid.New()
 
-	user      = users.User{Email: userEmail, Password: validPass}
-	admin     = users.User{ID: adminID, Email: adminEmail, Password: validPass, Status: "enabled"}
-	usersList = []users.User{user, admin}
+	user          = users.User{Email: userEmail, Password: validPass}
+	platformOwner = users.User{ID: platformOwnerID, Email: platformOwnerEmail, Password: validPass, Status: "enabled"}
+	usersList     = []users.User{user, platformOwner}
 )
 
 func newServer(jsonMessages []mfjson.Message, senmlMessaages []senml.Message, tc domain.ThingsClient, ac domain.AuthClient) *httptest.Server {
@@ -97,7 +97,7 @@ func (tr testRequest) make() (*http.Response, error) {
 	return tr.client.Do(req)
 }
 func newAuthService() domain.AuthClient {
-	return mocks.NewAuthService(admin.ID, usersList, nil)
+	return mocks.NewAuthService(platformOwner.ID, usersList, nil)
 }
 
 func TestListSenMLMessages(t *testing.T) {
@@ -151,11 +151,11 @@ func TestListSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
+	platformOwnerToken, err := authSvc.Issue(context.Background(), platformOwner.ID, platformOwner.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: thingID},
+		platformOwnerToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(nil, messages, thSvc, authSvc)
@@ -173,7 +173,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages)),
@@ -183,7 +183,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with valid offset and limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages)),
@@ -193,31 +193,31 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with negative offset",
 			url:    fmt.Sprintf("%s/senml?offset=-1&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with negative limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=-10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with zero limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=0", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with non-integer offset",
 			url:    fmt.Sprintf("%s/senml?offset=abc&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with non-integer limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=abc", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
@@ -229,13 +229,13 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with multiple offset",
 			url:    fmt.Sprintf("%s/senml?offset=0&offset=1&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with multiple limit",
 			url:    fmt.Sprintf("%s/senml?offset=0&limit=20&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
@@ -247,7 +247,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with default offset",
 			url:    fmt.Sprintf("%s/senml?limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages)),
@@ -257,7 +257,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with default limit",
 			url:    fmt.Sprintf("%s/senml?offset=0", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages)),
@@ -267,7 +267,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with senml format",
 			url:    fmt.Sprintf("%s/senml?format=messages", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages)),
@@ -277,7 +277,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with subtopic",
 			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -287,7 +287,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with value and greater-than comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, mfreaders.GreaterThanKey),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -297,7 +297,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with value and greater-than-or-equal comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v-1, mfreaders.GreaterThanEqualKey),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -307,7 +307,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with subtopic and protocol",
 			url:    fmt.Sprintf("%s/senml?subtopic=%s&protocol=%s", ts.URL, subtopic, httpProt),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -317,7 +317,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with protocol",
 			url:    fmt.Sprintf("%s/senml?protocol=http", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -327,7 +327,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with name",
 			url:    fmt.Sprintf("%s/senml?name=%s", ts.URL, msgName),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(queryMsgs)),
@@ -337,7 +337,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with value",
 			url:    fmt.Sprintf("%s/senml?v=%f", ts.URL, v),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -347,7 +347,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with value and equal comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v, mfreaders.EqualKey),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -357,7 +357,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with value and lower-than comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, mfreaders.LowerThanKey),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -367,7 +367,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with value and lower-than-or-equal comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=%s", ts.URL, v+1, mfreaders.LowerThanEqualKey),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(valueMsgs)),
@@ -377,19 +377,19 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with non-float value",
 			url:    fmt.Sprintf("%s/senml?v=ab01", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with value and wrong comparator",
 			url:    fmt.Sprintf("%s/senml?v=%f&comparator=wrong", ts.URL, v-1),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with boolean value",
 			url:    fmt.Sprintf("%s/senml?vb=true", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(boolMsgs)),
@@ -399,13 +399,13 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with non-boolean value",
 			url:    fmt.Sprintf("%s/senml?vb=yes", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with string value",
 			url:    fmt.Sprintf("%s/senml?vs=%s", ts.URL, vs),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(stringMsgs)),
@@ -415,7 +415,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with data value",
 			url:    fmt.Sprintf("%s/senml?vd=%s", ts.URL, vd),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(dataMsgs)),
@@ -425,20 +425,20 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page with non-float from",
 			url:    fmt.Sprintf("%s/senml?from=ABCD", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 
 		{
 			desc:   "read page with non-float",
 			url:    fmt.Sprintf("%s/senml?to=ABCD", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read page with from/to ",
 			url:    fmt.Sprintf("%s/senml?from=%d&to=%d", ts.URL, messages[19].Time, messages[4].Time),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages[5:20])),
@@ -448,7 +448,7 @@ func TestListSenMLMessages(t *testing.T) {
 		{
 			desc:   "read page messages with thing ID filter",
 			url:    fmt.Sprintf("%s/senml?thing_id=%s", ts.URL, thingID),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: senmlPageRes{
 				Total:    uint64(len(messages)),
@@ -517,11 +517,11 @@ func TestListJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
+	platformOwnerToken, err := authSvc.Issue(context.Background(), platformOwner.ID, platformOwner.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: thingID},
+		platformOwnerToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(messages, nil, thSvc, authSvc)
@@ -538,7 +538,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with valid offset and limit",
 			url:    fmt.Sprintf("%s/json?offset=0&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages)),
@@ -548,7 +548,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with large limit",
 			url:    fmt.Sprintf("%s/json?offset=0&limit=100", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages)),
@@ -558,7 +558,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with offset",
 			url:    fmt.Sprintf("%s/json?offset=50&limit=20", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages)),
@@ -568,31 +568,31 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with negative offset",
 			url:    fmt.Sprintf("%s/json?offset=-1&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with negative limit",
 			url:    fmt.Sprintf("%s/json?offset=0&limit=-10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with zero limit",
 			url:    fmt.Sprintf("%s/json?offset=0&limit=0", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with non-integer offset",
 			url:    fmt.Sprintf("%s/json?offset=abc&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with non-integer limit",
 			url:    fmt.Sprintf("%s/json?offset=0&limit=xyz", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
@@ -610,19 +610,19 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with multiple offset parameters",
 			url:    fmt.Sprintf("%s/json?offset=0&offset=1&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with multiple limit parameters",
 			url:    fmt.Sprintf("%s/json?offset=0&limit=20&limit=10", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with from time filter",
 			url:    fmt.Sprintf("%s/json?from=%d", ts.URL, messages[50].Created),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages[0:51])),
@@ -632,7 +632,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with to time filter",
 			url:    fmt.Sprintf("%s/json?to=%d", ts.URL, messages[20].Created),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages[21:])),
@@ -642,7 +642,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with from/to time range",
 			url:    fmt.Sprintf("%s/json?from=%d&to=%d", ts.URL, messages[50].Created, messages[20].Created),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages[21:51])),
@@ -652,19 +652,19 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with non-numeric from",
 			url:    fmt.Sprintf("%s/json?from=yesterday", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with non-numeric to",
 			url:    fmt.Sprintf("%s/json?to=tomorrow", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with format parameter",
 			url:    fmt.Sprintf("%s/json?format=json", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages)),
@@ -674,7 +674,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with default parameters",
 			url:    fmt.Sprintf("%s/json", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages)),
@@ -684,7 +684,7 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with thing ID filter",
 			url:    fmt.Sprintf("%s/json?thing_id=%s", ts.URL, thingID),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusOK,
 			res: jsonPageRes{
 				Total:    uint64(len(messages)),
@@ -694,13 +694,13 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with invalid key",
 			url:    fmt.Sprintf("%s/json?key=items..value", ts.URL),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "read JSON messages with invalid comparator",
 			url:    fmt.Sprintf("%s/json?key=code&value=VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
 	}
@@ -744,11 +744,11 @@ func TestDeleteSenMLMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
+	platformOwnerToken, err := authSvc.Issue(context.Background(), platformOwner.ID, platformOwner.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: thingID},
+		platformOwnerToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(nil, nil, thSvc, authSvc)
@@ -761,9 +761,9 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "delete senml messages as admin",
+			desc:   "delete senml messages as platform owner",
 			url:    fmt.Sprintf("%s/senml/%s", ts.URL, thingID),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNoContent,
 		},
 		{
@@ -781,7 +781,7 @@ func TestDeleteSenMLMessages(t *testing.T) {
 		{
 			desc:   "delete senml messages with wrong thing ID",
 			url:    fmt.Sprintf("%s/senml/%s", ts.URL, invalid),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusForbidden,
 		},
 	}
@@ -806,11 +806,11 @@ func TestDeleteJSONMessages(t *testing.T) {
 
 	authSvc := newAuthService()
 
-	adminToken, err := authSvc.Issue(context.Background(), admin.ID, admin.Email, 0)
+	platformOwnerToken, err := authSvc.Issue(context.Background(), platformOwner.ID, platformOwner.Email, 0)
 	require.Nil(t, err, fmt.Sprintf("issue token got unexpected error: %s", err))
 
 	thSvc := mocks.NewThingsServiceClient(nil, map[string]things.Thing{
-		adminToken: {ID: thingID},
+		platformOwnerToken: {ID: thingID},
 	}, nil)
 
 	ts := newServer(nil, nil, thSvc, authSvc)
@@ -823,9 +823,9 @@ func TestDeleteJSONMessages(t *testing.T) {
 		status int
 	}{
 		{
-			desc:   "delete json messages as admin",
+			desc:   "delete json messages as platform owner",
 			url:    fmt.Sprintf("%s/json/%s", ts.URL, thingID),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusNoContent,
 		},
 		{
@@ -843,7 +843,7 @@ func TestDeleteJSONMessages(t *testing.T) {
 		{
 			desc:   "delete json messages with wrong thing ID",
 			url:    fmt.Sprintf("%s/json/%s", ts.URL, invalid),
-			token:  adminToken,
+			token:  platformOwnerToken,
 			status: http.StatusForbidden,
 		},
 	}

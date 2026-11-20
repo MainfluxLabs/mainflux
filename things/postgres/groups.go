@@ -40,29 +40,32 @@ func (gr groupRepository) Save(ctx context.Context, gs ...things.Group) ([]thing
 	q := `INSERT INTO groups (name, description, id, org_id, metadata, created_at, updated_at)
 		  VALUES (:name, :description, :id, :org_id, :metadata, :created_at, :updated_at)`
 
+	dbgs := make([]dbGroup, 0, len(gs))
 	for _, group := range gs {
 		dbg, err := toDBGroup(group)
 		if err != nil {
 			return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbg); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []things.Group{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return []things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbgs = append(dbgs, dbg)
+	}
 
-			return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbgs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []things.Group{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return []things.Group{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []things.Group{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -108,36 +111,45 @@ func (gr groupRepository) Update(ctx context.Context, g things.Group) (things.Gr
 }
 
 func (gr groupRepository) Remove(ctx context.Context, groupIDs ...string) error {
-	qd := `DELETE FROM groups WHERE id = :id`
+	tx, err := gr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	defer tx.Rollback()
 
-	for _, groupID := range groupIDs {
-		dbGr := dbGroup{
-			ID: groupID,
-		}
+	qd := `DELETE FROM groups WHERE id = ANY(:ids);`
 
-		res, err := gr.db.NamedExecContext(ctx, qd, dbGr)
-		if err != nil {
-			pqErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pqErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
+	params := map[string]any{
+		"ids": groupIDs,
+	}
+
+	res, err := tx.NamedExecContext(ctx, qd, params)
+	if err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
 			}
-
-			return errors.Wrap(dbutil.ErrUpdateEntity, err)
 		}
 
-		cnt, err := res.RowsAffected()
-		if err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
 
-		if cnt != 1 {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	cnt, err := res.RowsAffected()
+	if err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	// The transaction is rolled back when any group does not exist.
+	if cnt != int64(len(groupIDs)) {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

@@ -137,24 +137,26 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 	qIns := `INSERT INTO org_memberships (org_id, member_id, role, created_at, updated_at)
 			 VALUES(:org_id, :member_id, :role, :created_at, :updated_at)`
 
+	dboms := make([]dbOrgMembership, 0, len(oms))
 	for _, om := range oms {
 		dbom := toDBOrgMembership(om)
+		dboms = append(dboms, dbom)
+	}
 
-		if _, err := tx.NamedExecContext(ctx, qIns, dbom); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(auth.ErrOrgMembershipExists, errors.New(pgErr.Detail))
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, qIns, dboms); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(auth.ErrOrgMembershipExists, errors.New(pgErr.Detail))
 			}
-
-			return errors.Wrap(auth.ErrCreateOrgMembership, err)
 		}
+
+		return errors.Wrap(auth.ErrCreateOrgMembership, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -165,36 +167,24 @@ func (omr orgMembershipsRepository) Save(ctx context.Context, oms ...auth.OrgMem
 }
 
 func (omr orgMembershipsRepository) Remove(ctx context.Context, orgID string, ids ...string) error {
-	tx, err := omr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(auth.ErrRemoveOrgMembership, err)
+	qDel := `DELETE FROM org_memberships WHERE org_id = :org_id AND member_id = ANY(:member_ids);`
+
+	params := map[string]any{
+		"org_id":     orgID,
+		"member_ids": ids,
 	}
 
-	qDel := `DELETE from org_memberships WHERE org_id = :org_id AND member_id = :member_id`
-
-	for _, id := range ids {
-		om := auth.OrgMembership{
-			OrgID:    orgID,
-			MemberID: id,
-		}
-		dbom := toDBOrgMembership(om)
-
-		if _, err := tx.NamedExecContext(ctx, qDel, dbom); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(dbutil.ErrConflict, err)
-				}
+	if _, err := omr.db.NamedExecContext(ctx, qDel, params); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(dbutil.ErrConflict, err)
 			}
-
-			return errors.Wrap(auth.ErrRemoveOrgMembership, err)
 		}
-	}
 
-	if err = tx.Commit(); err != nil {
 		return errors.Wrap(auth.ErrRemoveOrgMembership, err)
 	}
 

@@ -66,7 +66,7 @@ const (
 	defLoginDuration      = "10h"
 	defMaxSessionDuration = "168h"
 	defInviteDuration     = "168h"
-	defAdminEmail         = ""
+	defPlatformOwnerEmail = ""
 	defTimeout            = "1s"
 	defThingsGRPCURL      = "localhost:8183"
 	defThingsCACerts      = ""
@@ -108,7 +108,7 @@ const (
 	envLoginDuration      = "MF_AUTH_LOGIN_TOKEN_DURATION"
 	envMaxSessionDuration = "MF_AUTH_MAX_SESSION_DURATION"
 	envInviteDuration     = "MF_INVITE_DURATION"
-	envAdminEmail         = "MF_USERS_ADMIN_EMAIL"
+	envPlatformOwnerEmail = "MF_USERS_PLATFORM_OWNER_EMAIL"
 	envThingsGRPCURL      = "MF_THINGS_AUTH_GRPC_URL"
 	envThingsCACerts      = "MF_THINGS_CA_CERTS"
 	envThingsClientTLS    = "MF_THINGS_CLIENT_TLS"
@@ -144,7 +144,7 @@ type config struct {
 	maxSessionDuration time.Duration
 	inviteDuration     time.Duration
 	timeout            time.Duration
-	adminEmail         string
+	platformOwnerEmail string
 	host               string
 	esURL              string
 	esStreamMaxLen     int64
@@ -340,7 +340,7 @@ func loadConfig() config {
 		maxSessionDuration: maxSessionDuration,
 		inviteDuration:     inviteDuration,
 		timeout:            timeout,
-		adminEmail:         mainflux.Env(envAdminEmail, defAdminEmail),
+		platformOwnerEmail: mainflux.Env(envPlatformOwnerEmail, defPlatformOwnerEmail),
 		host:               mainflux.Env(envHost, defHost),
 		esURL:              mainflux.Env(envESURL, defESURL),
 		esStreamMaxLen:     esStreamMaxLen,

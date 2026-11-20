@@ -73,14 +73,10 @@ func (jr *jsonRepository) Remove(ctx context.Context, rpm readers.JSONPageMetada
 }
 
 func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Message) error {
-	tx, err := jr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(errors.ErrSaveMessages, err)
-	}
-
 	q := `INSERT INTO json (subtopic, thing_id, protocol, payload, created)
           VALUES (:subtopic, :thing_id, :protocol, :payload, :created);`
 
+	jsonMsgs := make([]mfjson.Message, 0, len(messages))
 	for _, msg := range messages {
 		jsonMsg, ok := msg.(mfjson.Message)
 		if !ok {
@@ -94,13 +90,19 @@ func (jr *jsonRepository) Restore(ctx context.Context, messages ...readers.Messa
 			}
 		}
 
-		_, err := tx.NamedExecContext(ctx, q, jsonMsg)
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				return errors.Wrap(errors.ErrSaveMessages, err)
-			}
-			return handlePgError(err, errors.ErrSaveMessages)
+		jsonMsgs = append(jsonMsgs, jsonMsg)
+	}
+
+	tx, err := jr.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrSaveMessages, err)
+	}
+
+	if err := dbutil.NamedExecBatch(ctx, tx, q, jsonMsgs); err != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			return errors.Wrap(errors.ErrSaveMessages, err)
 		}
+		return handlePgError(err, errors.ErrSaveMessages)
 	}
 
 	if err := tx.Commit(); err != nil {

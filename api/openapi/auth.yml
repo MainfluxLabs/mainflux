@@ -120,6 +120,8 @@ paths:
           description: Key revoked.
         '401':
           description: Missing or invalid access token provided.
+        '404':
+          description: Key does not exist.
         '500':
           $ref: "#/components/responses/ServiceError"
   /orgs:
@@ -552,7 +554,7 @@ paths:
       description: |
         Restores org service from backup. Backup is a JSON file that contains
         all orgs, org memberships and platform user roles. User roles are skipped for
-        users that already have a role. Only accessible by root admin.
+        users that already have a role. Only accessible by the platform owner.
       tags:
         - auth
       requestBody:
@@ -565,7 +567,7 @@ paths:
         '401':
           description: Missing or invalid access token provided.
         '403':
-          description: This endpoint is available only for the root administrator.
+          description: This endpoint is available only for the platform owner.
         '500':
           $ref: "#/components/responses/ServiceError"
   /health:
@@ -818,9 +820,9 @@ components:
           example: "2e3f8a1c-6b4d-4f2a-9c7e-5d1b0a8f3e21"
         role:
           type: string
-          enum: [root, admin]
+          enum: [platform_owner, platform_admin]
           description: Platform role of the user.
-          example: "admin"
+          example: "platform_admin"
       required:
         - user_id
         - role

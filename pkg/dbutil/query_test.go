@@ -4,9 +4,13 @@
 package dbutil_test
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -234,5 +238,65 @@ func TestBuildWhereClause(t *testing.T) {
 			res := dbutil.BuildWhereClause(tc.filters...)
 			assert.Equal(t, tc.expected, res)
 		})
+	}
+}
+
+type batchRow struct {
+	ID   string `db:"id"`
+	Name string `db:"name"`
+	Kind string `db:"kind"`
+}
+
+type execRecorder struct {
+	chunks []int
+	err    error
+}
+
+func (r *execRecorder) NamedExecContext(_ context.Context, _ string, arg any) (sql.Result, error) {
+	r.chunks = append(r.chunks, len(arg.([]batchRow)))
+	return nil, r.err
+}
+
+func TestNamedExecBatch(t *testing.T) {
+	query := `INSERT INTO rows (id, name, kind) VALUES (:id, :name, :kind)`
+	chunkSize := 65535 / 3
+	errExec := errors.New("exec failed")
+
+	cases := []struct {
+		desc   string
+		rows   int
+		err    error
+		chunks []int
+	}{
+		{
+			desc:   "execute batch without rows",
+			rows:   0,
+			chunks: nil,
+		},
+		{
+			desc:   "execute batch within parameter limit",
+			rows:   chunkSize,
+			chunks: []int{chunkSize},
+		},
+		{
+			desc:   "execute batch over parameter limit",
+			rows:   2*chunkSize + 1,
+			chunks: []int{chunkSize, chunkSize, 1},
+		},
+		{
+			desc:   "execute batch with failing statement",
+			rows:   2 * chunkSize,
+			err:    errExec,
+			chunks: []int{chunkSize},
+		},
+	}
+
+	for _, tc := range cases {
+		rec := &execRecorder{err: tc.err}
+		err := dbutil.NamedExecBatch(context.Background(), rec, query, make([]batchRow, tc.rows))
+		assert.True(t, errors.Contains(err, tc.err),
+			fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		assert.Equal(t, tc.chunks, rec.chunks,
+			fmt.Sprintf("%s: expected chunks %v got %v\n", tc.desc, tc.chunks, rec.chunks))
 	}
 }

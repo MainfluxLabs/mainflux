@@ -43,27 +43,30 @@ func (tr thingRepository) Save(ctx context.Context, ths ...things.Thing) ([]thin
 	q := `INSERT INTO things (id, group_id, profile_id, name, type, key, external_key, metadata)
 		  VALUES (:id, :group_id, :profile_id, :name, :type, :key, :external_key, :metadata);`
 
+	dbths := make([]dbThing, 0, len(ths))
 	for _, thing := range ths {
 		dbth, err := toDBThing(thing)
 		if err != nil {
 			return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []things.Thing{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationDataException:
-					return []things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbths = append(dbths, dbth)
+	}
 
-			return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbths); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []things.Thing{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationDataException:
+				return []things.Thing{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []things.Thing{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -262,23 +265,12 @@ func (tr thingRepository) RetrieveByProfile(ctx context.Context, prID string, pm
 }
 
 func (tr thingRepository) Remove(ctx context.Context, ids ...string) error {
-	tx, err := tr.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
-	}
-	defer tx.Rollback()
-
-	q := `DELETE FROM things WHERE id = :id;`
-	for _, id := range ids {
-		dbth := dbThing{
-			ID: id,
-		}
-		if _, err := tx.NamedExecContext(ctx, q, dbth); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	q := `DELETE FROM things WHERE id = ANY(:ids);`
+	params := map[string]any{
+		"ids": ids,
 	}
 
-	if err := tx.Commit(); err != nil {
+	if _, err := tr.db.NamedExecContext(ctx, q, params); err != nil {
 		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 

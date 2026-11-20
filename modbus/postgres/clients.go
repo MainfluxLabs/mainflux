@@ -52,28 +52,31 @@ func (cr clientRepository) Save(ctx context.Context, cls ...modbus.Client) ([]mo
 			  VALUES (:id, :group_id, :thing_id, :name, :ip_address, :port, :slave_id, :function_code, 
 			  :scheduler, :data_fields, :metadata)`
 
+	dbCls := make([]dbClient, 0, len(cls))
 	for _, c := range cls {
 		dbCl, err := toDBClient(c)
 		if err != nil {
 			return nil, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbCl); err != nil {
-			_ = tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return nil, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbCls = append(dbCls, dbCl)
+	}
 
-			return nil, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbCls); err != nil {
+		_ = tx.Rollback()
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return nil, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return nil, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return nil, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -302,13 +305,14 @@ func (cr clientRepository) Update(ctx context.Context, c modbus.Client) error {
 }
 
 func (cr clientRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbCl := dbClient{ID: id}
-		q := `DELETE FROM clients WHERE id = :id;`
+	q := `DELETE FROM clients WHERE id = ANY(:ids);`
 
-		if _, err := cr.db.NamedExecContext(ctx, q, dbCl); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := cr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

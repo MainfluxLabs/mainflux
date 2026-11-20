@@ -2,12 +2,19 @@ package dbutil
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
+	"slices"
 	"strings"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/jmoiron/sqlx"
 )
+
+// maxQueryParams is the bind parameter limit of the PostgreSQL extended query protocol.
+const maxQueryParams = math.MaxUint16
 
 var (
 	errCreateMetadataQuery = errors.New("failed to create query for metadata")
@@ -124,4 +131,28 @@ func BuildWhereClause(filters ...string) string {
 	}
 
 	return ""
+}
+
+type namedExecer interface {
+	NamedExecContext(ctx context.Context, query string, arg any) (sql.Result, error)
+}
+
+// NamedExecBatch executes the named insert query in chunks within the bind parameter limit.
+func NamedExecBatch[T any](ctx context.Context, db namedExecer, query string, rows []T) error {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	_, params, err := sqlx.Named(query, rows[0])
+	if err != nil {
+		return err
+	}
+
+	for chunk := range slices.Chunk(rows, maxQueryParams/len(params)) {
+		if _, err := db.NamedExecContext(ctx, query, chunk); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

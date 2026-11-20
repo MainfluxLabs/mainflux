@@ -70,9 +70,9 @@ func (lm *loggingMiddleware) RegisterByInvite(ctx context.Context, user users.Us
 	return lm.svc.RegisterByInvite(ctx, user, inviteID, orgInviteRedirectPath)
 }
 
-func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User) (err error) {
+func (lm *loggingMiddleware) RegisterPlatformOwner(ctx context.Context, user users.User) (err error) {
 	defer func(begin time.Time) {
-		message := fmt.Sprintf("Method register_admin for user %s took %s to complete", user.Email, time.Since(begin))
+		message := fmt.Sprintf("Method register_platform_owner for user %s took %s to complete", user.Email, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -81,7 +81,7 @@ func (lm *loggingMiddleware) RegisterAdmin(ctx context.Context, user users.User)
 
 	}(time.Now())
 
-	return lm.svc.RegisterAdmin(ctx, user)
+	return lm.svc.RegisterPlatformOwner(ctx, user)
 }
 
 func (lm *loggingMiddleware) Register(ctx context.Context, token string, user users.User) (_ string, err error) {
@@ -378,14 +378,14 @@ func (lm *loggingMiddleware) Backup(ctx context.Context, token string) (users.Us
 	return lm.svc.Backup(ctx, token)
 }
 
-func (lm *loggingMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User, identities []users.Identity) error {
+func (lm *loggingMiddleware) Restore(ctx context.Context, token string, platformOwner users.User, users []users.User, identities []users.Identity) error {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method restore by user %s took %s to complete", email, time.Since(begin))
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.Restore(ctx, token, admin, users, identities)
+	return lm.svc.Restore(ctx, token, platformOwner, users, identities)
 }
 
 func (lm *loggingMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (_ users.PlatformInvite, err error) {

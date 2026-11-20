@@ -30,7 +30,7 @@ func NewPlatformInvitesRepo(db dbutil.Database) users.PlatformInvitesRepository 
 func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...users.PlatformInvite) error {
 	tx, err := ir.db.BeginTxx(ctx, nil)
 	if err != nil {
-		errors.Wrap(dbutil.ErrCreateEntity, err)
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 	defer tx.Rollback()
 
@@ -43,22 +43,25 @@ func (ir invitesRepository) SavePlatformInvite(ctx context.Context, invites ...u
 		if err := ir.syncPlatformInviteStateByEmail(ctx, invite.InviteeEmail); err != nil {
 			return err
 		}
+	}
 
-		dbInvite := toDBPlatformInvite(invite)
-		if _, err := tx.NamedExecContext(ctx, qIns, dbInvite); err != nil {
+	dbInvites := make([]dbPlatformInvite, 0, len(invites))
+	for _, invite := range invites {
+		dbInvites = append(dbInvites, toDBPlatformInvite(invite))
+	}
 
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(apiutil.ErrUserAlreadyInvited, err)
-				}
+	if err := dbutil.NamedExecBatch(ctx, tx, qIns, dbInvites); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(apiutil.ErrUserAlreadyInvited, err)
 			}
-
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -175,9 +178,9 @@ func (ir invitesRepository) UpdatePlatformInviteState(ctx context.Context, invit
 	})
 
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -199,9 +202,9 @@ func (ir invitesRepository) syncPlatformInviteStateByEmail(ctx context.Context, 
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"email": email})
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
@@ -223,9 +226,9 @@ func (ir invitesRepository) syncPlatformInviteStateByID(ctx context.Context, inv
 
 	_, err := ir.db.NamedExecContext(ctx, query, map[string]any{"inviteID": inviteID})
 	if err != nil {
-		pqErr, ok := err.(*pgconn.PgError)
+		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
-			switch pqErr.Code {
+			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
 				return errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}

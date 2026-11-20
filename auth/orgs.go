@@ -57,7 +57,7 @@ type Orgs interface {
 	Backup(ctx context.Context, token string) (Backup, error)
 
 	// Restore adds orgs, org memberships and user roles from a backup.
-	// Only accessible by root admin.
+	// Only accessible by the platform owner.
 	Restore(ctx context.Context, token string, backup Backup) error
 }
 

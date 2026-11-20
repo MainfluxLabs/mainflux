@@ -34,22 +34,25 @@ func (mr groupMembershipsRepository) Save(ctx context.Context, gms ...things.Gro
 
 	q := `INSERT INTO group_memberships (member_id, group_id, role) VALUES (:member_id, :group_id, :role);`
 
+	dbgms := make([]dbGroupMembership, 0, len(gms))
 	for _, g := range gms {
 		dbgm := toDBGroupMembership(g)
-		if _, err := tx.NamedExecContext(ctx, q, dbgm); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.ForeignKeyViolation:
-					return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
-				case pgerrcode.UniqueViolation:
-					return errors.Wrap(things.ErrGroupMembershipExists, errors.New(pgErr.Detail))
-				}
+		dbgms = append(dbgms, dbgm)
+	}
+
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbgms); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.ForeignKeyViolation:
+				return errors.Wrap(dbutil.ErrConflict, errors.New(pgErr.Detail))
+			case pgerrcode.UniqueViolation:
+				return errors.Wrap(things.ErrGroupMembershipExists, errors.New(pgErr.Detail))
 			}
-			return errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -155,17 +158,16 @@ func (mr groupMembershipsRepository) RetrieveGroupIDsByMember(ctx context.Contex
 }
 
 func (mr groupMembershipsRepository) Remove(ctx context.Context, groupID string, memberIDs ...string) error {
-	q := `DELETE FROM group_memberships WHERE member_id = :member_id AND group_id = :group_id;`
+	q := `DELETE FROM group_memberships
+		  WHERE group_id = :group_id AND member_id = ANY(:member_ids);`
 
-	for _, memberID := range memberIDs {
-		dbgm := dbGroupMembership{
-			MemberID: memberID,
-			GroupID:  groupID,
-		}
+	params := map[string]any{
+		"group_id":   groupID,
+		"member_ids": memberIDs,
+	}
 
-		if _, err := mr.db.NamedExecContext(ctx, q, dbgm); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	if _, err := mr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 	return nil
 }

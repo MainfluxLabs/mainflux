@@ -36,28 +36,31 @@ func (wr webhookRepository) Save(ctx context.Context, whs ...webhooks.Webhook) (
 
 	q := `INSERT INTO webhooks (id, thing_id, group_id, name, url, headers, metadata) VALUES (:id, :thing_id, :group_id, :name, :url, :headers, :metadata);`
 
+	dbWhs := make([]dbWebhook, 0, len(whs))
 	for _, webhook := range whs {
 		dbWh, err := toDBWebhook(webhook)
 		if err != nil {
 			return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbWh); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbWhs = append(dbWhs, dbWh)
+	}
 
-			return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbWhs); err != nil {
+		tx.Rollback()
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []webhooks.Webhook{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -182,13 +185,14 @@ func (wr webhookRepository) Update(ctx context.Context, w webhooks.Webhook) erro
 }
 
 func (wr webhookRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbwh := dbWebhook{ID: id}
-		q := `DELETE FROM webhooks WHERE id = :id;`
+	q := `DELETE FROM webhooks WHERE id = ANY(:ids);`
 
-		if _, err := wr.db.NamedExecContext(ctx, q, dbwh); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := wr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

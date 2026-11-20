@@ -41,10 +41,14 @@ func TestSaveProfiles(t *testing.T) {
 	prs = append(prs, things.Profile{ID: id2, GroupID: group.ID, Name: ""})
 	id := prs[0].ID
 
+	newPr := things.Profile{ID: generateUUID(t), GroupID: group.ID, Name: profileName}
+	invalidPr := things.Profile{ID: "invalid", GroupID: group.ID, Name: profileName + "-invalid"}
+
 	cases := []struct {
-		desc     string
-		profiles []things.Profile
-		err      error
+		desc       string
+		profiles   []things.Profile
+		unsavedIDs []string
+		err        error
 	}{
 		{
 			desc:     "save new profiles",
@@ -70,11 +74,22 @@ func TestSaveProfiles(t *testing.T) {
 			},
 			err: dbutil.ErrMalformedEntity,
 		},
+		{
+			desc:       "save profiles with an invalid ID",
+			profiles:   []things.Profile{newPr, invalidPr},
+			unsavedIDs: []string{newPr.ID},
+			err:        dbutil.ErrMalformedEntity,
+		},
 	}
 
 	for _, cc := range cases {
 		_, err := profileRepo.Save(context.Background(), cc.profiles...)
 		assert.True(t, errors.Contains(err, cc.err), fmt.Sprintf("%s: expected %s got %s\n", cc.desc, cc.err, err))
+
+		for _, id := range cc.unsavedIDs {
+			_, err := profileRepo.RetrieveByID(context.Background(), id)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", cc.desc, err))
+		}
 	}
 }
 
@@ -416,27 +431,65 @@ func TestRemoveProfile(t *testing.T) {
 	_, err = thingRepo.Save(context.Background(), th)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	cases := map[string]struct {
-		prID string
-		err  error
+	var prIDs []string
+	for i := 0; i < 2; i++ {
+		pr := things.Profile{
+			ID:      generateUUID(t),
+			GroupID: group.ID,
+			Name:    fmt.Sprintf("%s-%d", profileName, i),
+		}
+		_, err := profileRepo.Save(context.Background(), pr)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+		prIDs = append(prIDs, pr.ID)
+	}
+
+	cases := []struct {
+		desc        string
+		prIDs       []string
+		retainedIDs []string
+		err         error
 	}{
-		"remove non-existing profile": {
-			prID: "wrong",
-			err:  dbutil.ErrRemoveEntity,
+		{
+			desc:  "remove non-existing profile",
+			prIDs: []string{"wrong"},
+			err:   dbutil.ErrRemoveEntity,
 		},
-		"remove profile": {
-			prID: prID1,
-			err:  nil,
+		{
+			desc:  "remove profile",
+			prIDs: []string{prID1},
+			err:   nil,
 		},
-		"remove assigned profile": {
-			prID: prID2,
-			err:  things.ErrProfileAssigned,
+		{
+			desc:  "remove assigned profile",
+			prIDs: []string{prID2},
+			err:   things.ErrProfileAssigned,
+		},
+		{
+			desc:        "remove profiles with an assigned profile",
+			prIDs:       append([]string{prID2}, prIDs...),
+			retainedIDs: prIDs,
+			err:         things.ErrProfileAssigned,
+		},
+		{
+			desc:  "remove profiles",
+			prIDs: prIDs,
+			err:   nil,
 		},
 	}
 
-	for desc, tc := range cases {
-		err := profileRepo.Remove(context.Background(), tc.prID)
-		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", desc, tc.err, err))
+	for _, tc := range cases {
+		err := profileRepo.Remove(context.Background(), tc.prIDs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.retainedIDs {
+			_, err := profileRepo.RetrieveByID(context.Background(), id)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected %s retained got %s\n", tc.desc, id, err))
+		}
+	}
+
+	for _, id := range append([]string{prID1}, prIDs...) {
+		_, err := profileRepo.RetrieveByID(context.Background(), id)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", id, err))
 	}
 }
 
