@@ -29,6 +29,7 @@ func init() {
 func hideProcessLinux() error {
 	return unix.Prctl(unix.PR_SET_DUMPABLE, 0, 0, 0, 0)
 }
+
 func reapOrphansLinux(log logger.Logger) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGCHLD)

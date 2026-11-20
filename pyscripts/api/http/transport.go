@@ -28,7 +28,6 @@ import (
 
 // MakeHandler returns an HTTP handler for Python script API endpoints.
 func MakeHandler(tracer opentracing.Tracer, svc pyscripts.Service, ac domain.AuthClient, logger log.Logger) http.Handler {
-
 	opts := []kithttp.ServerOption{
 		kithttp.ServerErrorEncoder(apiutil.LoggingErrorEncoder(logger, encodeError)),
 		kithttp.ServerBefore(authn.HTTPTokenToContext),
