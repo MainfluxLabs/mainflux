@@ -245,13 +245,17 @@ func (ps *pyscriptsService) RunScript(ctx context.Context, token, id string, in 
 
 	// A run that retired its worker keeps the group's slot for retiredHold, so
 	// one group cannot retire workers faster than the pool respawns them.
-	res, err := ps.runner.Run(ctx, script.Source, in)
-	switch {
-	case res.Retired:
-		time.AfterFunc(retiredHold, done)
-	default:
-		done()
-	}
+	var res Result
+	defer func() {
+		switch {
+		case res.Retired:
+			time.AfterFunc(retiredHold, done)
+		default:
+			done()
+		}
+	}()
+
+	res, err = ps.runner.Run(ctx, script.Source, in)
 	if err != nil {
 		return ScriptRun{}, err
 	}
