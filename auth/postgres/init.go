@@ -186,6 +186,25 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE sessions DROP COLUMN IF EXISTS impersonator_id`,
 				},
 			},
+			{
+				Id: "auth_09",
+				Up: []string{
+					`ALTER TABLE users_roles DROP CONSTRAINT IF EXISTS users_roles_role_check`,
+					`ALTER TABLE users_roles ALTER COLUMN role TYPE VARCHAR(14)`,
+					`UPDATE users_roles SET role = 'platform_owner' WHERE role = 'root'`,
+					`UPDATE users_roles SET role = 'platform_admin' WHERE role = 'admin'`,
+					`ALTER TABLE users_roles ADD CONSTRAINT users_roles_role_check
+						CHECK (role IN ('platform_owner', 'platform_admin'))`,
+				},
+				Down: []string{
+					`ALTER TABLE users_roles DROP CONSTRAINT IF EXISTS users_roles_role_check`,
+					`UPDATE users_roles SET role = 'root' WHERE role = 'platform_owner'`,
+					`UPDATE users_roles SET role = 'admin' WHERE role = 'platform_admin'`,
+					`ALTER TABLE users_roles ALTER COLUMN role TYPE VARCHAR(12)`,
+					`ALTER TABLE users_roles ADD CONSTRAINT users_roles_role_check
+						CHECK (role IN ('root', 'admin'))`,
+				},
+			},
 		},
 	}
 

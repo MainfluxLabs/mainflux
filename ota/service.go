@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	// ErrInvalidStatus indicates a status report with an unknown status.
+	// ErrInvalidStatus indicates an unknown status.
 	ErrInvalidStatus = errors.New("invalid OTA status")
 
 	// ErrUpdateFinished indicates a status report for a thing update that already finished.
@@ -160,12 +160,14 @@ func (ots *otaService) CreateUpdate(ctx context.Context, token, groupID string, 
 		u.Timeout = defaultTimeout
 	}
 
+	u.Stats = UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))}
+	u.Status = u.Stats.Status()
+
 	if err := ots.updates.Save(ctx, u, thingIDs...); err != nil {
 		return Update{}, err
 	}
 
 	ots.notify(u, thingIDs...)
-	u.Stats = UpdateStats{Targets: uint64(len(thingIDs)), Pending: uint64(len(thingIDs))}
 
 	return u, nil
 }

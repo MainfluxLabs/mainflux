@@ -30,30 +30,30 @@ import (
 )
 
 const (
-	contentTypeJSON = "application/json"
-	email           = "user@example.com"
-	adminEmail      = "admin@example.com"
-	otherUserEmail  = "other_user@example.com"
-	token           = email
-	adminToken      = adminEmail
-	wrongValue      = "wrong_value"
-	emptyValue      = ""
-	emptyJson       = "{}"
-	password        = "password"
-	nameKey         = "name"
-	orgID           = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2          = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix          = "fe6b4e92-cc98-425e-b0aa-"
-	n               = 101
+	contentTypeJSON    = "application/json"
+	email              = "user@example.com"
+	platformOwnerEmail = "admin@example.com"
+	otherUserEmail     = "other_user@example.com"
+	token              = email
+	platformOwnerToken = platformOwnerEmail
+	wrongValue         = "wrong_value"
+	emptyValue         = ""
+	emptyJson          = "{}"
+	password           = "password"
+	nameKey            = "name"
+	orgID              = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2             = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix             = "fe6b4e92-cc98-425e-b0aa-"
+	n                  = 101
 )
 
 var (
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
-	otherUser = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
-	admin     = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
-	usersList = []users.User{admin, user, otherUser}
-	orgsList  = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
-	metadata  = map[string]any{"test": "data"}
+	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
+	otherUser     = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
+	platformOwner = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: platformOwnerEmail, Password: password, Role: auth.PlatformOwner}
+	usersList     = []users.User{platformOwner, user, otherUser}
+	orgsList      = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
+	metadata      = map[string]any{"test": "data"}
 )
 
 type testRequest struct {
@@ -84,7 +84,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
+	auth := mocks.NewAuthService(platformOwner.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
@@ -100,7 +100,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(platformOwner.ID, usersList, orgsList), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
@@ -210,7 +210,7 @@ func TestBackup(t *testing.T) {
 	}{
 		{
 			desc:   "backup all things, profiles and groups",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			res:    backup,
 		},
@@ -342,7 +342,7 @@ func TestRestore(t *testing.T) {
 	}{
 		{
 			desc:        "restore all things, profiles and groups",
-			auth:        adminToken,
+			auth:        platformOwnerToken,
 			status:      http.StatusCreated,
 			req:         data,
 			contentType: contentTypeJSON,

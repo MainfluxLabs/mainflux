@@ -13,27 +13,56 @@ import (
 
 const (
 	// Event prefixes
-	thingPrefix    = "thing."
-	profilePrefix  = "profile."
-	groupPrefix    = "group."
-	orgPrefix      = "org."
-	userPrefix     = "user."
-	mainfluxPrefix = "mainflux."
+	thingPrefix           = "thing."
+	profilePrefix         = "profile."
+	groupPrefix           = "group."
+	groupMembershipPrefix = "group_membership."
+	orgPrefix             = "org."
+	orgMembershipPrefix   = "org_membership."
+	orgInvitePrefix       = "org_invite."
+	apiKeyPrefix          = "api_key."
+	sessionPrefix         = "session."
+	userPrefix            = "user."
+	mainfluxPrefix        = "mainflux."
 
 	// Event operation strings
 	ThingCreate                = thingPrefix + "create"
 	ThingUpdate                = thingPrefix + "update"
 	ThingUpdateGroupAndProfile = thingPrefix + "update_group_and_profile"
+	ThingUpdateMetadata        = thingPrefix + "update_metadata"
+	ThingUpdateExternalKey     = thingPrefix + "update_external_key"
+	ThingRemoveExternalKey     = thingPrefix + "remove_external_key"
 	ThingRemove                = thingPrefix + "remove"
 
 	ProfileCreate = profilePrefix + "create"
 	ProfileUpdate = profilePrefix + "update"
 	ProfileRemove = profilePrefix + "remove"
 
+	GroupCreate = groupPrefix + "create"
+	GroupUpdate = groupPrefix + "update"
 	GroupRemove = groupPrefix + "remove"
 
+	GroupMembershipCreate = groupMembershipPrefix + "create"
+	GroupMembershipUpdate = groupMembershipPrefix + "update"
+	GroupMembershipRemove = groupMembershipPrefix + "remove"
+
 	OrgCreate = orgPrefix + "create"
+	OrgUpdate = orgPrefix + "update"
 	OrgRemove = orgPrefix + "remove"
+
+	OrgMembershipCreate = orgMembershipPrefix + "create"
+	OrgMembershipUpdate = orgMembershipPrefix + "update"
+	OrgMembershipRemove = orgMembershipPrefix + "remove"
+
+	OrgInviteCreate  = orgInvitePrefix + "create"
+	OrgInviteRevoke  = orgInvitePrefix + "revoke"
+	OrgInviteAccept  = orgInvitePrefix + "accept"
+	OrgInviteDecline = orgInvitePrefix + "decline"
+
+	APIKeyIssue  = apiKeyPrefix + "issue"
+	APIKeyRevoke = apiKeyPrefix + "revoke"
+
+	SessionLogoutAll = sessionPrefix + "logout_all"
 
 	UserImpersonate = userPrefix + "impersonate"
 

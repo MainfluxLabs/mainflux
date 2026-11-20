@@ -15,6 +15,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 )
 
 var _ ota.UpdateRepository = (*updateRepository)(nil)
@@ -36,10 +37,18 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
-	qFailActive := `UPDATE thing_updates
+	qFailActive := `WITH old AS (
+			SELECT update_id, thing_id, status FROM thing_updates
+			WHERE thing_id = ANY(:thing_ids)
+			AND status = ANY(:active)
+			FOR UPDATE
+		)
+		UPDATE thing_updates t
 		SET status = :failed, error = :error, updated_at = :updated_at
-		WHERE thing_id = ANY(:thing_ids)
-		AND status = ANY(:active);`
+		FROM old
+		WHERE t.update_id = old.update_id
+		AND t.thing_id = old.thing_id
+		RETURNING t.update_id, old.status;`
 	failParams := map[string]any{
 		"failed":     ota.StatusFailed,
 		"error":      fmt.Sprintf(ota.ErrMsgSuperseded, u.ID),
@@ -47,15 +56,18 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 		"thing_ids":  thingIDs,
 		"active":     ota.ActiveStatuses,
 	}
-	if _, err := tx.NamedExecContext(ctx, qFailActive, failParams); err != nil {
+	var oldStatuses []dbOldStatus
+	if err := namedSelect(ctx, tx, &oldStatuses, qFailActive, failParams); err != nil {
 		tx.Rollback()
 		return createErr(err)
 	}
 
 	qInsUpdate := `INSERT INTO updates (id, group_id, file_name, version, file_size, checksum,
-		description, timeout, created_at)
+		description, timeout, created_at, status, targets, pending_count, downloading_count,
+		installing_count, succeeded_count, failed_count)
 		VALUES (:id, :group_id, :file_name, :version, :file_size, :checksum,
-		:description, :timeout, :created_at);`
+		:description, :timeout, :created_at, :status, :targets, :pending_count, :downloading_count,
+		:installing_count, :succeeded_count, :failed_count);`
 	if _, err := tx.NamedExecContext(ctx, qInsUpdate, toDBUpdate(u)); err != nil {
 		tx.Rollback()
 		return createErr(err)
@@ -74,6 +86,11 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 		return createErr(err)
 	}
 
+	if err := adjustStats(ctx, tx, oldStatuses, ota.StatusFailed); err != nil {
+		tx.Rollback()
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
@@ -82,8 +99,9 @@ func (ur updateRepository) Save(ctx context.Context, u ota.Update, thingIDs ...s
 }
 
 func (ur updateRepository) RetrieveByID(ctx context.Context, id string) (ota.Update, error) {
-	q := `SELECT id, group_id, file_name, version, file_size, checksum,
-		description, timeout, created_at
+	q := `SELECT id, group_id, file_name, version, file_size, checksum, description,
+		timeout, created_at, status, targets, pending_count, downloading_count, installing_count,
+		succeeded_count, failed_count
 		FROM updates
 		WHERE id = $1;`
 
@@ -97,12 +115,7 @@ func (ur updateRepository) RetrieveByID(ctx context.Context, id string) (ota.Upd
 		return ota.Update{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	stats, err := ur.stats(ctx, id)
-	if err != nil {
-		return ota.Update{}, err
-	}
-
-	return toUpdate(dbu, stats[id]), nil
+	return toUpdate(dbu), nil
 }
 
 func (ur updateRepository) RetrieveByGroup(ctx context.Context, groupID string, pm ota.PageMetadata) (ota.UpdatesPage, error) {
@@ -114,15 +127,20 @@ func (ur updateRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	dq := dbutil.GetDirQuery(pm.Dir)
 	olq := dbutil.GetOffsetLimitQuery(pm.Limit)
 
-	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum,
-		description, timeout, created_at
+	sq := statusQuery(pm.Status)
+	whereClause := dbutil.BuildWhereClause("group_id = :group_id", sq)
+
+	q := fmt.Sprintf(`SELECT id, group_id, file_name, version, file_size, checksum, description,
+		timeout, created_at, status, targets, pending_count, downloading_count, installing_count,
+		succeeded_count, failed_count
 		FROM updates
-		WHERE group_id = :group_id
-		ORDER BY %s %s %s;`, oq, dq, olq)
-	qc := `SELECT COUNT(*) FROM updates WHERE group_id = :group_id;`
+		%s
+		ORDER BY %s %s %s;`, whereClause, oq, dq, olq)
+	qc := fmt.Sprintf(`SELECT COUNT(*) FROM updates %s;`, whereClause)
 
 	params := map[string]any{
 		"group_id": groupID,
+		"status":   pm.Status,
 		"limit":    pm.Limit,
 		"offset":   pm.Offset,
 	}
@@ -133,25 +151,13 @@ func (ur updateRepository) RetrieveByGroup(ctx context.Context, groupID string, 
 	}
 	defer rows.Close()
 
-	var dbus []dbUpdate
-	var ids []string
+	var items []ota.Update
 	for rows.Next() {
 		var dbu dbUpdate
 		if err := rows.StructScan(&dbu); err != nil {
 			return ota.UpdatesPage{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 		}
-		dbus = append(dbus, dbu)
-		ids = append(ids, dbu.ID)
-	}
-
-	stats, err := ur.stats(ctx, ids...)
-	if err != nil {
-		return ota.UpdatesPage{}, err
-	}
-
-	var items []ota.Update
-	for _, dbu := range dbus {
-		items = append(items, toUpdate(dbu, stats[dbu.ID]))
+		items = append(items, toUpdate(dbu))
 	}
 
 	total, err := dbutil.Total(ctx, ur.db, qc, params)
@@ -258,12 +264,20 @@ func (ur updateRepository) RetrieveActiveThingUpdate(ctx context.Context, thingI
 }
 
 func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUpdate) error {
-	q := `UPDATE thing_updates
+	q := `WITH old AS (
+			SELECT update_id, thing_id, status FROM thing_updates
+			WHERE update_id = :update_id
+			AND thing_id = :thing_id
+			AND status = ANY(:active)
+			FOR UPDATE
+		)
+		UPDATE thing_updates t
 		SET status = :status, error = :error,
 		reported_version = :reported_version, updated_at = :updated_at
-		WHERE update_id = :update_id
-		AND thing_id = :thing_id
-		AND status = ANY(:active);`
+		FROM old
+		WHERE t.update_id = old.update_id
+		AND t.thing_id = old.thing_id
+		RETURNING t.update_id, old.status;`
 
 	params := map[string]any{
 		"status":           tu.Status,
@@ -275,8 +289,14 @@ func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUp
 		"active":           ota.ActiveStatuses,
 	}
 
-	res, err := ur.db.NamedExecContext(ctx, q, params)
+	tx, err := ur.db.BeginTxx(ctx, nil)
 	if err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	var oldStatuses []dbOldStatus
+	if err := namedSelect(ctx, tx, &oldStatuses, q, params); err != nil {
+		tx.Rollback()
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok && pgErr.Code == pgerrcode.StringDataRightTruncationDataException {
 			return errors.Wrap(dbutil.ErrMalformedEntity, err)
@@ -284,13 +304,18 @@ func (ur updateRepository) UpdateThingUpdate(ctx context.Context, tu ota.ThingUp
 		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
-	cnt, err := res.RowsAffected()
-	if err != nil {
+	if len(oldStatuses) == 0 {
+		tx.Rollback()
+		return dbutil.ErrNotFound
+	}
+
+	if err := adjustStats(ctx, tx, oldStatuses, tu.Status); err != nil {
+		tx.Rollback()
 		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
-	if cnt == 0 {
-		return dbutil.ErrNotFound
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return nil
@@ -332,31 +357,48 @@ func (ur updateRepository) RetryFailed(ctx context.Context, updateID string, thi
 		"thing_ids":  thingIDs,
 	}
 
-	rows, err := ur.db.NamedQueryContext(ctx, q, params)
+	tx, err := ur.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
-	defer rows.Close()
 
 	var retriedThingIDs []string
-	for rows.Next() {
-		var thingID string
-		if err := rows.Scan(&thingID); err != nil {
-			return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
-		}
-		retriedThingIDs = append(retriedThingIDs, thingID)
+	if err := namedSelect(ctx, tx, &retriedThingIDs, q, params); err != nil {
+		tx.Rollback()
+		return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	oldStatuses := make([]dbOldStatus, len(retriedThingIDs))
+	for i := range oldStatuses {
+		oldStatuses[i] = dbOldStatus{UpdateID: updateID, Status: ota.StatusFailed}
+	}
+
+	if err := adjustStats(ctx, tx, oldStatuses, ota.StatusPending); err != nil {
+		tx.Rollback()
+		return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(dbutil.ErrUpdateEntity, err)
 	}
 
 	return retriedThingIDs, nil
 }
 
 func (ur updateRepository) FailTimedOut(ctx context.Context, now time.Time) error {
-	q := `UPDATE thing_updates t
+	q := `WITH old AS (
+			SELECT t.update_id, t.thing_id, t.status FROM thing_updates t
+			JOIN updates u ON u.id = t.update_id
+			WHERE t.status = ANY(:active)
+			AND t.updated_at + u.timeout * INTERVAL '1 second' < :now
+			FOR UPDATE OF t
+		)
+		UPDATE thing_updates t
 		SET status = :failed, error = :error, updated_at = :now
-		FROM updates u
-		WHERE u.id = t.update_id
-		AND t.status = ANY(:active)
-		AND t.updated_at + u.timeout * INTERVAL '1 second' < :now;`
+		FROM old
+		WHERE t.update_id = old.update_id
+		AND t.thing_id = old.thing_id
+		RETURNING t.update_id, old.status;`
 
 	params := map[string]any{
 		"failed": ota.StatusFailed,
@@ -365,18 +407,40 @@ func (ur updateRepository) FailTimedOut(ctx context.Context, now time.Time) erro
 		"active": ota.ActiveStatuses,
 	}
 
-	if _, err := ur.db.NamedExecContext(ctx, q, params); err != nil {
-		return errors.Wrap(dbutil.ErrUpdateEntity, err)
-	}
-
-	return nil
+	return ur.changeThingUpdates(ctx, q, params, ota.StatusFailed, dbutil.ErrUpdateEntity)
 }
 
 func (ur updateRepository) RemoveThingUpdatesByThing(ctx context.Context, thingID string) error {
-	q := `DELETE FROM thing_updates WHERE thing_id = :thing_id;`
+	q := `DELETE FROM thing_updates
+		WHERE thing_id = :thing_id
+		RETURNING update_id, status;`
 
-	if _, err := ur.db.NamedExecContext(ctx, q, map[string]any{"thing_id": thingID}); err != nil {
-		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	params := map[string]any{"thing_id": thingID}
+
+	return ur.changeThingUpdates(ctx, q, params, "", dbutil.ErrRemoveEntity)
+}
+
+// changeThingUpdates runs q, which returns the old statuses of the thing updates it changed to
+// newStatus, and applies the changes to their updates in the same transaction.
+func (ur updateRepository) changeThingUpdates(ctx context.Context, q string, params map[string]any, newStatus string, errType error) error {
+	tx, err := ur.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(errType, err)
+	}
+
+	var oldStatuses []dbOldStatus
+	if err := namedSelect(ctx, tx, &oldStatuses, q, params); err != nil {
+		tx.Rollback()
+		return errors.Wrap(errType, err)
+	}
+
+	if err := adjustStats(ctx, tx, oldStatuses, newStatus); err != nil {
+		tx.Rollback()
+		return errors.Wrap(errType, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(errType, err)
 	}
 
 	return nil
@@ -396,37 +460,76 @@ func (ur updateRepository) retrieveThingUpdate(ctx context.Context, q string, ar
 	return toThingUpdate(dbtu), nil
 }
 
-// stats returns thing update counts by status for each of the given updates.
-func (ur updateRepository) stats(ctx context.Context, updateIDs ...string) (map[string]ota.UpdateStats, error) {
-	q := `SELECT update_id,
-		COUNT(*) AS targets,
-		COUNT(*) FILTER (WHERE status = 'pending') AS pending,
-		COUNT(*) FILTER (WHERE status = 'downloading') AS downloading,
-		COUNT(*) FILTER (WHERE status = 'installing') AS installing,
-		COUNT(*) FILTER (WHERE status = 'succeeded') AS succeeded,
-		COUNT(*) FILTER (WHERE status = 'failed') AS failed
-		FROM thing_updates
-		WHERE update_id = ANY($1)
-		GROUP BY update_id;`
-
-	var rows []dbUpdateStats
-	if err := ur.db.SelectContext(ctx, &rows, q, updateIDs); err != nil {
-		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+// adjustStats moves each changed thing update from its old status counter to the newStatus
+// counter in its update's stats, and stores the stats with the resulting status. An empty
+// newStatus means the thing updates were removed. Every change of thing updates calls it in the
+// same transaction, so the stored stats and status never drift.
+func adjustStats(ctx context.Context, tx *sqlx.Tx, oldStatuses []dbOldStatus, newStatus string) error {
+	if len(oldStatuses) == 0 {
+		return nil
 	}
 
-	stats := make(map[string]ota.UpdateStats, len(rows))
-	for _, r := range rows {
-		stats[r.UpdateID] = ota.UpdateStats{
-			Targets:     r.Targets,
-			Pending:     r.Pending,
-			Downloading: r.Downloading,
-			Installing:  r.Installing,
-			Succeeded:   r.Succeeded,
-			Failed:      r.Failed,
+	updateIDs := make([]string, len(oldStatuses))
+	for i, old := range oldStatuses {
+		updateIDs[i] = old.UpdateID
+	}
+
+	// The lock orders changes of the same update, so each one counts into the latest stats.
+	qLock := `SELECT id, targets, pending_count, downloading_count, installing_count,
+		succeeded_count, failed_count
+		FROM updates
+		WHERE id = ANY(:update_ids)
+		ORDER BY id
+		FOR UPDATE;`
+	qStore := `UPDATE updates u
+		SET status = s.status, targets = s.targets, pending_count = s.pending_count,
+		downloading_count = s.downloading_count, installing_count = s.installing_count,
+		succeeded_count = s.succeeded_count, failed_count = s.failed_count
+		FROM unnest(CAST(:update_ids AS uuid[]), CAST(:statuses AS varchar[]),
+			CAST(:targets AS bigint[]), CAST(:pending_counts AS bigint[]),
+			CAST(:downloading_counts AS bigint[]), CAST(:installing_counts AS bigint[]),
+			CAST(:succeeded_counts AS bigint[]), CAST(:failed_counts AS bigint[]))
+			AS s (id, status, targets, pending_count, downloading_count, installing_count,
+			succeeded_count, failed_count)
+		WHERE u.id = s.id;`
+
+	var dbus []dbUpdate
+	if err := namedSelect(ctx, tx, &dbus, qLock, map[string]any{"update_ids": updateIDs}); err != nil {
+		return err
+	}
+
+	updates := make(map[string]ota.Update, len(dbus))
+	for _, dbu := range dbus {
+		updates[dbu.ID] = toUpdate(dbu)
+	}
+
+	for _, old := range oldStatuses {
+		u, ok := updates[old.UpdateID]
+		if !ok {
+			return dbutil.ErrNotFound
 		}
+		u.Stats.Remove(old.Status)
+		if newStatus != "" {
+			u.Stats.Add(newStatus)
+		}
+		updates[old.UpdateID] = u
 	}
 
-	return stats, nil
+	if _, err := tx.NamedExecContext(ctx, qStore, toDBUpdateStats(updates)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// namedSelect runs a named query in the transaction and scans its rows into dest.
+func namedSelect(ctx context.Context, tx *sqlx.Tx, dest any, q string, params map[string]any) error {
+	query, args, err := tx.BindNamed(q, params)
+	if err != nil {
+		return err
+	}
+
+	return tx.SelectContext(ctx, dest, query, args...)
 }
 
 func statusQuery(status string) string {
@@ -451,42 +554,46 @@ func createErr(err error) error {
 }
 
 type dbUpdate struct {
-	ID          string    `db:"id"`
-	GroupID     string    `db:"group_id"`
-	FileName    string    `db:"file_name"`
-	Version     string    `db:"version"`
-	FileSize    int64     `db:"file_size"`
-	Checksum    string    `db:"checksum"`
-	Description string    `db:"description"`
-	Timeout     int64     `db:"timeout"`
-	CreatedAt   time.Time `db:"created_at"`
-}
-
-type dbUpdateStats struct {
-	UpdateID    string `db:"update_id"`
-	Targets     uint64 `db:"targets"`
-	Pending     uint64 `db:"pending"`
-	Downloading uint64 `db:"downloading"`
-	Installing  uint64 `db:"installing"`
-	Succeeded   uint64 `db:"succeeded"`
-	Failed      uint64 `db:"failed"`
+	ID               string    `db:"id"`
+	GroupID          string    `db:"group_id"`
+	FileName         string    `db:"file_name"`
+	Version          string    `db:"version"`
+	FileSize         int64     `db:"file_size"`
+	Checksum         string    `db:"checksum"`
+	Description      string    `db:"description"`
+	Timeout          int64     `db:"timeout"`
+	CreatedAt        time.Time `db:"created_at"`
+	Status           string    `db:"status"`
+	Targets          uint64    `db:"targets"`
+	PendingCount     uint64    `db:"pending_count"`
+	DownloadingCount uint64    `db:"downloading_count"`
+	InstallingCount  uint64    `db:"installing_count"`
+	SucceededCount   uint64    `db:"succeeded_count"`
+	FailedCount      uint64    `db:"failed_count"`
 }
 
 func toDBUpdate(u ota.Update) dbUpdate {
 	return dbUpdate{
-		ID:          u.ID,
-		GroupID:     u.GroupID,
-		FileName:    u.FileName,
-		Version:     u.Version,
-		FileSize:    u.FileSize,
-		Checksum:    u.Checksum,
-		Description: u.Description,
-		Timeout:     int64(u.Timeout / time.Second),
-		CreatedAt:   u.CreatedAt,
+		ID:               u.ID,
+		GroupID:          u.GroupID,
+		FileName:         u.FileName,
+		Version:          u.Version,
+		FileSize:         u.FileSize,
+		Checksum:         u.Checksum,
+		Description:      u.Description,
+		Timeout:          int64(u.Timeout / time.Second),
+		CreatedAt:        u.CreatedAt,
+		Status:           u.Status,
+		Targets:          u.Stats.Targets,
+		PendingCount:     u.Stats.Pending,
+		DownloadingCount: u.Stats.Downloading,
+		InstallingCount:  u.Stats.Installing,
+		SucceededCount:   u.Stats.Succeeded,
+		FailedCount:      u.Stats.Failed,
 	}
 }
 
-func toUpdate(dbu dbUpdate, stats ota.UpdateStats) ota.Update {
+func toUpdate(dbu dbUpdate) ota.Update {
 	return ota.Update{
 		ID:          dbu.ID,
 		GroupID:     dbu.GroupID,
@@ -497,8 +604,50 @@ func toUpdate(dbu dbUpdate, stats ota.UpdateStats) ota.Update {
 		Description: dbu.Description,
 		Timeout:     time.Duration(dbu.Timeout) * time.Second,
 		CreatedAt:   dbu.CreatedAt,
-		Stats:       stats,
+		Status:      dbu.Status,
+		Stats: ota.UpdateStats{
+			Targets:     dbu.Targets,
+			Pending:     dbu.PendingCount,
+			Downloading: dbu.DownloadingCount,
+			Installing:  dbu.InstallingCount,
+			Succeeded:   dbu.SucceededCount,
+			Failed:      dbu.FailedCount,
+		},
 	}
+}
+
+// dbUpdateStats holds the stats and status of several updates as parallel columns for unnest.
+type dbUpdateStats struct {
+	UpdateIDs         []string `db:"update_ids"`
+	Statuses          []string `db:"statuses"`
+	Targets           []uint64 `db:"targets"`
+	PendingCounts     []uint64 `db:"pending_counts"`
+	DownloadingCounts []uint64 `db:"downloading_counts"`
+	InstallingCounts  []uint64 `db:"installing_counts"`
+	SucceededCounts   []uint64 `db:"succeeded_counts"`
+	FailedCounts      []uint64 `db:"failed_counts"`
+}
+
+func toDBUpdateStats(updates map[string]ota.Update) dbUpdateStats {
+	var dbus dbUpdateStats
+	for _, u := range updates {
+		dbus.UpdateIDs = append(dbus.UpdateIDs, u.ID)
+		dbus.Statuses = append(dbus.Statuses, u.Stats.Status())
+		dbus.Targets = append(dbus.Targets, u.Stats.Targets)
+		dbus.PendingCounts = append(dbus.PendingCounts, u.Stats.Pending)
+		dbus.DownloadingCounts = append(dbus.DownloadingCounts, u.Stats.Downloading)
+		dbus.InstallingCounts = append(dbus.InstallingCounts, u.Stats.Installing)
+		dbus.SucceededCounts = append(dbus.SucceededCounts, u.Stats.Succeeded)
+		dbus.FailedCounts = append(dbus.FailedCounts, u.Stats.Failed)
+	}
+
+	return dbus
+}
+
+// dbOldStatus is the status a thing update of an update had before it changed.
+type dbOldStatus struct {
+	UpdateID string `db:"update_id"`
+	Status   string `db:"status"`
 }
 
 type dbThingUpdate struct {

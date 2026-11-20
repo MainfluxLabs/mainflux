@@ -30,9 +30,9 @@ const (
 	contentType = "application/json"
 	wrongValue  = "wrong-value"
 
-	adminID    = "admin-id"
-	adminEmail = "admin@example.com"
-	adminToken = adminEmail
+	platformOwnerID    = "admin-id"
+	platformOwnerEmail = "admin@example.com"
+	platformOwnerToken = platformOwnerEmail
 
 	editorID    = "editor-id"
 	editorEmail = "editor@example.com"
@@ -50,7 +50,7 @@ const (
 )
 
 var usersList = []domain.User{
-	{ID: adminID, Email: adminEmail},
+	{ID: platformOwnerID, Email: platformOwnerEmail},
 	{ID: editorID, Email: editorEmail},
 	{ID: viewerID, Email: viewerEmail},
 	{ID: unauthID, Email: unauthEmail},
@@ -91,7 +91,7 @@ func newService() uiconfigs.Service {
 		{OrgID: orgID, MemberID: editorID, Role: domain.OrgEditor},
 		{OrgID: orgID, MemberID: viewerID, Role: domain.OrgViewer},
 	}
-	authClient := pkgmocks.NewAuthService(adminID, usersList, nil, orgMemberships...)
+	authClient := pkgmocks.NewAuthService(platformOwnerID, usersList, nil, orgMemberships...)
 	thingsClient := pkgmocks.NewThingsServiceClient(map[string]domain.Profile{}, nil, nil)
 
 	return uiconfigs.New(orgConfigs, thingConfigs, groupConfigs, thingsClient, authClient, uuid.NewMock(), logger.NewMock())
@@ -99,7 +99,7 @@ func newService() uiconfigs.Service {
 
 func newServer(svc uiconfigs.Service) *httptest.Server {
 	log := logger.NewMock()
-	ac := pkgmocks.NewAuthService(adminID, usersList, nil)
+	ac := pkgmocks.NewAuthService(platformOwnerID, usersList, nil)
 	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, log)
 	return httptest.NewServer(mux)
 }
@@ -293,7 +293,7 @@ func TestListOrgsConfigs(t *testing.T) {
 	}{
 		{
 			desc:   "list org configs with valid token",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			url:    fmt.Sprintf("%s/orgs/configs", ts.URL),
 			status: http.StatusOK,
 		},
@@ -305,7 +305,7 @@ func TestListOrgsConfigs(t *testing.T) {
 		},
 		{
 			desc:   "list org configs with invalid limit",
-			token:  adminToken,
+			token:  platformOwnerToken,
 			url:    fmt.Sprintf("%s/orgs/configs?limit=%s", ts.URL, "abc"),
 			status: http.StatusBadRequest,
 		},
@@ -327,7 +327,7 @@ func TestListOrgsConfigs(t *testing.T) {
 		client: client,
 		method: http.MethodGet,
 		url:    fmt.Sprintf("%s/orgs/configs", ts.URL),
-		token:  adminToken,
+		token:  platformOwnerToken,
 	}
 	res, err := req.make()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))

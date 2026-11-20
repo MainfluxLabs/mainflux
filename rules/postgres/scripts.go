@@ -26,23 +26,26 @@ func (rr ruleRepository) SaveScripts(ctx context.Context, scripts ...rules.LuaSc
 		VALUES (:id, :group_id, :script, :name, :description);
 	`
 
+	dbScripts := make([]dbLuaScript, 0, len(scripts))
 	for _, script := range scripts {
 		dbScript := toDBLuaScript(script)
-		if _, err := tx.NamedExecContext(ctx, query, dbScript); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []rules.LuaScript{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbScripts = append(dbScripts, dbScript)
+	}
 
-			return []rules.LuaScript{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, query, dbScripts); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []rules.LuaScript{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []rules.LuaScript{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []rules.LuaScript{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -171,14 +174,15 @@ func (rr ruleRepository) UpdateScript(ctx context.Context, script rules.LuaScrip
 func (rr ruleRepository) RemoveScripts(ctx context.Context, ids ...string) error {
 	query := `
 		DELETE FROM lua_scripts
-		WHERE id = :id
+		WHERE id = ANY(:ids)
 	`
 
-	for _, id := range ids {
-		dbr := dbLuaScript{ID: id}
-		if _, err := rr.db.NamedExecContext(ctx, query, dbr); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
@@ -210,27 +214,30 @@ func (rr ruleRepository) SaveScriptRuns(ctx context.Context, runs ...rules.Scrip
 		VALUES (:id, :script_id, :rule_id, :thing_id, :logs, :started_at, :finished_at, :status, :error);
 	`
 
+	dbRuns := make([]dbScriptRun, 0, len(runs))
 	for _, run := range runs {
 		dbRun, err := toDBScriptRun(run)
 		if err != nil {
 			return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, query, dbRun); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbRuns = append(dbRuns, dbRun)
+	}
 
-			return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, query, dbRuns); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []rules.ScriptRun{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -274,14 +281,15 @@ func (rr ruleRepository) RetrieveScriptRunByID(ctx context.Context, id string) (
 func (rr ruleRepository) RemoveScriptRuns(ctx context.Context, ids ...string) error {
 	query := `
 		DELETE FROM lua_script_runs
-		WHERE id = :id
+		WHERE id = ANY(:ids)
 	`
 
-	for _, id := range ids {
-		dbRun := dbScriptRun{ID: id}
-		if _, err := rr.db.NamedExecContext(ctx, query, dbRun); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := rr.db.NamedExecContext(ctx, query, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

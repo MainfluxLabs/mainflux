@@ -201,8 +201,8 @@ func TestImpersonatedEventIsDecoded(t *testing.T) {
 		ID:    "user-id",
 		Email: "user@example.com",
 		Impersonator: &domain.Identity{
-			ID:    "root-id",
-			Email: "root@example.com",
+			ID:    "platform-owner-id",
+			Email: "platform-owner@example.com",
 		},
 	}
 	event := events.Event{
@@ -325,4 +325,65 @@ func TestCloseInterruptsBlockedRead(t *testing.T) {
 		t.Fatal("Subscribe did not return within 3s after cancel")
 	}
 	_ = sub.Close()
+}
+
+func TestAuditEventsAreDecoded(t *testing.T) {
+	flushRedis(t)
+
+	h := &recordingHandler{}
+	sub := newSub(t, "audit", events.ThingsStream)
+	cancel, done := runSubscriber(t, sub, h)
+	defer func() {
+		cancel()
+		<-done
+		_ = sub.Close()
+	}()
+
+	// Give the subscriber time to enter its blocking read.
+	time.Sleep(300 * time.Millisecond)
+
+	metadata := map[string]any{"key": "value"}
+	actions := []events.EventAction{
+		events.ThingMetadataUpdated{ID: "thing-id", Metadata: metadata},
+		events.ThingExternalKeyUpdated{ID: "thing-id"},
+		events.ThingExternalKeyRemoved{ID: "thing-id"},
+		events.GroupCreated{ID: "group-id", Name: "name", Description: "desc", Metadata: metadata},
+		events.GroupUpdated{ID: "group-id", Name: "name", Description: "desc", Metadata: metadata},
+		events.GroupMembershipCreated{GroupID: "group-id", MemberID: "member-id", Role: "viewer"},
+		events.GroupMembershipUpdated{GroupID: "group-id", MemberID: "member-id", Role: "editor"},
+		events.GroupMembershipRemoved{GroupID: "group-id", MemberID: "member-id"},
+		events.OrgUpdated{ID: "org-id", Name: "name", Description: "desc", Metadata: metadata},
+		events.OrgMembershipCreated{OrgID: "org-id", MemberID: "member-id", Role: "viewer"},
+		events.OrgMembershipUpdated{OrgID: "org-id", MemberID: "member-id", Role: "editor"},
+		events.OrgMembershipRemoved{OrgID: "org-id", MemberID: "member-id"},
+		events.OrgInviteCreated{
+			ID:           "invite-id",
+			InviteeID:    "member-id",
+			InviteeEmail: "member@example.com",
+			InviteeRole:  "viewer",
+			GroupInvites: []domain.GroupInvite{{GroupID: "group-id", MemberRole: "editor"}},
+		},
+		events.OrgInviteRevoked{ID: "invite-id"},
+		events.OrgInviteAccepted{ID: "invite-id"},
+		events.OrgInviteDeclined{ID: "invite-id"},
+		events.APIKeyIssued{ID: "key-id", ExpiresAt: time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)},
+		events.APIKeyRevoked{ID: "key-id"},
+		events.SessionLoggedOutAll{},
+	}
+
+	for _, action := range actions {
+		event := events.Event{Action: action, OrgID: "org-id", GroupID: "group-id"}
+		err := redisClient.XAdd(context.Background(), &r.XAddArgs{
+			Stream: events.ThingsStream,
+			Values: map[string]any(event.Encode()),
+		}).Err()
+		require.NoError(t, err, "publishing event")
+	}
+
+	require.True(t, waitForCount(t, h, len(actions), 5000), "expected all events to be delivered")
+	for i, action := range actions {
+		assert.Equal(t, action, h.received[i].Action, action.Operation())
+		assert.Equal(t, "org-id", h.received[i].OrgID, action.Operation())
+		assert.Equal(t, "group-id", h.received[i].GroupID, action.Operation())
+	}
 }

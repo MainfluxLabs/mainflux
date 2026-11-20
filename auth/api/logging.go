@@ -318,7 +318,7 @@ func (lm *loggingMiddleware) GetOrgMembership(ctx context.Context, orgID, member
 	return lm.svc.GetOrgMembership(ctx, orgID, memberID)
 }
 
-func (lm *loggingMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (err error) {
+func (lm *loggingMiddleware) CreateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (_ []auth.OrgMembership, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method create_org_memberships by user %s, org id %s took %s to complete", email, orgID, time.Since(begin))
@@ -360,7 +360,7 @@ func (lm *loggingMiddleware) ListOrgMemberships(ctx context.Context, token, orgI
 	return lm.svc.ListOrgMemberships(ctx, token, orgID, pm)
 }
 
-func (lm *loggingMiddleware) UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (err error) {
+func (lm *loggingMiddleware) UpdateOrgMemberships(ctx context.Context, token, orgID string, oms ...auth.OrgMembership) (_ []auth.OrgMembership, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method update_org_memberships by user %s, org id %s took %s to complete", email, orgID, time.Since(begin))
@@ -502,7 +502,7 @@ func (lm *loggingMiddleware) CreateDormantOrgInvite(ctx context.Context, token s
 	return lm.svc.CreateDormantOrgInvite(ctx, token, oi, platformInviteID)
 }
 
-func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteID string) (err error) {
+func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteID string) (_ auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method revoke_org_invite by user %s, invite id %s took %s to complete", email, inviteID, time.Since(begin))
@@ -517,7 +517,7 @@ func (lm *loggingMiddleware) RevokeOrgInvite(ctx context.Context, token, inviteI
 	return lm.svc.RevokeOrgInvite(ctx, token, inviteID)
 }
 
-func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) (err error) {
+func (lm *loggingMiddleware) RespondOrgInvite(ctx context.Context, token, inviteID string, accept bool) (_ auth.OrgInvite, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method respond_org_invite by user %s, invite id %s and accept %t took %s to complete", email, inviteID, accept, time.Since(begin))

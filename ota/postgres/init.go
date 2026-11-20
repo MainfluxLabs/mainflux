@@ -52,17 +52,25 @@ func migrateDB(db *sqlx.DB) error {
 				Id: "ota_01",
 				Up: []string{
 					`CREATE TABLE IF NOT EXISTS updates (
-						id          UUID PRIMARY KEY,
-						group_id    UUID NOT NULL,
-						file_name   VARCHAR(255) NOT NULL,
-						version     VARCHAR(254) NOT NULL,
-						file_size   BIGINT NOT NULL DEFAULT 0,
-						checksum    VARCHAR(64) NOT NULL DEFAULT '',
-						description TEXT NOT NULL DEFAULT '',
-						timeout     BIGINT NOT NULL,
-						created_at  TIMESTAMPTZ NOT NULL
+						id                UUID PRIMARY KEY,
+						group_id          UUID NOT NULL,
+						file_name         VARCHAR(255) NOT NULL,
+						version           VARCHAR(254) NOT NULL,
+						file_size         BIGINT NOT NULL DEFAULT 0,
+						checksum          VARCHAR(64) NOT NULL DEFAULT '',
+						description       TEXT NOT NULL DEFAULT '',
+						timeout           BIGINT NOT NULL,
+						created_at        TIMESTAMPTZ NOT NULL,
+						targets           BIGINT NOT NULL DEFAULT 0,
+						pending_count     BIGINT NOT NULL DEFAULT 0,
+						downloading_count BIGINT NOT NULL DEFAULT 0,
+						installing_count  BIGINT NOT NULL DEFAULT 0,
+						succeeded_count   BIGINT NOT NULL DEFAULT 0,
+						failed_count      BIGINT NOT NULL DEFAULT 0,
+						status            VARCHAR(32) NOT NULL
 					)`,
-					`CREATE INDEX IF NOT EXISTS idx_updates_group_id ON updates (group_id)`,
+					`CREATE INDEX IF NOT EXISTS idx_updates_group_id_status
+						ON updates (group_id, status)`,
 					`CREATE TABLE IF NOT EXISTS thing_updates (
 						update_id        UUID NOT NULL REFERENCES updates (id) ON DELETE CASCADE,
 						thing_id         UUID NOT NULL,

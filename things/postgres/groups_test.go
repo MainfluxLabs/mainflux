@@ -38,53 +38,90 @@ func TestSaveGroup(t *testing.T) {
 	orgID := generateUUID(t)
 	grID := generateUUID(t)
 
+	grs := []things.Group{
+		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-1"},
+		{ID: generateUUID(t), OrgID: orgID, Name: groupName + "-2"},
+	}
+	grIDs := []string{grs[0].ID, grs[1].ID}
+	invalidGr := things.Group{ID: generateUUID(t), OrgID: orgID, Name: invalidName}
+
 	cases := []struct {
-		desc  string
-		group things.Group
-		err   error
+		desc       string
+		groups     []things.Group
+		unsavedIDs []string
+		err        error
 	}{
 		{
 			desc: "save new group",
-			group: things.Group{
-				ID:    grID,
-				OrgID: orgID,
-				Name:  groupName,
+			groups: []things.Group{
+				{
+					ID:    grID,
+					OrgID: orgID,
+					Name:  groupName,
+				},
 			},
 			err: nil,
 		},
 		{
 			desc: "save new group with existing name",
-			group: things.Group{
-				ID:    grID,
-				OrgID: orgID,
-				Name:  groupName,
+			groups: []things.Group{
+				{
+					ID:    grID,
+					OrgID: orgID,
+					Name:  groupName,
+				},
 			},
 			err: dbutil.ErrConflict,
 		},
 		{
 			desc: "save group with invalid name",
-			group: things.Group{
-				ID:    grID,
-				OrgID: orgID,
-				Name:  invalidName,
+			groups: []things.Group{
+				{
+					ID:    grID,
+					OrgID: orgID,
+					Name:  invalidName,
+				},
 			},
 			err: dbutil.ErrMalformedEntity,
 		},
 		{
 			desc: "save group with invalid description",
-			group: things.Group{
-				ID:          grID,
-				OrgID:       orgID,
-				Name:        groupName,
-				Description: invalidDesc,
+			groups: []things.Group{
+				{
+					ID:          grID,
+					OrgID:       orgID,
+					Name:        groupName,
+					Description: invalidDesc,
+				},
 			},
 			err: dbutil.ErrMalformedEntity,
+		},
+		{
+			desc:       "save new groups with an invalid name",
+			groups:     append(grs, invalidGr),
+			unsavedIDs: grIDs,
+			err:        dbutil.ErrMalformedEntity,
+		},
+		{
+			desc:   "save new groups",
+			groups: grs,
+			err:    nil,
 		},
 	}
 
 	for _, tc := range cases {
-		_, err := groupRepo.Save(context.Background(), tc.group)
+		_, err := groupRepo.Save(context.Background(), tc.groups...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.unsavedIDs {
+			_, err := groupRepo.RetrieveByID(context.Background(), id)
+			assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", tc.desc, err))
+		}
+	}
+
+	for _, id := range grIDs {
+		_, err := groupRepo.RetrieveByID(context.Background(), id)
+		assert.Nil(t, err, fmt.Sprintf("%s: %s\n", id, err))
 	}
 }
 
@@ -268,8 +305,45 @@ func TestRemoveGroup(t *testing.T) {
 
 	grIDs := []string{group1.ID, group2.ID}
 
-	err = groupRepo.Remove(context.Background(), grIDs...)
-	assert.True(t, errors.Contains(err, nil), fmt.Sprintf("delete non empty groups: expected %v got %v\n", nil, err))
+	cases := []struct {
+		desc        string
+		grIDs       []string
+		retainedIDs []string
+		err         error
+	}{
+		{
+			desc:        "delete groups with a malformed id",
+			grIDs:       append([]string{"wrong"}, grIDs...),
+			retainedIDs: grIDs,
+			err:         dbutil.ErrMalformedEntity,
+		},
+		{
+			desc:        "delete groups with a non-existing id",
+			grIDs:       append([]string{generateUUID(t)}, grIDs...),
+			retainedIDs: grIDs,
+			err:         dbutil.ErrRemoveEntity,
+		},
+		{
+			desc:  "delete non empty groups",
+			grIDs: grIDs,
+			err:   nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := groupRepo.Remove(context.Background(), tc.grIDs...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %v got %v\n", tc.desc, tc.err, err))
+
+		for _, id := range tc.retainedIDs {
+			_, err := groupRepo.RetrieveByID(context.Background(), id)
+			assert.Nil(t, err, fmt.Sprintf("%s: expected %s retained got %s\n", tc.desc, id, err))
+		}
+	}
+
+	for _, id := range grIDs {
+		_, err := groupRepo.RetrieveByID(context.Background(), id)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("%s: %s\n", id, err))
+	}
 }
 
 func TestRetrieveByIDs(t *testing.T) {

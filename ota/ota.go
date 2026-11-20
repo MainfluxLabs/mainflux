@@ -30,6 +30,15 @@ const (
 	ErrMsgSuperseded = "superseded by update %s"
 )
 
+const (
+	// UpdateStatusInProgress means at least one thing is still active.
+	UpdateStatusInProgress = "in_progress"
+	// UpdateStatusCompleted means no thing is active or failed.
+	UpdateStatusCompleted = "completed"
+	// UpdateStatusCompletedWithFailures means no thing is active and at least one failed.
+	UpdateStatusCompletedWithFailures = "completed_with_failures"
+)
+
 // ActiveStatuses are the statuses of a thing update that is still running.
 var ActiveStatuses = []string{StatusPending, StatusDownloading, StatusInstalling}
 
@@ -44,6 +53,7 @@ type Update struct {
 	Description string
 	Timeout     time.Duration
 	CreatedAt   time.Time
+	Status      string
 	Stats       UpdateStats
 }
 
@@ -55,6 +65,51 @@ type UpdateStats struct {
 	Installing  uint64
 	Succeeded   uint64
 	Failed      uint64
+}
+
+// Status returns the update status the stats add up to.
+func (s UpdateStats) Status() string {
+	switch {
+	case s.Pending+s.Downloading+s.Installing > 0:
+		return UpdateStatusInProgress
+	case s.Failed > 0:
+		return UpdateStatusCompletedWithFailures
+	default:
+		return UpdateStatusCompleted
+	}
+}
+
+// Add counts a thing with the given status.
+func (s *UpdateStats) Add(status string) {
+	s.Targets++
+	if counter := s.counter(status); counter != nil {
+		*counter++
+	}
+}
+
+// Remove stops counting a thing with the given status.
+func (s *UpdateStats) Remove(status string) {
+	s.Targets--
+	if counter := s.counter(status); counter != nil {
+		*counter--
+	}
+}
+
+func (s *UpdateStats) counter(status string) *uint64 {
+	switch status {
+	case StatusPending:
+		return &s.Pending
+	case StatusDownloading:
+		return &s.Downloading
+	case StatusInstalling:
+		return &s.Installing
+	case StatusSucceeded:
+		return &s.Succeeded
+	case StatusFailed:
+		return &s.Failed
+	default:
+		return nil
+	}
 }
 
 // ThingUpdate is the progress of one thing within an update.
@@ -81,9 +136,16 @@ type ThingUpdatesPage struct {
 
 // UpdateOrderFields maps API-facing order keys to SQL column expressions for the updates table.
 var UpdateOrderFields = map[string]string{
-	"id":         "id",
-	"created_at": "created_at",
-	"version":    "version",
+	"id":          "id",
+	"created_at":  "created_at",
+	"version":     "version",
+	"status":      "status",
+	"targets":     "targets",
+	"pending":     "pending_count",
+	"downloading": "downloading_count",
+	"installing":  "installing_count",
+	"succeeded":   "succeeded_count",
+	"failed":      "failed_count",
 }
 
 // ThingUpdateOrderFields maps API order keys to SQL column expressions of the thing_updates table.
@@ -99,10 +161,11 @@ type UpdateRepository interface {
 	// thing updates of the same things are marked failed as superseded in the same transaction.
 	Save(ctx context.Context, u Update, thingIDs ...string) error
 
-	// RetrieveByID retrieves the update with the given ID, including its stats.
+	// RetrieveByID retrieves the update with the given ID, including its status and stats.
 	RetrieveByID(ctx context.Context, id string) (Update, error)
 
-	// RetrieveByGroup retrieves a page of updates of the given group, including their stats.
+	// RetrieveByGroup retrieves a page of updates of the given group, including their status and
+	// stats, optionally filtered by status.
 	RetrieveByGroup(ctx context.Context, groupID string, pm PageMetadata) (UpdatesPage, error)
 
 	// Remove removes the update with the given ID and its thing updates.

@@ -30,34 +30,34 @@ import (
 )
 
 const (
-	contentTypeJSON  = "application/json"
-	email            = "user@example.com"
-	adminEmail       = "admin@example.com"
-	otherUserEmail   = "other_user@example.com"
-	token            = email
-	otherToken       = otherUserEmail
-	adminToken       = adminEmail
-	wrongValue       = "wrong_value"
-	emptyValue       = ""
-	emptyJson        = "{}"
-	wrongID          = 0
-	password         = "password"
-	maxNameSize      = 1024
-	nameKey          = "name"
-	ascKey           = "asc"
-	descKey          = "desc"
-	orgID            = "374106f7-030e-4881-8ab0-151195c29f92"
-	orgID2           = "374106f7-030e-4881-8ab0-151195c29f93"
-	prefix           = "fe6b4e92-cc98-425e-b0aa-"
-	n                = 101
-	validData        = `{"limit":5,"offset":0}`
-	descData         = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
-	ascData          = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
-	invalidOrderData = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
-	zeroLimitData    = `{"limit":0,"offset":0}`
-	invalidDirData   = `{"limit":5,"offset":0,"dir":"wrong"}`
-	invalidLimitData = `{"limit":210,"offset":0}`
-	invalidData      = `{"limit": "invalid"}`
+	contentTypeJSON    = "application/json"
+	email              = "user@example.com"
+	platformOwnerEmail = "admin@example.com"
+	otherUserEmail     = "other_user@example.com"
+	token              = email
+	otherToken         = otherUserEmail
+	platformOwnerToken = platformOwnerEmail
+	wrongValue         = "wrong_value"
+	emptyValue         = ""
+	emptyJson          = "{}"
+	wrongID            = 0
+	password           = "password"
+	maxNameSize        = 1024
+	nameKey            = "name"
+	ascKey             = "asc"
+	descKey            = "desc"
+	orgID              = "374106f7-030e-4881-8ab0-151195c29f92"
+	orgID2             = "374106f7-030e-4881-8ab0-151195c29f93"
+	prefix             = "fe6b4e92-cc98-425e-b0aa-"
+	n                  = 101
+	validData          = `{"limit":5,"offset":0}`
+	descData           = `{"limit":5,"offset":0,"dir":"desc","order":"name"}`
+	ascData            = `{"limit":5,"offset":0,"dir":"asc","order":"name"}`
+	invalidOrderData   = `{"limit":5,"offset":0,"dir":"asc","order":"wrong"}`
+	zeroLimitData      = `{"limit":0,"offset":0}`
+	invalidDirData     = `{"limit":5,"offset":0,"dir":"wrong"}`
+	invalidLimitData   = `{"limit":210,"offset":0}`
+	invalidData        = `{"limit": "invalid"}`
 )
 
 var (
@@ -75,8 +75,8 @@ var (
 	}
 	user            = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
 	otherUser       = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
-	admin           = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
-	usersList       = []users.User{admin, user, otherUser}
+	platformOwner   = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: platformOwnerEmail, Password: password, Role: auth.PlatformOwner}
+	usersList       = []users.User{platformOwner, user, otherUser}
 	group           = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}, {ID: orgID2, OwnerID: user.ID}}
 	orgMemberships  = []auth.OrgMembership{{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Editor}}
@@ -113,7 +113,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
+	auth := mocks.NewAuthService(platformOwner.ID, usersList, orgsList, orgMemberships...)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
@@ -129,7 +129,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(platformOwner.ID, usersList, orgsList), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
@@ -657,7 +657,7 @@ func TestListProfilesByOrg(t *testing.T) {
 	ts := newServer(svc)
 	defer ts.Close()
 
-	grs, err := svc.CreateGroups(context.Background(), adminToken, orgID, group)
+	grs, err := svc.CreateGroups(context.Background(), platformOwnerToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grs2, err := svc.CreateGroups(context.Background(), otherToken, orgID, group)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -671,7 +671,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
 	}
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profiles...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	data := []profileRes{}
@@ -746,105 +746,105 @@ func TestListProfilesByOrg(t *testing.T) {
 		},
 		{
 			desc:   "get a list of profiles by org with negative offset",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, -2, 5),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org with negative limit",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 1, -5),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org with no limit",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 1, 0),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org without offset",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles?limit=%d", profileURL, orgID, 5),
 			res:    data[0:5],
 		},
 		{
 			desc:   "get a list of profiles by org without limit",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d", profileURL, orgID, 1),
 			res:    data[1:11],
 		},
 		{
 			desc:   "get a list of profiles by org with redundant query params",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&value=something", profileURL, orgID, 0, 5),
 			res:    data[0:5],
 		},
 		{
 			desc:   "get a list of profiles by org with limit greater than max",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d", profileURL, orgID, 0, 210),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of things by org with default URL",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles", profileURL, orgID),
 			res:    data[0:10],
 		},
 		{
 			desc:   "get a list of profiles by org with invalid number of params",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles%s", profileURL, orgID, "?offset=4&limit=4&limit=5&offset=5"),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org with invalid offset",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles%s", profileURL, orgID, "?offset=e&limit=5"),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org with invalid limit",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles%s", profileURL, orgID, "?offset=5&limit=e"),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org sorted by name ascendant",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, nameKey, ascKey),
 			res:    data[0:5],
 		},
 		{
 			desc:   "get a list of profiles by org sorted by name descendent",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusOK,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, nameKey, descKey),
 			res:    data[0:5],
 		},
 		{
 			desc:   "get a list of profiles by org sorted with invalid order",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, "wrong", ascKey),
 			res:    nil,
 		},
 		{
 			desc:   "get a list of profiles by org sorted by name with invalid direction",
-			auth:   adminToken,
+			auth:   platformOwnerToken,
 			status: http.StatusBadRequest,
 			url:    fmt.Sprintf("%s/%s/profiles?offset=%d&limit=%d&order=%s&dir=%s", profileURL, orgID, 0, 5, nameKey, "wrong"),
 			res:    nil,
@@ -884,7 +884,7 @@ func TestSearchProfiles(t *testing.T) {
 		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
 	}
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profiles...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	data := []profileRes{}
@@ -1034,7 +1034,7 @@ func TestSearchProfilesByGroup(t *testing.T) {
 		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
 	}
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profiles...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	data := []profileRes{}
@@ -1184,7 +1184,7 @@ func TestSearchProfilesByOrg(t *testing.T) {
 		profiles[i] = things.Profile{ID: id, Name: name, Metadata: metadata}
 	}
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profiles...)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profiles...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	data := []profileRes{}

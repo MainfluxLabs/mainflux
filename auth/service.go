@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -17,12 +18,12 @@ const (
 	recoveryDuration = 5 * time.Minute
 
 	// Re-export role constants from domain for backward compatibility.
-	Admin   = domain.OrgAdmin
-	Owner   = domain.OrgOwner
-	Editor  = domain.OrgEditor
-	Viewer  = domain.OrgViewer
-	RootSub = domain.RootSub
-	OrgSub  = domain.OrgSub
+	Admin       = domain.OrgAdmin
+	Owner       = domain.OrgOwner
+	Editor      = domain.OrgEditor
+	Viewer      = domain.OrgViewer
+	PlatformSub = domain.PlatformSub
+	OrgSub      = domain.OrgSub
 )
 
 // Domain type aliases
@@ -144,7 +145,7 @@ func New(orgs OrgRepository, tc domain.ThingsClient, uc domain.UsersClient, keys
 
 func (svc service) Authorize(ctx context.Context, ar AuthzReq) error {
 	switch ar.Subject {
-	case RootSub:
+	case PlatformSub:
 		return svc.canAccessPlatform(ctx, ar.Token)
 	case OrgSub:
 		return svc.canAccessOrg(ctx, ar.Token, ar.Object, ar.Action)
@@ -160,8 +161,11 @@ func (svc service) Identify(ctx context.Context, token string) (Identity, error)
 func (svc service) identify(ctx context.Context, token string) (Identity, error) {
 	key, err := svc.tokenizer.Parse(token)
 	if err == ErrAPIKeyExpired {
-		err = svc.keys.Remove(ctx, key.IssuerID, key.ID)
-		return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+		if err := svc.keys.Remove(ctx, key.IssuerID, key.ID); err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
+			return Identity{}, errors.Wrap(ErrAPIKeyExpired, err)
+		}
+
+		return Identity{}, ErrAPIKeyExpired
 	}
 	if err != nil {
 		return Identity{}, errors.Wrap(errIdentify, err)
@@ -266,8 +270,8 @@ func (svc service) Backup(ctx context.Context, token string) (Backup, error) {
 }
 
 func (svc service) Restore(ctx context.Context, token string, backup Backup) error {
-	// Restoring platform roles is restricted to the root admin to prevent privilege escalation.
-	if err := svc.canAccessAsRoot(ctx, token); err != nil {
+	// Restoring platform roles is restricted to the platform owner to prevent privilege escalation.
+	if err := svc.canAccessAsPlatformOwner(ctx, token); err != nil {
 		return err
 	}
 
@@ -279,10 +283,10 @@ func (svc service) Restore(ctx context.Context, token string, backup Backup) err
 		return err
 	}
 
-	// The root role belongs only to the configured root admin.
+	// The platform owner role belongs only to the configured platform owner.
 	var urs []UserRole
 	for _, ur := range backup.UserRoles {
-		if ur.Role != RoleRootAdmin {
+		if ur.Role != PlatformOwner {
 			urs = append(urs, ur)
 		}
 	}
@@ -300,20 +304,20 @@ func (svc service) canAccessPlatform(ctx context.Context, token string) error {
 		return err
 	}
 
-	if role != RoleAdmin && role != RoleRootAdmin {
+	if role != PlatformAdmin && role != PlatformOwner {
 		return errors.ErrAuthorization
 	}
 
 	return nil
 }
 
-func (svc service) canAccessAsRoot(ctx context.Context, token string) error {
+func (svc service) canAccessAsPlatformOwner(ctx context.Context, token string) error {
 	role, err := svc.retrieveCallerRole(ctx, token)
 	if err != nil {
 		return err
 	}
 
-	if role != RoleRootAdmin {
+	if role != PlatformOwner {
 		return errors.ErrAuthorization
 	}
 

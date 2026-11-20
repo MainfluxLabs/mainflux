@@ -37,27 +37,30 @@ func (nr notifierRepository) Save(ctx context.Context, nfs ...notifiers.Notifier
 
 	q := `INSERT INTO notifiers (id, group_id, name, contacts, metadata) VALUES (:id, :group_id, :name, :contacts, :metadata);`
 
+	dbNfs := make([]dbNotifier, 0, len(nfs))
 	for _, notifier := range nfs {
 		dbNf, err := toDBNotifier(notifier)
 		if err != nil {
 			return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbNf); err != nil {
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbNfs = append(dbNfs, dbNf)
+	}
 
-			return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbNfs); err != nil {
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []notifiers.Notifier{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -179,13 +182,14 @@ func (nr notifierRepository) Update(ctx context.Context, n notifiers.Notifier) e
 }
 
 func (nr notifierRepository) Remove(ctx context.Context, ids ...string) error {
-	q := `DELETE FROM notifiers WHERE id = :id;`
+	q := `DELETE FROM notifiers WHERE id = ANY(:ids);`
 
-	for _, id := range ids {
-		dbNf := dbNotifier{ID: id}
-		if _, err := nr.db.NamedExecContext(ctx, q, dbNf); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := nr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil

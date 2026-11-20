@@ -127,10 +127,10 @@ func TestBackup(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	memberships := []auth.OrgMembership{viewer, editor, admin}
-	err = svc.CreateOrgMemberships(context.Background(), adminToken, o.ID, memberships...)
+	_, err = svc.CreateOrgMemberships(context.Background(), adminToken, o.ID, memberships...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
-	err = svc.AssignRole(context.Background(), id, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), id, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	or := []orgRes{
@@ -169,7 +169,7 @@ func TestBackup(t *testing.T) {
 	urs := []viewUserRole{
 		{
 			UserID: id,
-			Role:   auth.RoleAdmin,
+			Role:   auth.PlatformAdmin,
 		},
 	}
 
@@ -249,9 +249,9 @@ func TestRestore(t *testing.T) {
 	_, platformAdminToken, err := svc.Issue(context.Background(), "", platformAdminKey)
 	assert.Nil(t, err, fmt.Sprintf("Issuing login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), id, auth.RoleRootAdmin)
+	err = svc.AssignRole(context.Background(), id, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
-	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), adminID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	ts := newServer(svc)
 	defer ts.Close()
@@ -291,15 +291,15 @@ func TestRestore(t *testing.T) {
 	urs := []viewUserRole{
 		{
 			UserID: id,
-			Role:   auth.RoleAdmin,
+			Role:   auth.PlatformAdmin,
 		},
 		{
 			UserID: editorID,
-			Role:   auth.RoleAdmin,
+			Role:   auth.PlatformAdmin,
 		},
 		{
 			UserID: viewerID,
-			Role:   auth.RoleRootAdmin,
+			Role:   auth.PlatformOwner,
 		},
 	}
 
@@ -326,7 +326,7 @@ func TestRestore(t *testing.T) {
 		UserRoles: []viewUserRole{
 			{
 				UserID: "",
-				Role:   auth.RoleAdmin,
+				Role:   auth.PlatformAdmin,
 			},
 		},
 	})
@@ -408,8 +408,8 @@ func TestRestore(t *testing.T) {
 	}
 
 	roles := map[string]string{
-		id:       auth.RoleRootAdmin,
-		editorID: auth.RoleAdmin,
+		id:       auth.PlatformOwner,
+		editorID: auth.PlatformAdmin,
 		viewerID: "",
 	}
 

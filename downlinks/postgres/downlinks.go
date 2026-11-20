@@ -40,28 +40,31 @@ func (dr downlinkRepository) Save(ctx context.Context, dls ...downlinks.Downlink
           VALUES (:id, :group_id, :thing_id, :name, :url, :method, :payload, :headers, 
           :scheduler, :time_filter, :metadata);`
 
+	dbDls := make([]dbDownlink, 0, len(dls))
 	for _, downlink := range dls {
 		dbDl, err := toDBDownlink(downlink)
 		if err != nil {
 			return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 		}
 
-		if _, err := tx.NamedExecContext(ctx, q, dbDl); err != nil {
-			tx.Rollback()
-			pgErr, ok := err.(*pgconn.PgError)
-			if ok {
-				switch pgErr.Code {
-				case pgerrcode.InvalidTextRepresentation:
-					return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				case pgerrcode.UniqueViolation:
-					return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrConflict, err)
-				case pgerrcode.StringDataRightTruncationWarning:
-					return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
-				}
-			}
+		dbDls = append(dbDls, dbDl)
+	}
 
-			return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrCreateEntity, err)
+	if err := dbutil.NamedExecBatch(ctx, tx, q, dbDls); err != nil {
+		tx.Rollback()
+		pgErr, ok := err.(*pgconn.PgError)
+		if ok {
+			switch pgErr.Code {
+			case pgerrcode.InvalidTextRepresentation:
+				return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			case pgerrcode.UniqueViolation:
+				return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrConflict, err)
+			case pgerrcode.StringDataRightTruncationWarning:
+				return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+			}
 		}
+
+		return []downlinks.Downlink{}, errors.Wrap(dbutil.ErrCreateEntity, err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -278,13 +281,14 @@ func (dr downlinkRepository) Update(ctx context.Context, w downlinks.Downlink) e
 }
 
 func (dr downlinkRepository) Remove(ctx context.Context, ids ...string) error {
-	for _, id := range ids {
-		dbDl := dbDownlink{ID: id}
-		q := `DELETE FROM downlinks WHERE id = :id;`
+	q := `DELETE FROM downlinks WHERE id = ANY(:ids);`
 
-		if _, err := dr.db.NamedExecContext(ctx, q, dbDl); err != nil {
-			return errors.Wrap(dbutil.ErrRemoveEntity, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
+
+	if _, err := dr.db.NamedExecContext(ctx, q, params); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
 	}
 
 	return nil
