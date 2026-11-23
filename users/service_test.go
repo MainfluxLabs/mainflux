@@ -1674,14 +1674,14 @@ func TestOAuthCallback(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+		res, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
 			Provider: tc.provider,
 			Code:     tc.code,
 			Verifier: tc.verifier,
 		})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
 		if tc.redirectURLContains != "" {
-			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
+			assert.Contains(t, res.RedirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
 		}
 	}
 }

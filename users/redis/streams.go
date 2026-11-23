@@ -109,6 +109,19 @@ func (es eventStore) Login(ctx context.Context, user users.User) (string, error)
 	return token, err
 }
 
+func (es eventStore) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (users.OAuthCallbackResult, error) {
+	res, err := es.Service.OAuthCallback(ctx, data)
+	if err != nil {
+		return res, err
+	}
+
+	if res.Registered {
+		es.publishSelfRegistered(ctx, res.User.ID, res.User.Email, data.InviteID)
+	}
+
+	return res, nil
+}
+
 func (es eventStore) UpdateUser(ctx context.Context, token string, user users.User) error {
 	if err := es.Service.UpdateUser(ctx, token, user); err != nil {
 		return err

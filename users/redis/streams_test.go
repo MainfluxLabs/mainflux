@@ -5,6 +5,7 @@ package redis_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
+	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/pkg/authn"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
@@ -25,6 +27,7 @@ import (
 	r "github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -64,6 +67,18 @@ type testEnv struct {
 
 // newEnv returns a users service and the auth client it uses, without an event store.
 func newEnv(emailVerifyEnabled bool) testEnv {
+	c := users.Config{
+		InviteDuration:      inviteDuration,
+		EmailVerifyEnabled:  emailVerifyEnabled,
+		SelfRegisterEnabled: true,
+		PassMinLength:       users.MinPasswordLength,
+	}
+
+	return newEnvWithConfig(c, usersList)
+}
+
+// newEnvWithConfig is newEnv with a custom config and the users known to the auth client.
+func newEnvWithConfig(c users.Config, authUsers []users.User) testEnv {
 	verifications := []users.EmailVerification{
 		{
 			User:      newUser,
@@ -72,13 +87,7 @@ func newEnv(emailVerifyEnabled bool) testEnv {
 			ExpiresAt: time.Now().Add(time.Hour),
 		},
 	}
-	ac := mocks.NewAuthService(admin.ID, usersList, nil)
-	c := users.Config{
-		InviteDuration:      inviteDuration,
-		EmailVerifyEnabled:  emailVerifyEnabled,
-		SelfRegisterEnabled: true,
-		PassMinLength:       users.MinPasswordLength,
-	}
+	ac := mocks.NewAuthService(admin.ID, authUsers, nil)
 	svc := users.New(
 		usmocks.NewUserRepository(usersList),
 		usmocks.NewEmailVerificationRepository(verifications),
@@ -359,6 +368,123 @@ func TestRegister(t *testing.T) {
 				"id":    id,
 				"email": newUser.Email,
 			})
+		}
+
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, expected, event)
+		assert.Equal(t, expected, event, msg)
+	}
+}
+
+func TestOAuthCallback(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+
+	googleUser := users.User{Email: "google-user@example.com"}
+	githubUser := users.User{Email: "github-user@example.com"}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "access-token", "token_type": "Bearer"})
+	})
+	mux.HandleFunc("/google/userinfo", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": "google-id", "email": googleUser.Email})
+	})
+	mux.HandleFunc("/github/user", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": 1})
+	})
+	mux.HandleFunc("/github/emails", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{{"email": githubUser.Email, "primary": true, "verified": true}})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	c := users.Config{
+		InviteDuration:      inviteDuration,
+		SelfRegisterEnabled: true,
+		PassMinLength:       users.MinPasswordLength,
+		GoogleOAuth:         oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv.URL + "/token"}},
+		GitHubOAuth:         oauth2.Config{Endpoint: oauth2.Endpoint{TokenURL: srv.URL + "/token"}},
+		URLs: users.ConfigURLs{
+			GoogleUserInfoURL:   srv.URL + "/google/userinfo",
+			GitHubUserInfoURL:   srv.URL + "/github/user",
+			GitHubUserEmailsURL: srv.URL + "/github/emails",
+			RedirectLoginURL:    "https://example.com/login",
+		},
+	}
+	// The auth client must know the new users to issue their login keys.
+	env := newEnvWithConfig(c, append([]users.User{googleUser, githubUser}, usersList...))
+
+	invite, err := env.svc.CreatePlatformInvite(
+		context.Background(),
+		admin.Email,
+		redirectPath,
+		githubUser.Email,
+		domain.OrgInvite{},
+	)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+
+	svc := env.withEventStore(t)
+
+	cases := []struct {
+		desc      string
+		provider  string
+		inviteID  string
+		err       error
+		published bool
+	}{
+		{
+			desc:      "oauth callback registers a new user",
+			provider:  users.GoogleProvider,
+			err:       nil,
+			published: true,
+		},
+		{
+			desc:      "oauth callback logs in a linked user",
+			provider:  users.GoogleProvider,
+			err:       nil,
+			published: false,
+		},
+		{
+			desc:      "oauth callback registers a new user by invite",
+			provider:  users.GitHubProvider,
+			inviteID:  invite.ID,
+			err:       nil,
+			published: true,
+		},
+		{
+			desc:      "oauth callback with unknown provider",
+			provider:  "unknown",
+			err:       apiutil.ErrInvalidProvider,
+			published: false,
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		res, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+			Provider: tc.provider,
+			Code:     "code",
+			Verifier: oauth2.GenerateVerifier(),
+			InviteID: tc.inviteID,
+		})
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err)
+		assert.True(t, errors.Contains(err, tc.err), msg)
+
+		var expected map[string]any
+		if tc.published {
+			fields := map[string]any{
+				"id":    res.User.ID,
+				"email": res.User.Email,
+			}
+			if tc.inviteID != "" {
+				fields["invite_id"] = tc.inviteID
+			}
+			expected = actorEvent(events.UserRegister, res.User, fields)
 		}
 
 		var event map[string]any

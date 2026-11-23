@@ -248,7 +248,7 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		redirectURL, err := svc.OAuthCallback(ctx, users.OAuthCallbackData{
+		res, err := svc.OAuthCallback(ctx, users.OAuthCallbackData{
 			Provider:     req.provider,
 			Code:         req.code,
 			Verifier:     req.verifier,
@@ -259,7 +259,7 @@ func oauthCallbackEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		return redirectURLRes{redirectURL}, nil
+		return redirectURLRes{res.RedirectURL}, nil
 	}
 }
 

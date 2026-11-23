@@ -103,7 +103,7 @@ func (ms *metricsMiddleware) OAuthLogin(provider string) (data users.OAuthLoginD
 	return ms.svc.OAuthLogin(provider)
 }
 
-func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (string, error) {
+func (ms *metricsMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (users.OAuthCallbackResult, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "oauth_callback").Add(1)
 		ms.latency.With("method", "oauth_callback").Observe(time.Since(begin).Seconds())

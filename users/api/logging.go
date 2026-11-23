@@ -139,7 +139,7 @@ func (lm *loggingMiddleware) OAuthLogin(provider string) (data users.OAuthLoginD
 	return lm.svc.OAuthLogin(provider)
 }
 
-func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (token string, err error) {
+func (lm *loggingMiddleware) OAuthCallback(ctx context.Context, data users.OAuthCallbackData) (res users.OAuthCallbackResult, err error) {
 	defer func(begin time.Time) {
 		message := fmt.Sprintf("Method oauth_callback for provider %s took %s to complete", data.Provider, time.Since(begin))
 		if err != nil {

@@ -67,7 +67,7 @@ const (
 
 	UserRegister          = userPrefix + "register"
 	UserLogin             = userPrefix + "login"
-	UserLoginFail         = userPrefix + "login_failed"
+	UserLoginFail         = userPrefix + "login_fail"
 	UserUpdate            = userPrefix + "update"
 	UserChangePassword    = userPrefix + "change_password"
 	UserResetPassword     = userPrefix + "reset_password"
