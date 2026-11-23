@@ -5,6 +5,7 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -16,6 +17,7 @@ import (
 const (
 	groupByProfilePrefix  = "gr_by_pr"
 	profilesByGroupPrefix = "prs_by_gr"
+	configByProfilePrefix = "cfg_by_pr"
 )
 
 var _ things.ProfileCache = (*profileCache)(nil)
@@ -74,10 +76,52 @@ func (pc *profileCache) ViewGroup(ctx context.Context, profileID string) (string
 	return groupID, nil
 }
 
+func (pc *profileCache) SaveConfig(ctx context.Context, profileID string, config *things.Config) error {
+	data, err := json.Marshal(config)
+	if err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	ck := configByProfileIDKey(profileID)
+	if err := pc.client.Set(ctx, ck, data, 0).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+
+	return nil
+}
+
+func (pc *profileCache) RemoveConfig(ctx context.Context, profileID string) error {
+	ck := configByProfileIDKey(profileID)
+	if err := pc.client.Del(ctx, ck).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+
+	return nil
+}
+
+func (pc *profileCache) ViewConfig(ctx context.Context, profileID string) (*things.Config, error) {
+	ck := configByProfileIDKey(profileID)
+	data, err := pc.client.Get(ctx, ck).Bytes()
+	if err != nil {
+		return nil, errors.Wrap(dbutil.ErrNotFound, err)
+	}
+
+	var config *things.Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+
+	return config, nil
+}
+
 func groupByProfileIDKey(profileID string) string {
 	return fmt.Sprintf("%s:%s", groupByProfilePrefix, profileID)
 }
 
 func profilesByGroupIDKey(groupID string) string {
 	return fmt.Sprintf("%s:%s", profilesByGroupPrefix, groupID)
+}
+
+func configByProfileIDKey(profileID string) string {
+	return fmt.Sprintf("%s:%s", configByProfilePrefix, profileID)
 }

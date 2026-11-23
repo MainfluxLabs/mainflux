@@ -23,6 +23,9 @@ const (
 	retrieveAllProfiles        = "retrieve_all_profiles"
 	backupAllProfiles          = "backup_all_profiles"
 	retrieveGroupIDByProfileID = "retrieve_group_id_by_profile_id"
+	saveConfigByProfileID      = "save_config_by_profile_id"
+	retrieveConfigByProfileID  = "retrieve_config_by_profile_id"
+	removeConfigByProfileID    = "remove_config_by_profile_id"
 )
 
 var (
@@ -144,4 +147,28 @@ func (pcm profileCacheMiddleware) RemoveGroup(ctx context.Context, profileID str
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return pcm.cache.RemoveGroup(ctx, profileID)
+}
+
+func (pcm profileCacheMiddleware) SaveConfig(ctx context.Context, profileID string, config *things.Config) error {
+	span := dbutil.CreateSpan(ctx, pcm.tracer, saveConfigByProfileID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return pcm.cache.SaveConfig(ctx, profileID, config)
+}
+
+func (pcm profileCacheMiddleware) ViewConfig(ctx context.Context, profileID string) (*things.Config, error) {
+	span := dbutil.CreateSpan(ctx, pcm.tracer, retrieveConfigByProfileID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return pcm.cache.ViewConfig(ctx, profileID)
+}
+
+func (pcm profileCacheMiddleware) RemoveConfig(ctx context.Context, profileID string) error {
+	span := dbutil.CreateSpan(ctx, pcm.tracer, removeConfigByProfileID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return pcm.cache.RemoveConfig(ctx, profileID)
 }

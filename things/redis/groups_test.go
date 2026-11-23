@@ -10,6 +10,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/things"
 	"github.com/MainfluxLabs/mainflux/things/redis"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,4 +76,37 @@ func TestRemoveGroupEntitiesRemovesOrg(t *testing.T) {
 
 	_, err = groupCache.ViewOrg(context.Background(), groupID)
 	assert.True(t, errors.Contains(err, dbutil.ErrNotFound), fmt.Sprintf("view org after removing group entities: expected %s got %s", dbutil.ErrNotFound, err))
+}
+
+func TestRemoveGroupEntitiesRemovesProfileAndConfig(t *testing.T) {
+	groupCache := redis.NewGroupCache(redisClient)
+	thingCache := redis.NewThingCache(redisClient)
+	profileCache := redis.NewProfileCache(redisClient)
+
+	groupID, thingID, profileID := "123", "456", "789"
+
+	err := thingCache.SaveGroup(context.Background(), thingID, groupID)
+	require.Nil(t, err, fmt.Sprintf("save group by thing: expected nil got %s", err))
+
+	err = thingCache.SaveProfile(context.Background(), thingID, profileID)
+	require.Nil(t, err, fmt.Sprintf("save profile by thing: expected nil got %s", err))
+
+	err = profileCache.SaveGroup(context.Background(), profileID, groupID)
+	require.Nil(t, err, fmt.Sprintf("save group by profile: expected nil got %s", err))
+
+	err = profileCache.SaveConfig(context.Background(), profileID, &things.Config{})
+	require.Nil(t, err, fmt.Sprintf("save config by profile: expected nil got %s", err))
+
+	err = groupCache.RemoveGroupEntities(context.Background(), groupID)
+	require.Nil(t, err, fmt.Sprintf("remove group entities: expected nil got %s", err))
+
+	_, err = thingCache.ViewProfile(context.Background(), thingID)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+		fmt.Sprintf("view thing profile after group removal: expected %s got %s",
+			dbutil.ErrNotFound, err))
+
+	_, err = profileCache.ViewConfig(context.Background(), profileID)
+	assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+		fmt.Sprintf("view profile config after group removal: expected %s got %s",
+			dbutil.ErrNotFound, err))
 }

@@ -66,4 +66,13 @@ type ProfileCache interface {
 
 	// ViewGroup returns group ID by given profile ID.
 	ViewGroup(context.Context, string) (string, error)
+
+	// SaveConfig stores profile config by given profile ID.
+	SaveConfig(context.Context, string, *Config) error
+
+	// RemoveConfig removes profile config by given profile ID.
+	RemoveConfig(context.Context, string) error
+
+	// ViewConfig returns profile config by given profile ID.
+	ViewConfig(context.Context, string) (*Config, error)
 }

@@ -12,15 +12,18 @@ import (
 )
 
 const (
-	saveThingKey             = "save_thing_key"
-	retrieveThingIDByKey     = "retrieve_thing_id_by_key"
-	removeThingKey           = "remove_thing_key"
-	saveThingGroup           = "save_thing_group"
-	retrieveGroupIDByThingID = "retrieve_group_id_by_thing_id"
-	removeThingGroup         = "remove_thing_group"
-	saveThingType            = "save_thing_type"
-	retrieveThingType        = "retrieve_thing_type"
-	removeThingType          = "remove_thing_type"
+	saveThingKey               = "save_thing_key"
+	retrieveThingIDByKey       = "retrieve_thing_id_by_key"
+	removeThingKey             = "remove_thing_key"
+	saveThingGroup             = "save_thing_group"
+	retrieveGroupIDByThingID   = "retrieve_group_id_by_thing_id"
+	removeThingGroup           = "remove_thing_group"
+	saveThingType              = "save_thing_type"
+	retrieveThingType          = "retrieve_thing_type"
+	removeThingType            = "remove_thing_type"
+	saveThingProfile           = "save_thing_profile"
+	retrieveProfileIDByThingID = "retrieve_profile_id_by_thing_id"
+	removeThingProfile         = "remove_thing_profile"
 )
 
 var _ things.ThingCache = (*thingCacheMiddleware)(nil)
@@ -117,4 +120,28 @@ func (tcm thingCacheMiddleware) RemoveType(ctx context.Context, thingID string) 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
 	return tcm.cache.RemoveType(ctx, thingID)
+}
+
+func (tcm thingCacheMiddleware) SaveProfile(ctx context.Context, thingID string, profileID string) error {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, saveThingProfile)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.SaveProfile(ctx, thingID, profileID)
+}
+
+func (tcm thingCacheMiddleware) ViewProfile(ctx context.Context, thingID string) (string, error) {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, retrieveProfileIDByThingID)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.ViewProfile(ctx, thingID)
+}
+
+func (tcm thingCacheMiddleware) RemoveProfile(ctx context.Context, thingID string) error {
+	span := dbutil.CreateSpan(ctx, tcm.tracer, removeThingProfile)
+	defer span.Finish()
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	return tcm.cache.RemoveProfile(ctx, thingID)
 }

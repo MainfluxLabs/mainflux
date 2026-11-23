@@ -116,4 +116,13 @@ type ThingCache interface {
 
 	// RemoveType removes thing type by given thing ID.
 	RemoveType(context.Context, string) error
+
+	// SaveProfile stores profile ID by given thing ID.
+	SaveProfile(context.Context, string, string) error
+
+	// ViewProfile returns profile ID by given thing ID.
+	ViewProfile(context.Context, string) (string, error)
+
+	// RemoveProfile removes profile ID by given thing ID.
+	RemoveProfile(context.Context, string) error
 }

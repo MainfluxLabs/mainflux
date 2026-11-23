@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -158,4 +159,77 @@ func TestThingRemove(t *testing.T) {
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
 	}
 
+}
+
+func TestViewProfileByThing(t *testing.T) {
+	thingCache := redis.NewThingCache(redisClient)
+
+	thingID, profileID := "123", "321"
+
+	err := thingCache.SaveProfile(context.Background(), thingID, profileID)
+	require.Nil(t, err, fmt.Sprintf("save profile by thing: expected nil got %s", err))
+
+	cases := []struct {
+		desc      string
+		thingID   string
+		profileID string
+		err       error
+	}{
+		{
+			desc:      "view cached profile by thing",
+			thingID:   thingID,
+			profileID: profileID,
+			err:       nil,
+		},
+		{
+			desc:      "view profile by non-cached thing",
+			thingID:   wrongValue,
+			profileID: "",
+			err:       dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		profileID, err := thingCache.ViewProfile(context.Background(), tc.thingID)
+		assert.Equal(t, tc.profileID, profileID,
+			fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.profileID, profileID))
+		assert.True(t, errors.Contains(err, tc.err),
+			fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestRemoveProfileByThing(t *testing.T) {
+	thingCache := redis.NewThingCache(redisClient)
+
+	thingID, profileID := "123", "321"
+
+	err := thingCache.SaveProfile(context.Background(), thingID, profileID)
+	require.Nil(t, err, fmt.Sprintf("save profile by thing: expected nil got %s", err))
+
+	cases := []struct {
+		desc    string
+		thingID string
+		err     error
+	}{
+		{
+			desc:    "remove cached profile by thing",
+			thingID: thingID,
+			err:     nil,
+		},
+		{
+			desc:    "remove profile by non-cached thing",
+			thingID: wrongValue,
+			err:     nil,
+		},
+	}
+
+	for _, tc := range cases {
+		err := thingCache.RemoveProfile(context.Background(), tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err),
+			fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+
+		_, err = thingCache.ViewProfile(context.Background(), tc.thingID)
+		assert.True(t, errors.Contains(err, dbutil.ErrNotFound),
+			fmt.Sprintf("%s: expected %s got %s\n", tc.desc, dbutil.ErrNotFound, err))
+	}
 }

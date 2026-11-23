@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	keysByIDPrefix      = "keys_by_id"
-	idByKeyPrefix       = "id_by_key"
-	groupByThingPrefix  = "gr_by_th"
-	thingsByGroupPrefix = "ths_by_gr"
-	typeByThingPrefix   = "ty_by_th"
+	keysByIDPrefix       = "keys_by_id"
+	idByKeyPrefix        = "id_by_key"
+	groupByThingPrefix   = "gr_by_th"
+	thingsByGroupPrefix  = "ths_by_gr"
+	typeByThingPrefix    = "ty_by_th"
+	profileByThingPrefix = "pr_by_th"
 )
 
 var _ things.ThingCache = (*thingCache)(nil)
@@ -194,6 +195,31 @@ func (tc *thingCache) RemoveType(ctx context.Context, thingID string) error {
 	return nil
 }
 
+func (tc *thingCache) SaveProfile(ctx context.Context, thingID string, profileID string) error {
+	pk := profileByThingIDKey(thingID)
+	if err := tc.client.Set(ctx, pk, profileID, 0).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrCreateEntity, err)
+	}
+	return nil
+}
+
+func (tc *thingCache) ViewProfile(ctx context.Context, thingID string) (string, error) {
+	pk := profileByThingIDKey(thingID)
+	profileID, err := tc.client.Get(ctx, pk).Result()
+	if err != nil {
+		return "", errors.Wrap(dbutil.ErrNotFound, err)
+	}
+	return profileID, nil
+}
+
+func (tc *thingCache) RemoveProfile(ctx context.Context, thingID string) error {
+	pk := profileByThingIDKey(thingID)
+	if err := tc.client.Del(ctx, pk).Err(); err != nil {
+		return errors.Wrap(dbutil.ErrRemoveEntity, err)
+	}
+	return nil
+}
+
 func idByThingKeyKey(key things.ThingKey) string {
 	return fmt.Sprintf("%s:%s:%s", idByKeyPrefix, key.Type, key.Value)
 }
@@ -212,4 +238,8 @@ func thingsByGroupIDKey(groupID string) string {
 
 func typeByThingIDKey(thingID string) string {
 	return fmt.Sprintf("%s:%s", typeByThingPrefix, thingID)
+}
+
+func profileByThingIDKey(thingID string) string {
+	return fmt.Sprintf("%s:%s", profileByThingPrefix, thingID)
 }

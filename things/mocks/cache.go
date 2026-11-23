@@ -20,6 +20,7 @@ type thingCacheMock struct {
 	thingsByExternalKey map[string]string
 	groups              map[string]string
 	types               map[string]string
+	profiles            map[string]string
 }
 
 // NewThingCache returns mock cache instance.
@@ -29,6 +30,7 @@ func NewThingCache() things.ThingCache {
 		thingsByExternalKey: make(map[string]string),
 		groups:              make(map[string]string),
 		types:               make(map[string]string),
+		profiles:            make(map[string]string),
 	}
 }
 
@@ -159,15 +161,46 @@ func (tcm *thingCacheMock) RemoveType(_ context.Context, thingID string) error {
 	return nil
 }
 
+func (tcm *thingCacheMock) SaveProfile(_ context.Context, thingID string, profileID string) error {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	tcm.profiles[thingID] = profileID
+	return nil
+}
+
+func (tcm *thingCacheMock) ViewProfile(_ context.Context, thingID string) (string, error) {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	profileID, ok := tcm.profiles[thingID]
+	if !ok {
+		return "", dbutil.ErrNotFound
+	}
+
+	return profileID, nil
+}
+
+func (tcm *thingCacheMock) RemoveProfile(_ context.Context, thingID string) error {
+	tcm.mu.Lock()
+	defer tcm.mu.Unlock()
+
+	delete(tcm.profiles, thingID)
+
+	return nil
+}
+
 type profileCacheMock struct {
-	mu     sync.Mutex
-	groups map[string]string
+	mu      sync.Mutex
+	groups  map[string]string
+	configs map[string]*things.Config
 }
 
 // NewProfileCache returns mock cache instance.
 func NewProfileCache() things.ProfileCache {
 	return &profileCacheMock{
-		groups: make(map[string]string),
+		groups:  make(map[string]string),
+		configs: make(map[string]*things.Config),
 	}
 }
 
@@ -196,6 +229,34 @@ func (pcm *profileCacheMock) RemoveGroup(_ context.Context, profileID string) er
 	defer pcm.mu.Unlock()
 
 	delete(pcm.groups, profileID)
+	return nil
+}
+
+func (pcm *profileCacheMock) SaveConfig(_ context.Context, profileID string, config *things.Config) error {
+	pcm.mu.Lock()
+	defer pcm.mu.Unlock()
+
+	pcm.configs[profileID] = config
+	return nil
+}
+
+func (pcm *profileCacheMock) ViewConfig(_ context.Context, profileID string) (*things.Config, error) {
+	pcm.mu.Lock()
+	defer pcm.mu.Unlock()
+
+	config, ok := pcm.configs[profileID]
+	if !ok {
+		return nil, dbutil.ErrNotFound
+	}
+
+	return config, nil
+}
+
+func (pcm *profileCacheMock) RemoveConfig(_ context.Context, profileID string) error {
+	pcm.mu.Lock()
+	defer pcm.mu.Unlock()
+
+	delete(pcm.configs, profileID)
 	return nil
 }
 
