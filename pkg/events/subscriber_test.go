@@ -369,6 +369,21 @@ func TestAuditEventsAreDecoded(t *testing.T) {
 		events.APIKeyIssued{ID: "key-id", ExpiresAt: time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)},
 		events.APIKeyRevoked{ID: "key-id"},
 		events.SessionLoggedOutAll{},
+		events.UserRegistered{ID: "user-id", Email: "user@example.com", InviteID: "invite-id"},
+		events.UserLoggedIn{},
+		events.UserLoginFailed{Email: "user@example.com"},
+		events.UserUpdated{ID: "user-id", Metadata: metadata},
+		events.UserPasswordChanged{ID: "user-id"},
+		events.UserPasswordReset{ID: "user-id"},
+		events.UserEnabled{ID: "user-id"},
+		events.UserDisabled{ID: "user-id"},
+		events.UserAdminRoleAssigned{ID: "user-id"},
+		events.UserAdminRoleUnassigned{ID: "user-id"},
+		events.PlatformInviteCreated{
+			ID:           "invite-id",
+			InviteeEmail: "user@example.com",
+		},
+		events.PlatformInviteRevoked{ID: "invite-id"},
 	}
 
 	for _, action := range actions {

@@ -261,7 +261,7 @@ func (svc authServiceMock) UnassignRole(_ context.Context, id string) error {
 }
 
 func (svc authServiceMock) CreateDormantOrgInvite(_ context.Context, _, _, _, _ string, _ []domain.GroupInvite) error {
-	panic("not implemented")
+	return nil
 }
 
 func (svc authServiceMock) ActivateOrgInvite(_ context.Context, _, _, _ string) error {

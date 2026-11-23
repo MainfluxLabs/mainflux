@@ -20,6 +20,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/email"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	mfevents "github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/jaeger"
 	"github.com/MainfluxLabs/mainflux/pkg/servers"
 	serversgrpc "github.com/MainfluxLabs/mainflux/pkg/servers/grpc"
@@ -32,6 +33,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/users/bcrypt"
 	"github.com/MainfluxLabs/mainflux/users/emailer"
 	"github.com/MainfluxLabs/mainflux/users/postgres"
+	rediscache "github.com/MainfluxLabs/mainflux/users/redis"
 	"github.com/MainfluxLabs/mainflux/users/tracing"
 	"github.com/coreos/go-oidc/v3/oidc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
@@ -84,6 +86,10 @@ const (
 	defAuthGRPCTimeout = "1s"
 	defGRPCPort        = "8184"
 
+	defESURL          = "redis://localhost:6379/0"
+	defESStreamMaxLen = "100000"
+	defESBufferSize   = "10000"
+
 	defSelfRegisterEnabled = "true" // By default, everybody can create a user. Otherwise, only admin can create a user.
 	defEmailVerifyEnabled  = "false"
 
@@ -129,6 +135,10 @@ const (
 	envauthGRPCTimeout = "MF_AUTH_GRPC_TIMEOUT"
 	envGRPCPort        = "MF_USERS_GRPC_PORT"
 
+	envESURL          = "MF_USERS_ES_URL"
+	envESStreamMaxLen = "MF_USERS_ES_STREAM_MAXLEN"
+	envESBufferSize   = "MF_USERS_ES_BUFFER_SIZE"
+
 	envSelfRegisterEnabled = "MF_USERS_SELF_REGISTER_ENABLED"
 	envEmailVerifyEnabled  = "MF_REQUIRE_EMAIL_VERIFICATION"
 
@@ -173,6 +183,9 @@ type config struct {
 	githubOauthConfig     oauth2.Config
 	oidcConfig            users.OIDCConfig
 	urls                  users.ConfigURLs
+	esURL                 string
+	esStreamMaxLen        int64
+	esBufferSize          int
 }
 
 func main() {
@@ -204,7 +217,26 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("users_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(db, dbTracer, auth, cfg, logger)
+	pub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.UsersStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialise event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := pub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
+
+	svc := newService(db, dbTracer, auth, cfg, pub, logger)
 
 	g.Go(func() error {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, auth, usersHttpTracer, logger), cfg.httpConfig, logger)
@@ -336,6 +368,18 @@ func loadConfig() config {
 		log.Fatal(err)
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(
+		mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64,
+	)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
+	}
+
 	return config{
 		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:              dbConfig,
@@ -356,6 +400,9 @@ func loadConfig() config {
 		githubOauthConfig:     githubOauthConfig,
 		oidcConfig:            oidcConfig,
 		urls:                  urls,
+		esURL:                 mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:        esStreamMaxLen,
+		esBufferSize:          esBufferSize,
 	}
 }
 
@@ -368,7 +415,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c config, logger logger.Logger) users.Service {
+func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c config, pub mfevents.Publisher, logger logger.Logger) users.Service {
 	database := dbutil.NewDatabase(db)
 	hasher := argon2.New()
 	// Only verifies bcrypt hashes from earlier versions, replaced on login; remove once none remain.
@@ -414,6 +461,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 	}
 
 	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, legacyHasher, ac, svcEmailer, idProvider, logger, usersCfg)
+	svc = rediscache.NewEventStoreMiddleware(svc, ac, pub, usersCfg.EmailVerifyEnabled)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

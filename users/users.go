@@ -38,6 +38,14 @@ type OAuthCallbackData struct {
 	RedirectPath string
 }
 
+// OAuthCallbackResult is the outcome of an OAuth callback.
+type OAuthCallbackResult struct {
+	RedirectURL string
+	User        User
+	// Registered reports whether the callback created the user.
+	Registered bool
+}
+
 type Identity struct {
 	UserID         string
 	Provider       string

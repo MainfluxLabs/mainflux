@@ -1683,14 +1683,14 @@ func TestOAuthCallback(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+		res, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
 			Provider: tc.provider,
 			Code:     tc.code,
 			Verifier: tc.verifier,
 		})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
 		if tc.redirectURLContains != "" {
-			assert.Contains(t, redirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
+			assert.Contains(t, res.RedirectURL, tc.redirectURLContains, fmt.Sprintf("%s: redirect URL should contain %q\n", tc.desc, tc.redirectURLContains))
 		}
 	}
 }
@@ -1906,14 +1906,14 @@ func TestOIDCCallback(t *testing.T) {
 		idToken = tc.idToken
 		userInfoClaims = tc.userInfoClaims
 
-		redirectURL, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+		res, err := svc.OAuthCallback(context.Background(), users.OAuthCallbackData{
 			Provider: users.OIDCProvider,
 			Code:     "valid-code",
 			Verifier: verifier,
 		})
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
 		if tc.err == nil {
-			assert.Contains(t, redirectURL, "token=", fmt.Sprintf("%s: redirect URL should contain token\n", tc.desc))
+			assert.Contains(t, res.RedirectURL, "token=", fmt.Sprintf("%s: redirect URL should contain token\n", tc.desc))
 		}
 	}
 

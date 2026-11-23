@@ -111,7 +111,7 @@ type Service interface {
 	OAuthLogin(provider string) (data OAuthLoginData, err error)
 
 	// OAuthCallback exchanges the OAuth code for user info and logs in/creates the user.
-	OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error)
+	OAuthCallback(ctx context.Context, data OAuthCallbackData) (OAuthCallbackResult, error)
 
 	// ViewUser retrieves user info for a given user ID and an authorized token.
 	ViewUser(ctx context.Context, token, id string) (User, error)
@@ -537,7 +537,7 @@ func (svc usersService) OAuthLogin(provider string) (data OAuthLoginData, err er
 	return data, nil
 }
 
-func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (string, error) {
+func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackData) (OAuthCallbackResult, error) {
 	var providerUser oauthUser
 	var err error
 
@@ -549,25 +549,30 @@ func (svc usersService) OAuthCallback(ctx context.Context, data OAuthCallbackDat
 	case OIDCProvider:
 		providerUser, err = svc.fetchOIDCUser(ctx, data.Code, data.Verifier)
 	default:
-		return "", apiutil.ErrInvalidProvider
+		return OAuthCallbackResult{}, apiutil.ErrInvalidProvider
 	}
 
 	if err != nil {
-		return "", err
+		return OAuthCallbackResult{}, err
 	}
 
-	user, err := svc.handleIdentity(ctx, providerUser, data.InviteID, data.RedirectPath)
+	user, registered, err := svc.handleIdentity(ctx, providerUser, data.InviteID, data.RedirectPath)
 	if err != nil {
-		return "", err
+		return OAuthCallbackResult{}, err
 	}
 
 	token, err := svc.issue(ctx, user.ID, user.Email, domain.LoginKey)
 	if err != nil {
-		return "", err
+		return OAuthCallbackResult{}, err
 	}
 
-	redirectURL := fmt.Sprintf("%s#token=%s", svc.urls.RedirectLoginURL, token)
-	return redirectURL, nil
+	res := OAuthCallbackResult{
+		RedirectURL: fmt.Sprintf("%s#token=%s", svc.urls.RedirectLoginURL, token),
+		User:        user,
+		Registered:  registered,
+	}
+
+	return res, nil
 }
 
 // oauthUser holds the user identity returned by an OAuth provider.
@@ -731,55 +736,56 @@ func (svc usersService) fetchOIDCUser(ctx context.Context, code, verifier string
 }
 
 // handleIdentity returns the user linked to the provider identity,
-// or links or creates one by e-mail.
-func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUser, inviteID, redirectPath string) (User, error) {
+// or links or creates one by e-mail, and reports whether it created the user.
+func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUser, inviteID, redirectPath string) (User, bool, error) {
 	identity, err := svc.identity.Retrieve(ctx, providerUser.provider, providerUser.providerUserID)
 	if err != nil && !errors.Contains(err, dbutil.ErrNotFound) {
-		return User{}, err
+		return User{}, false, err
 	}
 
 	if identity.UserID != "" {
 		user, err := svc.users.RetrieveByID(ctx, identity.UserID)
 		if err != nil {
-			return User{}, err
+			return User{}, false, err
 		}
 		if user.Status != EnabledStatusKey {
-			return User{}, errors.ErrAuthentication
+			return User{}, false, errors.ErrAuthentication
 		}
 		if user.Email != providerUser.email && providerUser.emailVerified {
 			user.Email = providerUser.email
 			if err := svc.users.Update(ctx, user); err != nil {
-				return User{}, err
+				return User{}, false, err
 			}
 		}
-		return user, nil
+		return user, false, nil
 	}
 
+	var registered bool
 	user, err := svc.users.RetrieveByEmail(ctx, providerUser.email)
 	if err == nil && !providerUser.emailVerified {
 		// An unverified e-mail does not prove ownership of an existing account.
-		return User{}, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
+		return User{}, false, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
 	}
 	if err != nil {
 		if !errors.Contains(err, dbutil.ErrNotFound) {
-			return User{}, err
+			return User{}, false, err
 		}
 		if !svc.selfRegisterEnabled && inviteID == "" {
-			return User{}, ErrSelfRegisterDisabled
+			return User{}, false, ErrSelfRegisterDisabled
 		}
 		// Account creation requires a verified e-mail when e-mail verification is enabled.
 		// A platform invite already proves e-mail ownership.
 		if svc.emailVerifyEnabled && !providerUser.emailVerified && inviteID == "" {
-			return User{}, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
+			return User{}, false, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
 		}
 		if inviteID != "" {
 			if err := svc.ValidatePlatformInvite(ctx, inviteID, providerUser.email); err != nil {
-				return User{}, err
+				return User{}, false, err
 			}
 		}
 		uid, err := svc.idProvider.ID()
 		if err != nil {
-			return User{}, err
+			return User{}, false, err
 		}
 		user = User{
 			ID:     uid,
@@ -787,11 +793,12 @@ func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUs
 			Status: EnabledStatusKey,
 		}
 		if _, err := svc.users.Save(ctx, user); err != nil {
-			return User{}, err
+			return User{}, false, err
 		}
+		registered = true
 		if inviteID != "" {
 			if err := svc.auth.ActivateOrgInvite(ctx, inviteID, user.ID, redirectPath); err != nil {
-				return User{}, err
+				return User{}, false, err
 			}
 		}
 	}
@@ -803,11 +810,11 @@ func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUs
 	}
 	if err := svc.identity.Save(ctx, newIdentity); err != nil {
 		if !errors.Contains(err, dbutil.ErrConflict) {
-			return User{}, err
+			return User{}, false, err
 		}
 	}
 
-	return user, nil
+	return user, registered, nil
 }
 
 func (svc usersService) ViewUser(ctx context.Context, token, id string) (User, error) {
@@ -1058,11 +1065,11 @@ func (svc usersService) ChangePassword(ctx context.Context, token, email, passwo
 		userID = u.ID
 
 	case oldPassword != "" && email == "":
-		u := User{
-			Email:    ir.email,
-			Password: oldPassword,
+		dbUser, err := svc.users.RetrieveByEmail(ctx, ir.email)
+		if err != nil || dbUser.Password == "" {
+			return errors.ErrInvalidPassword
 		}
-		if _, err := svc.Login(ctx, u); err != nil {
+		if err := svc.comparePassword(ctx, dbUser, oldPassword); err != nil {
 			return errors.ErrInvalidPassword
 		}
 		userEmail = ir.email
