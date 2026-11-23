@@ -35,9 +35,9 @@ type authServiceMock struct {
 
 // NewAuthService creates mock of auth service client.
 // Org owners come from orgList, other org roles come from orgMemberships.
-func NewAuthService(adminID string, userList []users.User, orgList []auth.Org, orgMemberships ...auth.OrgMembership) domain.AuthClient {
+func NewAuthService(platformOwnerID string, userList []users.User, orgList []auth.Org, orgMemberships ...auth.OrgMembership) domain.AuthClient {
 	usersByEmail := make(map[string]users.User)
-	platformRoles := map[string]string{adminID: auth.RoleRootAdmin}
+	platformRoles := map[string]string{platformOwnerID: auth.PlatformOwner}
 	orgRoles := make(map[string]map[string]string)
 	orgs := make(map[string]auth.Org)
 
@@ -167,7 +167,7 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 	}
 
 	switch ar.Subject {
-	case auth.RootSub:
+	case auth.PlatformSub:
 		if !svc.isPlatformAdmin(u.ID) {
 			return errors.ErrAuthorization
 		}
@@ -184,7 +184,7 @@ func (svc authServiceMock) Authorize(_ context.Context, ar domain.AuthzReq) erro
 
 func (svc authServiceMock) isPlatformAdmin(userID string) bool {
 	role := svc.platformRoles[userID]
-	return role == auth.RoleRootAdmin || role == auth.RoleAdmin
+	return role == auth.PlatformOwner || role == auth.PlatformAdmin
 }
 
 func (svc authServiceMock) canAccessOrg(userID, orgID, action string) error {

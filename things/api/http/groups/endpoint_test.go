@@ -29,11 +29,11 @@ const (
 	contentTypeJSON        = "application/json"
 	contentTypeOctetStream = "application/octet-stream"
 	userEmail              = "user@example.com"
-	adminEmail             = "admin@example.com"
+	platformOwnerEmail     = "admin@example.com"
 	otherUserEmail         = "other_user@example.com"
 	token                  = userEmail
 	otherToken             = otherUserEmail
-	adminToken             = adminEmail
+	platformOwnerToken     = platformOwnerEmail
 	wrongValue             = "wrong_value"
 	emptyValue             = ""
 	password               = "password"
@@ -59,9 +59,9 @@ const (
 var (
 	user            = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
 	otherUser       = users.User{ID: "ecf9e48b-ba3b-41c4-82a9-72e063b17868", Email: otherUserEmail, Password: password}
-	admin           = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: adminEmail, Password: password, Role: auth.RootSub}
+	platformOwner   = users.User{ID: "2e248e36-2d26-46ea-97b0-1e38d674cbe4", Email: platformOwnerEmail, Password: password, Role: auth.PlatformOwner}
 	group           = things.Group{Name: "test-group", Description: "test-group-desc", OrgID: orgID}
-	usersList       = []users.User{admin, user, otherUser}
+	usersList       = []users.User{platformOwner, user, otherUser}
 	orgsList        = []auth.Org{{ID: orgID, OwnerID: user.ID}}
 	metadata        = map[string]any{"test": "data"}
 	invalidNameData = fmt.Sprintf(`{"limit":5,"offset":0,"name":"%s"}`, strings.Repeat("m", maxNameSize+1))
@@ -95,7 +95,7 @@ func (tr testRequest) make() (*http.Response, error) {
 }
 
 func newService() things.Service {
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
+	auth := mocks.NewAuthService(platformOwner.ID, usersList, orgsList)
 	thingsRepo := thmocks.NewThingRepository()
 	profilesRepo := thmocks.NewProfileRepository(thingsRepo)
 	groupMembershipsRepo := thmocks.NewGroupMembershipsRepository()
@@ -111,7 +111,7 @@ func newService() things.Service {
 
 func newServer(svc things.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(platformOwner.ID, usersList, orgsList), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 

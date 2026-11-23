@@ -35,13 +35,13 @@ func TestSaveRole(t *testing.T) {
 		{
 			desc: "save role",
 			id:   userID,
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  nil,
 		},
 		{
 			desc: "save already existing role",
 			id:   userID,
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  dbutil.ErrConflict,
 		},
 		{
@@ -53,13 +53,13 @@ func TestSaveRole(t *testing.T) {
 		{
 			desc: "save with invalid user id",
 			id:   invalid,
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  dbutil.ErrCreateEntity,
 		},
 		{
 			desc: "save without user id",
 			id:   "",
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  dbutil.ErrCreateEntity,
 		},
 		{
@@ -85,7 +85,7 @@ func TestRetrieve(t *testing.T) {
 	unknownUid, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), userID, auth.RoleAdmin)
+	err = repo.SaveRole(context.Background(), userID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -97,7 +97,7 @@ func TestRetrieve(t *testing.T) {
 		{
 			desc: "retrieve role",
 			id:   userID,
-			role: auth.RoleAdmin,
+			role: auth.PlatformAdmin,
 			err:  nil,
 		},
 		{
@@ -128,7 +128,7 @@ func TestUpdateRole(t *testing.T) {
 	userID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), userID, auth.RoleAdmin)
+	err = repo.SaveRole(context.Background(), userID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -140,13 +140,13 @@ func TestUpdateRole(t *testing.T) {
 		{
 			desc: "update role",
 			id:   userID,
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  nil,
 		},
 		{
 			desc: "update role for invalid user id",
 			id:   invalid,
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  dbutil.ErrUpdateEntity,
 		},
 		{
@@ -158,7 +158,7 @@ func TestUpdateRole(t *testing.T) {
 		{
 			desc: "update with empty user id",
 			id:   "",
-			role: auth.RoleRootAdmin,
+			role: auth.PlatformOwner,
 			err:  dbutil.ErrUpdateEntity,
 		},
 	}
@@ -176,7 +176,7 @@ func TestDeleteRole(t *testing.T) {
 	userID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), userID, auth.RoleAdmin)
+	err = repo.SaveRole(context.Background(), userID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -216,16 +216,16 @@ func TestRetrieveRoles(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
-	rootID, err := idProvider.ID()
+	platformOwnerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	adminID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	userID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), rootID, auth.RoleRootAdmin)
+	err = repo.SaveRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
-	err = repo.SaveRole(context.Background(), adminID, auth.RoleAdmin)
+	err = repo.SaveRole(context.Background(), adminID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -236,10 +236,10 @@ func TestRetrieveRoles(t *testing.T) {
 	}{
 		{
 			desc: "retrieve roles",
-			ids:  []string{rootID, adminID, userID},
+			ids:  []string{platformOwnerID, adminID, userID},
 			roles: map[string]string{
-				rootID:  auth.RoleRootAdmin,
-				adminID: auth.RoleAdmin,
+				platformOwnerID: auth.PlatformOwner,
+				adminID:         auth.PlatformAdmin,
 			},
 			err: nil,
 		},
@@ -277,7 +277,7 @@ func TestBackupAllRoles(t *testing.T) {
 		userID, err := idProvider.ID()
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-		err = repo.SaveRole(context.Background(), userID, auth.RoleAdmin)
+		err = repo.SaveRole(context.Background(), userID, auth.PlatformAdmin)
 		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	}
 
@@ -291,14 +291,14 @@ func TestRestoreAllRoles(t *testing.T) {
 	dbMiddleware := dbutil.NewDatabase(db)
 	repo := postgres.NewRolesRepo(dbMiddleware)
 
-	rootID, err := idProvider.ID()
+	platformOwnerID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	adminID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	repeatedID, err := idProvider.ID()
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
-	err = repo.SaveRole(context.Background(), rootID, auth.RoleRootAdmin)
+	err = repo.SaveRole(context.Background(), platformOwnerID, auth.PlatformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	cases := []struct {
@@ -310,12 +310,12 @@ func TestRestoreAllRoles(t *testing.T) {
 			desc: "restore roles",
 			urs: []auth.UserRole{
 				{
-					UserID: rootID,
-					Role:   auth.RoleAdmin,
+					UserID: platformOwnerID,
+					Role:   auth.PlatformAdmin,
 				},
 				{
 					UserID: adminID,
-					Role:   auth.RoleAdmin,
+					Role:   auth.PlatformAdmin,
 				},
 			},
 			err: nil,
@@ -325,11 +325,11 @@ func TestRestoreAllRoles(t *testing.T) {
 			urs: []auth.UserRole{
 				{
 					UserID: repeatedID,
-					Role:   auth.RoleAdmin,
+					Role:   auth.PlatformAdmin,
 				},
 				{
 					UserID: repeatedID,
-					Role:   auth.RoleRootAdmin,
+					Role:   auth.PlatformOwner,
 				},
 			},
 			err: nil,
@@ -339,7 +339,7 @@ func TestRestoreAllRoles(t *testing.T) {
 			urs: []auth.UserRole{
 				{
 					UserID: invalid,
-					Role:   auth.RoleAdmin,
+					Role:   auth.PlatformAdmin,
 				},
 			},
 			err: dbutil.ErrMalformedEntity,
@@ -363,9 +363,9 @@ func TestRestoreAllRoles(t *testing.T) {
 	}
 
 	roles := map[string]string{
-		rootID:     auth.RoleRootAdmin,
-		adminID:    auth.RoleAdmin,
-		repeatedID: auth.RoleAdmin,
+		platformOwnerID: auth.PlatformOwner,
+		adminID:         auth.PlatformAdmin,
+		repeatedID:      auth.PlatformAdmin,
 	}
 
 	for userID, expected := range roles {

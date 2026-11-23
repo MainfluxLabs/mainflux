@@ -274,7 +274,7 @@ func TestAuthorize(t *testing.T) {
 	_, adminToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: adminID, Subject: adminEmail})
 	require.Nil(t, err, fmt.Sprintf("Issuing admin login key expected to succeed: %s", err))
 
-	err = svc.AssignRole(context.Background(), adminID, auth.RoleAdmin)
+	err = svc.AssignRole(context.Background(), adminID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Assigning admin role expected to succeed: %s", err))
 
 	_, viewerToken, err := svc.Issue(context.Background(), "", auth.Key{Type: auth.LoginKey, IssuedAt: time.Now(), IssuerID: viewerID, Subject: viewerEmail})
@@ -294,12 +294,12 @@ func TestAuthorize(t *testing.T) {
 	}{
 		{
 			desc: "authorize with empty token",
-			ar:   domain.AuthzReq{Token: "", Subject: auth.RootSub},
+			ar:   domain.AuthzReq{Token: "", Subject: auth.PlatformSub},
 			code: codes.Unauthenticated,
 		},
 		{
 			desc: "authorize with invalid token",
-			ar:   domain.AuthzReq{Token: "invalid", Subject: auth.RootSub},
+			ar:   domain.AuthzReq{Token: "invalid", Subject: auth.PlatformSub},
 			code: codes.Unauthenticated,
 		},
 		{
@@ -309,12 +309,12 @@ func TestAuthorize(t *testing.T) {
 		},
 		{
 			desc: "authorize with valid token, non-admin user",
-			ar:   domain.AuthzReq{Token: userToken, Subject: auth.RootSub},
+			ar:   domain.AuthzReq{Token: userToken, Subject: auth.PlatformSub},
 			code: codes.PermissionDenied,
 		},
 		{
 			desc: "authorize with valid token, admin user",
-			ar:   domain.AuthzReq{Token: adminToken, Subject: auth.RootSub},
+			ar:   domain.AuthzReq{Token: adminToken, Subject: auth.PlatformSub},
 			code: codes.OK,
 		},
 		{
@@ -573,13 +573,13 @@ func TestAssignRole(t *testing.T) {
 		{
 			desc: "assign role",
 			id:   roleUserID,
-			role: auth.RoleAdmin,
+			role: auth.PlatformAdmin,
 			code: codes.OK,
 		},
 		{
 			desc: "assign role to user with role",
 			id:   roleUserID,
-			role: auth.RoleAdmin,
+			role: auth.PlatformAdmin,
 			code: codes.AlreadyExists,
 		},
 	}
@@ -595,7 +595,7 @@ func TestAssignRole(t *testing.T) {
 
 func TestRetrieveRoles(t *testing.T) {
 	adminUserID := "retrieveRolesAdminID"
-	err := svc.AssignRole(context.Background(), adminUserID, auth.RoleAdmin)
+	err := svc.AssignRole(context.Background(), adminUserID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Assigning role expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)
@@ -612,7 +612,7 @@ func TestRetrieveRoles(t *testing.T) {
 			desc: "retrieve roles",
 			ids:  []string{adminUserID, "retrieveRolesUserID"},
 			roles: map[string]string{
-				adminUserID: auth.RoleAdmin,
+				adminUserID: auth.PlatformAdmin,
 			},
 			code: codes.OK,
 		},
@@ -637,7 +637,7 @@ func TestRetrieveRoles(t *testing.T) {
 
 func TestUnassignRole(t *testing.T) {
 	roleUserID := "roleUserID"
-	err := svc.AssignRole(context.Background(), roleUserID, auth.RoleAdmin)
+	err := svc.AssignRole(context.Background(), roleUserID, auth.PlatformAdmin)
 	require.Nil(t, err, fmt.Sprintf("Assigning role expected to succeed: %s", err))
 
 	authAddr := fmt.Sprintf("localhost:%d", port)

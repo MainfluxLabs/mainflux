@@ -64,16 +64,16 @@ const (
 	defServerKey     = ""
 	defJaegerURL     = ""
 
-	defEmailHost         = "localhost"
-	defEmailPort         = "25"
-	defEmailUsername     = "root"
-	defEmailPassword     = ""
-	defEmailFromAddress  = ""
-	defEmailFromName     = ""
-	defEmailTemplatesDir = "."
-	defAdminEmail        = ""
-	defAdminPassword     = ""
-	defPassMinLength     = "15"
+	defEmailHost             = "localhost"
+	defEmailPort             = "25"
+	defEmailUsername         = "root"
+	defEmailPassword         = ""
+	defEmailFromAddress      = ""
+	defEmailFromName         = ""
+	defEmailTemplatesDir     = "."
+	defPlatformOwnerEmail    = ""
+	defPlatformOwnerPassword = ""
+	defPassMinLength         = "15"
 
 	defHost = "http://localhost"
 
@@ -113,9 +113,9 @@ const (
 	envServerKey     = "MF_USERS_SERVER_KEY"
 	envJaegerURL     = "MF_JAEGER_URL"
 
-	envAdminEmail    = "MF_USERS_ADMIN_EMAIL"
-	envAdminPassword = "MF_USERS_ADMIN_PASSWORD"
-	envPassMinLength = "MF_USERS_PASS_MIN_LENGTH"
+	envPlatformOwnerEmail    = "MF_USERS_PLATFORM_OWNER_EMAIL"
+	envPlatformOwnerPassword = "MF_USERS_PLATFORM_OWNER_PASSWORD"
+	envPassMinLength         = "MF_USERS_PASS_MIN_LENGTH"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -157,27 +157,27 @@ const (
 )
 
 type config struct {
-	logLevel            string
-	dbConfig            postgres.Config
-	httpConfig          servers.Config
-	grpcConfig          servers.Config
-	emailConf           email.Config
-	authConfig          clients.Config
-	jaegerURL           string
-	authGRPCTimeout     time.Duration
-	adminEmail          string
-	adminPassword       string
-	passMinLength       int
-	host                string
-	selfRegisterEnabled bool
-	emailVerifyEnabled  bool
-	inviteDuration      time.Duration
-	googleOauthConfig   oauth2.Config
-	githubOauthConfig   oauth2.Config
-	urls                users.ConfigURLs
-	esURL               string
-	esStreamMaxLen      int64
-	esBufferSize        int
+	logLevel              string
+	dbConfig              postgres.Config
+	httpConfig            servers.Config
+	grpcConfig            servers.Config
+	emailConf             email.Config
+	authConfig            clients.Config
+	jaegerURL             string
+	authGRPCTimeout       time.Duration
+	platformOwnerEmail    string
+	platformOwnerPassword string
+	passMinLength         int
+	host                  string
+	selfRegisterEnabled   bool
+	emailVerifyEnabled    bool
+	inviteDuration        time.Duration
+	googleOauthConfig     oauth2.Config
+	githubOauthConfig     oauth2.Config
+	urls                  users.ConfigURLs
+	esURL                 string
+	esStreamMaxLen        int64
+	esBufferSize          int
 }
 
 func main() {
@@ -363,27 +363,27 @@ func loadConfig() config {
 	}
 
 	return config{
-		logLevel:            mainflux.Env(envLogLevel, defLogLevel),
-		dbConfig:            dbConfig,
-		httpConfig:          httpConfig,
-		grpcConfig:          grpcConfig,
-		emailConf:           emailConf,
-		authConfig:          authConfig,
-		jaegerURL:           mainflux.Env(envJaegerURL, defJaegerURL),
-		authGRPCTimeout:     authGRPCTimeout,
-		adminEmail:          mainflux.Env(envAdminEmail, defAdminEmail),
-		adminPassword:       mainflux.Env(envAdminPassword, defAdminPassword),
-		host:                mainflux.Env(envHost, defHost),
-		passMinLength:       passMinLength,
-		selfRegisterEnabled: selfRegisterEnabled,
-		emailVerifyEnabled:  emailVerifyEnabled,
-		inviteDuration:      inviteDuration,
-		googleOauthConfig:   googleOauthConfig,
-		githubOauthConfig:   githubOauthConfig,
-		urls:                urls,
-		esURL:               mainflux.Env(envESURL, defESURL),
-		esStreamMaxLen:      esStreamMaxLen,
-		esBufferSize:        esBufferSize,
+		logLevel:              mainflux.Env(envLogLevel, defLogLevel),
+		dbConfig:              dbConfig,
+		httpConfig:            httpConfig,
+		grpcConfig:            grpcConfig,
+		emailConf:             emailConf,
+		authConfig:            authConfig,
+		jaegerURL:             mainflux.Env(envJaegerURL, defJaegerURL),
+		authGRPCTimeout:       authGRPCTimeout,
+		platformOwnerEmail:    mainflux.Env(envPlatformOwnerEmail, defPlatformOwnerEmail),
+		platformOwnerPassword: mainflux.Env(envPlatformOwnerPassword, defPlatformOwnerPassword),
+		host:                  mainflux.Env(envHost, defHost),
+		passMinLength:         passMinLength,
+		selfRegisterEnabled:   selfRegisterEnabled,
+		emailVerifyEnabled:    emailVerifyEnabled,
+		inviteDuration:        inviteDuration,
+		googleOauthConfig:     googleOauthConfig,
+		githubOauthConfig:     githubOauthConfig,
+		urls:                  urls,
+		esURL:                 mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:        esStreamMaxLen,
+		esBufferSize:          esBufferSize,
 	}
 }
 
@@ -458,21 +458,21 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 			Help:      "Total duration of requests in microseconds.",
 		}, []string{"method"}),
 	)
-	if err := createAdmin(svc, c); err != nil {
-		logger.Error("failed to create root user: " + err.Error())
+	if err := createPlatformOwner(svc, c); err != nil {
+		logger.Error("failed to create platform owner: " + err.Error())
 		os.Exit(1)
 	}
 
 	return svc
 }
 
-func createAdmin(svc users.Service, c config) error {
+func createPlatformOwner(svc users.Service, c config) error {
 	user := users.User{
-		Email:    c.adminEmail,
-		Password: c.adminPassword,
+		Email:    c.platformOwnerEmail,
+		Password: c.platformOwnerPassword,
 	}
 
-	if err := svc.RegisterAdmin(context.Background(), user); err != nil {
+	if err := svc.RegisterPlatformOwner(context.Background(), user); err != nil {
 		return err
 	}
 

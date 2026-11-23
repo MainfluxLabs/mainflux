@@ -40,11 +40,11 @@ const (
 )
 
 var (
-	admin = users.User{
+	platformOwner = users.User{
 		ID:       "574106f7-030e-4881-8ab0-151195c29f94",
 		Email:    "admin@example.com",
 		Password: password,
-		Role:     domain.RoleRootAdmin,
+		Role:     domain.PlatformOwner,
 		Status:   users.EnabledStatusKey,
 	}
 	user = users.User{
@@ -57,7 +57,7 @@ var (
 		Email:    "new-user@example.com",
 		Password: password,
 	}
-	usersList = []users.User{admin, user}
+	usersList = []users.User{platformOwner, user}
 )
 
 type testEnv struct {
@@ -87,7 +87,7 @@ func newEnvWithConfig(c users.Config, authUsers []users.User) testEnv {
 			ExpiresAt: time.Now().Add(time.Hour),
 		},
 	}
-	ac := mocks.NewAuthService(admin.ID, authUsers, nil)
+	ac := mocks.NewAuthService(platformOwner.ID, authUsers, nil)
 	svc := users.New(
 		usmocks.NewUserRepository(usersList),
 		usmocks.NewEmailVerificationRepository(verifications),
@@ -279,7 +279,7 @@ func TestRegisterByInvite(t *testing.T) {
 
 	invite, err := env.svc.CreatePlatformInvite(
 		context.Background(),
-		admin.Email,
+		platformOwner.Email,
 		redirectPath,
 		newUser.Email,
 		domain.OrgInvite{},
@@ -343,8 +343,8 @@ func TestRegister(t *testing.T) {
 		published bool
 	}{
 		{
-			desc:      "register user as admin",
-			token:     admin.Email,
+			desc:      "register user as platform owner",
+			token:     platformOwner.Email,
 			err:       nil,
 			published: true,
 		},
@@ -364,7 +364,7 @@ func TestRegister(t *testing.T) {
 
 		var expected map[string]any
 		if tc.published {
-			expected = actorEvent(events.UserRegister, admin, map[string]any{
+			expected = actorEvent(events.UserRegister, platformOwner, map[string]any{
 				"id":    id,
 				"email": newUser.Email,
 			})
@@ -421,7 +421,7 @@ func TestOAuthCallback(t *testing.T) {
 
 	invite, err := env.svc.CreatePlatformInvite(
 		context.Background(),
-		admin.Email,
+		platformOwner.Email,
 		redirectPath,
 		githubUser.Email,
 		domain.OrgInvite{},
@@ -619,11 +619,11 @@ func TestChangePassword(t *testing.T) {
 			}),
 		},
 		{
-			desc:  "change another user's password as admin",
-			token: admin.Email,
+			desc:  "change another user's password as platform owner",
+			token: platformOwner.Email,
 			email: user.Email,
 			err:   nil,
-			event: actorEvent(events.UserChangePassword, admin, map[string]any{
+			event: actorEvent(events.UserChangePassword, platformOwner, map[string]any{
 				"id": user.ID,
 			}),
 		},
@@ -708,17 +708,17 @@ func TestChangeUserStatus(t *testing.T) {
 		},
 		{
 			desc:   "disable user",
-			token:  admin.Email,
+			token:  platformOwner.Email,
 			change: svc.DisableUser,
 			err:    nil,
-			event:  actorEvent(events.UserDisable, admin, map[string]any{"id": user.ID}),
+			event:  actorEvent(events.UserDisable, platformOwner, map[string]any{"id": user.ID}),
 		},
 		{
 			desc:   "enable user",
-			token:  admin.Email,
+			token:  platformOwner.Email,
 			change: svc.EnableUser,
 			err:    nil,
-			event:  actorEvent(events.UserEnable, admin, map[string]any{"id": user.ID}),
+			event:  actorEvent(events.UserEnable, platformOwner, map[string]any{"id": user.ID}),
 		},
 	}
 
@@ -756,19 +756,19 @@ func TestChangeAdminRole(t *testing.T) {
 		},
 		{
 			desc:   "assign admin role",
-			token:  admin.Email,
+			token:  platformOwner.Email,
 			change: svc.AssignAdminRole,
 			err:    nil,
-			event: actorEvent(events.UserAssignAdminRole, admin, map[string]any{
+			event: actorEvent(events.UserAssignAdminRole, platformOwner, map[string]any{
 				"id": user.ID,
 			}),
 		},
 		{
 			desc:   "unassign admin role",
-			token:  admin.Email,
+			token:  platformOwner.Email,
 			change: svc.UnassignAdminRole,
 			err:    nil,
-			event: actorEvent(events.UserUnassignAdminRole, admin, map[string]any{
+			event: actorEvent(events.UserUnassignAdminRole, platformOwner, map[string]any{
 				"id": user.ID,
 			}),
 		},
@@ -815,14 +815,14 @@ func TestCreatePlatformInvite(t *testing.T) {
 		},
 		{
 			desc:      "create platform invite for registered user",
-			token:     admin.Email,
+			token:     platformOwner.Email,
 			email:     user.Email,
 			err:       dbutil.ErrConflict,
 			published: false,
 		},
 		{
 			desc:      "create platform invite with org invite",
-			token:     admin.Email,
+			token:     platformOwner.Email,
 			email:     newUser.Email,
 			orgInvite: orgInvite,
 			err:       nil,
@@ -839,7 +839,7 @@ func TestCreatePlatformInvite(t *testing.T) {
 
 		var expected map[string]any
 		if tc.published {
-			expected = actorEvent(events.PlatformInviteCreate, admin, map[string]any{
+			expected = actorEvent(events.PlatformInviteCreate, platformOwner, map[string]any{
 				"id":            invite.ID,
 				"invitee_email": newUser.Email,
 				"invitee_role":  "editor",
@@ -861,7 +861,7 @@ func TestRevokePlatformInvite(t *testing.T) {
 
 	invite, err := env.svc.CreatePlatformInvite(
 		context.Background(),
-		admin.Email,
+		platformOwner.Email,
 		redirectPath,
 		newUser.Email,
 		domain.OrgInvite{},
@@ -886,10 +886,10 @@ func TestRevokePlatformInvite(t *testing.T) {
 		},
 		{
 			desc:     "revoke platform invite",
-			token:    admin.Email,
+			token:    platformOwner.Email,
 			inviteID: invite.ID,
 			err:      nil,
-			event: actorEvent(events.PlatformInviteRevoke, admin, map[string]any{
+			event: actorEvent(events.PlatformInviteRevoke, platformOwner, map[string]any{
 				"id": invite.ID,
 			}),
 		},

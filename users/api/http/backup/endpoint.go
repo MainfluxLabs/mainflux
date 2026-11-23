@@ -16,12 +16,12 @@ func backupEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		admin, users, identities, err := svc.Backup(ctx, req.token)
+		platformOwner, users, identities, err := svc.Backup(ctx, req.token)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildBackupResponse(admin, users, identities), nil
+		return buildBackupResponse(platformOwner, users, identities), nil
 	}
 }
 
@@ -32,9 +32,9 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		admin, users, identities := buildBackup(req)
+		platformOwner, users, identities := buildBackup(req)
 
-		if err := svc.Restore(ctx, req.token, admin, users, identities); err != nil {
+		if err := svc.Restore(ctx, req.token, platformOwner, users, identities); err != nil {
 			return nil, err
 		}
 
@@ -42,14 +42,14 @@ func restoreEndpoint(svc users.Service) endpoint.Endpoint {
 	}
 }
 
-func buildBackupResponse(admin users.User, users []users.User, identities []users.Identity) backupRes {
+func buildBackupResponse(platformOwner users.User, users []users.User, identities []users.Identity) backupRes {
 	res := backupRes{
-		Admin: backupUserRes{
-			ID:       admin.ID,
-			Email:    admin.Email,
-			Password: admin.Password,
-			Metadata: admin.Metadata,
-			Status:   admin.Status,
+		PlatformOwner: backupUserRes{
+			ID:       platformOwner.ID,
+			Email:    platformOwner.Email,
+			Password: platformOwner.Password,
+			Metadata: platformOwner.Metadata,
+			Status:   platformOwner.Status,
 		},
 		Users:      []backupUserRes{},
 		Identities: []backupIdentityRes{},
@@ -79,12 +79,12 @@ func buildBackupResponse(admin users.User, users []users.User, identities []user
 }
 
 func buildBackup(req restoreReq) (users.User, []users.User, []users.Identity) {
-	admin := users.User{
-		ID:       req.Admin.ID,
-		Email:    req.Admin.Email,
-		Password: req.Admin.Password,
-		Metadata: req.Admin.Metadata,
-		Status:   req.Admin.Status,
+	platformOwner := users.User{
+		ID:       req.PlatformOwner.ID,
+		Email:    req.PlatformOwner.Email,
+		Password: req.PlatformOwner.Password,
+		Metadata: req.PlatformOwner.Metadata,
+		Status:   req.PlatformOwner.Status,
 	}
 
 	u := []users.User{}
@@ -109,5 +109,5 @@ func buildBackup(req restoreReq) (users.User, []users.User, []users.Identity) {
 		i = append(i, view)
 	}
 
-	return admin, u, i
+	return platformOwner, u, i
 }

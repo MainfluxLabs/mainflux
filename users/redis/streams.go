@@ -147,7 +147,7 @@ func (es eventStore) ChangePassword(ctx context.Context, token, email, password,
 	identity, _ := authn.IdentityFromCtx(ctx)
 	userID := identity.ID
 
-	// A provided e-mail means a platform admin changed another user's password.
+	// A provided e-mail means a platform owner or admin changed another user's password.
 	if email != "" {
 		us, err := es.Service.ListUsersByEmails(ctx, []string{email})
 		if err != nil {

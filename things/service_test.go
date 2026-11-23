@@ -25,7 +25,7 @@ import (
 const (
 	emptyValue         = ""
 	wrongValue         = "wrong-value"
-	adminEmail         = "admin@example.com"
+	platformOwnerEmail = "admin@example.com"
 	userEmail          = "user@example.com"
 	otherUserEmail     = "other.user@example.com"
 	unauthUserEmail    = "unauth@example.com"
@@ -33,7 +33,7 @@ const (
 	editorEmail        = "editor@gmail.com"
 	orgAdminEmail      = "org.admin@example.com"
 	otherOrgOwnerEmail = "other.org.owner@example.com"
-	adminToken         = adminEmail
+	platformOwnerToken = platformOwnerEmail
 	viewerToken        = viewerEmail
 	editorToken        = editorEmail
 	orgAdminToken      = orgAdminEmail
@@ -61,12 +61,12 @@ var (
 	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: userEmail, Password: password}
 	otherUser     = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password}
 	unauthUser    = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f93", Email: unauthUserEmail, Password: password}
-	admin         = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
+	platformOwner = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: platformOwnerEmail, Password: password, Role: auth.PlatformOwner}
 	viewer        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f99", Email: viewerEmail, Password: password}
 	editor        = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f91", Email: editorEmail, Password: password}
 	orgAdmin      = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f96", Email: orgAdminEmail, Password: password}
 	otherOrgOwner = users.User{ID: "974106f7-030e-4881-8ab0-151195c29f98", Email: otherOrgOwnerEmail, Password: password}
-	usersList     = []users.User{admin, user, otherUser, viewer, editor, unauthUser, orgAdmin, otherOrgOwner}
+	usersList     = []users.User{platformOwner, user, otherUser, viewer, editor, unauthUser, orgAdmin, otherOrgOwner}
 	usersByEmails = map[string]users.User{
 		userEmail:          {ID: user.ID, Email: userEmail},
 		otherUserEmail:     {ID: otherUser.ID, Email: otherToken},
@@ -108,7 +108,7 @@ func newService() things.Service {
 }
 
 func newServiceWithGroupMemberships(groupMembershipsRepo things.GroupMembershipsRepository) things.Service {
-	auth := authmock.NewAuthService(admin.ID, usersList, orgsList, orgMemberships...)
+	auth := authmock.NewAuthService(platformOwner.ID, usersList, orgsList, orgMemberships...)
 	uc := mocks.NewUsersService(usersByIDs, usersByEmails)
 	thingsRepo := mocks.NewThingRepository()
 	profilesRepo := mocks.NewProfileRepository(thingsRepo)
@@ -350,9 +350,9 @@ func TestViewThing(t *testing.T) {
 			token: token,
 			err:   nil,
 		},
-		"view existing thing as admin": {
+		"view existing thing as platform owner": {
 			id:    th.ID,
-			token: adminToken,
+			token: platformOwnerToken,
 			err:   nil,
 		},
 		"view thing with wrong credentials": {
@@ -482,8 +482,8 @@ func TestListThings(t *testing.T) {
 			size: 5,
 			err:  nil,
 		},
-		"list all things as admin": {
-			token: adminToken,
+		"list all things as platform owner": {
+			token: platformOwnerToken,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
@@ -747,13 +747,13 @@ func TestListThingsByProfile(t *testing.T) {
 func TestListThingsByOrg(t *testing.T) {
 	svc := newService()
 
-	grs, err := svc.CreateGroups(context.Background(), adminToken, orgID, createdGroup)
+	grs, err := svc.CreateGroups(context.Background(), platformOwnerToken, orgID, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grs2, err := svc.CreateGroups(context.Background(), otherToken, orgID, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	gr, gr2 := grs[0], grs2[0]
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profile)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	prs2, err := svc.CreateProfiles(context.Background(), otherToken, gr2.ID, profile)
@@ -778,7 +778,7 @@ func TestListThingsByOrg(t *testing.T) {
 		ths2 = append(ths2, th2)
 	}
 
-	_, err = svc.CreateThings(context.Background(), adminToken, pr.ID, ths...)
+	_, err = svc.CreateThings(context.Background(), platformOwnerToken, pr.ID, ths...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	_, err = svc.CreateThings(context.Background(), otherToken, pr2.ID, ths2...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -790,8 +790,8 @@ func TestListThingsByOrg(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"list things by org as admin": {
-			token: adminToken,
+		"list things by org as platform owner": {
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -821,7 +821,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all things by org with no limit": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
@@ -830,7 +830,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list half of things by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n,
@@ -840,7 +840,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list last thing by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n2 - 1,
@@ -850,7 +850,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list empty set of things by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n2 + 1,
@@ -870,7 +870,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  errors.ErrAuthentication,
 		},
 		"list things by non-existent org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: "non-existent",
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -880,7 +880,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all things by org sorted by name ascendant": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -892,7 +892,7 @@ func TestListThingsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all things by org sorted by name descendent": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1108,9 +1108,9 @@ func TestViewProfile(t *testing.T) {
 			token: token,
 			err:   nil,
 		},
-		"view existing profile as admin": {
+		"view existing profile as platform owner": {
 			id:    pr.ID,
-			token: adminToken,
+			token: platformOwnerToken,
 			err:   nil,
 		},
 		"view profile with wrong credentials": {
@@ -1187,8 +1187,8 @@ func TestListProfiles(t *testing.T) {
 			size: 5,
 			err:  nil,
 		},
-		"list all profiles as admin": {
-			token: adminToken,
+		"list all profiles as platform owner": {
+			token: platformOwnerToken,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
 				Limit:  n2,
@@ -1316,7 +1316,7 @@ func TestListProfiles(t *testing.T) {
 func TestListProfilesByOrg(t *testing.T) {
 	svc := newService()
 
-	grs, err := svc.CreateGroups(context.Background(), adminToken, orgID, createdGroup)
+	grs, err := svc.CreateGroups(context.Background(), platformOwnerToken, orgID, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	grs2, err := svc.CreateGroups(context.Background(), otherToken, orgID, createdGroup)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1341,7 +1341,7 @@ func TestListProfilesByOrg(t *testing.T) {
 		prs2 = append(prs2, pr2)
 	}
 
-	_, err = svc.CreateProfiles(context.Background(), adminToken, gr.ID, prs1...)
+	_, err = svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, prs1...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	_, err = svc.CreateProfiles(context.Background(), otherToken, gr2.ID, prs2...)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -1353,8 +1353,8 @@ func TestListProfilesByOrg(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"list profiles by org as admin": {
-			token: adminToken,
+		"list profiles by org as platform owner": {
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1384,7 +1384,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list profiles by org with no limit": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
@@ -1393,7 +1393,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list half of profiles by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n,
@@ -1403,7 +1403,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list last profile by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n2 - 1,
@@ -1413,7 +1413,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list empty set of profiles by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n2 + 1,
@@ -1433,7 +1433,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  errors.ErrAuthentication,
 		},
 		"list profiles by non-existent org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: "non-existent",
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1443,7 +1443,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all profiles by org sorted by name ascendant": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1455,7 +1455,7 @@ func TestListProfilesByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all profiles by org sorted by name descendent": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1508,8 +1508,8 @@ func TestViewProfileByThing(t *testing.T) {
 			profile: pr,
 			err:     nil,
 		},
-		"view profile by existing thing as admin": {
-			token:   adminToken,
+		"view profile by existing thing as platform owner": {
+			token:   platformOwnerToken,
 			thID:    th.ID,
 			profile: pr,
 			err:     nil,
@@ -1825,8 +1825,8 @@ func TestListGroups(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:  "list groups as system admin",
-			token: adminToken,
+			desc:  "list groups as platform owner",
+			token: platformOwnerToken,
 			meta: things.PageMetadata{
 				Offset: 0,
 				Limit:  n,
@@ -1916,8 +1916,8 @@ func TestListGroupsByOrg(t *testing.T) {
 		size         uint64
 		err          error
 	}{
-		"list groups by org as root admin": {
-			token: adminToken,
+		"list groups by org as platform owner": {
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1967,7 +1967,7 @@ func TestListGroupsByOrg(t *testing.T) {
 			err:  errors.ErrAuthorization,
 		},
 		"list groups by org with no limit": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Limit: 0,
@@ -1976,7 +1976,7 @@ func TestListGroupsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list half of groups by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -1986,7 +1986,7 @@ func TestListGroupsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list last group by org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: n - 1,
@@ -2006,7 +2006,7 @@ func TestListGroupsByOrg(t *testing.T) {
 			err:  errors.ErrAuthentication,
 		},
 		"list groups by non-existent org": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: "non-existent",
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -2016,7 +2016,7 @@ func TestListGroupsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all groups by org sorted by name ascendant": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -2028,7 +2028,7 @@ func TestListGroupsByOrg(t *testing.T) {
 			err:  nil,
 		},
 		"list all groups by org sorted by name descendent": {
-			token: adminToken,
+			token: platformOwnerToken,
 			orgID: orgID,
 			pageMetadata: things.PageMetadata{
 				Offset: 0,
@@ -2300,15 +2300,8 @@ func TestViewGroup(t *testing.T) {
 			err:   nil,
 		},
 		{
-			desc:  "view group as admin",
-			token: adminToken,
-			grID:  gr.ID,
-			res:   grRes,
-			err:   nil,
-		},
-		{
-			desc:  "view group as system admin",
-			token: adminToken,
+			desc:  "view group as platform owner",
+			token: platformOwnerToken,
 			grID:  gr.ID,
 			res:   grRes,
 			err:   nil,
@@ -2385,7 +2378,7 @@ func TestViewGroupByThing(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	gr := grs[0]
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profile)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
@@ -2473,7 +2466,7 @@ func TestViewGroupByProfile(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 	gr := grs[0]
 
-	prs, err := svc.CreateProfiles(context.Background(), adminToken, gr.ID, profile)
+	prs, err := svc.CreateProfiles(context.Background(), platformOwnerToken, gr.ID, profile)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	prID := prs[0].ID
 
@@ -2774,8 +2767,8 @@ func TestListGroupMemberships(t *testing.T) {
 			err:  nil,
 		},
 		{
-			desc:    "list group memberships as admin",
-			token:   adminToken,
+			desc:    "list group memberships as platform owner",
+			token:   platformOwnerToken,
 			groupID: gr.ID,
 			meta: things.PageMetadata{
 				Offset: 0,
@@ -2798,17 +2791,6 @@ func TestListGroupMemberships(t *testing.T) {
 		{
 			desc:    "list group memberships as viewer",
 			token:   viewerToken,
-			groupID: gr.ID,
-			meta: things.PageMetadata{
-				Offset: 0,
-				Limit:  n,
-			},
-			size: n,
-			err:  nil,
-		},
-		{
-			desc:    "list group memberships as system admin",
-			token:   adminToken,
 			groupID: gr.ID,
 			meta: things.PageMetadata{
 				Offset: 0,
@@ -3274,7 +3256,7 @@ func TestRemoveExternalKey(t *testing.T) {
 	createdThing := createdThings[0]
 
 	externalKey := "abc12345"
-	err = svc.UpdateExternalKey(context.Background(), adminToken, externalKey, createdThing.ID)
+	err = svc.UpdateExternalKey(context.Background(), platformOwnerToken, externalKey, createdThing.ID)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
 	cases := []struct {
@@ -3385,7 +3367,7 @@ func TestBackup(t *testing.T) {
 		err    error
 	}{
 		"list backups": {
-			token:  adminToken,
+			token:  platformOwnerToken,
 			backup: backup,
 			err:    nil,
 		},
@@ -3472,7 +3454,7 @@ func TestRestore(t *testing.T) {
 		err    error
 	}{
 		"Restore backup": {
-			token:  adminToken,
+			token:  platformOwnerToken,
 			backup: backup,
 			err:    nil,
 		},

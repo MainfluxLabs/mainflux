@@ -38,12 +38,12 @@ const (
 )
 
 var (
-	admin = users.User{
+	platformOwner = users.User{
 		ID:    "874106f7-030e-4881-8ab0-151195c29f97",
 		Email: email,
-		Role:  auth.RootSub,
+		Role:  auth.PlatformOwner,
 	}
-	usersList = []users.User{admin}
+	usersList = []users.User{platformOwner}
 
 	desiredState = shadows.State{"led": "on"}
 )
@@ -109,7 +109,7 @@ func newService() shadows.Service {
 }
 
 func newHTTPServer(svc shadows.Service) *httptest.Server {
-	ac := pkgmocks.NewAuthService(admin.ID, usersList, nil)
+	ac := pkgmocks.NewAuthService(platformOwner.ID, usersList, nil)
 	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, logger.NewMock())
 	return httptest.NewServer(mux)
 }

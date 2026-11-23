@@ -42,12 +42,12 @@ const (
 )
 
 var (
-	adminUser = users.User{
+	platformOwner = users.User{
 		ID:    "874106f7-030e-4881-8ab0-151195c29f97",
 		Email: token,
-		Role:  auth.RootSub,
+		Role:  auth.PlatformOwner,
 	}
-	usersList = []users.User{adminUser}
+	usersList = []users.User{platformOwner}
 
 	validScheduler   = `"scheduler":{"frequency":"minutely","minute":5,"time_zone":"UTC"}`
 	invalidScheduler = `"scheduler":{"frequency":"invalid"}`
@@ -117,7 +117,7 @@ func toJSON(data any) string {
 }
 
 func newService() downlinks.Service {
-	authSvc := pkgmocks.NewAuthService(adminUser.ID, usersList, nil)
+	authSvc := pkgmocks.NewAuthService(platformOwner.ID, usersList, nil)
 	thingsSvc := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -135,7 +135,7 @@ func newService() downlinks.Service {
 }
 
 func newHTTPServer(svc downlinks.Service) *httptest.Server {
-	ac := pkgmocks.NewAuthService(adminUser.ID, usersList, nil)
+	ac := pkgmocks.NewAuthService(platformOwner.ID, usersList, nil)
 	mux := httpapi.MakeHandler(mocktracer.New(), svc, ac, logger.NewMock())
 	return httptest.NewServer(mux)
 }

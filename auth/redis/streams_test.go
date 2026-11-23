@@ -162,8 +162,8 @@ func TestIssue(t *testing.T) {
 	svc := withEventStore(t, newService())
 
 	impersonator := domain.Identity{
-		ID:    "root-id",
-		Email: "root@test.com",
+		ID:    "platform-owner-id",
+		Email: "platform-owner@test.com",
 	}
 
 	cases := []struct {

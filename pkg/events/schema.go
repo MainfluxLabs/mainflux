@@ -1076,7 +1076,7 @@ func decodeUserUpdated(e redisEvent) UserUpdated {
 	return u
 }
 
-// UserPasswordChanged signals that a user's password was changed by the user or a platform admin.
+// UserPasswordChanged signals that a user's password was changed by the user or a platform owner or admin.
 type UserPasswordChanged struct {
 	ID string
 }
@@ -1114,7 +1114,7 @@ func decodeUserPasswordReset(e redisEvent) UserPasswordReset {
 	return UserPasswordReset{ID: e.field("id", "")}
 }
 
-// UserEnabled signals that a platform admin enabled a user.
+// UserEnabled signals that a platform owner or admin enabled a user.
 type UserEnabled struct {
 	ID string
 }
@@ -1133,7 +1133,7 @@ func decodeUserEnabled(e redisEvent) UserEnabled {
 	return UserEnabled{ID: e.field("id", "")}
 }
 
-// UserDisabled signals that a platform admin disabled a user.
+// UserDisabled signals that a platform owner or admin disabled a user.
 type UserDisabled struct {
 	ID string
 }
@@ -1152,7 +1152,7 @@ func decodeUserDisabled(e redisEvent) UserDisabled {
 	return UserDisabled{ID: e.field("id", "")}
 }
 
-// UserAdminRoleAssigned signals that the root admin assigned the platform admin role to a user.
+// UserAdminRoleAssigned signals that the platform owner assigned the platform admin role to a user.
 type UserAdminRoleAssigned struct {
 	ID string
 }
@@ -1171,7 +1171,7 @@ func decodeUserAdminRoleAssigned(e redisEvent) UserAdminRoleAssigned {
 	return UserAdminRoleAssigned{ID: e.field("id", "")}
 }
 
-// UserAdminRoleUnassigned signals that the root admin removed the platform admin role from a user.
+// UserAdminRoleUnassigned signals that the platform owner removed the platform admin role from a user.
 type UserAdminRoleUnassigned struct {
 	ID string
 }
@@ -1230,7 +1230,7 @@ func decodePlatformInviteCreated(e redisEvent) PlatformInviteCreated {
 	return pi
 }
 
-// PlatformInviteRevoked signals that a platform admin revoked a platform invite.
+// PlatformInviteRevoked signals that a platform owner or admin revoked a platform invite.
 type PlatformInviteRevoked struct {
 	ID string
 }

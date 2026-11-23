@@ -58,13 +58,13 @@ func (ms *metricsMiddleware) RegisterByInvite(ctx context.Context, user users.Us
 	return ms.svc.RegisterByInvite(ctx, user, inviteID, orgInviteRedirectPath)
 }
 
-func (ms *metricsMiddleware) RegisterAdmin(ctx context.Context, user users.User) error {
+func (ms *metricsMiddleware) RegisterPlatformOwner(ctx context.Context, user users.User) error {
 	defer func(begin time.Time) {
-		ms.counter.With("method", "register_admin").Add(1)
-		ms.latency.With("method", "register_admin").Observe(time.Since(begin).Seconds())
+		ms.counter.With("method", "register_platform_owner").Add(1)
+		ms.latency.With("method", "register_platform_owner").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.RegisterAdmin(ctx, user)
+	return ms.svc.RegisterPlatformOwner(ctx, user)
 }
 
 func (ms *metricsMiddleware) Register(ctx context.Context, token string, user users.User) (string, error) {
@@ -256,13 +256,13 @@ func (ms *metricsMiddleware) Backup(ctx context.Context, token string) (users.Us
 	return ms.svc.Backup(ctx, token)
 }
 
-func (ms *metricsMiddleware) Restore(ctx context.Context, token string, admin users.User, users []users.User, identities []users.Identity) error {
+func (ms *metricsMiddleware) Restore(ctx context.Context, token string, platformOwner users.User, users []users.User, identities []users.Identity) error {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "restore").Add(1)
 		ms.latency.With("method", "restore").Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	return ms.svc.Restore(ctx, token, admin, users, identities)
+	return ms.svc.Restore(ctx, token, platformOwner, users, identities)
 }
 
 func (ms *metricsMiddleware) CreatePlatformInvite(ctx context.Context, token, redirectPath, email string, orgInvite domain.OrgInvite) (users.PlatformInvite, error) {

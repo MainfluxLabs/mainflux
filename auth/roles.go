@@ -6,10 +6,10 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 )
 
-// RoleRootAdmin and RoleAdmin are aliases for the shared domain types.
+// PlatformOwner and PlatformAdmin are aliases for the shared domain types.
 const (
-	RoleRootAdmin = domain.RoleRootAdmin
-	RoleAdmin     = domain.RoleAdmin
+	PlatformOwner = domain.PlatformOwner
+	PlatformAdmin = domain.PlatformAdmin
 )
 
 // UserRole represents the platform role of a user.

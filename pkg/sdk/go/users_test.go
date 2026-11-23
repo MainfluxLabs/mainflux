@@ -35,11 +35,11 @@ const (
 )
 
 var (
-	user      = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass}
-	otherUser = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass}
-	admin     = users.User{Email: adminEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Role: auth.RootSub}
+	user          = users.User{Email: userEmail, ID: "574106f7-030e-4881-8ab0-151195c29f94", Password: validPass}
+	otherUser     = users.User{Email: otherEmail, ID: "371106m2-131g-5286-2mc1-540295c29f96", Password: validPass}
+	platformOwner = users.User{Email: platformOwnerEmail, ID: "371106m2-131g-5286-2mc1-540295c29f95", Password: validPass, Role: auth.PlatformOwner}
 
-	usersList = []users.User{admin, user, otherUser}
+	usersList = []users.User{platformOwner, user, otherUser}
 	orgsList  = []auth.Org{{ID: orgID, OwnerID: user.ID}}
 )
 
@@ -50,8 +50,8 @@ func newUserService() users.Service {
 	identityRepo := usmocks.NewIdentityRepository()
 	hasher := usmocks.NewHasher()
 	idProvider := uuid.New()
-	admin.ID, _ = idProvider.ID()
-	auth := mocks.NewAuthService(admin.ID, usersList, orgsList)
+	platformOwner.ID, _ = idProvider.ID()
+	auth := mocks.NewAuthService(platformOwner.ID, usersList, orgsList)
 	emailer := usmocks.NewEmailer()
 	oauthGoogleCfg := oauth2.Config{}
 	oauthGithubCfg := oauth2.Config{}
@@ -69,7 +69,7 @@ func newUserService() users.Service {
 
 func newUserServer(svc users.Service) *httptest.Server {
 	logger := logger.NewMock()
-	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(admin.ID, usersList, orgsList), mocktracer.New(), logger)
+	mux := httpapi.MakeHandler(svc, mocks.NewAuthService(platformOwner.ID, usersList, orgsList), mocktracer.New(), logger)
 	return httptest.NewServer(mux)
 }
 
@@ -85,7 +85,7 @@ func TestCreateUser(t *testing.T) {
 
 	sdkUser := sdk.User{Email: registerUser, Password: validPass}
 
-	token, err := svc.Login(context.Background(), admin)
+	token, err := svc.Login(context.Background(), platformOwner)
 	require.Nil(t, err, fmt.Sprintf("unexpected error login: %s", err))
 
 	mainfluxSDK := sdk.NewSDK(sdkConf)

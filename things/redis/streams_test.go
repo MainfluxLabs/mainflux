@@ -28,22 +28,22 @@ import (
 )
 
 const (
-	email          = "user@example.com"
-	adminEmail     = "admin@example.com"
-	otherUserEmail = "other.user@example.com"
-	password       = "password"
-	token          = email
+	email              = "user@example.com"
+	platformOwnerEmail = "admin@example.com"
+	otherUserEmail     = "other.user@example.com"
+	password           = "password"
+	token              = email
 )
 
 var (
-	user      = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
-	otherUser = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password}
-	admin     = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: adminEmail, Password: password, Role: auth.RootSub}
-	usersList = []users.User{admin, user, otherUser}
-	orgID     = "374106f7-030e-4881-8ab0-151195c29f92"
-	group     = things.Group{Name: "test-group", Description: "test-group-desc"}
-	orgsList  = []auth.Org{{ID: "374106f7-030e-4881-8ab0-151195c29f92", OwnerID: user.ID}}
-	profile   = things.Profile{Name: "test-profile"}
+	user          = users.User{ID: "574106f7-030e-4881-8ab0-151195c29f94", Email: email, Password: password}
+	otherUser     = users.User{ID: "674106f7-030e-4881-8ab0-151195c29f95", Email: otherUserEmail, Password: password}
+	platformOwner = users.User{ID: "874106f7-030e-4881-8ab0-151195c29f97", Email: platformOwnerEmail, Password: password, Role: auth.PlatformOwner}
+	usersList     = []users.User{platformOwner, user, otherUser}
+	orgID         = "374106f7-030e-4881-8ab0-151195c29f92"
+	group         = things.Group{Name: "test-group", Description: "test-group-desc"}
+	orgsList      = []auth.Org{{ID: "374106f7-030e-4881-8ab0-151195c29f92", OwnerID: user.ID}}
+	profile       = things.Profile{Name: "test-profile"}
 
 	orgMembership = auth.OrgMembership{OrgID: orgID, MemberID: otherUser.ID, Role: auth.Viewer}
 	usersByIDs    = map[string]users.User{user.ID: user, otherUser.ID: otherUser}
