@@ -768,7 +768,8 @@ func (svc usersService) handleIdentity(ctx context.Context, providerUser oauthUs
 			return User{}, ErrSelfRegisterDisabled
 		}
 		// Account creation requires a verified e-mail when e-mail verification is enabled.
-		if svc.emailVerifyEnabled && !providerUser.emailVerified {
+		// A platform invite already proves e-mail ownership.
+		if svc.emailVerifyEnabled && !providerUser.emailVerified && inviteID == "" {
 			return User{}, errors.Wrap(errors.ErrAuthentication, ErrEmailNotVerified)
 		}
 		if inviteID != "" {

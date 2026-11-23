@@ -1783,8 +1783,9 @@ func TestOIDCCallback(t *testing.T) {
 
 	newOIDCUser := users.User{Email: "new-oidc-user@example.com", ID: "oidc-user-id-001", Status: users.EnabledStatusKey}
 	newUnverifiedOIDCUser := users.User{Email: "new-unverified-oidc-user@example.com", ID: "oidc-user-id-002", Status: users.EnabledStatusKey}
+	invitedOIDCUser := users.User{Email: "invited-oidc-user@example.com", ID: "oidc-user-id-003", Status: users.EnabledStatusKey}
 	userRepo := usmocks.NewUserRepository(usersList)
-	authSvc := mocks.NewAuthService(platformOwner.ID, append(usersList, newOIDCUser, newUnverifiedOIDCUser), nil)
+	authSvc := mocks.NewAuthService(platformOwner.ID, append(usersList, newOIDCUser, newUnverifiedOIDCUser, invitedOIDCUser), nil)
 	identityRepo := usmocks.NewIdentityRepository()
 	c := users.Config{
 		InviteDuration:      inviteDuration,
@@ -1924,15 +1925,49 @@ func TestOIDCCallback(t *testing.T) {
 	require.Nil(t, err, "linked oidc user should exist")
 	assert.Equal(t, newOIDCUser.Email, linkedUser.Email, "unverified e-mail change should not be applied to linked user")
 
-	c.EmailVerifyEnabled = true
-	verifyingSvc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), usmocks.NewPlatformInvitesRepository(), identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), c)
-	idToken = signIDToken(signingKey, tokenClaims("oidc-sub-014", oidcClientID, map[string]any{"email": "another-new-oidc-user@example.com"}))
-	userInfoClaims = nil
+	invitesRepo := usmocks.NewPlatformInvitesRepository()
+	invite := users.PlatformInvite{
+		ID:           "oidc-invite-001",
+		InviteeEmail: invitedOIDCUser.Email,
+		CreatedAt:    time.Now(),
+		ExpiresAt:    time.Now().Add(inviteDuration),
+		State:        users.InviteStatePending,
+	}
+	err = invitesRepo.SavePlatformInvite(context.Background(), invite)
+	require.Nil(t, err)
 
-	_, err = verifyingSvc.OAuthCallback(context.Background(), users.OAuthCallbackData{
-		Provider: users.OIDCProvider,
-		Code:     "valid-code",
-		Verifier: verifier,
-	})
-	assert.True(t, errors.Contains(err, users.ErrEmailNotVerified), fmt.Sprintf("unverified e-mail should not create a user when verification is enabled: got %s", err))
+	c.EmailVerifyEnabled = true
+	verifyingSvc := users.New(userRepo, usmocks.NewEmailVerificationRepository(nil), invitesRepo, identityRepo, usmocks.NewHasher(), usmocks.NewLegacyHasher(), authSvc, usmocks.NewEmailer(), idProvider, logger.NewMock(), c)
+
+	verifyingCases := []struct {
+		desc     string
+		idToken  string
+		inviteID string
+		err      error
+	}{
+		{
+			desc:    "callback with unverified e-mail does not create user when verification is enabled",
+			idToken: signIDToken(signingKey, tokenClaims("oidc-sub-014", oidcClientID, map[string]any{"email": "another-new-oidc-user@example.com"})),
+			err:     users.ErrEmailNotVerified,
+		},
+		{
+			desc:     "callback with unverified e-mail creates invited user when verification is enabled",
+			idToken:  signIDToken(signingKey, tokenClaims("oidc-sub-015", oidcClientID, map[string]any{"email": invitedOIDCUser.Email})),
+			inviteID: invite.ID,
+			err:      nil,
+		},
+	}
+
+	for _, tc := range verifyingCases {
+		idToken = tc.idToken
+		userInfoClaims = nil
+
+		_, err := verifyingSvc.OAuthCallback(context.Background(), users.OAuthCallbackData{
+			Provider: users.OIDCProvider,
+			Code:     "valid-code",
+			Verifier: verifier,
+			InviteID: tc.inviteID,
+		})
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected err %s got %s\n", tc.desc, tc.err, err))
+	}
 }
