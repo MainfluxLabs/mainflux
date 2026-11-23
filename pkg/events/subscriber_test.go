@@ -382,8 +382,6 @@ func TestAuditEventsAreDecoded(t *testing.T) {
 		events.PlatformInviteCreated{
 			ID:           "invite-id",
 			InviteeEmail: "user@example.com",
-			InviteeRole:  "viewer",
-			GroupInvites: []domain.GroupInvite{{GroupID: "group-id", MemberRole: "editor"}},
 		},
 		events.PlatformInviteRevoked{ID: "invite-id"},
 	}

@@ -61,8 +61,9 @@ var (
 )
 
 type testEnv struct {
-	svc  users.Service
-	auth domain.AuthClient
+	svc                users.Service
+	auth               domain.AuthClient
+	emailVerifyEnabled bool
 }
 
 // newEnv returns a users service and the auth client it uses, without an event store.
@@ -102,7 +103,11 @@ func newEnvWithConfig(c users.Config, authUsers []users.User) testEnv {
 		c,
 	)
 
-	return testEnv{svc: svc, auth: ac}
+	return testEnv{
+		svc:                svc,
+		auth:               ac,
+		emailVerifyEnabled: c.EmailVerifyEnabled,
+	}
 }
 
 // withEventStore wraps the service in the event store middleware backed by the test Redis.
@@ -119,7 +124,7 @@ func (env testEnv) withEventStore(t *testing.T) users.Service {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = pub.Close() })
 
-	return redis.NewEventStoreMiddleware(env.svc, env.auth, pub)
+	return redis.NewEventStoreMiddleware(env.svc, env.auth, pub, env.emailVerifyEnabled)
 }
 
 // identityCtx returns a context carrying the token owner's identity, as the HTTP API sets it.
@@ -603,6 +608,13 @@ func TestChangePassword(t *testing.T) {
 		event       map[string]any
 	}{
 		{
+			desc:  "change unknown user's password as regular user",
+			token: user.Email,
+			email: "unknown@example.com",
+			err:   errors.ErrAuthorization,
+			event: nil,
+		},
+		{
 			desc:        "change own password with wrong old password",
 			token:       user.Email,
 			oldPassword: "wrong-password",
@@ -842,9 +854,6 @@ func TestCreatePlatformInvite(t *testing.T) {
 			expected = actorEvent(events.PlatformInviteCreate, platformOwner, map[string]any{
 				"id":            invite.ID,
 				"invitee_email": newUser.Email,
-				"invitee_role":  "editor",
-				"group_invites": `[{"group_id":"group-id","member_role":"viewer"}]`,
-				"evt_org_id":    orgID,
 			})
 		}
 

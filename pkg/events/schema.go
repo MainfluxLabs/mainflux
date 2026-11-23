@@ -1194,8 +1194,6 @@ func decodeUserAdminRoleUnassigned(e redisEvent) UserAdminRoleUnassigned {
 type PlatformInviteCreated struct {
 	ID           string
 	InviteeEmail string
-	InviteeRole  string
-	GroupInvites []domain.GroupInvite
 }
 
 func (e PlatformInviteCreated) Operation() string {
@@ -1203,31 +1201,17 @@ func (e PlatformInviteCreated) Operation() string {
 }
 
 func (e PlatformInviteCreated) Encode() map[string]any {
-	m := redisEvent{
+	return redisEvent{
 		"id":            e.ID,
 		"invitee_email": e.InviteeEmail,
 	}
-	if e.InviteeRole != "" {
-		m["invitee_role"] = e.InviteeRole
-	}
-	if len(e.GroupInvites) > 0 {
-		if b, err := json.Marshal(e.GroupInvites); err == nil {
-			m["group_invites"] = string(b)
-		}
-	}
-	return m
 }
 
 func decodePlatformInviteCreated(e redisEvent) PlatformInviteCreated {
-	pi := PlatformInviteCreated{
+	return PlatformInviteCreated{
 		ID:           e.field("id", ""),
 		InviteeEmail: e.field("invitee_email", ""),
-		InviteeRole:  e.field("invitee_role", ""),
 	}
-	if raw := e.field("group_invites", ""); raw != "" {
-		_ = json.Unmarshal([]byte(raw), &pi.GroupInvites)
-	}
-	return pi
 }
 
 // PlatformInviteRevoked signals that a platform owner or admin revoked a platform invite.

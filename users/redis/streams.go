@@ -16,17 +16,19 @@ import (
 
 type eventStore struct {
 	users.Service
-	auth domain.AuthClient
-	pub  events.Publisher
+	auth               domain.AuthClient
+	pub                events.Publisher
+	emailVerifyEnabled bool
 }
 
 // NewEventStoreMiddleware returns a users service that publishes an event
 // for every successful state-changing operation.
-func NewEventStoreMiddleware(svc users.Service, auth domain.AuthClient, pub events.Publisher) users.Service {
+func NewEventStoreMiddleware(svc users.Service, auth domain.AuthClient, pub events.Publisher, emailVerifyEnabled bool) users.Service {
 	return eventStore{
-		Service: svc,
-		auth:    auth,
-		pub:     pub,
+		Service:            svc,
+		auth:               auth,
+		pub:                pub,
+		emailVerifyEnabled: emailVerifyEnabled,
 	}
 }
 
@@ -36,16 +38,12 @@ func (es eventStore) SelfRegister(ctx context.Context, user users.User, redirect
 		return res, err
 	}
 
-	// With e-mail verification enabled, the account is created only when the e-mail is verified.
-	registered, err := es.Service.ListUsersByEmails(ctx, []string{user.Email})
-	if errors.Contains(err, dbutil.ErrNotFound) {
+	// With e-mail verification enabled, the account is created and published on VerifyEmail.
+	if es.emailVerifyEnabled {
 		return res, nil
 	}
-	if err != nil {
-		return "", err
-	}
 
-	es.publishSelfRegistered(ctx, registered[0].ID, user.Email, "")
+	es.publishSelfRegistered(ctx, res, user.Email, "")
 
 	return res, nil
 }
@@ -56,13 +54,9 @@ func (es eventStore) VerifyEmail(ctx context.Context, confirmationToken string) 
 		return userID, err
 	}
 
-	up, err := es.Service.ListUsersByIDs(ctx, []string{userID}, users.PageMetadata{})
-	if err != nil {
-		return "", err
-	}
-
+	// A failed lookup only leaves the e-mail out of the event.
 	var email string
-	if len(up.Users) > 0 {
+	if up, err := es.Service.ListUsersByIDs(ctx, []string{userID}, users.PageMetadata{}); err == nil && len(up.Users) > 0 {
 		email = up.Users[0].Email
 	}
 
@@ -100,7 +94,8 @@ func (es eventStore) Register(ctx context.Context, token string, user users.User
 
 func (es eventStore) Login(ctx context.Context, user users.User) (string, error) {
 	token, err := es.Service.Login(ctx, user)
-	if errors.Contains(err, errors.ErrAuthentication) {
+	// A failed user lookup is a database failure, not a failed login.
+	if errors.Contains(err, errors.ErrAuthentication) && !errors.Contains(err, dbutil.ErrRetrieveEntity) {
 		es.pub.Publish(ctx, events.Event{
 			Action: events.UserLoginFailed{Email: user.Email},
 		})
@@ -140,20 +135,24 @@ func (es eventStore) UpdateUser(ctx context.Context, token string, user users.Us
 }
 
 func (es eventStore) ChangePassword(ctx context.Context, token, email, password, oldPassword string) error {
-	if err := es.Service.ChangePassword(ctx, token, email, password, oldPassword); err != nil {
-		return err
-	}
-
 	identity, _ := authn.IdentityFromCtx(ctx)
 	userID := identity.ID
 
 	// A provided e-mail means a platform owner or admin changed another user's password.
+	// Looked up first with errors ignored, so the response is always the service's own.
 	if email != "" {
-		us, err := es.Service.ListUsersByEmails(ctx, []string{email})
-		if err != nil {
-			return err
+		userID = ""
+		if us, err := es.Service.ListUsersByEmails(ctx, []string{email}); err == nil && len(us) > 0 {
+			userID = us[0].ID
 		}
-		userID = us[0].ID
+	}
+
+	if err := es.Service.ChangePassword(ctx, token, email, password, oldPassword); err != nil {
+		return err
+	}
+
+	if userID == "" {
+		return nil
 	}
 
 	es.pub.Publish(ctx, events.Event{
@@ -164,13 +163,15 @@ func (es eventStore) ChangePassword(ctx context.Context, token, email, password,
 }
 
 func (es eventStore) ResetPassword(ctx context.Context, resetToken, password string) error {
+	// Identified first so a failed lookup can't fail a saved reset.
+	identity, identifyErr := es.auth.IdentifyRecovery(ctx, resetToken)
+
 	if err := es.Service.ResetPassword(ctx, resetToken, password); err != nil {
 		return err
 	}
 
-	identity, err := es.auth.IdentifyRecovery(ctx, resetToken)
-	if err != nil {
-		return err
+	if identifyErr != nil {
+		return nil
 	}
 
 	es.pub.Publish(ctx, events.Event{
@@ -235,14 +236,12 @@ func (es eventStore) CreatePlatformInvite(ctx context.Context, token, redirectPa
 		return invite, err
 	}
 
+	// The org invite is recorded by auth.
 	es.pub.Publish(ctx, events.Event{
 		Action: events.PlatformInviteCreated{
 			ID:           invite.ID,
 			InviteeEmail: invite.InviteeEmail,
-			InviteeRole:  orgInvite.InviteeRole,
-			GroupInvites: orgInvite.GroupInvites,
 		},
-		OrgID: orgInvite.OrgID,
 	})
 
 	return invite, nil

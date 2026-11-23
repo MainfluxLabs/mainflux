@@ -461,7 +461,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 	}
 
 	svc := users.New(userRepo, verificationRepo, platformInvitesRepo, identityRepo, hasher, legacyHasher, ac, svcEmailer, idProvider, logger, usersCfg)
-	svc = rediscache.NewEventStoreMiddleware(svc, ac, pub)
+	svc = rediscache.NewEventStoreMiddleware(svc, ac, pub, usersCfg.EmailVerifyEnabled)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,
