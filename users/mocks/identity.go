@@ -28,6 +28,17 @@ func (irm *identityRepositoryMock) Save(ctx context.Context, identity users.Iden
 	irm.mu.Lock()
 	defer irm.mu.Unlock()
 	key := identity.Provider + ":" + identity.ProviderUserID
+	if _, ok := irm.identities[key]; ok {
+		return dbutil.ErrConflict
+	}
+
+	// Each user has at most one identity per provider.
+	for _, existing := range irm.identities {
+		if existing.UserID == identity.UserID && existing.Provider == identity.Provider {
+			return dbutil.ErrConflict
+		}
+	}
+
 	irm.identities[key] = identity
 	return nil
 }
