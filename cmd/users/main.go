@@ -35,6 +35,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/users/postgres"
 	rediscache "github.com/MainfluxLabs/mainflux/users/redis"
 	"github.com/MainfluxLabs/mainflux/users/tracing"
+	"github.com/coreos/go-oidc/v3/oidc"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/jmoiron/sqlx"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -97,6 +98,7 @@ const (
 	defRedirectURL      = ""
 	defUserInfo         = ""
 	defRedirectLoginURL = ""
+	defOIDCIssuerURL    = ""
 
 	envLogLevel      = "MF_USERS_LOG_LEVEL"
 	envDBHost        = "MF_USERS_DB_HOST"
@@ -153,6 +155,11 @@ const (
 	envGitHubUserInfo     = "MF_GITHUB_USER_INFO"
 	envGitHubUserEmails   = "MF_GITHUB_USER_EMAILS"
 
+	envOIDCIssuerURL    = "MF_OIDC_ISSUER_URL"
+	envOIDCClientID     = "MF_OIDC_CLIENT_ID"
+	envOIDCClientSecret = "MF_OIDC_CLIENT_SECRET"
+	envOIDCRedirectURL  = "MF_OIDC_REDIRECT_URL"
+
 	envRedirectLoginURL = "MF_REDIRECT_LOGIN_URL"
 )
 
@@ -174,6 +181,7 @@ type config struct {
 	inviteDuration        time.Duration
 	googleOauthConfig     oauth2.Config
 	githubOauthConfig     oauth2.Config
+	oidcConfig            users.OIDCConfig
 	urls                  users.ConfigURLs
 	esURL                 string
 	esStreamMaxLen        int64
@@ -338,6 +346,16 @@ func loadConfig() config {
 		Endpoint:     github.Endpoint,
 	}
 
+	oidcConfig := users.OIDCConfig{
+		IssuerURL: mainflux.Env(envOIDCIssuerURL, defOIDCIssuerURL),
+		OAuth: oauth2.Config{
+			ClientID:     mainflux.Env(envOIDCClientID, defClientID),
+			ClientSecret: mainflux.Env(envOIDCClientSecret, defClientSecret),
+			RedirectURL:  fmt.Sprintf("%s%s", mainflux.Env(envHost, defHost), mainflux.Env(envOIDCRedirectURL, defRedirectURL)),
+			Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
+		},
+	}
+
 	urls := users.ConfigURLs{
 		GoogleUserInfoURL:   mainflux.Env(envGoogleUserInfo, defUserInfo),
 		GitHubUserInfoURL:   mainflux.Env(envGitHubUserInfo, defUserInfo),
@@ -380,6 +398,7 @@ func loadConfig() config {
 		inviteDuration:        inviteDuration,
 		googleOauthConfig:     googleOauthConfig,
 		githubOauthConfig:     githubOauthConfig,
+		oidcConfig:            oidcConfig,
 		urls:                  urls,
 		esURL:                 mainflux.Env(envESURL, defESURL),
 		esStreamMaxLen:        esStreamMaxLen,
@@ -436,6 +455,7 @@ func newService(db *sqlx.DB, tracer opentracing.Tracer, ac domain.AuthClient, c 
 		SelfRegisterEnabled: c.selfRegisterEnabled,
 		GoogleOAuth:         c.googleOauthConfig,
 		GitHubOAuth:         c.githubOauthConfig,
+		OIDC:                c.oidcConfig,
 		URLs:                c.urls,
 		PassMinLength:       c.passMinLength,
 	}
