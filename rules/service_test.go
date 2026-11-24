@@ -824,3 +824,71 @@ func TestConsumeMessageScriptSandbox(t *testing.T) {
 	desc := fmt.Sprintf("expected file and chunk loaders to be unset got %v\n", logs)
 	assert.Equal(t, []string{"nil nil nil"}, logs, desc)
 }
+
+func TestConsumeMessageScriptRuns(t *testing.T) {
+	cases := []struct {
+		desc   string
+		script string
+		total  uint64
+		status string
+	}{
+		{
+			desc:   "store run of script that returns true",
+			script: "return true",
+			total:  1,
+			status: rules.ScriptRunStatusSuccess,
+		},
+		{
+			desc:   "store run of script that fails",
+			script: "error('failure')",
+			total:  1,
+			status: rules.ScriptRunStatusFail,
+		},
+		{
+			desc:   "skip run of script that returns false",
+			script: "return false",
+			total:  0,
+		},
+		{
+			desc:   "skip run of script that returns no value",
+			script: "mfx.log('no value')",
+			total:  0,
+		},
+	}
+
+	for _, tc := range cases {
+		svc := newService()
+
+		script := rules.LuaScript{Name: "script", Script: tc.script}
+		scripts, err := svc.CreateScripts(context.Background(), token, groupID, script)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		rule := rules.Rule{
+			Name:       "script-rule",
+			Input:      rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
+			Conditions: []rules.Condition{{Type: rules.ConditionTypeScript, ScriptID: scripts[0].ID}},
+			Actions:    []rules.Action{{Type: rules.ActionTypeAlarm, Level: 1}},
+		}
+		_, err = svc.CreateRules(context.Background(), token, groupID, rule)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		msg := protomfx.Message{
+			ThingId:     thingID,
+			Records:     toRecords(t, map[string]any{"temperature": float64(30)}),
+			ContentType: "application/json",
+		}
+		err = svc.ConsumeMessage(subject, msg)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		pm := rules.PageMetadata{Limit: 10}
+		page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		desc := fmt.Sprintf("%s: expected %d runs got %d\n", tc.desc, tc.total, page.Total)
+		assert.Equal(t, tc.total, page.Total, desc)
+
+		for _, run := range page.Runs {
+			desc := fmt.Sprintf("%s: expected status %s got %s\n", tc.desc, tc.status, run.Status)
+			assert.Equal(t, tc.status, run.Status, desc)
+		}
+	}
+}

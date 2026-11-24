@@ -67,7 +67,7 @@ Each condition has a required `type`, which selects how it's evaluated.
 
 A `script` condition runs the referenced Lua script and uses its return value as the result: a strict `return true` counts as met, anything else — `return false`, no return, or a runtime error — counts as not met. The script's result is combined with any other conditions on the rule the same way a threshold result would be, under the rule's `operator`.
 
-Script conditions run with a **read-only** API — the only bound function is `mfx.log`, since a condition must not have side effects. Every evaluation is recorded as a [script run](#scripts).
+Script conditions run with a **read-only** API — the only bound function is `mfx.log`, since a condition must not have side effects. A [script run](#scripts) is stored when the script returns `true` or fails.
 
 Script conditions are only supported on `message`-input rules, not `alarm`-input rules.
 
@@ -137,7 +137,7 @@ return spread <= 2.0
 
 ### Script Runs
 
-Every condition evaluation is recorded as a script run: outcome, logs, and any runtime error.
+A script run, with its outcome, logs and runtime error, is stored when the script returns `true` or fails.
 
 | Field         | Description                                      |
 | ------------- | ------------------------------------------------ |
