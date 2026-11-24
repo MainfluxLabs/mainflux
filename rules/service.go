@@ -468,8 +468,14 @@ func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
 		if sub := rule.Input.Config.Subtopic(); sub != "" && sub != msg.Subtopic {
 			continue
 		}
-		if err := rs.runRule(ctx, &msg, body, payload, rule); err != nil {
+
+		startedAt := time.Now()
+		details, fired, err := rs.runRule(ctx, &msg, body, payload, rule)
+		if err != nil {
 			rs.logger.Error(fmt.Sprintf("processing rule with id %s failed with error: %v", rule.ID, err))
+		}
+		if fired || details.failed() {
+			rs.saveRun(ctx, rule.ID, msg.ThingId, startedAt, details)
 		}
 	}
 
@@ -510,9 +516,16 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			continue
 		}
 
-		triggered, err := evaluateAlarmPayload(body, rule.Conditions, rule.Operator, messaging.JSONContentType)
+		startedAt := time.Now()
+		conditions, triggered, err := evaluateAlarmPayload(body, rule.Conditions, rule.Operator, messaging.JSONContentType)
+		details := RuleRunDetails{Conditions: conditions}
 		if err != nil {
 			rs.logger.Error(fmt.Sprintf("evaluating alarm rule with id %s failed with error: %v", rule.ID, err))
+			// An error without a failed condition belongs to the payload.
+			if !details.failed() {
+				details.Error = err.Error()
+			}
+			rs.saveRun(ctx, rule.ID, alarm.ThingId, startedAt, details)
 			continue
 		}
 		if !triggered {
@@ -540,10 +553,16 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 			default:
 				continue
 			}
+
+			result := RuleRunAction{Type: action.Type, ID: action.ID}
 			if err != nil {
 				rs.logger.Error(fmt.Sprintf("processing alarm rule with id %s failed with error: %v", rule.ID, err))
+				result.Error = err.Error()
 			}
+			details.Actions = append(details.Actions, result)
 		}
+
+		rs.saveRun(ctx, rule.ID, alarm.ThingId, startedAt, details)
 	}
 
 	return nil
@@ -552,6 +571,7 @@ func (rs *rulesService) ConsumeAlarm(_ string, alarm protomfx.Alarm) error {
 type Repository interface {
 	RepositoryRules
 	RepositoryScripts
+	RepositoryRuns
 }
 
 type RepositoryScripts interface {
@@ -629,4 +649,9 @@ type RepositoryRules interface {
 
 	// UnassignRulesFromThing unassigns all rules from the given thing.
 	UnassignRulesFromThing(ctx context.Context, thingID string) error
+}
+
+type RepositoryRuns interface {
+	// SaveRuns persists multiple rule runs.
+	SaveRuns(ctx context.Context, runs ...RuleRun) ([]RuleRun, error)
 }

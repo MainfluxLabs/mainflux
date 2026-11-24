@@ -40,4 +40,16 @@ CREATE TABLE IF NOT EXISTS lua_script_runs (
     FOREIGN KEY (script_id) REFERENCES lua_scripts (id) ON DELETE CASCADE,
     FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS rule_runs (
+    id          UUID NOT NULL,
+    rule_id     UUID NOT NULL,
+    thing_id    UUID NOT NULL,
+    started_at  TIMESTAMPTZ NOT NULL,
+    finished_at TIMESTAMPTZ NOT NULL,
+    status      TEXT NOT NULL,
+    details     JSON NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
+);
 ```

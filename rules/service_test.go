@@ -12,6 +12,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
@@ -38,6 +39,10 @@ func newService() rules.Service {
 }
 
 func newServiceWithPub(pub rules.Publisher) rules.Service {
+	return newServiceWithRepo(mocks.NewRuleRepository(), pub)
+}
+
+func newServiceWithRepo(rulesRepo rules.Repository, pub rules.Publisher) rules.Service {
 	ths := authmock.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -50,7 +55,6 @@ func newServiceWithPub(pub rules.Publisher) rules.Service {
 		},
 	)
 
-	rulesRepo := mocks.NewRuleRepository()
 	idp := uuid.NewMock()
 	log := logger.NewMock()
 
@@ -890,5 +894,202 @@ func TestConsumeMessageScriptRuns(t *testing.T) {
 			desc := fmt.Sprintf("%s: expected status %s got %s\n", tc.desc, tc.status, run.Status)
 			assert.Equal(t, tc.status, run.Status, desc)
 		}
+	}
+}
+
+// runsRepository records the rule runs saved through the embedded repository.
+type runsRepository struct {
+	rules.Repository
+	runs []rules.RuleRun
+}
+
+func (rr *runsRepository) SaveRuns(ctx context.Context, runs ...rules.RuleRun) ([]rules.RuleRun, error) {
+	rr.runs = append(rr.runs, runs...)
+	return rr.Repository.SaveRuns(ctx, runs...)
+}
+
+func TestConsumeRuns(t *testing.T) {
+	met := rules.RuleRunCondition{Type: rules.ConditionTypeThreshold, Met: true}
+
+	cases := []struct {
+		desc    string
+		input   string
+		script  string
+		value   any
+		pub     rules.Publisher
+		status  string
+		details rules.RuleRunDetails
+	}{
+		{
+			desc:   "store run of fired message rule",
+			input:  rules.InputTypeMessage,
+			value:  30,
+			pub:    mocks.NewPublisher(),
+			status: rules.RuleRunStatusSuccess,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{met},
+				Actions:    []rules.RuleRunAction{{Type: rules.ActionTypeAlarm}},
+			},
+		},
+		{
+			desc:  "skip run of message rule that does not fire",
+			input: rules.InputTypeMessage,
+			value: 20,
+			pub:   mocks.NewPublisher(),
+		},
+		{
+			desc:   "store run of message rule with failed action",
+			input:  rules.InputTypeMessage,
+			value:  30,
+			pub:    mocks.NewFailingPublisher(),
+			status: rules.RuleRunStatusFail,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{met},
+				Actions: []rules.RuleRunAction{{
+					Type:  rules.ActionTypeAlarm,
+					Error: messaging.ErrPublishAlarm.Error(),
+				}},
+			},
+		},
+		{
+			desc:   "store run of message rule with failed threshold condition",
+			input:  rules.InputTypeMessage,
+			value:  "invalid",
+			pub:    mocks.NewPublisher(),
+			status: rules.RuleRunStatusFail,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{{
+					Type:  rules.ConditionTypeThreshold,
+					Error: `strconv.ParseFloat: parsing "invalid": invalid syntax`,
+				}},
+			},
+		},
+		{
+			desc:   "store run of message rule fired by script condition",
+			input:  rules.InputTypeMessage,
+			script: "mfx.log('fired') return true",
+			pub:    mocks.NewPublisher(),
+			status: rules.RuleRunStatusSuccess,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{{
+					Type: rules.ConditionTypeScript,
+					Met:  true,
+					Logs: []string{"fired"},
+				}},
+				Actions: []rules.RuleRunAction{{Type: rules.ActionTypeAlarm}},
+			},
+		},
+		{
+			desc:   "store run of message rule with failed script condition",
+			input:  rules.InputTypeMessage,
+			script: "error('failure')",
+			pub:    mocks.NewPublisher(),
+			status: rules.RuleRunStatusFail,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{{
+					Type:  rules.ConditionTypeScript,
+					Logs:  []string{},
+					Error: `runtime error: [string "error('failure')"]:1: failure`,
+				}},
+			},
+		},
+		{
+			desc:   "store run of fired alarm rule",
+			input:  rules.InputTypeAlarm,
+			value:  30,
+			pub:    mocks.NewPublisher(),
+			status: rules.RuleRunStatusSuccess,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{met},
+				Actions:    []rules.RuleRunAction{{Type: rules.ActionTypeWebhook}},
+			},
+		},
+		{
+			desc:  "skip run of alarm rule that does not fire",
+			input: rules.InputTypeAlarm,
+			value: 20,
+			pub:   mocks.NewPublisher(),
+		},
+		{
+			desc:   "store run of alarm rule with failed action",
+			input:  rules.InputTypeAlarm,
+			value:  30,
+			pub:    mocks.NewFailingPublisher(),
+			status: rules.RuleRunStatusFail,
+			details: rules.RuleRunDetails{
+				Conditions: []rules.RuleRunCondition{met},
+				Actions: []rules.RuleRunAction{{
+					Type:  rules.ActionTypeWebhook,
+					Error: messaging.ErrPublishWebhook.Error(),
+				}},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		repo := &runsRepository{Repository: mocks.NewRuleRepository()}
+		svc := newServiceWithRepo(repo, tc.pub)
+
+		field, action := "temperature", rules.Action{Type: rules.ActionTypeAlarm}
+		if tc.input == rules.InputTypeAlarm {
+			field, action = "level", rules.Action{Type: rules.ActionTypeWebhook}
+		}
+
+		condition := rules.Condition{
+			Type:       rules.ConditionTypeThreshold,
+			Field:      field,
+			Comparator: ">",
+			Threshold:  threshold(25),
+		}
+		if tc.script != "" {
+			script := rules.LuaScript{Name: "script", Script: tc.script}
+			scripts, err := svc.CreateScripts(context.Background(), token, groupID, script)
+			require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+			condition = rules.Condition{Type: rules.ConditionTypeScript, ScriptID: scripts[0].ID}
+			tc.details.Conditions[0].ScriptID = scripts[0].ID
+		}
+
+		rule := rules.Rule{
+			Name:       "rule",
+			Input:      rules.Input{Type: tc.input, ThingIDs: []string{thingID}},
+			Conditions: []rules.Condition{condition},
+			Operator:   rules.OperatorAND,
+			Actions:    []rules.Action{action},
+		}
+		rls, err := svc.CreateRules(context.Background(), token, groupID, rule)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		switch tc.input {
+		case rules.InputTypeAlarm:
+			err = svc.ConsumeAlarm(subject, protomfx.Alarm{ThingId: thingID, Level: int32(tc.value.(int))})
+		default:
+			err = svc.ConsumeMessage(subject, protomfx.Message{
+				ThingId:     thingID,
+				Records:     toRecords(t, map[string]any{field: tc.value}),
+				ContentType: "application/json",
+			})
+		}
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		var want []rules.RuleRun
+		if tc.status != "" {
+			want = []rules.RuleRun{{
+				RuleID:  rls[0].ID,
+				ThingID: thingID,
+				Status:  tc.status,
+				Details: tc.details,
+			}}
+		}
+
+		var got []rules.RuleRun
+		for _, run := range repo.runs {
+			got = append(got, rules.RuleRun{
+				RuleID:  run.RuleID,
+				ThingID: run.ThingID,
+				Status:  run.Status,
+				Details: run.Details,
+			})
+		}
+		assert.Equal(t, want, got, fmt.Sprintf("%s: unexpected rule runs", tc.desc))
 	}
 }

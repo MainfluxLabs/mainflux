@@ -76,24 +76,32 @@ const (
 	ConditionTypeScript = "script"
 )
 
-func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payload []byte, parsedPayload any, rule Rule) error {
-	triggered, err := rs.evaluateMessagePayload(ctx, msg, parsedPayload, rule)
+// runRule runs the actions of rule when the message fires it and returns the run details.
+func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payload []byte, parsedPayload any, rule Rule) (RuleRunDetails, bool, error) {
+	conditions, triggered, err := rs.evaluateMessagePayload(ctx, msg, parsedPayload, rule)
+	details := RuleRunDetails{Conditions: conditions}
 	if err != nil {
-		return err
+		// An error without a failed condition belongs to the payload.
+		if !details.failed() {
+			details.Error = err.Error()
+		}
+		return details, false, err
 	}
 	if !triggered {
-		return nil
+		return details, false, nil
 	}
 
 	ruleInfo, err := json.Marshal(domain.RuleInfo{Conditions: rule.Conditions, Operator: rule.Operator})
 	if err != nil {
-		return err
+		details.Error = err.Error()
+		return details, true, err
 	}
 
 	for _, action := range rule.Actions {
+		var err error
 		switch action.Type {
 		case ActionTypeAlarm:
-			if err := rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
+			err = rs.pub.PublishAlarm(fmt.Sprintf("%s.%s", subjectAlarms, domain.AlarmOriginRule), protomfx.Alarm{
 				ThingId:  msg.ThingId,
 				Subtopic: msg.Subtopic,
 				Protocol: msg.Protocol,
@@ -101,9 +109,7 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payl
 				Level:    action.Level,
 				RuleId:   rule.ID,
 				RuleInfo: ruleInfo,
-			}); err != nil {
-				return err
-			}
+			})
 		case ActionTypeSMTP, ActionTypeSMPP:
 			notification := protomfx.Notification{
 				Source: &protomfx.Notification_Message{
@@ -112,26 +118,32 @@ func (rs *rulesService) runRule(ctx context.Context, msg *protomfx.Message, payl
 				RuleId:   rule.ID,
 				RuleInfo: ruleInfo,
 			}
-			if err := rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification); err != nil {
-				return err
-			}
+			err = rs.pub.PublishNotification(fmt.Sprintf("%s.%s", action.Type, action.ID), notification)
 		case ActionTypeWebhook:
 			webhook := protomfx.Webhook{
 				ThingId: msg.ThingId,
 				Payload: payload,
 				Created: msg.Created,
 			}
-			if err := rs.pub.PublishWebhook(subjectWebhooks, webhook); err != nil {
-				return err
-			}
+			err = rs.pub.PublishWebhook(subjectWebhooks, webhook)
+		default:
+			continue
 		}
+
+		result := RuleRunAction{Type: action.Type, ID: action.ID}
+		if err != nil {
+			result.Error = err.Error()
+			details.Actions = append(details.Actions, result)
+			return details, true, err
+		}
+		details.Actions = append(details.Actions, result)
 	}
 
-	return nil
+	return details, true, nil
 }
 
 // evaluateAlarmPayload evaluates an alarm-input rule's conditions against payload
-func evaluateAlarmPayload(payload any, conditions []Condition, operator string, contentType string) (bool, error) {
+func evaluateAlarmPayload(payload any, conditions []Condition, operator string, contentType string) ([]RuleRunCondition, bool, error) {
 	switch data := payload.(type) {
 	case []any:
 		for _, item := range data {
@@ -139,84 +151,84 @@ func evaluateAlarmPayload(payload any, conditions []Condition, operator string, 
 			if !ok {
 				continue
 			}
-			triggered, err := evaluateAlarmConditions(obj, conditions, operator, contentType)
-			if err != nil {
-				return false, err
-			}
-			if triggered {
-				return true, nil
+			results, triggered, err := evaluateAlarmConditions(obj, conditions, operator, contentType)
+			if err != nil || triggered {
+				return results, triggered, err
 			}
 		}
-		return false, nil
+		return nil, false, nil
 	case map[string]any:
 		return evaluateAlarmConditions(data, conditions, operator, contentType)
 	default:
-		return false, errors.ErrInvalidPayload
+		return nil, false, errors.ErrInvalidPayload
 	}
 }
 
 // evaluateAlarmConditions evaluates every condition of an alarm-input rule against a single
 // payload object and reduces the results under the rule's operator.
-func evaluateAlarmConditions(payloadMap map[string]any, conditions []Condition, operator, contentType string) (bool, error) {
-	results := make([]bool, len(conditions))
+func evaluateAlarmConditions(payloadMap map[string]any, conditions []Condition, operator, contentType string) ([]RuleRunCondition, bool, error) {
+	results := make([]RuleRunCondition, 0, len(conditions))
 
-	for i, condition := range conditions {
-		r, err := evaluateThreshold(payloadMap, condition, contentType)
+	for _, condition := range conditions {
+		met, err := evaluateThreshold(payloadMap, condition, contentType)
 		if err != nil {
-			return false, err
+			results = append(results, RuleRunCondition{Type: condition.Type, Error: err.Error()})
+			return results, false, err
 		}
-		results[i] = r
+		results = append(results, RuleRunCondition{Type: condition.Type, Met: met})
 	}
 
-	return evaluateOperator(results, operator), nil
+	return results, evaluateOperator(results, operator), nil
 }
 
-// evaluateMessagePayload evaluates a message-input rule's conditions against parsedPayload,
-// which may run script conditions.
-func (rs *rulesService) evaluateMessagePayload(ctx context.Context, msg *protomfx.Message, parsedPayload any, rule Rule) (bool, error) {
+// evaluateMessagePayload evaluates a message-input rule against each payload object and returns
+// the results of the first object that fires the rule or else has a failed condition.
+func (rs *rulesService) evaluateMessagePayload(ctx context.Context, msg *protomfx.Message, parsedPayload any, rule Rule) ([]RuleRunCondition, bool, error) {
 	switch data := parsedPayload.(type) {
 	case []any:
+		var failed []RuleRunCondition
 		for _, item := range data {
 			obj, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
-			triggered, err := rs.evaluateMessageConditions(ctx, msg, obj, rule)
-			if err != nil {
-				return false, err
+			results, triggered, err := rs.evaluateMessageConditions(ctx, msg, obj, rule)
+			if err != nil || triggered {
+				return results, triggered, err
 			}
-			if triggered {
-				return true, nil
+			if failed == nil && (RuleRunDetails{Conditions: results}).failed() {
+				failed = results
 			}
 		}
-		return false, nil
+		return failed, false, nil
 	case map[string]any:
 		return rs.evaluateMessageConditions(ctx, msg, data, rule)
 	default:
-		return false, errors.ErrInvalidPayload
+		return nil, false, errors.ErrInvalidPayload
 	}
 }
 
 // evaluateMessageConditions evaluates every condition of a message-input rule against a
 // single payload object, running script conditions along the way, and reduces the results
 // under the rule's operator.
-func (rs *rulesService) evaluateMessageConditions(ctx context.Context, msg *protomfx.Message, payload map[string]any, rule Rule) (bool, error) {
-	results := make([]bool, len(rule.Conditions))
+func (rs *rulesService) evaluateMessageConditions(ctx context.Context, msg *protomfx.Message, payload map[string]any, rule Rule) ([]RuleRunCondition, bool, error) {
+	results := make([]RuleRunCondition, 0, len(rule.Conditions))
 
-	for i, condition := range rule.Conditions {
+	for _, condition := range rule.Conditions {
 		if condition.Type == ConditionTypeScript {
-			results[i] = rs.runScriptCondition(ctx, msg, payload, rule.ID, condition.ScriptID)
+			results = append(results, rs.runScriptCondition(ctx, msg, payload, rule.ID, condition.ScriptID))
 			continue
 		}
 
-		r, err := evaluateThreshold(payload, condition, msg.ContentType)
+		met, err := evaluateThreshold(payload, condition, msg.ContentType)
 		if err != nil {
-			return false, err
+			results = append(results, RuleRunCondition{Type: condition.Type, Error: err.Error()})
+			return results, false, err
 		}
-		results[i] = r
+		results = append(results, RuleRunCondition{Type: condition.Type, Met: met})
 	}
 
-	return evaluateOperator(results, rule.Operator), nil
+	return results, evaluateOperator(results, rule.Operator), nil
 }
 
 // evaluateThreshold evaluates a single threshold condition against payload. A missing or
@@ -256,10 +268,10 @@ func evaluateThreshold(payload map[string]any, condition Condition, contentType 
 }
 
 // evaluateOperator combines per-condition results under the rule's operator (AND if unset).
-func evaluateOperator(results []bool, operator string) bool {
+func evaluateOperator(results []RuleRunCondition, operator string) bool {
 	if operator == OperatorOR {
 		for _, r := range results {
-			if r {
+			if r.Met {
 				return true
 			}
 		}
@@ -267,7 +279,7 @@ func evaluateOperator(results []bool, operator string) bool {
 	}
 
 	for _, r := range results {
-		if !r {
+		if !r.Met {
 			return false
 		}
 	}

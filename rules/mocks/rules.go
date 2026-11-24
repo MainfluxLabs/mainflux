@@ -21,6 +21,7 @@ type ruleRepositoryMock struct {
 	ruleAssignments map[string][]string // thingID -> []ruleID
 	scripts         map[string]rules.LuaScript
 	scriptRuns      map[string]rules.ScriptRun
+	runs            map[string]rules.RuleRun
 }
 
 // NewRuleRepository creates in-memory rule repository used for testing.
@@ -30,6 +31,7 @@ func NewRuleRepository() rules.Repository {
 		ruleAssignments: make(map[string][]string),
 		scripts:         make(map[string]rules.LuaScript),
 		scriptRuns:      make(map[string]rules.ScriptRun),
+		runs:            make(map[string]rules.RuleRun),
 	}
 }
 
