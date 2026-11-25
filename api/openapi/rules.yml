@@ -310,7 +310,7 @@ paths:
   /things/{thingId}/runs:
     get:
       summary: Retrieve rule runs for a Thing.
-      description: Retrieves the runs of rules triggered by messages of the Thing identified by the provided ID.
+      description: Retrieves the runs of rules that evaluated messages or alarms of the Thing identified by the provided ID.
       tags:
         - rule-runs
       parameters:

@@ -137,21 +137,19 @@ return spread <= 2.0
 
 ## Rule Runs
 
-A rule run is stored when a rule fires or fails, with the result of every evaluated condition and executed action.
+A rule run is stored when a rule fires, or when its evaluation, a condition or an action fails. It records the result of each evaluated condition and executed action.
 
-| Field         | Description                                                 |
-| ------------- | ----------------------------------------------------------- |
-| `id`          | Unique run identifier (UUID)                                |
-| `rule_id`     | ID of the rule that was evaluated                           |
-| `thing_id`    | ID of the thing whose message triggered the evaluation      |
-| `started_at`  | Evaluation start timestamp (RFC 3339)                       |
-| `finished_at` | Evaluation end timestamp (RFC 3339)                         |
-| `status`      | `success`, or `fail` when the run reports any error         |
-| `error`       | Error that belongs to no single condition or action, if any |
-| `conditions`  | Results of the evaluated conditions                         |
-| `actions`     | Results of the executed actions                             |
-
-Each condition result contains the condition `type` and `met`. A script condition also contains `script_id`, the returned `result`, the `logs` written via `mfx.log()` and the runtime `error`, if any. Each action result contains the action `type`, the notifier `id` and the `error`, if any.
+| Field         | Description                                                                        |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `id`          | Unique run identifier (UUID)                                                       |
+| `rule_id`     | ID of the rule                                                                     |
+| `thing_id`    | ID of the thing whose message or alarm the rule evaluated                          |
+| `started_at`  | Run start timestamp (RFC 3339)                                                     |
+| `finished_at` | Run end timestamp (RFC 3339)                                                       |
+| `status`      | `fail` when the evaluation, a condition or an action fails, else `success`         |
+| `error`       | Evaluation error that belongs to no single condition or action, if any             |
+| `conditions`  | Evaluated conditions with `type`, `script_id`, `met`, `result`, `logs` and `error` |
+| `actions`     | Executed actions with `type`, `id` and `error`                                     |
 
 Run records are retrievable per rule or per thing, and can be bulk-deleted via the API.
 
