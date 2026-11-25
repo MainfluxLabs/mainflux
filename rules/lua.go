@@ -232,6 +232,11 @@ func (rs *rulesService) runScriptCondition(ctx context.Context, msg *protomfx.Me
 		return false
 	}
 
+	// Runs of unmet conditions are skipped to avoid storing a run for every message a rule evaluates.
+	if !result && run.Status != ScriptRunStatusFail {
+		return false
+	}
+
 	if _, err := rs.rules.SaveScriptRuns(ctx, run); err != nil {
 		rs.logger.Error(fmt.Sprintf("preserving script run to database failed with error: %v", err))
 	}
