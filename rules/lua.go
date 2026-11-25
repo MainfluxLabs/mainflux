@@ -211,30 +211,38 @@ func (env *luaEnv) execute() (ScriptRun, bool, error) {
 	return run, env.ls.ToBoolean(-1), nil
 }
 
-// runScriptCondition runs the script identified by scriptID as a Condition and returns its
-// boolean result. It is fail-closed: any error along the way makes the condition false.
-func (rs *rulesService) runScriptCondition(ctx context.Context, msg *protomfx.Message, payload map[string]any, ruleID, scriptID string) bool {
+// runScriptCondition runs the script identified by scriptID as a fail-closed condition.
+func (rs *rulesService) runScriptCondition(ctx context.Context, msg *protomfx.Message, payload map[string]any, ruleID, scriptID string) RuleRunCondition {
+	result := RuleRunCondition{Type: ConditionTypeScript, ScriptID: scriptID}
+
 	script, err := rs.rules.RetrieveScriptByID(ctx, scriptID)
 	if err != nil {
 		rs.logger.Error(fmt.Sprintf("retrieving script with id %s for condition evaluation failed with error: %v", scriptID, err))
-		return false
+		result.Error = err.Error()
+		return result
 	}
 
 	env, err := NewLuaEnv(rs, &script, ruleID, msg, payload, luaLog)
 	if err != nil {
 		rs.logger.Error(fmt.Sprintf("creating lua environment for script with id %s failed with error: %v", scriptID, err))
-		return false
+		result.Error = err.Error()
+		return result
 	}
 
-	run, result, err := env.execute()
+	run, met, err := env.execute()
 	if err != nil {
 		rs.logger.Error(fmt.Sprintf("executing script with id %s failed with error: %v", scriptID, err))
-		return false
+		result.Error = err.Error()
+		return result
 	}
 
+	result.Met = met
+	result.Logs = run.Logs
+	result.Error = run.Error
+
 	// Runs of unmet conditions are skipped to avoid storing a run for every message a rule evaluates.
-	if !result && run.Status != ScriptRunStatusFail {
-		return false
+	if !met && run.Status != ScriptRunStatusFail {
+		return result
 	}
 
 	if _, err := rs.rules.SaveScriptRuns(ctx, run); err != nil {

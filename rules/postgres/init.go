@@ -188,6 +188,27 @@ func migrateDB(db *sqlx.DB) error {
 					`ALTER TABLE lua_script_runs DROP COLUMN IF EXISTS rule_id`,
 				},
 			},
+			{
+				Id: "rules_11",
+				Up: []string{
+					`CREATE TABLE IF NOT EXISTS rule_runs (
+						id          UUID NOT NULL,
+						rule_id     UUID NOT NULL,
+						thing_id    UUID NOT NULL,
+						started_at  TIMESTAMPTZ NOT NULL,
+						finished_at TIMESTAMPTZ NOT NULL,
+						status      TEXT NOT NULL,
+						details     JSON NOT NULL,
+						PRIMARY KEY (id),
+						FOREIGN KEY (rule_id) REFERENCES rules (id) ON DELETE CASCADE
+					)`,
+					`CREATE INDEX IF NOT EXISTS idx_rule_runs_rule_id ON rule_runs (rule_id)`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_rule_runs_rule_id`,
+					`DROP TABLE IF EXISTS rule_runs`,
+				},
+			},
 		},
 	}
 
