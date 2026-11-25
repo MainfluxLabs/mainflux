@@ -85,20 +85,20 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 
 	mux.Get("/things/:id/runs", kithttp.NewServer(
 		endpoint.Chain(
-			kitot.TraceServer(tracer, "list_script_runs_by_thing"),
+			kitot.TraceServer(tracer, "list_runs_by_thing"),
 			withIdentity,
-		)(listScriptRunsByThingEndpoint(svc)),
-		decodeListScriptRunsByThing,
+		)(listRunsByThingEndpoint(svc)),
+		decodeListRunsByThing,
 		encodeResponse,
 		opts...,
 	))
 
 	mux.Patch("/runs", kithttp.NewServer(
 		endpoint.Chain(
-			kitot.TraceServer(tracer, "remove_script_runs"),
+			kitot.TraceServer(tracer, "remove_runs"),
 			withIdentity,
-		)(removeScriptRunsEndpoint(svc)),
-		decodeRemoveScriptRuns,
+		)(removeRunsEndpoint(svc)),
+		decodeRemoveRuns,
 		encodeResponse,
 		opts...,
 	))
@@ -188,13 +188,13 @@ func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := api.BuildScriptRunsPageMetadata(r)
+func decodeListRunsByThing(_ context.Context, r *http.Request) (any, error) {
+	pm, err := api.BuildRunsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listScriptRunsByThingReq{
+	req := listRunsByThingReq{
 		token:        apiutil.ExtractBearerToken(r),
 		thingID:      bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
@@ -202,12 +202,12 @@ func decodeListScriptRunsByThing(_ context.Context, r *http.Request) (any, error
 	return req, nil
 }
 
-func decodeRemoveScriptRuns(_ context.Context, r *http.Request) (any, error) {
+func decodeRemoveRuns(_ context.Context, r *http.Request) (any, error) {
 	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
 		return nil, apiutil.ErrUnsupportedContentType
 	}
 
-	req := removeScriptRunsReq{
+	req := removeRunsReq{
 		token: apiutil.ExtractBearerToken(r),
 	}
 

@@ -72,19 +72,18 @@ type thingIDsRes struct {
 	ThingIDs []string `json:"thing_ids"`
 }
 
-type scriptRunRes struct {
-	ID       string `json:"id"`
-	ScriptID string `json:"script_id"`
-	RuleID   string `json:"rule_id"`
-	ThingID  string `json:"thing_id"`
-	Status   string `json:"status"`
+type runRes struct {
+	ID      string `json:"id"`
+	RuleID  string `json:"rule_id"`
+	ThingID string `json:"thing_id"`
+	Status  string `json:"status"`
 }
 
-type scriptRunsPageRes struct {
-	Total  uint64         `json:"total"`
-	Offset uint64         `json:"offset"`
-	Limit  uint64         `json:"limit"`
-	Runs   []scriptRunRes `json:"runs"`
+type runsPageRes struct {
+	Total  uint64   `json:"total"`
+	Offset uint64   `json:"offset"`
+	Limit  uint64   `json:"limit"`
+	Runs   []runRes `json:"runs"`
 }
 
 func newService() rules.Service {
@@ -1173,7 +1172,7 @@ func TestUnassignThings(t *testing.T) {
 	}
 }
 
-func TestListScriptRunsByRule(t *testing.T) {
+func TestListRunsByRule(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -1189,32 +1188,32 @@ func TestListScriptRunsByRule(t *testing.T) {
 		size   int
 	}{
 		{
-			desc:   "list script runs by rule",
+			desc:   "list rule runs by rule",
 			auth:   token,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10&offset=0", ts.URL, ruleID),
 			status: http.StatusOK,
 			size:   0,
 		},
 		{
-			desc:   "list script runs with non-existing rule ID",
+			desc:   "list rule runs with non-existing rule ID",
 			auth:   token,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10", ts.URL, wrongValue),
 			status: http.StatusNotFound,
 		},
 		{
-			desc:   "list script runs with empty token",
+			desc:   "list rule runs with empty token",
 			auth:   emptyValue,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10", ts.URL, ruleID),
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "list script runs with wrong token",
+			desc:   "list rule runs with wrong token",
 			auth:   wrongValue,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10", ts.URL, ruleID),
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "list script runs with limit exceeding max",
+			desc:   "list rule runs with limit exceeding max",
 			auth:   token,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=201", ts.URL, ruleID),
 			status: http.StatusBadRequest,
@@ -1231,7 +1230,7 @@ func TestListScriptRunsByRule(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 
-		var page scriptRunsPageRes
+		var page runsPageRes
 		json.NewDecoder(res.Body).Decode(&page)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
 		if tc.status == http.StatusOK {

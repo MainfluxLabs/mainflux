@@ -11,19 +11,19 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
-type ScriptRunRes struct {
-	ID         string    `json:"id"`
-	ScriptID   string    `json:"script_id"`
-	RuleID     string    `json:"rule_id"`
-	ThingID    string    `json:"thing_id"`
-	Logs       []string  `json:"logs"`
-	StartedAt  time.Time `json:"started_at"`
-	FinishedAt time.Time `json:"finished_at"`
-	Status     string    `json:"status"`
-	Error      string    `json:"error,omitempty"`
+type RunRes struct {
+	ID         string                   `json:"id"`
+	RuleID     string                   `json:"rule_id"`
+	ThingID    string                   `json:"thing_id"`
+	StartedAt  time.Time                `json:"started_at"`
+	FinishedAt time.Time                `json:"finished_at"`
+	Status     string                   `json:"status"`
+	Error      string                   `json:"error,omitempty"`
+	Conditions []rules.RuleRunCondition `json:"conditions,omitempty"`
+	Actions    []rules.RuleRunAction    `json:"actions,omitempty"`
 }
 
-func BuildScriptRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
+func BuildRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
 	if err != nil {
 		return rules.PageMetadata{}, err
@@ -69,16 +69,16 @@ func BuildScriptRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 	}, nil
 }
 
-func ToScriptRunRes(run rules.ScriptRun) ScriptRunRes {
-	return ScriptRunRes{
+func ToRunRes(run rules.RuleRun) RunRes {
+	return RunRes{
 		ID:         run.ID,
-		ScriptID:   run.ScriptID,
 		RuleID:     run.RuleID,
 		ThingID:    run.ThingID,
-		Logs:       run.Logs,
 		StartedAt:  run.StartedAt,
 		FinishedAt: run.FinishedAt,
 		Status:     run.Status,
-		Error:      run.Error,
+		Error:      run.Details.Error,
+		Conditions: run.Details.Conditions,
+		Actions:    run.Details.Actions,
 	}
 }

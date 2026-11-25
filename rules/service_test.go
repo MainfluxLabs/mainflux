@@ -784,11 +784,11 @@ func TestConsumeMessageScriptLogLimit(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pm := rules.PageMetadata{Limit: 10}
-	page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+	page, err := svc.ListRunsByThing(context.Background(), token, thingID, pm)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	require.Len(t, page.Runs, 1)
 
-	logs := len(page.Runs[0].Logs)
+	logs := len(page.Runs[0].Details.Conditions[0].Logs)
 	assert.Equal(t, 256, logs, fmt.Sprintf("expected 256 log lines got %d\n", logs))
 }
 
@@ -820,11 +820,11 @@ func TestConsumeMessageScriptSandbox(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pm := rules.PageMetadata{Limit: 10}
-	page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+	page, err := svc.ListRunsByThing(context.Background(), token, thingID, pm)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	require.Len(t, page.Runs, 1)
 
-	logs := page.Runs[0].Logs
+	logs := page.Runs[0].Details.Conditions[0].Logs
 	desc := fmt.Sprintf("expected file and chunk loaders to be unset got %v\n", logs)
 	assert.Equal(t, []string{"nil nil nil"}, logs, desc)
 }
@@ -840,13 +840,13 @@ func TestConsumeMessageScriptRuns(t *testing.T) {
 			desc:   "store run of script that returns true",
 			script: "return true",
 			total:  1,
-			status: rules.ScriptRunStatusSuccess,
+			status: rules.RuleRunStatusSuccess,
 		},
 		{
 			desc:   "store run of script that fails",
 			script: "error('failure')",
 			total:  1,
-			status: rules.ScriptRunStatusFail,
+			status: rules.RuleRunStatusFail,
 		},
 		{
 			desc:   "skip run of script that returns false",
@@ -885,7 +885,7 @@ func TestConsumeMessageScriptRuns(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 
 		pm := rules.PageMetadata{Limit: 10}
-		page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+		page, err := svc.ListRunsByThing(context.Background(), token, thingID, pm)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		desc := fmt.Sprintf("%s: expected %d runs got %d\n", tc.desc, tc.total, page.Total)
 		assert.Equal(t, tc.total, page.Total, desc)

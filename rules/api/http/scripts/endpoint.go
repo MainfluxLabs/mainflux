@@ -110,30 +110,30 @@ func removeScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listScriptRunsByThingEndpoint(svc rules.Service) endpoint.Endpoint {
+func listRunsByThingEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listScriptRunsByThingReq)
+		req := request.(listRunsByThingReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListScriptRunsByThing(ctx, req.token, req.thingID, req.pageMetadata)
+		page, err := svc.ListRunsByThing(ctx, req.token, req.thingID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildScriptRunsPageResponse(page, req.pageMetadata), nil
+		return buildRunsPageResponse(page, req.pageMetadata), nil
 	}
 }
 
-func removeScriptRunsEndpoint(svc rules.Service) endpoint.Endpoint {
+func removeRunsEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(removeScriptRunsReq)
+		req := request.(removeRunsReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		if err := svc.RemoveScriptRuns(ctx, req.token, req.ScriptRunIDs...); err != nil {
+		if err := svc.RemoveRuns(ctx, req.token, req.RunIDs...); err != nil {
 			return nil, err
 		}
 
@@ -196,8 +196,8 @@ func buildScriptResponse(s rules.LuaScript, updated bool) scriptRes {
 	}
 }
 
-func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadata) scriptRunsPageRes {
-	res := scriptRunsPageRes{
+func buildRunsPageResponse(page rules.RuleRunsPage, pm rules.PageMetadata) runsPageRes {
+	res := runsPageRes{
 		pageRes: pageRes{
 			Total:  page.Total,
 			Offset: pm.Offset,
@@ -206,11 +206,11 @@ func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadat
 			Dir:    pm.Dir,
 			Name:   pm.Name,
 		},
-		Runs: []api.ScriptRunRes{},
+		Runs: []api.RunRes{},
 	}
 
 	for _, run := range page.Runs {
-		res.Runs = append(res.Runs, api.ToScriptRunRes(run))
+		res.Runs = append(res.Runs, api.ToRunRes(run))
 	}
 
 	return res

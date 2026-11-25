@@ -65,9 +65,9 @@ Each condition has a required `type`, which selects how it's evaluated.
 
 #### Script conditions
 
-A `script` condition runs the referenced Lua script and uses its return value as the result: a strict `return true` counts as met, anything else — `return false`, no return, or a runtime error — counts as not met. The script's result is combined with any other conditions on the rule the same way a threshold result would be, under the rule's `operator`. A script may return `nil`, a boolean, a number, a string, an object or an array, and the returned value is stored as the result of the condition in the rule run. The script run fails when the returned value contains a function, a NaN or infinite number, a table key that is neither a string nor a number, or two table keys with the same string form, or when its size exceeds 65,536, counted as one per value plus the length of every string and table key.
+A `script` condition runs the referenced Lua script and uses its return value as the result: a strict `return true` counts as met, anything else — `return false`, no return, or a runtime error — counts as not met. The script's result is combined with any other conditions on the rule the same way a threshold result would be, under the rule's `operator`. A script may return `nil`, a boolean, a number, a string, an object or an array, and the returned value is stored as the result of the condition in the [rule run](#rule-runs). The condition fails with an error when the returned value contains a function, a NaN or infinite number, a table key that is neither a string nor a number, or two table keys with the same string form, or when its size exceeds 65,536, counted as one per value plus the length of every string and table key.
 
-Script conditions run with a **read-only** API — the only bound function is `mfx.log`, since a condition must not have side effects. A [script run](#scripts) is stored when the script returns `true` or fails.
+Script conditions run with a **read-only** API — the only bound function is `mfx.log`, since a condition must not have side effects. The script's result, logs and runtime error are stored in the [rule run](#rule-runs).
 
 Script conditions are only supported on `message`-input rules, not `alarm`-input rules.
 
@@ -135,23 +135,23 @@ mfx.log(string.format("temp=%.1f  hum=%.1f%%  dew_point=%.1f  spread=%.1f",
 return spread <= 2.0
 ```
 
-### Script Runs
+## Rule Runs
 
-A script run, with its outcome, logs and runtime error, is stored when the script returns `true` or fails.
+A rule run is stored when a rule fires or fails, with the result of every evaluated condition and executed action.
 
-| Field         | Description                                      |
-| ------------- | ------------------------------------------------ |
-| `id`          | Unique run identifier (UUID)                     |
-| `script_id`   | ID of the script that was executed               |
-| `rule_id`     | ID of the rule whose condition triggered the run |
-| `thing_id`    | ID of the thing that triggered the execution     |
-| `logs`        | Log lines written via `mfx.log()`                |
-| `started_at`  | Execution start timestamp (RFC 3339)             |
-| `finished_at` | Execution end timestamp (RFC 3339)               |
-| `status`      | `success` or `fail`                              |
-| `error`       | Runtime error message, if any                    |
+| Field         | Description                                                 |
+| ------------- | ----------------------------------------------------------- |
+| `id`          | Unique run identifier (UUID)                                |
+| `rule_id`     | ID of the rule that was evaluated                           |
+| `thing_id`    | ID of the thing whose message triggered the evaluation      |
+| `started_at`  | Evaluation start timestamp (RFC 3339)                       |
+| `finished_at` | Evaluation end timestamp (RFC 3339)                         |
+| `status`      | `success`, or `fail` when the run reports any error         |
+| `error`       | Error that belongs to no single condition or action, if any |
+| `conditions`  | Results of the evaluated conditions                         |
+| `actions`     | Results of the executed actions                             |
 
-`status` reflects only whether the script ran without a Lua runtime error — it does not reflect whether the script's return value counted as the condition being met.
+Each condition result contains the condition `type` and `met`. A script condition also contains `script_id`, the returned `result`, the `logs` written via `mfx.log()` and the runtime `error`, if any. Each action result contains the action `type`, the notifier `id` and the `error`, if any.
 
 Run records are retrievable per rule or per thing, and can be bulk-deleted via the API.
 

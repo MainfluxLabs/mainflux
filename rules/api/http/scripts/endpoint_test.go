@@ -53,22 +53,21 @@ type scriptsPageRes struct {
 	Scripts []scriptRes `json:"scripts"`
 }
 
-type scriptRunRes struct {
+type runRes struct {
 	ID         string    `json:"id"`
-	ScriptID   string    `json:"script_id"`
+	RuleID     string    `json:"rule_id"`
 	ThingID    string    `json:"thing_id"`
-	Logs       []string  `json:"logs"`
 	StartedAt  time.Time `json:"started_at"`
 	FinishedAt time.Time `json:"finished_at"`
 	Status     string    `json:"status"`
 	Error      string    `json:"error,omitempty"`
 }
 
-type scriptRunsPageRes struct {
-	Total  uint64         `json:"total"`
-	Offset uint64         `json:"offset"`
-	Limit  uint64         `json:"limit"`
-	Runs   []scriptRunRes `json:"runs"`
+type runsPageRes struct {
+	Total  uint64   `json:"total"`
+	Offset uint64   `json:"offset"`
+	Limit  uint64   `json:"limit"`
+	Runs   []runRes `json:"runs"`
 }
 
 func newService() rules.Service {
@@ -601,7 +600,7 @@ func TestRemoveScripts(t *testing.T) {
 	}
 }
 
-func TestListScriptRunsByThing(t *testing.T) {
+func TestListRunsByThing(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -614,28 +613,28 @@ func TestListScriptRunsByThing(t *testing.T) {
 		size   int
 	}{
 		{
-			desc:   "list script runs by thing",
+			desc:   "list rule runs by thing",
 			token:  token,
 			url:    fmt.Sprintf("%s/things/%s/runs?limit=10&offset=0", ts.URL, thingID),
 			status: http.StatusOK,
 			size:   0,
 		},
 		{
-			desc:   "list script runs with wrong thing ID",
+			desc:   "list rule runs with wrong thing ID",
 			token:  token,
 			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, wrongValue),
 			status: http.StatusForbidden,
 			size:   0,
 		},
 		{
-			desc:   "list script runs with empty token",
+			desc:   "list rule runs with empty token",
 			token:  emptyValue,
 			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, thingID),
 			status: http.StatusUnauthorized,
 			size:   0,
 		},
 		{
-			desc:   "list script runs with limit exceeding max",
+			desc:   "list rule runs with limit exceeding max",
 			token:  token,
 			url:    fmt.Sprintf("%s/things/%s/runs?limit=201", ts.URL, thingID),
 			status: http.StatusBadRequest,
@@ -653,7 +652,7 @@ func TestListScriptRunsByThing(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 
-		var page scriptRunsPageRes
+		var page runsPageRes
 		json.NewDecoder(res.Body).Decode(&page)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
 		if tc.status == http.StatusOK {
@@ -662,7 +661,7 @@ func TestListScriptRunsByThing(t *testing.T) {
 	}
 }
 
-func TestRemoveScriptRuns(t *testing.T) {
+func TestRemoveRuns(t *testing.T) {
 	svc := newService()
 	ts := newHTTPServer(svc)
 	defer ts.Close()
@@ -675,28 +674,35 @@ func TestRemoveScriptRuns(t *testing.T) {
 		status      int
 	}{
 		{
-			desc:        "remove script runs with empty token",
+			desc:        "remove rule runs with empty token",
 			token:       emptyValue,
 			contentType: contentType,
 			ids:         []string{"non-existent-run-id"},
 			status:      http.StatusUnauthorized,
 		},
 		{
-			desc:        "remove non-existing script runs",
+			desc:        "remove non-existing rule runs",
 			token:       token,
 			contentType: contentType,
 			ids:         []string{wrongValue},
 			status:      http.StatusNotFound,
 		},
 		{
-			desc:        "remove script runs with empty list",
+			desc:        "remove rule runs with empty list",
 			token:       token,
 			contentType: contentType,
 			ids:         []string{},
 			status:      http.StatusBadRequest,
 		},
 		{
-			desc:        "remove script runs without content type",
+			desc:        "remove rule runs with empty ID",
+			token:       token,
+			contentType: contentType,
+			ids:         []string{emptyValue},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove rule runs without content type",
 			token:       token,
 			contentType: emptyValue,
 			ids:         []string{"run-id"},
@@ -706,7 +712,7 @@ func TestRemoveScriptRuns(t *testing.T) {
 
 	for _, tc := range cases {
 		body := toJSON(struct {
-			ScriptRunIDs []string `json:"script_run_ids"`
+			RunIDs []string `json:"run_ids"`
 		}{tc.ids})
 
 		req := testRequest{

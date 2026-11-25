@@ -116,10 +116,10 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 	))
 	mux.Get("/rules/:id/runs", kithttp.NewServer(
 		endpoint.Chain(
-			kitot.TraceServer(tracer, "list_script_runs_by_rule"),
+			kitot.TraceServer(tracer, "list_runs_by_rule"),
 			withIdentity,
-		)(listScriptRunsByRuleEndpoint(svc)),
-		decodeListScriptRunsByRule,
+		)(listRunsByRuleEndpoint(svc)),
+		decodeListRunsByRule,
 		encodeResponse,
 		opts...,
 	))
@@ -245,13 +245,13 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeListScriptRunsByRule(_ context.Context, r *http.Request) (any, error) {
-	pm, err := api.BuildScriptRunsPageMetadata(r)
+func decodeListRunsByRule(_ context.Context, r *http.Request) (any, error) {
+	pm, err := api.BuildRunsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listScriptRunsByRuleReq{
+	req := listRunsByRuleReq{
 		token:        apiutil.ExtractBearerToken(r),
 		ruleID:       bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,

@@ -181,24 +181,24 @@ func removeRulesEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listScriptRunsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
+func listRunsByRuleEndpoint(svc rules.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listScriptRunsByRuleReq)
+		req := request.(listRunsByRuleReq)
 		if err := req.validate(); err != nil {
 			return nil, err
 		}
 
-		page, err := svc.ListScriptRunsByRule(ctx, req.token, req.ruleID, req.pageMetadata)
+		page, err := svc.ListRunsByRule(ctx, req.token, req.ruleID, req.pageMetadata)
 		if err != nil {
 			return nil, err
 		}
 
-		return buildScriptRunsPageResponse(page, req.pageMetadata), nil
+		return buildRunsPageResponse(page, req.pageMetadata), nil
 	}
 }
 
-func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadata) scriptRunsPageRes {
-	res := scriptRunsPageRes{
+func buildRunsPageResponse(page rules.RuleRunsPage, pm rules.PageMetadata) runsPageRes {
+	res := runsPageRes{
 		pageRes: pageRes{
 			Total:  page.Total,
 			Offset: pm.Offset,
@@ -207,11 +207,11 @@ func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadat
 			Dir:    pm.Dir,
 			Name:   pm.Name,
 		},
-		Runs: []api.ScriptRunRes{},
+		Runs: []api.RunRes{},
 	}
 
 	for _, run := range page.Runs {
-		res.Runs = append(res.Runs, api.ToScriptRunRes(run))
+		res.Runs = append(res.Runs, api.ToRunRes(run))
 	}
 
 	return res

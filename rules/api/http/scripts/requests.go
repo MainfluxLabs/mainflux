@@ -147,13 +147,13 @@ func (req removeScriptsReq) validate() error {
 	return nil
 }
 
-type listScriptRunsByThingReq struct {
+type listRunsByThingReq struct {
 	token        string
 	thingID      string
 	pageMetadata rules.PageMetadata
 }
 
-func (req listScriptRunsByThingReq) validate() error {
+func (req listRunsByThingReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -162,26 +162,26 @@ func (req listScriptRunsByThingReq) validate() error {
 		return apiutil.ErrMissingThingID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.ScriptRunOrderFields)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleRunOrderFields)
 }
 
-type removeScriptRunsReq struct {
-	token        string
-	ScriptRunIDs []string `json:"script_run_ids"`
+type removeRunsReq struct {
+	token  string
+	RunIDs []string `json:"run_ids"`
 }
 
-func (req removeScriptRunsReq) validate() error {
+func (req removeRunsReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
 
-	if len(req.ScriptRunIDs) < minLen {
+	if len(req.RunIDs) < minLen {
 		return apiutil.ErrEmptyList
 	}
 
-	for _, id := range req.ScriptRunIDs {
+	for _, id := range req.RunIDs {
 		if id == "" {
-			return apiutil.ErrMissingScriptRunID
+			return apiutil.ErrMissingRuleRunID
 		}
 	}
 

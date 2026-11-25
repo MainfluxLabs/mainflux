@@ -210,13 +210,13 @@ func (req removeRulesReq) validate() error {
 	return nil
 }
 
-type listScriptRunsByRuleReq struct {
+type listRunsByRuleReq struct {
 	token        string
 	ruleID       string
 	pageMetadata rules.PageMetadata
 }
 
-func (req listScriptRunsByRuleReq) validate() error {
+func (req listRunsByRuleReq) validate() error {
 	if req.token == "" {
 		return apiutil.ErrBearerToken
 	}
@@ -225,7 +225,7 @@ func (req listScriptRunsByRuleReq) validate() error {
 		return apiutil.ErrMissingRuleID
 	}
 
-	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.ScriptRunOrderFields)
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleRunOrderFields)
 }
 
 func validateThingIDs(ids []string) error {
