@@ -38,6 +38,7 @@ type RuleRunCondition struct {
 	Type     string   `json:"type"`
 	ScriptID string   `json:"script_id,omitempty"`
 	Met      bool     `json:"met"`
+	Result   any      `json:"result,omitempty"`
 	Logs     []string `json:"logs,omitempty"`
 	Error    string   `json:"error,omitempty"`
 }
