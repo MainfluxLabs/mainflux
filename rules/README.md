@@ -65,7 +65,7 @@ Each condition has a required `type`, which selects how it's evaluated.
 
 #### Script conditions
 
-A `script` condition runs the referenced Lua script and uses its return value as the result: a strict `return true` counts as met, anything else — `return false`, no return, or a runtime error — counts as not met. The script's result is combined with any other conditions on the rule the same way a threshold result would be, under the rule's `operator`.
+A `script` condition runs the referenced Lua script and uses its return value as the result: a strict `return true` counts as met, anything else — `return false`, no return, or a runtime error — counts as not met. The script's result is combined with any other conditions on the rule the same way a threshold result would be, under the rule's `operator`. A script may return `nil`, a boolean, a number, a string, an object or an array, and the returned value is stored as the result of the condition in the rule run. The script run fails when the returned value contains a function, a NaN or infinite number, a table key that is neither a string nor a number, or two table keys with the same string form, or when its size exceeds 65,536, counted as one per value plus the length of every string and table key.
 
 Script conditions run with a **read-only** API — the only bound function is `mfx.log`, since a condition must not have side effects. A [script run](#scripts) is stored when the script returns `true` or fails.
 

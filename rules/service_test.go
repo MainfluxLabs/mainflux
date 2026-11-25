@@ -972,9 +972,10 @@ func TestConsumeRuns(t *testing.T) {
 			status: rules.RuleRunStatusSuccess,
 			details: rules.RuleRunDetails{
 				Conditions: []rules.RuleRunCondition{{
-					Type: rules.ConditionTypeScript,
-					Met:  true,
-					Logs: []string{"fired"},
+					Type:   rules.ConditionTypeScript,
+					Met:    true,
+					Result: true,
+					Logs:   []string{"fired"},
 				}},
 				Actions: []rules.RuleRunAction{{Type: rules.ActionTypeAlarm}},
 			},
@@ -1091,5 +1092,116 @@ func TestConsumeRuns(t *testing.T) {
 			})
 		}
 		assert.Equal(t, want, got, fmt.Sprintf("%s: unexpected rule runs", tc.desc))
+	}
+}
+
+func TestConsumeRunsScriptResult(t *testing.T) {
+	cases := []struct {
+		desc   string
+		script string
+		status string
+		result rules.RuleRunCondition
+	}{
+		{
+			desc:   "store object returned by script condition",
+			script: "return {temperature = mfx.message.payload.temperature, unit = 'C'}",
+			status: rules.RuleRunStatusSuccess,
+			result: rules.RuleRunCondition{
+				Result: map[string]any{"temperature": float64(30), "unit": "C"},
+			},
+		},
+		{
+			desc:   "store array of objects returned by script condition",
+			script: "return {{value = 1}, {value = 2}}",
+			status: rules.RuleRunStatusSuccess,
+			result: rules.RuleRunCondition{
+				Result: []any{map[string]any{"value": float64(1)}, map[string]any{"value": float64(2)}},
+			},
+		},
+		{
+			desc:   "store false returned by script condition",
+			script: "return false",
+			status: rules.RuleRunStatusSuccess,
+			result: rules.RuleRunCondition{Result: false},
+		},
+		{
+			desc:   "store no result of script condition without return value",
+			script: "mfx.log('no value')",
+			status: rules.RuleRunStatusSuccess,
+			result: rules.RuleRunCondition{Logs: []string{"no value"}},
+		},
+		{
+			desc:   "store error of script condition that returns cyclic table",
+			script: "local t = {} t.self = t return t",
+			status: rules.RuleRunStatusFail,
+			result: rules.RuleRunCondition{Error: "script return value exceeds size limit"},
+		},
+		{
+			desc:   "store error of script condition that returns repeatedly referenced tables",
+			script: "local t = {} for i = 1, 30 do t = {t, t} end return t",
+			status: rules.RuleRunStatusFail,
+			result: rules.RuleRunCondition{Error: "script return value exceeds size limit"},
+		},
+		{
+			desc:   "store error of script condition that returns oversized string",
+			script: "return string.rep('a', 100000)",
+			status: rules.RuleRunStatusFail,
+			result: rules.RuleRunCondition{Error: "script return value exceeds size limit"},
+		},
+		{
+			desc:   "store error of script condition that returns duplicate table keys",
+			script: "return {[1] = 'a', ['1'] = 'b'}",
+			status: rules.RuleRunStatusFail,
+			result: rules.RuleRunCondition{
+				Error: "script return value contains an unsupported or duplicate table key",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		repo := &runsRepository{Repository: mocks.NewRuleRepository()}
+		svc := newServiceWithRepo(repo, mocks.NewPublisher())
+
+		script := rules.LuaScript{Name: "script", Script: tc.script}
+		scripts, err := svc.CreateScripts(context.Background(), token, groupID, script)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		rule := rules.Rule{
+			Name:  "rule",
+			Input: rules.Input{Type: rules.InputTypeMessage, ThingIDs: []string{thingID}},
+			Conditions: []rules.Condition{
+				{
+					Type:       rules.ConditionTypeThreshold,
+					Field:      "temperature",
+					Comparator: ">",
+					Threshold:  threshold(25),
+				},
+				{Type: rules.ConditionTypeScript, ScriptID: scripts[0].ID},
+			},
+			Operator: rules.OperatorOR,
+			Actions:  []rules.Action{{Type: rules.ActionTypeAlarm}},
+		}
+		_, err = svc.CreateRules(context.Background(), token, groupID, rule)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+
+		err = svc.ConsumeMessage(subject, protomfx.Message{
+			ThingId:     thingID,
+			Records:     toRecords(t, map[string]any{"temperature": float64(30)}),
+			ContentType: "application/json",
+		})
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
+		require.Len(t, repo.runs, 1, fmt.Sprintf("%s: expected one rule run", tc.desc))
+
+		want := tc.result
+		want.Type = rules.ConditionTypeScript
+		want.ScriptID = scripts[0].ID
+		want.Met = tc.result.Result == true
+		if want.Logs == nil {
+			want.Logs = []string{}
+		}
+
+		run := repo.runs[0]
+		assert.Equal(t, tc.status, run.Status, fmt.Sprintf("%s: unexpected rule run status", tc.desc))
+		assert.Equal(t, want, run.Details.Conditions[1], fmt.Sprintf("%s: unexpected condition result", tc.desc))
 	}
 }

@@ -3,6 +3,8 @@ package rules
 import (
 	"context"
 	"fmt"
+	"math"
+	"strconv"
 	"time"
 
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
@@ -18,9 +20,19 @@ const (
 
 	maxLogLineLength = 2_048
 	maxLogLineCount  = 256
+
+	// maxResultSize bounds the converted size of a returned value, counting every table entry
+	// separately so that cyclic and repeatedly referenced tables are bounded as well.
+	maxResultSize = 65_536
 )
 
-var ErrScriptSize = errors.New("script size exceeds limit")
+var (
+	ErrScriptSize = errors.New("script size exceeds limit")
+
+	errResultSize  = errors.New("script return value exceeds size limit")
+	errResultKey   = errors.New("script return value contains an unsupported or duplicate table key")
+	errResultValue = errors.New("script return value cannot be represented in JSON")
+)
 
 // LuaScript represents a specific Lua script.
 type LuaScript struct {
@@ -175,11 +187,11 @@ func NewLuaEnv(service *rulesService, script *LuaScript, ruleID string, message 
 	return env, nil
 }
 
-// Run the environment's associated Lua script.
-func (env *luaEnv) execute() (ScriptRun, bool, error) {
+// Run the environment's associated Lua script and return its last return value.
+func (env *luaEnv) execute() (ScriptRun, any, error) {
 	id, err := env.service.idProvider.ID()
 	if err != nil {
-		return ScriptRun{}, false, err
+		return ScriptRun{}, nil, err
 	}
 
 	run := ScriptRun{
@@ -200,15 +212,118 @@ func (env *luaEnv) execute() (ScriptRun, bool, error) {
 	if runErr != nil {
 		run.Error = runErr.Error()
 		run.Status = ScriptRunStatusFail
-		return run, false, nil
+		return run, nil, nil
 	}
 
-	ok := env.ls.Top() > 0 && env.ls.TypeOf(-1) == lua.TypeBoolean
-	if !ok {
-		return run, false, nil
+	if env.ls.Top() == 0 {
+		return run, nil, nil
 	}
 
-	return run, env.ls.ToBoolean(-1), nil
+	c := resultConverter{ls: env.ls, size: maxResultSize}
+	value, err := c.value(-1)
+	if err != nil {
+		run.Error = err.Error()
+		run.Status = ScriptRunStatusFail
+		return run, nil, nil
+	}
+
+	return run, value, nil
+}
+
+// resultConverter converts a script return value to a Go value within the remaining size.
+type resultConverter struct {
+	ls   *lua.State
+	size int
+}
+
+// take deducts n from the remaining size and reports whether the size limit is respected.
+func (c *resultConverter) take(n int) bool {
+	c.size -= n
+	return c.size >= 0
+}
+
+// value converts the Lua value at idx to a Go value.
+func (c *resultConverter) value(idx int) (any, error) {
+	if !c.take(1) {
+		return nil, errResultSize
+	}
+
+	switch c.ls.TypeOf(idx) {
+	case lua.TypeNil:
+		return nil, nil
+	case lua.TypeBoolean:
+		return c.ls.ToBoolean(idx), nil
+	case lua.TypeNumber:
+		n, _ := c.ls.ToNumber(idx)
+		if math.IsNaN(n) || math.IsInf(n, 0) {
+			return nil, errResultValue
+		}
+		return n, nil
+	case lua.TypeString:
+		s, _ := c.ls.ToString(idx)
+		if !c.take(len(s)) {
+			return nil, errResultSize
+		}
+		return s, nil
+	case lua.TypeTable:
+		return c.table(idx)
+	default:
+		return nil, errResultValue
+	}
+}
+
+// table converts the Lua table at idx to an array when its keys are the integers 1 to n,
+// and to an object otherwise. Errors leave the stack unbalanced because the Lua state is
+// discarded after the conversion.
+func (c *resultConverter) table(idx int) (any, error) {
+	if !c.ls.CheckStack(2) {
+		return nil, errResultSize
+	}
+	idx = c.ls.AbsIndex(idx)
+
+	obj := map[string]any{}
+	c.ls.PushNil()
+	for c.ls.Next(idx) {
+		var key string
+		switch c.ls.TypeOf(-2) {
+		case lua.TypeString:
+			key, _ = c.ls.ToString(-2)
+		case lua.TypeNumber:
+			n, _ := c.ls.ToNumber(-2)
+			key = strconv.FormatFloat(n, 'f', -1, 64)
+		default:
+			return nil, errResultKey
+		}
+		if _, ok := obj[key]; ok {
+			return nil, errResultKey
+		}
+		if !c.take(len(key)) {
+			return nil, errResultSize
+		}
+
+		value, err := c.value(-1)
+		if err != nil {
+			return nil, err
+		}
+		obj[key] = value
+		c.ls.Pop(1)
+	}
+
+	n := c.ls.RawLength(idx)
+	if n == 0 || n != len(obj) {
+		return obj, nil
+	}
+
+	arr := make([]any, n)
+	for i := range arr {
+		value, ok := obj[strconv.Itoa(i+1)]
+		if !ok {
+			return obj, nil
+		}
+		arr[i] = value
+	}
+
+	return arr, nil
 }
 
 // runScriptCondition runs the script identified by scriptID as a fail-closed condition.
@@ -229,14 +344,16 @@ func (rs *rulesService) runScriptCondition(ctx context.Context, msg *protomfx.Me
 		return result
 	}
 
-	run, met, err := env.execute()
+	run, value, err := env.execute()
 	if err != nil {
 		rs.logger.Error(fmt.Sprintf("executing script with id %s failed with error: %v", scriptID, err))
 		result.Error = err.Error()
 		return result
 	}
 
+	met, _ := value.(bool)
 	result.Met = met
+	result.Result = value
 	result.Logs = run.Logs
 	result.Error = run.Error
 
