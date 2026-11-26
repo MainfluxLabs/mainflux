@@ -369,14 +369,6 @@ func (pm JSONPageMetadata) query() string {
 		q.Add("to", strconv.FormatInt(pm.To, 10))
 	}
 
-	if pm.Key != "" {
-		q.Add("key", pm.Key)
-	}
-
-	if pm.Value != "" {
-		q.Add("value", pm.Value)
-	}
-
 	for _, kv := range pm.KeyValues {
 		entry := kv.Key
 		if kv.Value != "" {

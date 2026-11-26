@@ -693,18 +693,6 @@ func TestListJSONMessages(t *testing.T) {
 			},
 		},
 		{
-			desc:   "read JSON messages with invalid key",
-			url:    fmt.Sprintf("%s/json?key=items..value", ts.URL),
-			token:  platformOwnerToken,
-			status: http.StatusBadRequest,
-		},
-		{
-			desc:   "read JSON messages with invalid comparator",
-			url:    fmt.Sprintf("%s/json?key=code&value=VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
-			token:  platformOwnerToken,
-			status: http.StatusBadRequest,
-		},
-		{
 			desc:   "read JSON messages with key-value pairs",
 			url:    fmt.Sprintf("%s/json?key_val=code:VO110&key_val=items[*].value", ts.URL),
 			token:  platformOwnerToken,
@@ -743,6 +731,16 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with key-value pair without key",
 			url:    fmt.Sprintf("%s/json?key_val=:VO110", ts.URL),
+			token:  platformOwnerToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with key-value pair without key and value",
+			url:    fmt.Sprintf("%s/json?key_val=:", ts.URL),
 			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},
