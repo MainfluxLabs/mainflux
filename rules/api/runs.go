@@ -11,6 +11,8 @@ import (
 	"github.com/MainfluxLabs/mainflux/rules"
 )
 
+const startedAtOrder = "started_at"
+
 type RunRes struct {
 	ID         string                   `json:"id"`
 	RuleID     string                   `json:"rule_id"`
@@ -25,6 +27,12 @@ type RunRes struct {
 
 func BuildRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 	base, err := apiutil.BuildPageMetadata(r)
+	if err != nil {
+		return rules.PageMetadata{}, err
+	}
+
+	// Rule run IDs are random, so ordering by ID does not reflect the order in which runs occurred.
+	order, err := apiutil.ReadStringQuery(r, apiutil.OrderKey, startedAtOrder)
 	if err != nil {
 		return rules.PageMetadata{}, err
 	}
@@ -60,7 +68,7 @@ func BuildRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 	return rules.PageMetadata{
 		Offset: base.Offset,
 		Limit:  base.Limit,
-		Order:  base.Order,
+		Order:  order,
 		Dir:    base.Dir,
 		Name:   name,
 		Status: status,

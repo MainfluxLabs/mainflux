@@ -776,6 +776,7 @@ components:
       schema:
         type: string
         enum: [id, started_at, finished_at, status]
+        default: started_at
       example: "started_at"
     RunStatus:
       name: status

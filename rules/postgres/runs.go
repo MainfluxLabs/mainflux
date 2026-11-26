@@ -5,7 +5,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -59,35 +58,54 @@ func (rr ruleRepository) SaveRuns(ctx context.Context, runs ...rules.RuleRun) ([
 	return runs, nil
 }
 
-func (rr ruleRepository) RetrieveRunByID(ctx context.Context, id string) (rules.RuleRun, error) {
+func (rr ruleRepository) RetrieveRunsByIDs(ctx context.Context, ids ...string) ([]rules.RuleRun, error) {
 	query := `
 		SELECT id, rule_id, thing_id, started_at, finished_at, status, details
 		FROM rule_runs
-		WHERE id = $1;
+		WHERE id = ANY(:ids);
 	`
 
-	var dbr dbRuleRun
-	if err := rr.db.QueryRowxContext(ctx, query, id).StructScan(&dbr); err != nil {
-		if err == sql.ErrNoRows {
-			return rules.RuleRun{}, errors.Wrap(dbutil.ErrNotFound, err)
-		}
+	params := map[string]any{
+		"ids": ids,
+	}
 
+	rows, err := rr.db.NamedQueryContext(ctx, query, params)
+	if err != nil {
 		pgErr, ok := err.(*pgconn.PgError)
 		if ok {
 			switch pgErr.Code {
 			case pgerrcode.InvalidTextRepresentation:
-				return rules.RuleRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
+				return []rules.RuleRun{}, errors.Wrap(dbutil.ErrMalformedEntity, err)
 			}
 		}
-		return rules.RuleRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		return []rules.RuleRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	}
+	defer rows.Close()
+
+	var runs []rules.RuleRun
+	for rows.Next() {
+		var dbr dbRuleRun
+		if err := rows.StructScan(&dbr); err != nil {
+			return []rules.RuleRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+
+		run, err := toRun(dbr)
+		if err != nil {
+			return []rules.RuleRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+		}
+
+		runs = append(runs, run)
 	}
 
-	run, err := toRun(dbr)
-	if err != nil {
-		return rules.RuleRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
+	if err := rows.Err(); err != nil {
+		return []rules.RuleRun{}, errors.Wrap(dbutil.ErrRetrieveEntity, err)
 	}
 
-	return run, nil
+	if len(runs) != countUnique(ids) {
+		return []rules.RuleRun{}, dbutil.ErrNotFound
+	}
+
+	return runs, nil
 }
 
 func (rr ruleRepository) RetrieveRunsByThing(ctx context.Context, thingID string, pm rules.PageMetadata) (rules.RuleRunsPage, error) {
@@ -188,6 +206,15 @@ func (rr ruleRepository) retrieveRuns(ctx context.Context, col, val string, pm r
 	}
 
 	return page, nil
+}
+
+func countUnique(ids []string) int {
+	unique := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		unique[id] = struct{}{}
+	}
+
+	return len(unique)
 }
 
 type dbRuleRun struct {

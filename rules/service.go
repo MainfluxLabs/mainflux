@@ -429,13 +429,13 @@ func (rs *rulesService) ListRunsByRule(ctx context.Context, token, ruleID string
 }
 
 func (rs *rulesService) RemoveRuns(ctx context.Context, token string, ids ...string) error {
-	thingIDs := make([]string, 0, len(ids))
-	for _, id := range ids {
-		run, err := rs.rules.RetrieveRunByID(ctx, id)
-		if err != nil {
-			return err
-		}
+	runs, err := rs.rules.RetrieveRunsByIDs(ctx, ids...)
+	if err != nil {
+		return err
+	}
 
+	thingIDs := make([]string, 0, len(runs))
+	for _, run := range runs {
 		thingIDs = append(thingIDs, run.ThingID)
 	}
 
@@ -655,8 +655,8 @@ type RepositoryRuns interface {
 	// SaveRuns persists multiple rule runs.
 	SaveRuns(ctx context.Context, runs ...RuleRun) ([]RuleRun, error)
 
-	// RetrieveRunByID retrieves a single rule run based on its ID.
-	RetrieveRunByID(ctx context.Context, id string) (RuleRun, error)
+	// RetrieveRunsByIDs retrieves the rule runs identified by the provided IDs.
+	RetrieveRunsByIDs(ctx context.Context, ids ...string) ([]RuleRun, error)
 
 	// RetrieveRunsByThing retrieves a list of rule runs by Thing ID.
 	RetrieveRunsByThing(ctx context.Context, thingID string, pm PageMetadata) (RuleRunsPage, error)

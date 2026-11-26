@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -30,6 +31,7 @@ const (
 	otherThing = "6384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
 	subject    = "things." + thingID + ".messages"
+	runPrefix  = "fe6b4e92-cc98-425e-b0aa-"
 )
 
 func threshold(v float64) *float64 { return &v }
@@ -79,6 +81,35 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 	}
 
 	saved, err := svc.CreateRules(context.Background(), token, groupID, rs...)
+	require.Nil(t, err)
+	require.Len(t, saved, n)
+
+	return saved
+}
+
+func saveRuns(t *testing.T, repo rules.Repository, ruleID string, n int) []rules.RuleRun {
+	t.Helper()
+
+	started := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+	var runs []rules.RuleRun
+	for i := range n {
+		status := rules.RuleRunStatusSuccess
+		if i%2 == 1 {
+			status = rules.RuleRunStatusFail
+		}
+
+		runs = append(runs, rules.RuleRun{
+			ID:         fmt.Sprintf("%s%012d", runPrefix, i+1),
+			RuleID:     ruleID,
+			ThingID:    thingID,
+			StartedAt:  started.Add(time.Duration(i) * time.Second),
+			FinishedAt: started.Add(time.Duration(i) * time.Second),
+			Status:     status,
+		})
+	}
+
+	saved, err := repo.SaveRuns(context.Background(), runs...)
 	require.Nil(t, err)
 	require.Len(t, saved, n)
 
@@ -752,6 +783,51 @@ func TestUnassignRulesFromThing(t *testing.T) {
 
 	for _, tc := range cases {
 		err := svc.UnassignRulesFromThing(context.Background(), tc.thingID)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestRemoveRuns(t *testing.T) {
+	repo := mocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo, mocks.NewPublisher())
+	saved := saveRules(t, svc, 1)
+	runs := saveRuns(t, repo, saved[0].ID, 1)
+	runID := runs[0].ID
+
+	cases := []struct {
+		desc  string
+		token string
+		ids   []string
+		err   error
+	}{
+		{
+			desc:  "remove rule runs with invalid token",
+			token: wrongValue,
+			ids:   []string{runID},
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "remove existing and non-existing rule runs",
+			token: token,
+			ids:   []string{runID, wrongValue},
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "remove existing rule run",
+			token: token,
+			ids:   []string{runID},
+			err:   nil,
+		},
+		{
+			desc:  "remove non-existing rule run",
+			token: token,
+			ids:   []string{wrongValue},
+			err:   dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RemoveRuns(context.Background(), tc.token, tc.ids...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
 	}
 }

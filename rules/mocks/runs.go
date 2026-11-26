@@ -22,16 +22,20 @@ func (rrm *ruleRepositoryMock) SaveRuns(_ context.Context, runs ...rules.RuleRun
 	return runs, nil
 }
 
-func (rrm *ruleRepositoryMock) RetrieveRunByID(_ context.Context, id string) (rules.RuleRun, error) {
+func (rrm *ruleRepositoryMock) RetrieveRunsByIDs(_ context.Context, ids ...string) ([]rules.RuleRun, error) {
 	rrm.mu.Lock()
 	defer rrm.mu.Unlock()
 
-	run, ok := rrm.runs[id]
-	if !ok {
-		return rules.RuleRun{}, dbutil.ErrNotFound
+	runs := make([]rules.RuleRun, 0, len(ids))
+	for _, id := range ids {
+		run, ok := rrm.runs[id]
+		if !ok {
+			return []rules.RuleRun{}, dbutil.ErrNotFound
+		}
+		runs = append(runs, run)
 	}
 
-	return run, nil
+	return runs, nil
 }
 
 func (rrm *ruleRepositoryMock) RetrieveRunsByThing(_ context.Context, thingID string, pm rules.PageMetadata) (rules.RuleRunsPage, error) {
