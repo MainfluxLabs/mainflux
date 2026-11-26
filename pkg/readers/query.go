@@ -155,10 +155,14 @@ func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 }
 
 // keyValuesConditions returns one predicate per key-value pair, so that every pair must match.
+// A pair without a key matches its value against every payload node.
 func keyValuesConditions(pm domain.JSONPageMetadata) []string {
 	var conds []string
 	for i, kv := range pm.KeyValues {
 		path := fmt.Sprintf(keyValuesKeyPath, i)
+		if kv.Key == "" {
+			path = anyPayloadPath
+		}
 
 		nodeCond := nonNullNodeCond
 		if kv.Value != "" {

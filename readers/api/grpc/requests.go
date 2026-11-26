@@ -27,8 +27,14 @@ func (req listJSONMessagesReq) validate() error {
 
 	hasValue := req.pm.Value != ""
 	for _, kv := range req.pm.KeyValues {
-		if _, err := mfreaders.ParseKey(kv.Key); err != nil {
+		if kv.Key == "" && kv.Value == "" {
 			return apiutil.ErrInvalidQueryParams
+		}
+
+		if kv.Key != "" {
+			if _, err := mfreaders.ParseKey(kv.Key); err != nil {
+				return apiutil.ErrInvalidQueryParams
+			}
 		}
 
 		if kv.Value != "" {

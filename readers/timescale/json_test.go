@@ -440,6 +440,20 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 				},
 			},
 		},
+		"read messages with key-value pair without key": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				KeyValues: []readers.KeyValue{
+					{Value: "value_2"},
+				},
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
 		"read messages with key and key-value pair": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,

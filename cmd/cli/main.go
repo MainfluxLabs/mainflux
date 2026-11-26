@@ -289,7 +289,7 @@ func main() {
 		&cli.KeyVal,
 		"key-val",
 		nil,
-		"JSON payload key-value pair in the key:value or key form (repeatable)",
+		"JSON payload key-value pair in the key:value, key or :value form (repeatable)",
 	)
 
 	rootCmd.PersistentFlags().StringVar(

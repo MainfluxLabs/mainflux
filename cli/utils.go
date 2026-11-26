@@ -49,7 +49,7 @@ var (
 	Key string = ""
 	// Value JSON payload value query parameter
 	Value string = ""
-	// KeyVal JSON payload key-value pairs in the key:value or key form
+	// KeyVal JSON payload key-value pairs in the key:value, key or :value form
 	KeyVal []string
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
