@@ -1218,6 +1218,12 @@ func TestListRunsByRule(t *testing.T) {
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=201", ts.URL, ruleID),
 			status: http.StatusBadRequest,
 		},
+		{
+			desc:   "list rule runs with invalid status",
+			auth:   token,
+			url:    fmt.Sprintf("%s/rules/%s/runs?status=%s", ts.URL, ruleID, wrongValue),
+			status: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range cases {
@@ -1280,6 +1286,12 @@ func TestListRunsByThing(t *testing.T) {
 			desc:   "list rule runs with limit exceeding max",
 			auth:   token,
 			url:    fmt.Sprintf("%s/things/%s/runs?limit=201", ts.URL, thingID),
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "list rule runs with invalid status",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?status=%s", ts.URL, thingID, wrongValue),
 			status: http.StatusBadRequest,
 		},
 	}

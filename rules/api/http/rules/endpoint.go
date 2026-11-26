@@ -236,7 +236,6 @@ func buildRunsPageResponse(page rules.RuleRunsPage, pm rules.PageMetadata) runsP
 			Limit:  pm.Limit,
 			Order:  pm.Order,
 			Dir:    pm.Dir,
-			Name:   pm.Name,
 		},
 		Runs: []api.RunRes{},
 	}

@@ -37,11 +37,6 @@ func BuildRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 		return rules.PageMetadata{}, err
 	}
 
-	name, err := apiutil.ReadStringQuery(r, apiutil.NameKey, "")
-	if err != nil {
-		return rules.PageMetadata{}, err
-	}
-
 	status, err := apiutil.ReadStringQuery(r, apiutil.StatusKey, "")
 	if err != nil {
 		return rules.PageMetadata{}, err
@@ -70,7 +65,6 @@ func BuildRunsPageMetadata(r *http.Request) (rules.PageMetadata, error) {
 		Limit:  base.Limit,
 		Order:  order,
 		Dir:    base.Dir,
-		Name:   name,
 		Status: status,
 		From:   from,
 		To:     to,
