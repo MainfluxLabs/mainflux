@@ -87,6 +87,10 @@ type runsPageRes struct {
 }
 
 func newService() rules.Service {
+	return newServiceWithRepo(rulesmocks.NewRuleRepository())
+}
+
+func newServiceWithRepo(rulesRepo rules.Repository) rules.Service {
 	ths := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -98,7 +102,6 @@ func newService() rules.Service {
 			token: {ID: groupID},
 		},
 	)
-	rulesRepo := rulesmocks.NewRuleRepository()
 	pub := rulesmocks.NewPublisher()
 	idp := uuid.NewMock()
 	log := logger.NewMock()
@@ -156,6 +159,22 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving rule %d: %s", i+1, err))
 		saved = append(saved, rs...)
 	}
+	return saved
+}
+
+func saveRuns(t *testing.T, repo rules.Repository, ruleID string, n int) []rules.RuleRun {
+	t.Helper()
+	var runs []rules.RuleRun
+	for i := range n {
+		runs = append(runs, rules.RuleRun{
+			ID:      fmt.Sprintf("%s%012d", prefixID, i+1),
+			RuleID:  ruleID,
+			ThingID: thingID,
+			Status:  rules.RuleRunStatusSuccess,
+		})
+	}
+	saved, err := repo.SaveRuns(context.Background(), runs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error saving rule runs: %s", err))
 	return saved
 }
 
@@ -1173,12 +1192,15 @@ func TestUnassignThings(t *testing.T) {
 }
 
 func TestListRunsByRule(t *testing.T) {
-	svc := newService()
+	repo := rulesmocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
 	saved := saveRules(t, svc, 1)
 	ruleID := saved[0].ID
+	n := 10
+	saveRuns(t, repo, ruleID, n)
 
 	cases := []struct {
 		desc   string
@@ -1190,9 +1212,16 @@ func TestListRunsByRule(t *testing.T) {
 		{
 			desc:   "list rule runs by rule",
 			auth:   token,
-			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10&offset=0", ts.URL, ruleID),
+			url:    fmt.Sprintf("%s/rules/%s/runs?limit=%d&offset=0", ts.URL, ruleID, n),
 			status: http.StatusOK,
-			size:   0,
+			size:   n,
+		},
+		{
+			desc:   "list last rule run by rule",
+			auth:   token,
+			url:    fmt.Sprintf("%s/rules/%s/runs?limit=%d&offset=%d", ts.URL, ruleID, n, n-1),
+			status: http.StatusOK,
+			size:   1,
 		},
 		{
 			desc:   "list rule runs with non-existing rule ID",
@@ -1246,9 +1275,14 @@ func TestListRunsByRule(t *testing.T) {
 }
 
 func TestListRunsByThing(t *testing.T) {
-	svc := newService()
+	repo := rulesmocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
+
+	saved := saveRules(t, svc, 1)
+	n := 10
+	saveRuns(t, repo, saved[0].ID, n)
 
 	cases := []struct {
 		desc   string
@@ -1260,9 +1294,16 @@ func TestListRunsByThing(t *testing.T) {
 		{
 			desc:   "list rule runs by thing",
 			auth:   token,
-			url:    fmt.Sprintf("%s/things/%s/runs?limit=10&offset=0", ts.URL, thingID),
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=%d&offset=0", ts.URL, thingID, n),
 			status: http.StatusOK,
-			size:   0,
+			size:   n,
+		},
+		{
+			desc:   "list last rule run by thing",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=%d&offset=%d", ts.URL, thingID, n, n-1),
+			status: http.StatusOK,
+			size:   1,
 		},
 		{
 			desc:   "list rule runs with wrong thing ID",
@@ -1316,9 +1357,14 @@ func TestListRunsByThing(t *testing.T) {
 }
 
 func TestRemoveRuns(t *testing.T) {
-	svc := newService()
+	repo := rulesmocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
+
+	saved := saveRules(t, svc, 1)
+	runs := saveRuns(t, repo, saved[0].ID, 1)
+	runID := runs[0].ID
 
 	cases := []struct {
 		desc        string
@@ -1333,6 +1379,20 @@ func TestRemoveRuns(t *testing.T) {
 			contentType: contentType,
 			ids:         []string{wrongValue},
 			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove existing rule run",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{runID},
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "remove removed rule run",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{runID},
+			status:      http.StatusNotFound,
 		},
 		{
 			desc:        "remove non-existing rule runs",

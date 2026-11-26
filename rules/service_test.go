@@ -787,6 +787,187 @@ func TestUnassignRulesFromThing(t *testing.T) {
 	}
 }
 
+func TestListRunsByRule(t *testing.T) {
+	repo := mocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo, mocks.NewPublisher())
+	saved := saveRules(t, svc, 1)
+	ruleID := saved[0].ID
+	n := 10
+	saveRuns(t, repo, ruleID, n)
+
+	cases := []struct {
+		desc         string
+		token        string
+		ruleID       string
+		pageMetadata rules.PageMetadata
+		size         uint64
+		err          error
+	}{
+		{
+			desc:   "list rule runs by rule",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:   "list rule runs by rule with no limit",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Limit: 0,
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:   "list last rule run by rule",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) - 1,
+				Limit:  uint64(n),
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:   "list empty set of rule runs by rule",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) + 1,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  nil,
+		},
+		{
+			desc:   "list rule runs by rule with invalid auth token",
+			token:  wrongValue,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc:   "list rule runs by non-existing rule",
+			token:  token,
+			ruleID: wrongValue,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListRunsByRule(context.Background(), tc.token, tc.ruleID, tc.pageMetadata)
+		size := uint64(len(page.Runs))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestListRunsByThing(t *testing.T) {
+	repo := mocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo, mocks.NewPublisher())
+	saved := saveRules(t, svc, 1)
+	n := 10
+	saveRuns(t, repo, saved[0].ID, n)
+
+	cases := []struct {
+		desc         string
+		token        string
+		thingID      string
+		pageMetadata rules.PageMetadata
+		size         uint64
+		err          error
+	}{
+		{
+			desc:    "list rule runs by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:    "list rule runs by thing with no limit",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Limit: 0,
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:    "list last rule run by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) - 1,
+				Limit:  uint64(n),
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "list empty set of rule runs by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) + 1,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  nil,
+		},
+		{
+			desc:    "list rule runs by thing with invalid auth token",
+			token:   wrongValue,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc:    "list rule runs by thing with invalid thing ID",
+			token:   token,
+			thingID: wrongValue,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListRunsByThing(context.Background(), tc.token, tc.thingID, tc.pageMetadata)
+		size := uint64(len(page.Runs))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
 func TestRemoveRuns(t *testing.T) {
 	repo := mocks.NewRuleRepository()
 	svc := newServiceWithRepo(repo, mocks.NewPublisher())
