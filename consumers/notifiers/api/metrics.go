@@ -68,7 +68,7 @@ func (ms *metricsMiddleware) UpdateNotifier(ctx context.Context, token string, n
 	return ms.svc.UpdateNotifier(ctx, token, notifier)
 }
 
-func (ms *metricsMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) error {
+func (ms *metricsMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) ([]notifiers.Notifier, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_notifiers").Add(1)
 		ms.latency.With("method", "remove_notifiers").Observe(time.Since(begin).Seconds())

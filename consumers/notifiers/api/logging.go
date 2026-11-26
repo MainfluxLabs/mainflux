@@ -85,7 +85,7 @@ func (lm *loggingMiddleware) UpdateNotifier(ctx context.Context, token string, n
 	return lm.svc.UpdateNotifier(ctx, token, notifier)
 }
 
-func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) (err error) {
+func (lm *loggingMiddleware) RemoveNotifiers(ctx context.Context, token string, id ...string) (response []notifiers.Notifier, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_notifiers by user %s, notifier ids %v took %s to complete", email, id, time.Since(begin))

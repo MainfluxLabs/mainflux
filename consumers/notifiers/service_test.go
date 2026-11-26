@@ -473,7 +473,10 @@ func runRemoveNotifiersTest(t *testing.T, validContacts []string) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveNotifiers(context.Background(), tc.token, tc.id)
+		removed, err := svc.RemoveNotifiers(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, []notifiers.Notifier{nf}, removed, fmt.Sprintf("%s: expected removed notifiers %v got %v\n", tc.desc, nf, removed))
+		}
 	}
 }
