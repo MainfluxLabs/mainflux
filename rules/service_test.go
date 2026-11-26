@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
@@ -30,6 +31,7 @@ const (
 	otherThing = "6384fb1c-d0ae-4cbe-be52-c54223150fe1"
 	groupID    = "574106f7-030e-4881-8ab0-151195c29f94"
 	subject    = "things." + thingID + ".messages"
+	runPrefix  = "fe6b4e92-cc98-425e-b0aa-"
 )
 
 func threshold(v float64) *float64 { return &v }
@@ -79,6 +81,35 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 	}
 
 	saved, err := svc.CreateRules(context.Background(), token, groupID, rs...)
+	require.Nil(t, err)
+	require.Len(t, saved, n)
+
+	return saved
+}
+
+func saveRuns(t *testing.T, repo rules.Repository, ruleID string, n int) []rules.RuleRun {
+	t.Helper()
+
+	started := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+	var runs []rules.RuleRun
+	for i := range n {
+		status := rules.RuleRunStatusSuccess
+		if i%2 == 1 {
+			status = rules.RuleRunStatusFail
+		}
+
+		runs = append(runs, rules.RuleRun{
+			ID:         fmt.Sprintf("%s%012d", runPrefix, i+1),
+			RuleID:     ruleID,
+			ThingID:    thingID,
+			StartedAt:  started.Add(time.Duration(i) * time.Second),
+			FinishedAt: started.Add(time.Duration(i) * time.Second),
+			Status:     status,
+		})
+	}
+
+	saved, err := repo.SaveRuns(context.Background(), runs...)
 	require.Nil(t, err)
 	require.Len(t, saved, n)
 
@@ -756,6 +787,238 @@ func TestUnassignRulesFromThing(t *testing.T) {
 	}
 }
 
+func TestListRunsByRule(t *testing.T) {
+	repo := mocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo, mocks.NewPublisher())
+	saved := saveRules(t, svc, 1)
+	ruleID := saved[0].ID
+	n := 10
+	saveRuns(t, repo, ruleID, n)
+
+	cases := []struct {
+		desc         string
+		token        string
+		ruleID       string
+		pageMetadata rules.PageMetadata
+		size         uint64
+		err          error
+	}{
+		{
+			desc:   "list rule runs by rule",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:   "list rule runs by rule with no limit",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Limit: 0,
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:   "list last rule run by rule",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) - 1,
+				Limit:  uint64(n),
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:   "list empty set of rule runs by rule",
+			token:  token,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) + 1,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  nil,
+		},
+		{
+			desc:   "list rule runs by rule with invalid auth token",
+			token:  wrongValue,
+			ruleID: ruleID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc:   "list rule runs by non-existing rule",
+			token:  token,
+			ruleID: wrongValue,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListRunsByRule(context.Background(), tc.token, tc.ruleID, tc.pageMetadata)
+		size := uint64(len(page.Runs))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestListRunsByThing(t *testing.T) {
+	repo := mocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo, mocks.NewPublisher())
+	saved := saveRules(t, svc, 1)
+	n := 10
+	saveRuns(t, repo, saved[0].ID, n)
+
+	cases := []struct {
+		desc         string
+		token        string
+		thingID      string
+		pageMetadata rules.PageMetadata
+		size         uint64
+		err          error
+	}{
+		{
+			desc:    "list rule runs by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:    "list rule runs by thing with no limit",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Limit: 0,
+			},
+			size: uint64(n),
+			err:  nil,
+		},
+		{
+			desc:    "list last rule run by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) - 1,
+				Limit:  uint64(n),
+			},
+			size: 1,
+			err:  nil,
+		},
+		{
+			desc:    "list empty set of rule runs by thing",
+			token:   token,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: uint64(n) + 1,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  nil,
+		},
+		{
+			desc:    "list rule runs by thing with invalid auth token",
+			token:   wrongValue,
+			thingID: thingID,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  errors.ErrAuthentication,
+		},
+		{
+			desc:    "list rule runs by thing with invalid thing ID",
+			token:   token,
+			thingID: wrongValue,
+			pageMetadata: rules.PageMetadata{
+				Offset: 0,
+				Limit:  uint64(n),
+			},
+			size: 0,
+			err:  errors.ErrAuthorization,
+		},
+	}
+
+	for _, tc := range cases {
+		page, err := svc.ListRunsByThing(context.Background(), tc.token, tc.thingID, tc.pageMetadata)
+		size := uint64(len(page.Runs))
+		assert.Equal(t, tc.size, size, fmt.Sprintf("%s: expected size %d got %d", tc.desc, tc.size, size))
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
+func TestRemoveRuns(t *testing.T) {
+	repo := mocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo, mocks.NewPublisher())
+	saved := saveRules(t, svc, 1)
+	runs := saveRuns(t, repo, saved[0].ID, 1)
+	runID := runs[0].ID
+
+	cases := []struct {
+		desc  string
+		token string
+		ids   []string
+		err   error
+	}{
+		{
+			desc:  "remove rule runs with invalid token",
+			token: wrongValue,
+			ids:   []string{runID},
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "remove existing and non-existing rule runs",
+			token: token,
+			ids:   []string{runID, wrongValue},
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "remove existing rule run",
+			token: token,
+			ids:   []string{runID},
+			err:   nil,
+		},
+		{
+			desc:  "remove removed rule run",
+			token: token,
+			ids:   []string{runID},
+			err:   dbutil.ErrNotFound,
+		},
+		{
+			desc:  "remove non-existing rule run",
+			token: token,
+			ids:   []string{wrongValue},
+			err:   dbutil.ErrNotFound,
+		},
+	}
+
+	for _, tc := range cases {
+		err := svc.RemoveRuns(context.Background(), tc.token, tc.ids...)
+		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+	}
+}
+
 func TestConsumeMessageScriptLogLimit(t *testing.T) {
 	svc := newService()
 
@@ -784,11 +1047,11 @@ func TestConsumeMessageScriptLogLimit(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pm := rules.PageMetadata{Limit: 10}
-	page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+	page, err := svc.ListRunsByThing(context.Background(), token, thingID, pm)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	require.Len(t, page.Runs, 1)
 
-	logs := len(page.Runs[0].Logs)
+	logs := len(page.Runs[0].Details.Conditions[0].Logs)
 	assert.Equal(t, 256, logs, fmt.Sprintf("expected 256 log lines got %d\n", logs))
 }
 
@@ -820,11 +1083,11 @@ func TestConsumeMessageScriptSandbox(t *testing.T) {
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 
 	pm := rules.PageMetadata{Limit: 10}
-	page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+	page, err := svc.ListRunsByThing(context.Background(), token, thingID, pm)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
 	require.Len(t, page.Runs, 1)
 
-	logs := page.Runs[0].Logs
+	logs := page.Runs[0].Details.Conditions[0].Logs
 	desc := fmt.Sprintf("expected file and chunk loaders to be unset got %v\n", logs)
 	assert.Equal(t, []string{"nil nil nil"}, logs, desc)
 }
@@ -840,13 +1103,13 @@ func TestConsumeMessageScriptRuns(t *testing.T) {
 			desc:   "store run of script that returns true",
 			script: "return true",
 			total:  1,
-			status: rules.ScriptRunStatusSuccess,
+			status: rules.RuleRunStatusSuccess,
 		},
 		{
 			desc:   "store run of script that fails",
 			script: "error('failure')",
 			total:  1,
-			status: rules.ScriptRunStatusFail,
+			status: rules.RuleRunStatusFail,
 		},
 		{
 			desc:   "skip run of script that returns false",
@@ -885,7 +1148,7 @@ func TestConsumeMessageScriptRuns(t *testing.T) {
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 
 		pm := rules.PageMetadata{Limit: 10}
-		page, err := svc.ListScriptRunsByThing(context.Background(), token, thingID, pm)
+		page, err := svc.ListRunsByThing(context.Background(), token, thingID, pm)
 		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s", tc.desc, err))
 		desc := fmt.Sprintf("%s: expected %d runs got %d\n", tc.desc, tc.total, page.Total)
 		assert.Equal(t, tc.total, page.Total, desc)

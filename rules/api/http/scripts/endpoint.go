@@ -9,7 +9,6 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
 	"github.com/MainfluxLabs/mainflux/rules"
-	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -110,37 +109,6 @@ func removeScriptsEndpoint(svc rules.Service) endpoint.Endpoint {
 	}
 }
 
-func listScriptRunsByThingEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(listScriptRunsByThingReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		page, err := svc.ListScriptRunsByThing(ctx, req.token, req.thingID, req.pageMetadata)
-		if err != nil {
-			return nil, err
-		}
-
-		return buildScriptRunsPageResponse(page, req.pageMetadata), nil
-	}
-}
-
-func removeScriptRunsEndpoint(svc rules.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		req := request.(removeScriptRunsReq)
-		if err := req.validate(); err != nil {
-			return nil, err
-		}
-
-		if err := svc.RemoveScriptRuns(ctx, req.token, req.ScriptRunIDs...); err != nil {
-			return nil, err
-		}
-
-		return apiutil.EmptyRes{StatusCode: http.StatusNoContent}, nil
-	}
-}
-
 func buildScriptsResponse(scripts []rules.LuaScript, created bool) scriptsRes {
 	res := scriptsRes{Scripts: []scriptRes{}, created: created}
 
@@ -194,24 +162,4 @@ func buildScriptResponse(s rules.LuaScript, updated bool) scriptRes {
 		Description: s.Description,
 		updated:     updated,
 	}
-}
-
-func buildScriptRunsPageResponse(page rules.ScriptRunsPage, pm rules.PageMetadata) scriptRunsPageRes {
-	res := scriptRunsPageRes{
-		pageRes: pageRes{
-			Total:  page.Total,
-			Offset: pm.Offset,
-			Limit:  pm.Limit,
-			Ord:    pm.Order,
-			Dir:    pm.Dir,
-			Name:   pm.Name,
-		},
-		Runs: []api.ScriptRunRes{},
-	}
-
-	for _, run := range page.Runs {
-		res.Runs = append(res.Runs, api.ToScriptRunRes(run))
-	}
-
-	return res
 }

@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -51,24 +50,6 @@ type scriptsPageRes struct {
 	Offset  uint64      `json:"offset"`
 	Limit   uint64      `json:"limit"`
 	Scripts []scriptRes `json:"scripts"`
-}
-
-type scriptRunRes struct {
-	ID         string    `json:"id"`
-	ScriptID   string    `json:"script_id"`
-	ThingID    string    `json:"thing_id"`
-	Logs       []string  `json:"logs"`
-	StartedAt  time.Time `json:"started_at"`
-	FinishedAt time.Time `json:"finished_at"`
-	Status     string    `json:"status"`
-	Error      string    `json:"error,omitempty"`
-}
-
-type scriptRunsPageRes struct {
-	Total  uint64         `json:"total"`
-	Offset uint64         `json:"offset"`
-	Limit  uint64         `json:"limit"`
-	Runs   []scriptRunRes `json:"runs"`
 }
 
 func newService() rules.Service {
@@ -591,128 +572,6 @@ func TestRemoveScripts(t *testing.T) {
 			client:      ts.Client(),
 			method:      http.MethodPatch,
 			url:         fmt.Sprintf("%s/scripts", ts.URL),
-			token:       tc.token,
-			contentType: tc.contentType,
-			body:        strings.NewReader(body),
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
-	}
-}
-
-func TestListScriptRunsByThing(t *testing.T) {
-	svc := newService()
-	ts := newHTTPServer(svc)
-	defer ts.Close()
-
-	cases := []struct {
-		desc   string
-		token  string
-		url    string
-		status int
-		size   int
-	}{
-		{
-			desc:   "list script runs by thing",
-			token:  token,
-			url:    fmt.Sprintf("%s/things/%s/runs?limit=10&offset=0", ts.URL, thingID),
-			status: http.StatusOK,
-			size:   0,
-		},
-		{
-			desc:   "list script runs with wrong thing ID",
-			token:  token,
-			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, wrongValue),
-			status: http.StatusForbidden,
-			size:   0,
-		},
-		{
-			desc:   "list script runs with empty token",
-			token:  emptyValue,
-			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, thingID),
-			status: http.StatusUnauthorized,
-			size:   0,
-		},
-		{
-			desc:   "list script runs with limit exceeding max",
-			token:  token,
-			url:    fmt.Sprintf("%s/things/%s/runs?limit=201", ts.URL, thingID),
-			status: http.StatusBadRequest,
-			size:   0,
-		},
-	}
-
-	for _, tc := range cases {
-		req := testRequest{
-			client: ts.Client(),
-			method: http.MethodGet,
-			url:    tc.url,
-			token:  tc.token,
-		}
-		res, err := req.make()
-		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
-
-		var page scriptRunsPageRes
-		json.NewDecoder(res.Body).Decode(&page)
-		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
-		if tc.status == http.StatusOK {
-			assert.Equal(t, tc.size, len(page.Runs), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(page.Runs)))
-		}
-	}
-}
-
-func TestRemoveScriptRuns(t *testing.T) {
-	svc := newService()
-	ts := newHTTPServer(svc)
-	defer ts.Close()
-
-	cases := []struct {
-		desc        string
-		token       string
-		contentType string
-		ids         []string
-		status      int
-	}{
-		{
-			desc:        "remove script runs with empty token",
-			token:       emptyValue,
-			contentType: contentType,
-			ids:         []string{"non-existent-run-id"},
-			status:      http.StatusUnauthorized,
-		},
-		{
-			desc:        "remove non-existing script runs",
-			token:       token,
-			contentType: contentType,
-			ids:         []string{wrongValue},
-			status:      http.StatusNotFound,
-		},
-		{
-			desc:        "remove script runs with empty list",
-			token:       token,
-			contentType: contentType,
-			ids:         []string{},
-			status:      http.StatusBadRequest,
-		},
-		{
-			desc:        "remove script runs without content type",
-			token:       token,
-			contentType: emptyValue,
-			ids:         []string{"run-id"},
-			status:      http.StatusUnsupportedMediaType,
-		},
-	}
-
-	for _, tc := range cases {
-		body := toJSON(struct {
-			ScriptRunIDs []string `json:"script_run_ids"`
-		}{tc.ids})
-
-		req := testRequest{
-			client:      ts.Client(),
-			method:      http.MethodPatch,
-			url:         fmt.Sprintf("%s/runs", ts.URL),
 			token:       tc.token,
 			contentType: tc.contentType,
 			body:        strings.NewReader(body),

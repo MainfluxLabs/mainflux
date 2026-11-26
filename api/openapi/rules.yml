@@ -309,15 +309,22 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /things/{thingId}/runs:
     get:
-      summary: Retrieve Script runs for a Thing.
-      description: Retrieve a list of script run history for a specific Thing identified by the provided ID.
+      summary: Retrieve rule runs for a Thing.
+      description: Retrieves the runs of rules that evaluated messages or alarms of the Thing identified by the provided ID.
       tags:
-        - script-runs
+        - rule-runs
       parameters:
         - $ref: "#/components/parameters/ThingId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/RunOrder"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/RunStatus"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
       responses:
         '200':
-          $ref: "#/components/responses/ListScriptRunsRes"
+          $ref: "#/components/responses/ListRunsRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -330,15 +337,22 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /rules/{ruleId}/runs:
     get:
-      summary: Retrieve Script runs for a Rule.
-      description: Retrieve a list of script run history for a specific Rule identified by the provided ID.
+      summary: Retrieve rule runs for a Rule.
+      description: Retrieves the runs of the Rule identified by the provided ID.
       tags:
-        - script-runs
+        - rule-runs
       parameters:
         - $ref: "#/components/parameters/RuleId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/RunOrder"
+        - $ref: "#/components/parameters/Dir"
+        - $ref: "#/components/parameters/RunStatus"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
       responses:
         '200':
-          $ref: "#/components/responses/ListScriptRunsRes"
+          $ref: "#/components/responses/ListRunsRes"
         '400':
           description: Failed due to malformed query parameters.
         '401':
@@ -353,15 +367,15 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /runs:
     patch:
-      summary: Removes script runs
-      description: Remove script run records with provided IDs.
+      summary: Removes rule runs
+      description: Removes the rule runs identified by the provided IDs.
       tags:
-        - script-runs
+        - rule-runs
       requestBody:
-        $ref: "#/components/requestBodies/RemoveScriptRunsReq"
+        $ref: "#/components/requestBodies/RemoveRunsReq"
       responses:
         '204':
-          description: Script runs removed.
+          description: Rule runs removed.
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -573,17 +587,59 @@ components:
         script:
           $ref: "#/components/schemas/ExampleScript"
       required: [id, group_id, name, script]
-    ScriptRunResSchema:
+    RunConditionResSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [threshold, script]
+          example: "script"
+        script_id:
+          type: string
+          format: uuid
+          description: ID of the evaluated script. Present only for script conditions.
+          example: "456e4567-e89b-12d3-a456-426614174abc"
+        met:
+          type: boolean
+          example: true
+        result:
+          description: Value returned by the script. Present only for script conditions that return a value.
+          example: true
+        logs:
+          type: array
+          description: Messages logged by the script. Present only for script conditions that log messages.
+          items:
+            type: string
+          example: ["Processing message", "temp = 10.7"]
+        error:
+          type: string
+          description: Error that occurred during the condition evaluation.
+          example: "runtime error: [string \"error('failure')\"]:1: failure"
+      required: [type, met]
+    RunActionResSchema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [smtp, smpp, alarm, webhook]
+          example: "smtp"
+        id:
+          type: string
+          format: uuid
+          description: ID of the notifier used by an smtp or smpp action.
+          example: "654e4567-e89b-12d3-a456-426614174fed"
+        error:
+          type: string
+          description: Error that occurred during the action execution.
+          example: "nats: connection closed"
+      required: [type]
+    RunResSchema:
       type: object
       properties:
         id:
           type: string
           format: uuid
           example: "789e4567-e89b-12d3-a456-426614174xyz"
-        script_id:
-          type: string
-          format: uuid
-          example: "456e4567-e89b-12d3-a456-426614174abc"
         rule_id:
           type: string
           format: uuid
@@ -592,11 +648,6 @@ components:
           type: string
           format: uuid
           example: "123e4567-e89b-12d3-a456-426614174000"
-        logs:
-          type: array
-          items:
-            type: string
-          example: ["Processing message", "Temperature converted successfully"]
         started_at:
           type: string
           format: date-time
@@ -607,12 +658,22 @@ components:
           example: "2024-01-15T10:30:01Z"
         status:
           type: string
+          description: Fail when the rule run, a condition or an action reports an error.
           enum: [success, fail]
           example: "success"
         error:
           type: string
-          example: ""
-      required: [id, script_id, thing_id, logs, started_at, finished_at, status]
+          description: Error that belongs to no single condition or action.
+          example: "invalid payload"
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunConditionResSchema"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunActionResSchema"
+      required: [id, rule_id, thing_id, started_at, finished_at, status]
     ExampleScript:
       type: string
       example: |
@@ -708,6 +769,39 @@ components:
         type: string
         enum: [name]
       example: "name"
+    RunOrder:
+      name: order
+      description: Field to sort rule runs by.
+      in: query
+      schema:
+        type: string
+        enum: [id, started_at, finished_at, status]
+        default: started_at
+      example: "started_at"
+    RunStatus:
+      name: status
+      description: Filter rule runs by status.
+      in: query
+      schema:
+        type: string
+        enum: [success, fail]
+      example: "fail"
+    From:
+      name: from
+      description: Start of the rule run start time range in Unix milliseconds, inclusive.
+      in: query
+      schema:
+        type: integer
+        format: int64
+      example: 1705314600000
+    To:
+      name: to
+      description: End of the rule run start time range in Unix milliseconds, exclusive.
+      in: query
+      schema:
+        type: integer
+        format: int64
+      example: 1705401000000
     Dir:
       name: dir
       description: Sort direction. Required when order is specified.
@@ -891,23 +985,23 @@ components:
             script_ids:
               - "456e4567-e89b-12d3-a456-426614174abc"
               - "789e4567-e89b-12d3-a456-426614174def"
-    RemoveScriptRunsReq:
-      description: JSON-formatted document describing the IDs of script runs to delete.
+    RemoveRunsReq:
+      description: JSON-formatted document describing the IDs of rule runs to delete.
       required: true
       content:
         application/json:
           schema:
             type: object
             properties:
-              script_run_ids:
+              run_ids:
                 type: array
                 items:
                   type: string
                   format: uuid
             required:
-              - script_run_ids
+              - run_ids
           example:
-            script_run_ids:
+            run_ids:
               - "789e4567-e89b-12d3-a456-426614174xyz"
               - "123e4567-e89b-12d3-a456-426614174qrs"
 
@@ -1093,8 +1187,8 @@ components:
                 description: "Create alarm and send SMTP notifier on low temperature value"
                 script:
                   $ref: "#/components/schemas/ExampleScript"
-    ListScriptRunsRes:
-      description: Script runs retrieved.
+    ListRunsRes:
+      description: Rule runs retrieved.
       content:
         application/json:
           schema:
@@ -1103,7 +1197,7 @@ components:
               runs:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ScriptRunResSchema"
+                  $ref: "#/components/schemas/RunResSchema"
               total:
                 type: integer
                 example: 5
@@ -1121,15 +1215,23 @@ components:
             limit: 10
             runs:
               - id: "789e4567-e89b-12d3-a456-426614174xyz"
-                script_id: "456e4567-e89b-12d3-a456-426614174abc"
+                rule_id: "789e4567-e89b-12d3-a456-426614174abc"
                 thing_id: "123e4567-e89b-12d3-a456-426614174000"
-                logs:
-                  - "Processing message"
-                  - "temp = 10.7"
                 started_at: "2024-01-15T10:30:00Z"
                 finished_at: "2024-01-15T10:30:01Z"
                 status: "success"
-                error: ""
+                conditions:
+                  - type: "threshold"
+                    met: false
+                  - type: "script"
+                    script_id: "456e4567-e89b-12d3-a456-426614174abc"
+                    met: true
+                    result: true
+                    logs:
+                      - "Processing message"
+                      - "temp = 10.7"
+                actions:
+                  - type: "alarm"
     ServiceError:
       description: Unexpected server-side error occurred.
       content:

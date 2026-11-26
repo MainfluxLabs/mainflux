@@ -48,6 +48,9 @@ var (
 	// ErrMissingScriptRunID indicates missing script run ID.
 	ErrMissingScriptRunID = errors.New("missing script run id")
 
+	// ErrMissingRuleRunID indicates missing rule run ID.
+	ErrMissingRuleRunID = errors.New("missing rule run id")
+
 	// ErrMissingUserID indicates missing user ID.
 	ErrMissingUserID = errors.New("missing user id")
 

@@ -15,7 +15,7 @@ var (
 	_ apiutil.Response = (*ruleResponse)(nil)
 	_ apiutil.Response = (*rulesRes)(nil)
 	_ apiutil.Response = (*thingIDsRes)(nil)
-	_ apiutil.Response = (*scriptRunsPageRes)(nil)
+	_ apiutil.Response = (*runsPageRes)(nil)
 )
 
 type pageRes struct {
@@ -105,19 +105,19 @@ func (res thingIDsRes) Empty() bool {
 	return false
 }
 
-type scriptRunsPageRes struct {
+type runsPageRes struct {
 	pageRes
-	Runs []api.ScriptRunRes `json:"runs"`
+	Runs []api.RunRes `json:"runs"`
 }
 
-func (res scriptRunsPageRes) Code() int {
+func (res runsPageRes) Code() int {
 	return http.StatusOK
 }
 
-func (res scriptRunsPageRes) Headers() map[string]string {
+func (res runsPageRes) Headers() map[string]string {
 	return map[string]string{}
 }
 
-func (res scriptRunsPageRes) Empty() bool {
+func (res runsPageRes) Empty() bool {
 	return false
 }

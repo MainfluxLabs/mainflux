@@ -25,6 +25,19 @@ type RuleRun struct {
 	Details    RuleRunDetails
 }
 
+type RuleRunsPage struct {
+	Total uint64
+	Runs  []RuleRun
+}
+
+// RuleRunOrderFields maps API-facing order keys to SQL column expressions for the rule_runs table.
+var RuleRunOrderFields = map[string]string{
+	"id":          "id",
+	"started_at":  "started_at",
+	"finished_at": "finished_at",
+	"status":      "status",
+}
+
 // RuleRunDetails represents the condition and action results of a rule run.
 type RuleRunDetails struct {
 	// Error describes a failure that belongs to no single condition or action.

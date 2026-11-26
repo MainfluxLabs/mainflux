@@ -209,6 +209,15 @@ func migrateDB(db *sqlx.DB) error {
 					`DROP TABLE IF EXISTS rule_runs`,
 				},
 			},
+			{
+				Id: "rules_12",
+				Up: []string{
+					`CREATE INDEX IF NOT EXISTS idx_rule_runs_thing_id ON rule_runs (thing_id)`,
+				},
+				Down: []string{
+					`DROP INDEX IF EXISTS idx_rule_runs_thing_id`,
+				},
+			},
 		},
 	}
 

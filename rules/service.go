@@ -64,15 +64,6 @@ type ServiceScripts interface {
 
 	// RemoveScriptsByGroup removes all Scripts belonging to a specific Group.
 	RemoveScriptsByGroup(ctx context.Context, groupID string) error
-
-	// ListScriptRunsByThing retrieves a list of Script Runs associated with a specific Thing.
-	ListScriptRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ScriptRunsPage, error)
-
-	// ListScriptRunsByRule retrieves a list of Script Runs associated with a specific Rule.
-	ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (ScriptRunsPage, error)
-
-	// RemoveScriptRuns removes the Runs identified by the provided IDs.
-	RemoveScriptRuns(ctx context.Context, token string, ids ...string) error
 }
 
 type ServiceRules interface {
@@ -108,6 +99,15 @@ type ServiceRules interface {
 
 	// UnassignRulesFromThing unassigns all rules from the given thing.
 	UnassignRulesFromThing(ctx context.Context, thingID string) error
+
+	// ListRunsByThing retrieves a list of Rule Runs associated with a specific Thing.
+	ListRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RuleRunsPage, error)
+
+	// ListRunsByRule retrieves a list of Rule Runs associated with a specific Rule.
+	ListRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (RuleRunsPage, error)
+
+	// RemoveRuns removes the Rule Runs identified by the provided IDs.
+	RemoveRuns(ctx context.Context, token string, ids ...string) error
 }
 
 const (
@@ -407,35 +407,35 @@ func (rs *rulesService) RemoveScriptsByGroup(ctx context.Context, groupID string
 	return rs.rules.RemoveScriptsByGroup(ctx, groupID)
 }
 
-func (rs *rulesService) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (ScriptRunsPage, error) {
+func (rs *rulesService) ListRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RuleRunsPage, error) {
 	if err := rs.things.CanUserAccessThing(ctx, domain.UserAccessReq{Token: token, ID: thingID, Action: domain.GroupViewer}); err != nil {
-		return ScriptRunsPage{}, err
+		return RuleRunsPage{}, err
 	}
 
-	return rs.rules.RetrieveScriptRunsByThing(ctx, thingID, pm)
+	return rs.rules.RetrieveRunsByThing(ctx, thingID, pm)
 }
 
-func (rs *rulesService) ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (ScriptRunsPage, error) {
+func (rs *rulesService) ListRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (RuleRunsPage, error) {
 	rule, err := rs.rules.RetrieveByID(ctx, ruleID)
 	if err != nil {
-		return ScriptRunsPage{}, err
+		return RuleRunsPage{}, err
 	}
 
 	if err := rs.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: rule.GroupID, Action: domain.GroupViewer}); err != nil {
-		return ScriptRunsPage{}, err
+		return RuleRunsPage{}, err
 	}
 
-	return rs.rules.RetrieveScriptRunsByRule(ctx, ruleID, pm)
+	return rs.rules.RetrieveRunsByRule(ctx, ruleID, pm)
 }
 
-func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids ...string) error {
-	thingIDs := make([]string, 0, len(ids))
-	for _, id := range ids {
-		run, err := rs.rules.RetrieveScriptRunByID(ctx, id)
-		if err != nil {
-			return err
-		}
+func (rs *rulesService) RemoveRuns(ctx context.Context, token string, ids ...string) error {
+	runs, err := rs.rules.RetrieveRunsByIDs(ctx, ids...)
+	if err != nil {
+		return err
+	}
 
+	thingIDs := make([]string, 0, len(runs))
+	for _, run := range runs {
 		thingIDs = append(thingIDs, run.ThingID)
 	}
 
@@ -443,7 +443,7 @@ func (rs *rulesService) RemoveScriptRuns(ctx context.Context, token string, ids 
 		return err
 	}
 
-	return rs.rules.RemoveScriptRuns(ctx, ids...)
+	return rs.rules.RemoveRuns(ctx, ids...)
 }
 
 func (rs *rulesService) ConsumeMessage(_ string, msg protomfx.Message) error {
@@ -654,4 +654,16 @@ type RepositoryRules interface {
 type RepositoryRuns interface {
 	// SaveRuns persists multiple rule runs.
 	SaveRuns(ctx context.Context, runs ...RuleRun) ([]RuleRun, error)
+
+	// RetrieveRunsByIDs retrieves the rule runs identified by the provided IDs.
+	RetrieveRunsByIDs(ctx context.Context, ids ...string) ([]RuleRun, error)
+
+	// RetrieveRunsByThing retrieves a list of rule runs by Thing ID.
+	RetrieveRunsByThing(ctx context.Context, thingID string, pm PageMetadata) (RuleRunsPage, error)
+
+	// RetrieveRunsByRule retrieves a list of rule runs by Rule ID.
+	RetrieveRunsByRule(ctx context.Context, ruleID string, pm PageMetadata) (RuleRunsPage, error)
+
+	// RemoveRuns removes one or more rule runs by IDs.
+	RemoveRuns(ctx context.Context, ids ...string) error
 }
