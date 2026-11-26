@@ -218,6 +218,16 @@ func TestViewOrg(t *testing.T) {
 	or, err := svc.CreateOrg(context.Background(), token, org)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
 
+	expiredKey := auth.Key{
+		Type:      auth.LoginKey,
+		IssuedAt:  time.Now().Add(-time.Hour),
+		ExpiresAt: time.Now().Add(-time.Minute),
+		IssuerID:  id,
+		Subject:   email,
+	}
+	expiredToken, err := jwt.New(secret).Issue(expiredKey)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+
 	data := orgRes{
 		ID:          or.ID,
 		OwnerID:     or.OwnerID,
@@ -258,6 +268,13 @@ func TestViewOrg(t *testing.T) {
 			desc:   "view org with invalid auth token",
 			id:     or.ID,
 			token:  wrongValue,
+			status: http.StatusUnauthorized,
+			res:    orgRes{},
+		},
+		{
+			desc:   "view org with expired auth token",
+			id:     or.ID,
+			token:  expiredToken,
 			status: http.StatusUnauthorized,
 			res:    orgRes{},
 		},
