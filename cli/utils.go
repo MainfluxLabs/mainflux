@@ -137,7 +137,7 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 
 	var keyValues []domain.KeyValue
 	for _, entry := range KeyVal {
-		key, value, _ := strings.Cut(entry, ":")
+		key, value, _ := strings.Cut(entry, domain.KeyValueSeparator)
 		keyValues = append(keyValues, domain.KeyValue{Key: key, Value: value})
 	}
 

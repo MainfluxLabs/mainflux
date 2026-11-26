@@ -63,6 +63,8 @@ const (
 
 	keyValuesKeyParam   = "key_val_key_%d"
 	keyValuesValueParam = "key_val_value_%d"
+	keyValuesKeyPath    = "CAST(:" + keyValuesKeyParam + " AS jsonpath)"
+	keyValuesValueBind  = ":" + keyValuesValueParam
 
 	// MaxKeyValues is the maximum number of key-value pairs in one JSON messages query.
 	MaxKeyValues = 10
@@ -156,11 +158,11 @@ func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 func keyValuesConditions(pm domain.JSONPageMetadata) []string {
 	var conds []string
 	for i, kv := range pm.KeyValues {
-		path := fmt.Sprintf("CAST(:"+keyValuesKeyParam+" AS jsonpath)", i)
+		path := fmt.Sprintf(keyValuesKeyPath, i)
 
 		nodeCond := nonNullNodeCond
 		if kv.Value != "" {
-			bind := fmt.Sprintf(":"+keyValuesValueParam, i)
+			bind := fmt.Sprintf(keyValuesValueBind, i)
 			nodeCond = valueCondition(pm.Comparator, kv.Value, bind)
 		}
 

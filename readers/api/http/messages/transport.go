@@ -214,7 +214,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 func readKeyValuesQuery(r *http.Request) []readers.KeyValue {
 	var keyValues []readers.KeyValue
 	for _, entry := range r.URL.Query()[keyValKey] {
-		key, value, _ := strings.Cut(entry, ":")
+		key, value, _ := strings.Cut(entry, domain.KeyValueSeparator)
 		keyValues = append(keyValues, readers.KeyValue{Key: key, Value: value})
 	}
 
