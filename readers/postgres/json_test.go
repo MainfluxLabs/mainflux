@@ -685,6 +685,77 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 				},
 			},
 		},
+		"read messages with key-value pairs": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				KeyValues: []readers.KeyValue{
+					{Key: "field_2", Value: "value"},
+					{Key: "field_5.field_2", Value: "42"},
+				},
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
+		"read messages with key-value pair and key without value": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				KeyValues: []readers.KeyValue{
+					{Key: "field_1", Value: "other_value"},
+					{Key: "field_array[*].field_1"},
+				},
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+		"read messages with key-value pairs matching different messages": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				KeyValues: []readers.KeyValue{
+					{Key: "field_2", Value: "value"},
+					{Key: "false_value"},
+				},
+			},
+			page: readers.JSONMessagesPage{},
+		},
+		"read messages with key-value pairs and value prefix": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				KeyValues: []readers.KeyValue{
+					{Key: "field_1", Value: "oth"},
+					{Key: "field_array[0].field_1", Value: "value_"},
+				},
+				Comparator: mfreaders.StartsWithKey,
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[1:2])),
+					Messages: fromJSON(msgs[1:2]),
+				},
+			},
+		},
+		"read messages with key and key-value pair": {
+			pageMeta: readers.JSONPageMetadata{
+				MessagesPageMetadata: pageMeta,
+				Key:                  "field_3",
+				KeyValues: []readers.KeyValue{
+					{Key: "field_5.field_1", Value: "value"},
+				},
+			},
+			page: readers.JSONMessagesPage{
+				MessagesPage: readers.MessagesPage{
+					Total:    uint64(len(msgs[0:1])),
+					Messages: fromJSON(msgs[0:1]),
+				},
+			},
+		},
 	}
 
 	for desc, tc := range cases {

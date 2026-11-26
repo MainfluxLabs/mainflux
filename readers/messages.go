@@ -36,6 +36,7 @@ type (
 	SenMLMessagesPage    = domain.SenMLMessagesPage
 	MessagesPageMetadata = domain.MessagesPageMetadata
 	JSONPageMetadata     = domain.JSONPageMetadata
+	KeyValue             = domain.KeyValue
 	SenMLPageMetadata    = domain.SenMLPageMetadata
 )
 

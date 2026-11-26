@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/things"
 )
@@ -374,6 +375,14 @@ func (pm JSONPageMetadata) query() string {
 
 	if pm.Value != "" {
 		q.Add("value", pm.Value)
+	}
+
+	for _, kv := range pm.KeyValues {
+		entry := kv.Key
+		if kv.Value != "" {
+			entry += domain.KeyValueSeparator + kv.Value
+		}
+		q.Add("key_val", entry)
 	}
 
 	if pm.Comparator != "" {

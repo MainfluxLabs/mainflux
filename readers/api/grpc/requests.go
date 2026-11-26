@@ -21,7 +21,22 @@ func (req listJSONMessagesReq) validate() error {
 		}
 	}
 
-	if req.pm.Value == "" {
+	if len(req.pm.KeyValues) > mfreaders.MaxKeyValues {
+		return apiutil.ErrInvalidQueryParams
+	}
+
+	hasValue := req.pm.Value != ""
+	for _, kv := range req.pm.KeyValues {
+		if _, err := mfreaders.ParseKey(kv.Key); err != nil {
+			return apiutil.ErrInvalidQueryParams
+		}
+
+		if kv.Value != "" {
+			hasValue = true
+		}
+	}
+
+	if !hasValue {
 		if req.pm.Comparator != "" {
 			return apiutil.ErrInvalidQueryParams
 		}

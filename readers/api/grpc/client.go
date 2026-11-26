@@ -97,7 +97,17 @@ func encodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 		Dir:         req.pm.Dir,
 		Value:       req.pm.Value,
 		Comparator:  req.pm.Comparator,
+		KeyValues:   encodeKeyValues(req.pm.KeyValues),
 	}, nil
+}
+
+func encodeKeyValues(kvs []domain.KeyValue) []*protomfx.KeyValue {
+	var res []*protomfx.KeyValue
+	for _, kv := range kvs {
+		res = append(res, &protomfx.KeyValue{Key: kv.Key, Value: kv.Value})
+	}
+
+	return res
 }
 
 func encodeListSenMLMessagesRequest(_ context.Context, grpcReq any) (any, error) {

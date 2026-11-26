@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -700,6 +701,66 @@ func TestListJSONMessages(t *testing.T) {
 		{
 			desc:   "read JSON messages with invalid comparator",
 			url:    fmt.Sprintf("%s/json?key=code&value=VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
+			token:  platformOwnerToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with key-value pairs",
+			url:    fmt.Sprintf("%s/json?key_val=code:VO110&key_val=items[*].value", ts.URL),
+			token:  platformOwnerToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with key-value pairs and comparator",
+			url:    fmt.Sprintf("%s/json?key_val=code:VO&key_val=items&comparator=%s", ts.URL, mfreaders.StartsWithKey),
+			token:  platformOwnerToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with key-value pair with percent sign in value",
+			url:    fmt.Sprintf("%s/json?key_val=code:VO%%25", ts.URL),
+			token:  platformOwnerToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
+			desc:   "read JSON messages with key-value pair with invalid key",
+			url:    fmt.Sprintf("%s/json?key_val=items..value:VO110", ts.URL),
+			token:  platformOwnerToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with key-value pair without key",
+			url:    fmt.Sprintf("%s/json?key_val=:VO110", ts.URL),
+			token:  platformOwnerToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with key-value pairs without value and with comparator",
+			url:    fmt.Sprintf("%s/json?key_val=code&comparator=%s", ts.URL, mfreaders.ContainsKey),
+			token:  platformOwnerToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with key-value pair and invalid comparator",
+			url:    fmt.Sprintf("%s/json?key_val=code:VO110&comparator=%s", ts.URL, mfreaders.GreaterThanKey),
+			token:  platformOwnerToken,
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "read JSON messages with too many key-value pairs",
+			url:    fmt.Sprintf("%s/json?%s", ts.URL, strings.Repeat("key_val=code&", 11)),
 			token:  platformOwnerToken,
 			status: http.StatusBadRequest,
 		},

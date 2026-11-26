@@ -285,6 +285,13 @@ func main() {
 		"JSON payload value",
 	)
 
+	rootCmd.PersistentFlags().StringArrayVar(
+		&cli.KeyVal,
+		"key-val",
+		nil,
+		"JSON payload key-value pair in the key:value or key form (repeatable)",
+	)
+
 	rootCmd.PersistentFlags().StringVar(
 		&cli.AggInterval,
 		"agg-interval",
