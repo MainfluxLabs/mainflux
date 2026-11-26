@@ -725,6 +725,16 @@ func TestListJSONMessages(t *testing.T) {
 			},
 		},
 		{
+			desc:   "read JSON messages with key-value pair with percent sign in value",
+			url:    fmt.Sprintf("%s/json?key_val=code:VO%%25", ts.URL),
+			token:  platformOwnerToken,
+			status: http.StatusOK,
+			res: jsonPageRes{
+				Total:    uint64(len(messages)),
+				Messages: messages[0:10],
+			},
+		},
+		{
 			desc:   "read JSON messages with key-value pair with invalid key",
 			url:    fmt.Sprintf("%s/json?key_val=items..value:VO110", ts.URL),
 			token:  platformOwnerToken,

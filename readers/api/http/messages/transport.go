@@ -180,11 +180,6 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	keyValues, err := readKeyValuesQuery(r)
-	if err != nil {
-		return nil, err
-	}
-
 	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
 	if err != nil {
 		return nil, err
@@ -205,7 +200,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	pageMeta.ThingID = thingID
 	pageMeta.Key = key
 	pageMeta.Value = value
-	pageMeta.KeyValues = keyValues
+	pageMeta.KeyValues = readKeyValuesQuery(r)
 	pageMeta.Comparator = comparator
 
 	return listJSONMessagesReq{
@@ -216,19 +211,14 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 }
 
 // readKeyValuesQuery splits every key_val entry at its first colon into a key and a value.
-func readKeyValuesQuery(r *http.Request) ([]readers.KeyValue, error) {
-	entries, err := apiutil.ReadStringArrayQuery(r, keyValKey)
-	if err != nil {
-		return nil, err
-	}
-
+func readKeyValuesQuery(r *http.Request) []readers.KeyValue {
 	var keyValues []readers.KeyValue
-	for _, entry := range entries {
+	for _, entry := range r.URL.Query()[keyValKey] {
 		key, value, _ := strings.Cut(entry, ":")
 		keyValues = append(keyValues, readers.KeyValue{Key: key, Value: value})
 	}
 
-	return keyValues, nil
+	return keyValues
 }
 
 func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {
