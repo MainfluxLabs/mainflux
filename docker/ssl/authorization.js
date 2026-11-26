@@ -6,17 +6,18 @@ function authenticate(s) {
         return;
     }
 
-    s.on('upload', function (data) {
-        if (data == '') {
+    // The upstream event delivers a Buffer, which preserves bytes above 0x7F that the upload event decodes as UTF-8.
+    s.on('upstream', function (data) {
+        if (data.length === 0) {
             return;
         }
 
-        var packet_type_flags_byte = data.codePointAt(0);
+        var packet_type_flags_byte = data[0];
         // First MQTT packet contain message type and flags. CONNECT message type
         // is encoded as 0001, and we're not interested in flags, so only values
         // 0001xxxx (which is between 16 and 32) should be checked.
         if (packet_type_flags_byte < 16 || packet_type_flags_byte >= 32) {
-            s.off('upload');
+            s.off('upstream');
             s.allow();
             return;
         }
@@ -27,12 +28,12 @@ function authenticate(s) {
 
         if (!clientKey.length || pass !== clientKey) {
             s.error('Cert CN (' + clientKey + ') does not match client password');
-            s.off('upload')
+            s.off('upstream')
             s.deny();
             return;
         }
 
-        s.off('upload');
+        s.off('upstream');
         s.allow();
     })
 }
@@ -81,7 +82,7 @@ function parsePackage(s, data) {
     // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180836
     var len_size = 1;
     for (var remaining_len = 1; remaining_len < 5; remaining_len++) {
-        if (data.codePointAt(remaining_len) > 128) {
+        if (data[remaining_len] > 128) {
             len_size += 1;
             continue;
         }
@@ -90,7 +91,7 @@ function parsePackage(s, data) {
 
     // CONTROL(1) + MSG_LEN(1-4) + PROTO_NAME_LEN(2) + PROTO_NAME(4) + PROTO_VERSION(1)
     var flags_pos = 1 + len_size + 2 + 4 + 1;
-    var flags = data.codePointAt(flags_pos);
+    var flags = data[flags_pos];
 
     // If there are no username and password flags (11xxxxxx), return.
     if (flags < 192) {
@@ -109,8 +110,8 @@ function parsePackage(s, data) {
     var len_msb, len_lsb, len;
 
     for (var i = 0; i < shift_flags; i++) {
-        len_msb = data.codePointAt(shift).toString(16);
-        len_lsb = data.codePointAt(shift + 1).toString(16);
+        len_msb = data[shift].toString(16);
+        len_lsb = data[shift + 1].toString(16);
         len = calcLen(len_msb, len_lsb);
         shift += len_bytes_num;
         if (i != shift_flags - 1) {
@@ -118,7 +119,7 @@ function parsePackage(s, data) {
         }
     }
 
-    var password = data.substring(shift, shift + len);
+    var password = data.slice(shift, shift + len).toString();
     return password;
 }
 
@@ -170,3 +171,5 @@ function parseCert(cert, key) {
 
     return '';
 }
+
+export default {authenticate, setKey};
