@@ -99,7 +99,7 @@ func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 		thingKey: domain.ThingKey{Value: req.GetThingKey().GetValue(), Type: req.GetThingKey().GetType()},
 		pm: domain.JSONPageMetadata{
 			MessagesPageMetadata: decodeMessagesPageMetadata(req),
-			KeyValues:           decodeKeyValues(req.GetKeyValues()),
+			KeyValues:            decodeKeyValues(req.GetKeyValues()),
 			Comparator:           req.GetComparator(),
 		},
 	}, nil
