@@ -819,6 +819,12 @@ func TestRemoveRuns(t *testing.T) {
 			err:   nil,
 		},
 		{
+			desc:  "remove removed rule run",
+			token: token,
+			ids:   []string{runID},
+			err:   dbutil.ErrNotFound,
+		},
+		{
 			desc:  "remove non-existing rule run",
 			token: token,
 			ids:   []string{wrongValue},
