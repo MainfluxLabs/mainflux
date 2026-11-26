@@ -1088,6 +1088,15 @@ func (ts *thingsService) getConfigByThing(ctx context.Context, thID string) (*Co
 		return nil, err
 	}
 
+	// Group membership is cached so that group removal also removes the cached profile and config.
+	if err := ts.thingCache.SaveGroup(ctx, thID, profile.GroupID); err != nil {
+		return nil, err
+	}
+
+	if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
+		return nil, err
+	}
+
 	if err := ts.thingCache.SaveProfile(ctx, thID, profile.ID); err != nil {
 		return nil, err
 	}
