@@ -82,7 +82,7 @@ function parsePackage(s, data) {
     // http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/errata01/os/mqtt-v3.1.1-errata01-os-complete.html#_Toc442180836
     var len_size = 1;
     for (var remaining_len = 1; remaining_len < 5; remaining_len++) {
-        if (data[remaining_len] > 128) {
+        if (data[remaining_len] & 0x80) {
             len_size += 1;
             continue;
         }
@@ -107,12 +107,10 @@ function parsePackage(s, data) {
 
     // If Wil Flag is present, Will Topic and Will Message need to be skipped as well.
     var shift_flags = 196 <= flags ? 5 : 3;
-    var len_msb, len_lsb, len;
+    var len;
 
     for (var i = 0; i < shift_flags; i++) {
-        len_msb = data[shift].toString(16);
-        len_lsb = data[shift + 1].toString(16);
-        len = calcLen(len_msb, len_lsb);
+        len = (data[shift] << 8) | data[shift + 1];
         shift += len_bytes_num;
         if (i != shift_flags - 1) {
             shift += len;
@@ -148,14 +146,6 @@ function setKey(r) {
     }
 
     return '';
-}
-
-function calcLen(msb, lsb) {
-    if (lsb < 2) {
-        lsb = '0' + lsb;
-    }
-
-    return parseInt(msb + lsb, 16);
 }
 
 function parseCert(cert, key) {
