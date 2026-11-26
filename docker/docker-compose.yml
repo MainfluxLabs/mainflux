@@ -1176,6 +1176,8 @@ services:
       MF_CERTS_CHECK_TIME: ${MF_CERTS_CHECK_TIME}
       MF_CERTS_CRL_PATH: ${MF_CERTS_CRL_PATH}
       MF_CERTS_ES_URL: ${MF_CERTS_ES_URL}
+      MF_CERTS_ES_STREAM_MAXLEN: ${MF_CERTS_ES_STREAM_MAXLEN}
+      MF_CERTS_ES_BUFFER_SIZE: ${MF_CERTS_ES_BUFFER_SIZE}
     volumes:
       - ./ssl/certs/ca.key:/etc/ssl/certs/ca.key
       - ./ssl/certs/ca.crt:/etc/ssl/certs/ca.crt

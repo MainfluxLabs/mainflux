@@ -357,3 +357,18 @@ func (cs *certsService) DownloadCert(ctx context.Context, thingKey domain.ThingK
 
 	return cert, nil
 }
+
+// GetGroupAndOrgIDsByThing returns the IDs of the thing's group and org, leaving out what can't be looked up.
+func GetGroupAndOrgIDsByThing(ctx context.Context, things domain.ThingsClient, thingID string) (groupID, orgID string) {
+	groupID, err := things.GetGroupIDByThing(ctx, thingID)
+	if err != nil {
+		return "", ""
+	}
+
+	group, err := things.GetGroup(ctx, groupID)
+	if err != nil {
+		return groupID, ""
+	}
+
+	return groupID, group.OrgID
+}

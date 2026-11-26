@@ -149,6 +149,14 @@ func decodeEvent(re redisEvent) (Event, error) {
 		action = decodePlatformInviteCreated(re)
 	case PlatformInviteRevoke:
 		action = decodePlatformInviteRevoked(re)
+	case CertIssue:
+		action = decodeCertIssued(re)
+	case CertRotate:
+		action = decodeCertRotated(re)
+	case CertRevoke:
+		action = decodeCertRevoked(re)
+	case CertRenew:
+		action = decodeCertRenewed(re)
 	default:
 		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}
