@@ -518,7 +518,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with nested key": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_5.field_2",
+				KeyValues:            []readers.KeyValue{{Key: "field_5.field_2"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -530,15 +530,14 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key containing a quote": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "it's",
+				KeyValues:            []readers.KeyValue{{Key: "it's"}},
 			},
 			page: readers.JSONMessagesPage{},
 		},
 		"read messages with array index key": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_array[1].field_1",
-				Value:                "value_2",
+				KeyValues:            []readers.KeyValue{{Key: "field_array[1].field_1", Value: "value_2"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -550,8 +549,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key through array wildcard": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_array[*].field_1",
-				Value:                "value_2",
+				KeyValues:            []readers.KeyValue{{Key: "field_array[*].field_1", Value: "value_2"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -563,16 +561,14 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key through array without index": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_array.field_1",
-				Value:                "value_2",
+				KeyValues:            []readers.KeyValue{{Key: "field_array.field_1", Value: "value_2"}},
 			},
 			page: readers.JSONMessagesPage{},
 		},
 		"read messages with key and exact value": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_5.field_1",
-				Value:                "value",
+				KeyValues:            []readers.KeyValue{{Key: "field_5.field_1", Value: "value"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -584,16 +580,14 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key and value in different case": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_5.field_1",
-				Value:                "VALUE",
+				KeyValues:            []readers.KeyValue{{Key: "field_5.field_1", Value: "VALUE"}},
 			},
 			page: readers.JSONMessagesPage{},
 		},
 		"read messages with key and value prefix": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_1",
-				Value:                "OTHER",
+				KeyValues:            []readers.KeyValue{{Key: "field_1", Value: "OTHER"}},
 				Comparator:           mfreaders.StartsWithKey,
 			},
 			page: readers.JSONMessagesPage{
@@ -606,8 +600,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key and value substring": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_1",
-				Value:                "her_va",
+				KeyValues:            []readers.KeyValue{{Key: "field_1", Value: "her_va"}},
 				Comparator:           mfreaders.ContainsKey,
 			},
 			page: readers.JSONMessagesPage{
@@ -620,8 +613,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key and underscore not used as wildcard": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_1",
-				Value:                "othe_",
+				KeyValues:            []readers.KeyValue{{Key: "field_1", Value: "othe_"}},
 				Comparator:           mfreaders.StartsWithKey,
 			},
 			page: readers.JSONMessagesPage{},
@@ -629,8 +621,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key and number value": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_1",
-				Value:                "123",
+				KeyValues:            []readers.KeyValue{{Key: "field_1", Value: "123"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -642,8 +633,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key and number value in different format": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_4",
-				Value:                "12.3440",
+				KeyValues:            []readers.KeyValue{{Key: "field_4", Value: "12.3440"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -655,8 +645,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with key and value at object": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Key:                  "field_5",
-				Value:                "value",
+				KeyValues:            []readers.KeyValue{{Key: "field_5", Value: "value"}},
 				Comparator:           mfreaders.ContainsKey,
 			},
 			page: readers.JSONMessagesPage{},
@@ -664,7 +653,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with value in nested fields": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Value:                "42",
+				KeyValues:            []readers.KeyValue{{Value: "42"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -676,7 +665,7 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 		"read messages with value in array element": {
 			pageMeta: readers.JSONPageMetadata{
 				MessagesPageMetadata: pageMeta,
-				Value:                "value_2",
+				KeyValues:            []readers.KeyValue{{Value: "value_2"}},
 			},
 			page: readers.JSONMessagesPage{
 				MessagesPage: readers.MessagesPage{
@@ -738,35 +727,6 @@ func TestListJSONMessagesByKeyValue(t *testing.T) {
 				MessagesPage: readers.MessagesPage{
 					Total:    uint64(len(msgs[1:2])),
 					Messages: fromJSON(msgs[1:2]),
-				},
-			},
-		},
-		"read messages with key-value pair without key": {
-			pageMeta: readers.JSONPageMetadata{
-				MessagesPageMetadata: pageMeta,
-				KeyValues: []readers.KeyValue{
-					{Value: "value_2"},
-				},
-			},
-			page: readers.JSONMessagesPage{
-				MessagesPage: readers.MessagesPage{
-					Total:    uint64(len(msgs[1:2])),
-					Messages: fromJSON(msgs[1:2]),
-				},
-			},
-		},
-		"read messages with key and key-value pair": {
-			pageMeta: readers.JSONPageMetadata{
-				MessagesPageMetadata: pageMeta,
-				Key:                  "field_3",
-				KeyValues: []readers.KeyValue{
-					{Key: "field_5.field_1", Value: "value"},
-				},
-			},
-			page: readers.JSONMessagesPage{
-				MessagesPage: readers.MessagesPage{
-					Total:    uint64(len(msgs[0:1])),
-					Messages: fromJSON(msgs[0:1]),
 				},
 			},
 		},

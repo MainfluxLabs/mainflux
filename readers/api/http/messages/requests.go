@@ -284,17 +284,11 @@ func validateAggregation(aggType, aggInterval string, aggValue uint64) error {
 }
 
 func validatePayloadFilter(pm readers.JSONPageMetadata) error {
-	if pm.Key != "" {
-		if _, err := mfreaders.ParseKey(pm.Key); err != nil {
-			return apiutil.ErrInvalidQueryParams
-		}
-	}
-
 	if len(pm.KeyValues) > mfreaders.MaxKeyValues {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	hasValue := pm.Value != ""
+	hasValue := false
 	for _, kv := range pm.KeyValues {
 		if kv.Key == "" && kv.Value == "" {
 			return apiutil.ErrInvalidQueryParams

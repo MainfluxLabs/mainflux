@@ -15,17 +15,11 @@ type listJSONMessagesReq struct {
 }
 
 func (req listJSONMessagesReq) validate() error {
-	if req.pm.Key != "" {
-		if _, err := mfreaders.ParseKey(req.pm.Key); err != nil {
-			return apiutil.ErrInvalidQueryParams
-		}
-	}
-
 	if len(req.pm.KeyValues) > mfreaders.MaxKeyValues {
 		return apiutil.ErrInvalidQueryParams
 	}
 
-	hasValue := req.pm.Value != ""
+	hasValue := false
 	for _, kv := range req.pm.KeyValues {
 		if kv.Key == "" && kv.Value == "" {
 			return apiutil.ErrInvalidQueryParams

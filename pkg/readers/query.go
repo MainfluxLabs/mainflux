@@ -55,8 +55,6 @@ const (
 )
 
 const (
-	keyPath         = "CAST(:key AS jsonpath)"
-	valueBind       = ":value"
 	anyPayloadPath  = "'strict $.**'"
 	jsonScalarTypes = "('string', 'number', 'boolean')"
 	nonNullNodeCond = "jsonb_typeof(node) <> 'null'"
@@ -113,36 +111,12 @@ func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 // JSONConditions returns the SQL predicates common to every json read.
 func JSONConditions(pm domain.JSONPageMetadata) []string {
 	conds := BaseConditions(pm.MessagesPageMetadata, JSONOrder)
-	conds = append(conds, keyValuesConditions(pm)...)
-
-	switch {
-	case pm.Key != "" && pm.Value != "":
-		valueCond := valueCondition(pm.Comparator, pm.Value, valueBind)
-		keyValueCond := anyPayloadNodeCondition(keyPath, valueCond)
-		return append(conds, keyValueCond)
-	case pm.Key != "":
-		keyCond := anyPayloadNodeCondition(keyPath, nonNullNodeCond)
-		return append(conds, keyCond)
-	case pm.Value != "":
-		valueCond := valueCondition(pm.Comparator, pm.Value, valueBind)
-		anyValueCond := anyPayloadNodeCondition(anyPayloadPath, valueCond)
-		return append(conds, anyValueCond)
-	default:
-		return conds
-	}
+	return append(conds, keyValuesConditions(pm)...)
 }
 
 // JSONQueryParams returns the named parameters referenced by JSONConditions.
 func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 	params := BaseQueryParams(pm.MessagesPageMetadata)
-
-	if pm.Key != "" {
-		params["key"] = keyParam(pm.Key)
-	}
-
-	if pm.Value != "" {
-		params["value"] = valueParam(pm.Value, pm.Comparator)
-	}
 
 	for i, kv := range pm.KeyValues {
 		params[fmt.Sprintf(keyValuesKeyParam, i)] = keyParam(kv.Key)

@@ -57,7 +57,7 @@ type SenMLPageMetadata struct {
 // KeyValueSeparator separates the key from the value in a key-value pair query entry.
 const KeyValueSeparator = ":"
 
-// KeyValue represents a JSON payload key and an optional value that the key must hold.
+// KeyValue represents a JSON payload key and a value that the key must hold, at least one of which is set.
 type KeyValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value,omitempty"`
@@ -66,8 +66,6 @@ type KeyValue struct {
 // JSONPageMetadata represents the parameters used to create database queries.
 type JSONPageMetadata struct {
 	MessagesPageMetadata
-	Key        string     `json:"key,omitempty"`
-	Value      string     `json:"value,omitempty"`
 	KeyValues  []KeyValue `json:"key_values,omitempty"`
 	Comparator string     `json:"comparator,omitempty"`
 }

@@ -89,13 +89,11 @@ func encodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 		Protocol:    req.pm.Protocol,
 		From:        req.pm.From,
 		To:          req.pm.To,
-		Key:         req.pm.Key,
 		AggInterval: req.pm.AggInterval,
 		AggValue:    req.pm.AggValue,
 		AggType:     req.pm.AggType,
 		AggFields:   req.pm.AggFields,
 		Dir:         req.pm.Dir,
-		Value:       req.pm.Value,
 		Comparator:  req.pm.Comparator,
 		KeyValues:   encodeKeyValues(req.pm.KeyValues),
 	}, nil
