@@ -320,7 +320,11 @@ func (ts *thingsService) UpdateThingGroupAndProfile(ctx context.Context, token s
 		return errors.ErrAuthorization
 	}
 
-	return ts.things.UpdateGroupAndProfile(ctx, thing)
+	if err := ts.things.UpdateGroupAndProfile(ctx, thing); err != nil {
+		return err
+	}
+
+	return ts.thingCache.RemoveProfile(ctx, thing.ID)
 }
 
 func (ts *thingsService) UpdateThingsMetadata(ctx context.Context, token string, things ...Thing) error {
@@ -456,6 +460,10 @@ func (ts *thingsService) RemoveThings(ctx context.Context, token string, ids ...
 		if err := ts.thingCache.RemoveType(ctx, id); err != nil {
 			return err
 		}
+
+		if err := ts.thingCache.RemoveProfile(ctx, id); err != nil {
+			return err
+		}
 	}
 
 	if err := ts.things.Remove(ctx, ids...); err != nil {
@@ -504,7 +512,11 @@ func (ts *thingsService) UpdateProfile(ctx context.Context, token string, profil
 		return err
 	}
 
-	return ts.profiles.Update(ctx, profile)
+	if err := ts.profiles.Update(ctx, profile); err != nil {
+		return err
+	}
+
+	return ts.profileCache.RemoveConfig(ctx, profile.ID)
 }
 
 func (ts *thingsService) ViewProfile(ctx context.Context, token, id string) (Profile, error) {
@@ -585,6 +597,10 @@ func (ts *thingsService) RemoveProfiles(ctx context.Context, token string, ids .
 		if err := ts.profileCache.RemoveGroup(ctx, id); err != nil {
 			return err
 		}
+
+		if err := ts.profileCache.RemoveConfig(ctx, id); err != nil {
+			return err
+		}
 	}
 
 	return ts.profiles.Remove(ctx, ids...)
@@ -604,26 +620,21 @@ func (ts *thingsService) GetPubConfigByKey(ctx context.Context, key ThingKey) (P
 		}
 	}
 
-	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
+	config, err := ts.getConfigByThing(ctx, thID)
 	if err != nil {
 		return PubConfigInfo{}, err
 	}
 
 	res := PubConfigInfo{
 		ThingID:       thID,
-		ProfileConfig: profile.Config,
+		ProfileConfig: config,
 	}
 
 	return res, nil
 }
 
 func (ts *thingsService) GetConfigByThing(ctx context.Context, thingID string) (*domain.ProfileConfig, error) {
-	profile, err := ts.profiles.RetrieveByThing(ctx, thingID)
-	if err != nil {
-		return nil, err
-	}
-
-	return profile.Config, nil
+	return ts.getConfigByThing(ctx, thingID)
 }
 
 func (ts *thingsService) CanUserAccessThing(ctx context.Context, req UserAccessReq) error {
@@ -1063,6 +1074,38 @@ func (ts *thingsService) getGroupIDByProfile(ctx context.Context, prID string) (
 	}
 
 	return grID, nil
+}
+
+func (ts *thingsService) getConfigByThing(ctx context.Context, thID string) (*Config, error) {
+	if prID, err := ts.thingCache.ViewProfile(ctx, thID); err == nil {
+		if config, err := ts.profileCache.ViewConfig(ctx, prID); err == nil {
+			return config, nil
+		}
+	}
+
+	profile, err := ts.profiles.RetrieveByThing(ctx, thID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group membership is cached so that group removal also removes the cached profile and config.
+	if err := ts.thingCache.SaveGroup(ctx, thID, profile.GroupID); err != nil {
+		return nil, err
+	}
+
+	if err := ts.profileCache.SaveGroup(ctx, profile.ID, profile.GroupID); err != nil {
+		return nil, err
+	}
+
+	if err := ts.thingCache.SaveProfile(ctx, thID, profile.ID); err != nil {
+		return nil, err
+	}
+
+	if err := ts.profileCache.SaveConfig(ctx, profile.ID, profile.Config); err != nil {
+		return nil, err
+	}
+
+	return profile.Config, nil
 }
 
 func (ts *thingsService) getGroupIDsByMember(ctx context.Context, memberID string) ([]string, error) {

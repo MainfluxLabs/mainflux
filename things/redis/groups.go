@@ -51,7 +51,8 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 			case thingsByGroupPrefix:
 				gk := groupByThingIDKey(entityID)
 				keysSetKey := keysByThingIDKey(entityID)
-				removalKeys = append(removalKeys, gk, keysSetKey)
+				pk := profileByThingIDKey(entityID)
+				removalKeys = append(removalKeys, gk, keysSetKey, pk)
 
 				if thingKeys, err := gc.client.SMembers(ctx, keysSetKey).Result(); err == nil {
 					for idx, keyVal := range thingKeys {
@@ -62,7 +63,8 @@ func (gc *groupCache) RemoveGroupEntities(ctx context.Context, groupID string) e
 				}
 			case profilesByGroupPrefix:
 				gk := groupByProfileIDKey(entityID)
-				removalKeys = append(removalKeys, gk)
+				ck := configByProfileIDKey(entityID)
+				removalKeys = append(removalKeys, gk, ck)
 			case membersByGroupPrefix:
 				gk := groupsByMemberIDKey(entityID)
 				pipe.HDel(ctx, gk, groupID)

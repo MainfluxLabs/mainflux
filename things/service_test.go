@@ -13,6 +13,7 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/dbutil"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	authmock "github.com/MainfluxLabs/mainflux/pkg/mocks"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/things"
@@ -4130,6 +4131,68 @@ func TestGetConfigByThing(t *testing.T) {
 			assert.NotNil(t, config, fmt.Sprintf("%s: expected config to be non-nil\n", tc.desc))
 		}
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+	}
+}
+
+func TestGetConfigByThingAfterUpdate(t *testing.T) {
+	svc := newService()
+
+	grs, err := svc.CreateGroups(context.Background(), token, orgID, createdGroup)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	grID := grs[0].ID
+
+	jsonProfile := things.Profile{
+		Name:   "json",
+		Config: &domain.ProfileConfig{ContentType: messaging.JSONContentType},
+	}
+	senmlProfile := things.Profile{
+		Name:   "senml",
+		Config: &domain.ProfileConfig{ContentType: messaging.SenMLContentType},
+	}
+	prs, err := svc.CreateProfiles(context.Background(), token, grID, jsonProfile, senmlProfile)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+	jsonPr, senmlPr := prs[0], prs[1]
+
+	ths, err := svc.CreateThings(context.Background(), token, jsonPr.ID, thing)
+	require.Nil(t, err, fmt.Sprintf("unexpected error: %s\n", err))
+	th := ths[0]
+
+	updatedPr := senmlPr
+	updatedPr.Config = &domain.ProfileConfig{ContentType: messaging.JSONContentType}
+
+	cases := []struct {
+		desc        string
+		update      func() error
+		contentType string
+	}{
+		{
+			desc: "get config by thing after thing profile change",
+			update: func() error {
+				movedThing := things.Thing{ID: th.ID, GroupID: grID, ProfileID: senmlPr.ID}
+				return svc.UpdateThingGroupAndProfile(context.Background(), token, movedThing)
+			},
+			contentType: messaging.SenMLContentType,
+		},
+		{
+			desc: "get config by thing after profile update",
+			update: func() error {
+				return svc.UpdateProfile(context.Background(), token, updatedPr)
+			},
+			contentType: messaging.JSONContentType,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.GetConfigByThing(context.Background(), th.ID)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s\n", tc.desc, err))
+
+		err = tc.update()
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s\n", tc.desc, err))
+
+		config, err := svc.GetConfigByThing(context.Background(), th.ID)
+		require.Nil(t, err, fmt.Sprintf("%s: unexpected error: %s\n", tc.desc, err))
+		assert.Equal(t, tc.contentType, config.ContentType,
+			fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.contentType, config.ContentType))
 	}
 }
 
