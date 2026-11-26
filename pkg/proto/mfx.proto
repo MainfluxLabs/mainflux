@@ -393,13 +393,13 @@ message ListJSONMessagesReq {
     string            protocol     = 6;
     int64             from         = 7;
     int64             to           = 8;
-    string            agg_interval = 10;
-    uint64            agg_value    = 11;
-    string            agg_type     = 12;
-    repeated string   agg_fields   = 13;
-    string            dir          = 14;
-    string            comparator   = 16;
-    repeated KeyValue key_values   = 17;
+    string            agg_interval = 9;
+    uint64            agg_value    = 10;
+    string            agg_type     = 11;
+    repeated string   agg_fields   = 12;
+    string            dir          = 13;
+    string            comparator   = 14;
+    repeated KeyValue key_values   = 15;
 }
 
 message KeyValue {
