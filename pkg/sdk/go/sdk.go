@@ -99,7 +99,7 @@ type JSONPageMetadata struct {
 	To          int64             `json:"to,omitempty"`
 	Key         string            `json:"key,omitempty"`
 	Value       string            `json:"value,omitempty"`
-	KeyValues   []domain.KeyValue `json:"key_val,omitempty"`
+	KeyValues   []domain.KeyValue `json:"key_values,omitempty"`
 	Comparator  string            `json:"comparator,omitempty"`
 	AggInterval string            `json:"agg_interval,omitempty"`
 	AggValue    uint64            `json:"agg_value,omitempty"`

@@ -128,7 +128,7 @@ paths:
                 agg_fields: ["humidity", "temperature"]
                 limit: 5
               - thing_id: "b2c3d4e5-1111-2222-3333-444455556666"
-                key_val:
+                key_values:
                   - key: "temperature"
                     value: "20"
                   - key: "humidity"
@@ -623,7 +623,7 @@ components:
         value:
           type: string
           description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
-        key_val:
+        key_values:
           type: array
           maxItems: 10
           description: JSON payload key-value pairs that every returned message matches.

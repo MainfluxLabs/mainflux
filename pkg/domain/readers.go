@@ -65,7 +65,7 @@ type JSONPageMetadata struct {
 	MessagesPageMetadata
 	Key        string     `json:"key,omitempty"`
 	Value      string     `json:"value,omitempty"`
-	KeyValues  []KeyValue `json:"key_val,omitempty"`
+	KeyValues  []KeyValue `json:"key_values,omitempty"`
 	Comparator string     `json:"comparator,omitempty"`
 }
 

@@ -232,7 +232,7 @@ func isIndex(index string) bool {
 	return err == nil
 }
 
-// keyParam returns the JSON path bound as :key.
+// keyParam returns the JSON path bound to a key parameter.
 func keyParam(key string) any {
 	path, err := ParseKey(key)
 	if err != nil {
