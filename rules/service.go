@@ -64,15 +64,6 @@ type ServiceScripts interface {
 
 	// RemoveScriptsByGroup removes all Scripts belonging to a specific Group.
 	RemoveScriptsByGroup(ctx context.Context, groupID string) error
-
-	// ListRunsByThing retrieves a list of Rule Runs associated with a specific Thing.
-	ListRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RuleRunsPage, error)
-
-	// ListRunsByRule retrieves a list of Rule Runs associated with a specific Rule.
-	ListRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (RuleRunsPage, error)
-
-	// RemoveRuns removes the Rule Runs identified by the provided IDs.
-	RemoveRuns(ctx context.Context, token string, ids ...string) error
 }
 
 type ServiceRules interface {
@@ -108,6 +99,15 @@ type ServiceRules interface {
 
 	// UnassignRulesFromThing unassigns all rules from the given thing.
 	UnassignRulesFromThing(ctx context.Context, thingID string) error
+
+	// ListRunsByThing retrieves a list of Rule Runs associated with a specific Thing.
+	ListRunsByThing(ctx context.Context, token, thingID string, pm PageMetadata) (RuleRunsPage, error)
+
+	// ListRunsByRule retrieves a list of Rule Runs associated with a specific Rule.
+	ListRunsByRule(ctx context.Context, token, ruleID string, pm PageMetadata) (RuleRunsPage, error)
+
+	// RemoveRuns removes the Rule Runs identified by the provided IDs.
+	RemoveRuns(ctx context.Context, token string, ids ...string) error
 }
 
 const (

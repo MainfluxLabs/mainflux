@@ -16,7 +16,6 @@ import (
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/uuid"
 	"github.com/MainfluxLabs/mainflux/rules"
-	"github.com/MainfluxLabs/mainflux/rules/api"
 	"github.com/go-kit/kit/endpoint"
 	kitot "github.com/go-kit/kit/tracing/opentracing"
 	kithttp "github.com/go-kit/kit/transport/http"
@@ -79,26 +78,6 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 			withIdentity,
 		)(removeScriptsEndpoint(svc)),
 		decodeRemoveScripts,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Get("/things/:id/runs", kithttp.NewServer(
-		endpoint.Chain(
-			kitot.TraceServer(tracer, "list_runs_by_thing"),
-			withIdentity,
-		)(listRunsByThingEndpoint(svc)),
-		decodeListRunsByThing,
-		encodeResponse,
-		opts...,
-	))
-
-	mux.Patch("/runs", kithttp.NewServer(
-		endpoint.Chain(
-			kitot.TraceServer(tracer, "remove_runs"),
-			withIdentity,
-		)(removeRunsEndpoint(svc)),
-		decodeRemoveRuns,
 		encodeResponse,
 		opts...,
 	))
@@ -178,36 +157,6 @@ func decodeRemoveScripts(_ context.Context, r *http.Request) (any, error) {
 	}
 
 	req := removeScriptsReq{
-		token: apiutil.ExtractBearerToken(r),
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
-	}
-
-	return req, nil
-}
-
-func decodeListRunsByThing(_ context.Context, r *http.Request) (any, error) {
-	pm, err := api.BuildRunsPageMetadata(r)
-	if err != nil {
-		return nil, err
-	}
-
-	req := listRunsByThingReq{
-		token:        apiutil.ExtractBearerToken(r),
-		thingID:      bone.GetValue(r, apiutil.IDKey),
-		pageMetadata: pm,
-	}
-	return req, nil
-}
-
-func decodeRemoveRuns(_ context.Context, r *http.Request) (any, error) {
-	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
-		return nil, apiutil.ErrUnsupportedContentType
-	}
-
-	req := removeRunsReq{
 		token: apiutil.ExtractBearerToken(r),
 	}
 

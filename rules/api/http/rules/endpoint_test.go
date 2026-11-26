@@ -1238,3 +1238,135 @@ func TestListRunsByRule(t *testing.T) {
 		}
 	}
 }
+
+func TestListRunsByThing(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc   string
+		auth   string
+		url    string
+		status int
+		size   int
+	}{
+		{
+			desc:   "list rule runs by thing",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10&offset=0", ts.URL, thingID),
+			status: http.StatusOK,
+			size:   0,
+		},
+		{
+			desc:   "list rule runs with wrong thing ID",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, wrongValue),
+			status: http.StatusForbidden,
+		},
+		{
+			desc:   "list rule runs with empty token",
+			auth:   emptyValue,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, thingID),
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "list rule runs with wrong token",
+			auth:   wrongValue,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, thingID),
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "list rule runs with limit exceeding max",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=201", ts.URL, thingID),
+			status: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+
+		var page runsPageRes
+		json.NewDecoder(res.Body).Decode(&page)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+		if tc.status == http.StatusOK {
+			assert.Equal(t, tc.size, len(page.Runs), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(page.Runs)))
+		}
+	}
+}
+
+func TestRemoveRuns(t *testing.T) {
+	svc := newService()
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		ids         []string
+		status      int
+	}{
+		{
+			desc:        "remove rule runs with empty token",
+			auth:        emptyValue,
+			contentType: contentType,
+			ids:         []string{wrongValue},
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove non-existing rule runs",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{wrongValue},
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove rule runs with empty list",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove rule runs with empty ID",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{emptyValue},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove rule runs without content type",
+			auth:        token,
+			contentType: emptyValue,
+			ids:         []string{wrongValue},
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		body := toJSON(struct {
+			RunIDs []string `json:"run_ids"`
+		}{tc.ids})
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/runs", ts.URL),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+	}
+}

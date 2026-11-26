@@ -228,6 +228,47 @@ func (req listRunsByRuleReq) validate() error {
 	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleRunOrderFields)
 }
 
+type listRunsByThingReq struct {
+	token        string
+	thingID      string
+	pageMetadata rules.PageMetadata
+}
+
+func (req listRunsByThingReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if req.thingID == "" {
+		return apiutil.ErrMissingThingID
+	}
+
+	return api.ValidatePageMetadata(req.pageMetadata, maxLimitSize, maxNameSize, rules.RuleRunOrderFields)
+}
+
+type removeRunsReq struct {
+	token  string
+	RunIDs []string `json:"run_ids"`
+}
+
+func (req removeRunsReq) validate() error {
+	if req.token == "" {
+		return apiutil.ErrBearerToken
+	}
+
+	if len(req.RunIDs) < minLen {
+		return apiutil.ErrEmptyList
+	}
+
+	for _, id := range req.RunIDs {
+		if id == "" {
+			return apiutil.ErrMissingRuleRunID
+		}
+	}
+
+	return nil
+}
+
 func validateThingIDs(ids []string) error {
 	if len(ids) < minLen || len(ids) > maxThingIDs {
 		return apiutil.ErrThingIDsSize
