@@ -45,7 +45,7 @@ var (
 	To int64 = 0
 	// Dir sort direction query parameter (asc/desc)
 	Dir string = ""
-	// KeyVal JSON payload key-value pairs in the key:value, key or :value form
+	// KeyVal JSON payload key-value pairs in the key:value, key or :value form, where the first colon separates the key from the value
 	KeyVal []string
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
