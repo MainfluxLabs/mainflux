@@ -384,6 +384,9 @@ func TestAuditEventsAreDecoded(t *testing.T) {
 			InviteeEmail: "user@example.com",
 		},
 		events.PlatformInviteRevoked{ID: "invite-id"},
+		events.WebhookCreated{ID: "webhook-id", ThingID: "thing-id", Name: "name", Metadata: metadata},
+		events.WebhookUpdated{ID: "webhook-id", Name: "name", Metadata: metadata},
+		events.WebhookRemoved{ID: "webhook-id"},
 	}
 
 	for _, action := range actions {

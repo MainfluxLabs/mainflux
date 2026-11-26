@@ -100,7 +100,7 @@ func (lm *loggingMiddleware) UpdateWebhook(ctx context.Context, token string, we
 	return lm.svc.UpdateWebhook(ctx, token, webhook)
 }
 
-func (lm *loggingMiddleware) RemoveWebhooks(ctx context.Context, token string, id ...string) (err error) {
+func (lm *loggingMiddleware) RemoveWebhooks(ctx context.Context, token string, id ...string) (response []webhooks.Webhook, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_webhooks by user %s took %s to complete", email, time.Since(begin))

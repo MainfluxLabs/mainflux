@@ -70,6 +70,8 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
+	defESStreamMaxLen    = "100000"
+	defESBufferSize      = "10000"
 
 	envBrokerURL         = "MF_BROKER_URL"
 	envLogLevel          = "MF_WEBHOOKS_LOG_LEVEL"
@@ -93,6 +95,8 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_WEBHOOKS_ES_URL"
+	envESStreamMaxLen    = "MF_WEBHOOKS_ES_STREAM_MAXLEN"
+	envESBufferSize      = "MF_WEBHOOKS_ES_BUFFER_SIZE"
 )
 
 type config struct {
@@ -106,6 +110,8 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
+	esStreamMaxLen    int64
+	esBufferSize      int
 }
 
 func main() {
@@ -150,7 +156,26 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("webhooks_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(things, dbTracer, db, logger)
+	eventPub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.WebhooksStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialise event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := eventPub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
+
+	svc := newService(things, dbTracer, db, eventPub, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
@@ -227,6 +252,18 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(
+		mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64,
+	)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
+	}
+
 	return config{
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
@@ -238,6 +275,8 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:    esStreamMaxLen,
+		esBufferSize:      esBufferSize,
 	}
 }
 
@@ -271,7 +310,7 @@ func subscribeToThingsES(ctx context.Context, svc webhooks.Service, cfg config, 
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) webhooks.Service {
+func newService(ts domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB, eventPub mfevents.Publisher, logger logger.Logger) webhooks.Service {
 	database := dbutil.NewDatabase(db)
 	webhooksRepo := postgres.NewWebhookRepository(database)
 	webhooksRepo = tracing.WebhookRepositoryMiddleware(dbTracer, webhooksRepo)
@@ -279,6 +318,7 @@ func newService(ts domain.ThingsClient, dbTracer opentracing.Tracer, db *sqlx.DB
 	idProvider := uuid.New()
 
 	svc := webhooks.New(ts, webhooksRepo, forwarder, idProvider)
+	svc = events.NewEventStoreMiddleware(svc, ts, eventPub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

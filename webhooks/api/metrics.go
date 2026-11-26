@@ -79,7 +79,7 @@ func (ms *metricsMiddleware) UpdateWebhook(ctx context.Context, token string, we
 	return ms.svc.UpdateWebhook(ctx, token, webhook)
 }
 
-func (ms *metricsMiddleware) RemoveWebhooks(ctx context.Context, token string, id ...string) error {
+func (ms *metricsMiddleware) RemoveWebhooks(ctx context.Context, token string, id ...string) ([]webhooks.Webhook, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_webhooks").Add(1)
 		ms.latency.With("method", "remove_webhooks").Observe(time.Since(begin).Seconds())

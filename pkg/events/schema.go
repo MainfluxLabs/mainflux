@@ -149,6 +149,12 @@ func decodeEvent(re redisEvent) (Event, error) {
 		action = decodePlatformInviteCreated(re)
 	case PlatformInviteRevoke:
 		action = decodePlatformInviteRevoked(re)
+	case WebhookCreate:
+		action = decodeWebhookCreated(re)
+	case WebhookUpdate:
+		action = decodeWebhookUpdated(re)
+	case WebhookRemove:
+		action = decodeWebhookRemoved(re)
 	default:
 		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}

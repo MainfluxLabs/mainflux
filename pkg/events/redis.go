@@ -24,6 +24,7 @@ const (
 	sessionPrefix         = "session."
 	userPrefix            = "user."
 	platformInvitePrefix  = "platform_invite."
+	webhookPrefix         = "webhook."
 	mainfluxPrefix        = "mainflux."
 
 	// Event operation strings
@@ -80,6 +81,10 @@ const (
 	PlatformInviteCreate = platformInvitePrefix + "create"
 	PlatformInviteRevoke = platformInvitePrefix + "revoke"
 
+	WebhookCreate = webhookPrefix + "create"
+	WebhookUpdate = webhookPrefix + "update"
+	WebhookRemove = webhookPrefix + "remove"
+
 	// General redis event map fields
 	jwtIdentityUserID    = "jwt_identity_user_id"
 	jwtIdentityUserEmail = "jwt_identity_user_email"
@@ -93,9 +98,10 @@ const (
 	evtGroupID = "evt_group_id"
 
 	// Redis event streams
-	ThingsStream = mainfluxPrefix + "things"
-	AuthStream   = mainfluxPrefix + "auth"
-	UsersStream  = mainfluxPrefix + "users"
+	ThingsStream   = mainfluxPrefix + "things"
+	AuthStream     = mainfluxPrefix + "auth"
+	UsersStream    = mainfluxPrefix + "users"
+	WebhooksStream = mainfluxPrefix + "webhooks"
 )
 
 // redisEvent is the raw payload delivered on a Redis stream.
