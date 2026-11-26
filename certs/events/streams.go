@@ -8,6 +8,7 @@ import (
 
 	"github.com/MainfluxLabs/mainflux/certs"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
+	"github.com/MainfluxLabs/mainflux/pkg/errors"
 	"github.com/MainfluxLabs/mainflux/pkg/events"
 )
 
@@ -43,7 +44,7 @@ func (es eventStore) IssueCert(ctx context.Context, token, thingID, ttl string, 
 
 func (es eventStore) RotateCert(ctx context.Context, token, serial, thingID, ttl string, keyBits int, keyType string) (certs.Cert, error) {
 	cert, err := es.Service.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
-	if err != nil {
+	if !revoked(err) {
 		return cert, err
 	}
 
@@ -53,7 +54,7 @@ func (es eventStore) RotateCert(ctx context.Context, token, serial, thingID, ttl
 		ThingID:       thingID,
 	})
 
-	return cert, nil
+	return cert, err
 }
 
 func (es eventStore) RevokeCert(ctx context.Context, token, serial string) (certs.Revoke, error) {
@@ -61,7 +62,7 @@ func (es eventStore) RevokeCert(ctx context.Context, token, serial string) (cert
 	cert, _ := es.Service.ViewCert(ctx, token, serial)
 
 	revoke, err := es.Service.RevokeCert(ctx, token, serial)
-	if err != nil {
+	if !revoked(err) {
 		return revoke, err
 	}
 
@@ -70,12 +71,12 @@ func (es eventStore) RevokeCert(ctx context.Context, token, serial string) (cert
 		ThingID: cert.ThingID,
 	})
 
-	return revoke, nil
+	return revoke, err
 }
 
 func (es eventStore) RenewCert(ctx context.Context, token, serial string) (certs.Cert, error) {
 	cert, err := es.Service.RenewCert(ctx, token, serial)
-	if err != nil {
+	if !revoked(err) {
 		return cert, err
 	}
 
@@ -85,7 +86,12 @@ func (es eventStore) RenewCert(ctx context.Context, token, serial string) (certs
 		ThingID:       cert.ThingID,
 	})
 
-	return cert, nil
+	return cert, err
+}
+
+// revoked reports whether a revocation was saved, which also holds when only the CRL failed to regenerate.
+func revoked(err error) bool {
+	return err == nil || errors.Contains(err, certs.ErrFailedCRLGeneration)
 }
 
 func (es eventStore) publish(ctx context.Context, thingID string, action events.EventAction) {

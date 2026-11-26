@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -62,7 +63,8 @@ type testEnv struct {
 	pki    pki.Agent
 }
 
-func newEnv(t *testing.T) testEnv {
+// newEnv returns a certs service whose CRL is written to crlPath, or not written when it is empty.
+func newEnv(t *testing.T, crlPath string) testEnv {
 	t.Helper()
 	ac := pkgmocks.NewAuthService("", []users.User{user}, nil)
 
@@ -81,7 +83,7 @@ func newEnv(t *testing.T) testEnv {
 	require.NoError(t, err)
 
 	repo := mocks.NewCertsRepository()
-	svc := certs.New(ac, tc, repo, certs.Config{}, pkiAgent)
+	svc := certs.New(ac, tc, repo, certs.Config{CRLPath: crlPath}, pkiAgent)
 
 	return testEnv{
 		svc:    svc,
@@ -191,7 +193,7 @@ func certEvent(operation string, fields map[string]any) map[string]any {
 
 func TestIssueCert(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
-	env := newEnv(t)
+	env := newEnv(t, "")
 	svc := env.withEventStore(t)
 
 	cases := []struct {
@@ -240,7 +242,7 @@ func TestIssueCert(t *testing.T) {
 
 func TestRotateCert(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
-	env := newEnv(t)
+	env := newEnv(t, "")
 
 	oldCert, err := env.svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -294,7 +296,7 @@ func TestRotateCert(t *testing.T) {
 
 func TestRevokeCert(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
-	env := newEnv(t)
+	env := newEnv(t, "")
 
 	cert, err := env.svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -354,7 +356,7 @@ func TestRevokeCert(t *testing.T) {
 
 func TestRenewCert(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
-	env := newEnv(t)
+	env := newEnv(t, "")
 
 	expiring, err := env.svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
 	require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
@@ -408,7 +410,7 @@ func TestRenewCert(t *testing.T) {
 
 func TestSchedulerRenewal(t *testing.T) {
 	_ = redisClient.FlushAll(context.Background()).Err()
-	env := newEnv(t)
+	env := newEnv(t, "")
 
 	cases := []struct {
 		desc    string
@@ -466,6 +468,88 @@ func TestSchedulerRenewal(t *testing.T) {
 			"evt_group_id":   tc.groupID,
 		}
 		msg := fmt.Sprintf("%s: expected %v got %v\n", tc.desc, expected, event)
+		assert.Equal(t, expected, event, msg)
+	}
+}
+
+func TestCRLFailure(t *testing.T) {
+	_ = redisClient.FlushAll(context.Background()).Err()
+	// The CRL directory doesn't exist, so certificates get revoked but the CRL can't be written.
+	env := newEnv(t, filepath.Join(t.TempDir(), "missing", "crl.pem"))
+	svc := env.withEventStore(t)
+
+	issue := func() certs.Cert {
+		cert, err := env.svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+		require.Nil(t, err, fmt.Sprintf("unexpected error: %s", err))
+		return cert
+	}
+	ctx := env.identityCtx(token)
+
+	cases := []struct {
+		desc     string
+		replaces bool
+		run      func(serial string) (string, error)
+		event    func(serial, newSerial string) map[string]any
+	}{
+		{
+			desc: "revoke cert",
+			run: func(serial string) (string, error) {
+				_, err := svc.RevokeCert(ctx, token, serial)
+				return "", err
+			},
+			event: func(serial, _ string) map[string]any {
+				return certEvent(events.CertRevoke, map[string]any{
+					"serial":   serial,
+					"thing_id": thingID,
+				})
+			},
+		},
+		{
+			desc:     "rotate cert",
+			replaces: true,
+			run: func(serial string) (string, error) {
+				cert, err := svc.RotateCert(ctx, token, serial, thingID, ttl, keyBits, keyType)
+				return cert.Serial, err
+			},
+			event: func(serial, newSerial string) map[string]any {
+				return certEvent(events.CertRotate, map[string]any{
+					"serial":         newSerial,
+					"revoked_serial": serial,
+					"thing_id":       thingID,
+				})
+			},
+		},
+		{
+			desc:     "renew cert",
+			replaces: true,
+			run: func(serial string) (string, error) {
+				cert, err := svc.RenewCert(ctx, token, serial)
+				return cert.Serial, err
+			},
+			event: func(serial, newSerial string) map[string]any {
+				return certEvent(events.CertRenew, map[string]any{
+					"serial":         newSerial,
+					"revoked_serial": serial,
+					"thing_id":       thingID,
+				})
+			},
+		},
+	}
+
+	lastID := "0"
+	for _, tc := range cases {
+		serial := issue().Serial
+		newSerial, err := tc.run(serial)
+		msg := fmt.Sprintf("%s: expected %s got %s\n", tc.desc, certs.ErrFailedCRLGeneration, err)
+		assert.True(t, errors.Contains(err, certs.ErrFailedCRLGeneration), msg)
+		if tc.replaces {
+			assert.NotEmpty(t, newSerial, fmt.Sprintf("%s: the new cert should be returned", tc.desc))
+		}
+
+		expected := tc.event(serial, newSerial)
+		var event map[string]any
+		event, lastID = nextEvent(t, tc.desc, lastID)
+		msg = fmt.Sprintf("%s: expected %v got %v\n", tc.desc, expected, event)
 		assert.Equal(t, expected, event, msg)
 	}
 }

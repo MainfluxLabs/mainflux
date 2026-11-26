@@ -302,6 +302,20 @@ func TestRotateCert(t *testing.T) {
 	}
 }
 
+func TestRotateCertFailure(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	_, err = svc.RotateCert(context.Background(), token, issuedCert.Serial, thingID, ttl, 1, ecdsaKeyType)
+	assert.True(t, errors.Contains(err, certs.ErrFailedCertCreation), fmt.Sprintf("expected %s got %s\n", certs.ErrFailedCertCreation, err))
+
+	_, err = svc.ViewCert(context.Background(), token, issuedCert.Serial)
+	assert.Nil(t, err, fmt.Sprintf("old cert should remain valid when issuing the new one fails: %s\n", err))
+}
+
 func TestDownloadCert(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
