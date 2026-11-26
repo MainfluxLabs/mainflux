@@ -376,6 +376,14 @@ func (pm JSONPageMetadata) query() string {
 		q.Add("value", pm.Value)
 	}
 
+	for _, kv := range pm.KeyValues {
+		entry := kv.Key
+		if kv.Value != "" {
+			entry += ":" + kv.Value
+		}
+		q.Add("key_val", entry)
+	}
+
 	if pm.Comparator != "" {
 		q.Add("comparator", pm.Comparator)
 	}

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/MainfluxLabs/mainflux/logger"
 	"github.com/MainfluxLabs/mainflux/pkg/apiutil"
@@ -34,6 +35,7 @@ const (
 	convertKey             = "convert"
 	keyKey                 = "key"
 	valueKey               = "value"
+	keyValKey              = "key_val"
 	aggIntervalKey         = "agg_interval"
 	aggValueKey            = "agg_value"
 	aggTypeKey             = "agg_type"
@@ -178,6 +180,11 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	keyValues, err := readKeyValuesQuery(r)
+	if err != nil {
+		return nil, err
+	}
+
 	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
 	if err != nil {
 		return nil, err
@@ -198,6 +205,7 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	pageMeta.ThingID = thingID
 	pageMeta.Key = key
 	pageMeta.Value = value
+	pageMeta.KeyValues = keyValues
 	pageMeta.Comparator = comparator
 
 	return listJSONMessagesReq{
@@ -205,6 +213,22 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		thingKey: apiutil.ExtractThingKey(r),
 		pageMeta: pageMeta,
 	}, nil
+}
+
+// readKeyValuesQuery splits every key_val entry at its first colon into a key and a value.
+func readKeyValuesQuery(r *http.Request) ([]readers.KeyValue, error) {
+	entries, err := apiutil.ReadStringArrayQuery(r, keyValKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var keyValues []readers.KeyValue
+	for _, entry := range entries {
+		key, value, _ := strings.Cut(entry, ":")
+		keyValues = append(keyValues, readers.KeyValue{Key: key, Value: value})
+	}
+
+	return keyValues, nil
 }
 
 func decodeListSenMLMessages(_ context.Context, r *http.Request) (any, error) {

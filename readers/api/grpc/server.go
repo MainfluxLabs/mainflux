@@ -101,9 +101,19 @@ func decodeListJSONMessagesRequest(_ context.Context, grpcReq any) (any, error) 
 			MessagesPageMetadata: decodeMessagesPageMetadata(req),
 			Key:                  req.GetKey(),
 			Value:                req.GetValue(),
+			KeyValues:            decodeKeyValues(req.GetKeyValues()),
 			Comparator:           req.GetComparator(),
 		},
 	}, nil
+}
+
+func decodeKeyValues(kvs []*protomfx.KeyValue) []domain.KeyValue {
+	var res []domain.KeyValue
+	for _, kv := range kvs {
+		res = append(res, domain.KeyValue{Key: kv.GetKey(), Value: kv.GetValue()})
+	}
+
+	return res
 }
 
 func decodeListSenMLMessagesRequest(_ context.Context, grpcReq any) (any, error) {

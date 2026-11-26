@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	mfxsdk "github.com/MainfluxLabs/mainflux/pkg/sdk/go"
 	"github.com/fatih/color"
 	prettyjson "github.com/hokaccha/go-prettyjson"
@@ -48,6 +49,8 @@ var (
 	Key string = ""
 	// Value JSON payload value query parameter
 	Value string = ""
+	// KeyVal JSON payload key-value pairs in the key:value or key form
+	KeyVal []string
 	// AggInterval aggregation interval (microsecond, millisecond, second, minute, hour, day, week, month, year)
 	AggInterval string = ""
 	// AggValue aggregation value
@@ -132,6 +135,12 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 		aggFields = strings.Split(AggField, ",")
 	}
 
+	var keyValues []domain.KeyValue
+	for _, entry := range KeyVal {
+		key, value, _ := strings.Cut(entry, ":")
+		keyValues = append(keyValues, domain.KeyValue{Key: key, Value: value})
+	}
+
 	return mfxsdk.JSONPageMetadata{
 		Offset:      uint64(Offset),
 		Limit:       uint64(Limit),
@@ -142,6 +151,7 @@ func buildJSONPageMetadata() mfxsdk.JSONPageMetadata {
 		To:          To,
 		Key:         Key,
 		Value:       Value,
+		KeyValues:   keyValues,
 		Comparator:  Comparator,
 		AggInterval: AggInterval,
 		AggValue:    uint64(AggValue),

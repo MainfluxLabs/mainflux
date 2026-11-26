@@ -290,7 +290,22 @@ func validatePayloadFilter(pm readers.JSONPageMetadata) error {
 		}
 	}
 
-	if pm.Value == "" {
+	if len(pm.KeyValues) > mfreaders.MaxKeyValues {
+		return apiutil.ErrInvalidQueryParams
+	}
+
+	hasValue := pm.Value != ""
+	for _, kv := range pm.KeyValues {
+		if _, err := mfreaders.ParseKey(kv.Key); err != nil {
+			return apiutil.ErrInvalidQueryParams
+		}
+
+		if kv.Value != "" {
+			hasValue = true
+		}
+	}
+
+	if !hasValue {
 		if pm.Comparator != "" {
 			return apiutil.ErrInvalidQueryParams
 		}

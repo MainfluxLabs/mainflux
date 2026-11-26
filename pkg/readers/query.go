@@ -56,8 +56,16 @@ const (
 
 const (
 	keyPath         = "CAST(:key AS jsonpath)"
+	valueBind       = ":value"
 	anyPayloadPath  = "'strict $.**'"
 	jsonScalarTypes = "('string', 'number', 'boolean')"
+	nonNullNodeCond = "jsonb_typeof(node) <> 'null'"
+
+	keyValuesKeyParam   = "key_val_key_%d"
+	keyValuesValueParam = "key_val_value_%d"
+
+	// MaxKeyValues is the maximum number of key-value pairs in one JSON messages query.
+	MaxKeyValues = 10
 )
 
 var (
@@ -103,17 +111,18 @@ func BaseQueryParams(pm domain.MessagesPageMetadata) map[string]any {
 // JSONConditions returns the SQL predicates common to every json read.
 func JSONConditions(pm domain.JSONPageMetadata) []string {
 	conds := BaseConditions(pm.MessagesPageMetadata, JSONOrder)
+	conds = append(conds, keyValuesConditions(pm)...)
 
 	switch {
 	case pm.Key != "" && pm.Value != "":
-		valueCond := valueCondition(pm.Comparator, pm.Value)
+		valueCond := valueCondition(pm.Comparator, pm.Value, valueBind)
 		keyValueCond := anyPayloadNodeCondition(keyPath, valueCond)
 		return append(conds, keyValueCond)
 	case pm.Key != "":
-		keyCond := anyPayloadNodeCondition(keyPath, "jsonb_typeof(node) <> 'null'")
+		keyCond := anyPayloadNodeCondition(keyPath, nonNullNodeCond)
 		return append(conds, keyCond)
 	case pm.Value != "":
-		valueCond := valueCondition(pm.Comparator, pm.Value)
+		valueCond := valueCondition(pm.Comparator, pm.Value, valueBind)
 		anyValueCond := anyPayloadNodeCondition(anyPayloadPath, valueCond)
 		return append(conds, anyValueCond)
 	default:
@@ -133,7 +142,32 @@ func JSONQueryParams(pm domain.JSONPageMetadata) map[string]any {
 		params["value"] = valueParam(pm.Value, pm.Comparator)
 	}
 
+	for i, kv := range pm.KeyValues {
+		params[fmt.Sprintf(keyValuesKeyParam, i)] = keyParam(kv.Key)
+		if kv.Value != "" {
+			params[fmt.Sprintf(keyValuesValueParam, i)] = valueParam(kv.Value, pm.Comparator)
+		}
+	}
+
 	return params
+}
+
+// keyValuesConditions returns one predicate per key-value pair, so that every pair must match.
+func keyValuesConditions(pm domain.JSONPageMetadata) []string {
+	var conds []string
+	for i, kv := range pm.KeyValues {
+		path := fmt.Sprintf("CAST(:"+keyValuesKeyParam+" AS jsonpath)", i)
+
+		nodeCond := nonNullNodeCond
+		if kv.Value != "" {
+			bind := fmt.Sprintf(":"+keyValuesValueParam, i)
+			nodeCond = valueCondition(pm.Comparator, kv.Value, bind)
+		}
+
+		conds = append(conds, anyPayloadNodeCondition(path, nodeCond))
+	}
+
+	return conds
 }
 
 // ParseKey converts a dot-separated JSON payload key into a strict JSON path.
@@ -214,18 +248,21 @@ func anyPayloadNodeCondition(path, nodeCond string) string {
 	return fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_path_query(payload, %s, '{}', true) AS node WHERE %s)", path, nodeCond)
 }
 
-// valueCondition matches node against :value when node is a scalar. For an
+// valueCondition matches node against the bind parameter when node is a scalar. For an
 // exact match on a numeric value, number nodes are also compared numerically.
-func valueCondition(comparator, value string) string {
+func valueCondition(comparator, value, bind string) string {
 	scalarCond := fmt.Sprintf("jsonb_typeof(node) IN %s", jsonScalarTypes)
 
-	textEqualCond := "node #>> '{}' = :value"
-	numberEqualCond := "jsonb_typeof(node) = 'number' AND CAST(node #>> '{}' AS numeric) = CAST(:value AS numeric)"
+	textEqualCond := fmt.Sprintf("node #>> '{}' = %s", bind)
+	numberEqualCond := fmt.Sprintf(
+		"jsonb_typeof(node) = 'number' AND CAST(node #>> '{}' AS numeric) = CAST(%s AS numeric)",
+		bind,
+	)
 
 	var valueCond string
 	switch {
 	case comparator == StartsWithKey || comparator == ContainsKey:
-		valueCond = "node #>> '{}' ILIKE :value"
+		valueCond = fmt.Sprintf("node #>> '{}' ILIKE %s", bind)
 	case isNumber(value):
 		valueCond = fmt.Sprintf("(%s OR (%s))", textEqualCond, numberEqualCond)
 	default:

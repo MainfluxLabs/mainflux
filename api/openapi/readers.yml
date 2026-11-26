@@ -28,6 +28,7 @@ paths:
         - $ref: "#/components/parameters/To"
         - $ref: "#/components/parameters/Key"
         - $ref: "#/components/parameters/Value"
+        - $ref: "#/components/parameters/KeyVal"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/AggInterval"
         - $ref: "#/components/parameters/AggType"
@@ -126,6 +127,12 @@ paths:
                 agg_value: 1
                 agg_fields: ["humidity", "temperature"]
                 limit: 5
+              - thing_id: "b2c3d4e5-1111-2222-3333-444455556666"
+                key_val:
+                  - key: "temperature"
+                    value: "20"
+                  - key: "humidity"
+                limit: 10
 
       responses:
         '200':
@@ -616,6 +623,21 @@ components:
         value:
           type: string
           description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
+        key_val:
+          type: array
+          maxItems: 10
+          description: JSON payload key-value pairs that every returned message matches.
+          items:
+            type: object
+            required:
+              - key
+            properties:
+              key:
+                type: string
+                description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
+              value:
+                type: string
+                description: JSON payload value that the key holds.
         comparator:
           type: string
           enum: [eq, starts_with, contains]
@@ -781,6 +803,19 @@ components:
       schema:
         type: string
       required: false
+    KeyVal:
+      name: key_val
+      description: JSON payload key-value pair in the `key:value` or `key` form that every returned message matches.
+      in: query
+      schema:
+        type: array
+        maxItems: 10
+        items:
+          type: string
+      style: form
+      explode: true
+      required: false
+      example: ["temperature:20", "humidity"]
     Subtopic:
       name: subtopic
       description: Message subtopic.

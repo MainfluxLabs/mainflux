@@ -54,12 +54,19 @@ type SenMLPageMetadata struct {
 	DataValue   string  `json:"vd,omitempty"`
 }
 
+// KeyValue represents a JSON payload key and an optional value that the key must hold.
+type KeyValue struct {
+	Key   string `json:"key"`
+	Value string `json:"value,omitempty"`
+}
+
 // JSONPageMetadata represents the parameters used to create database queries.
 type JSONPageMetadata struct {
 	MessagesPageMetadata
-	Key        string `json:"key,omitempty"`
-	Value      string `json:"value,omitempty"`
-	Comparator string `json:"comparator,omitempty"`
+	Key        string     `json:"key,omitempty"`
+	Value      string     `json:"value,omitempty"`
+	KeyValues  []KeyValue `json:"key_val,omitempty"`
+	Comparator string     `json:"comparator,omitempty"`
 }
 
 // ReadersClient specifies the API for querying messages from the readers service via gRPC.
