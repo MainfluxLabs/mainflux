@@ -79,7 +79,8 @@ default values.
 | `MF_AUTH_GRPC_URL`              | Auth service gRPC URL                                                      | localhost:8181           |
 | `MF_AUTH_GRPC_TIMEOUT`          | Auth service gRPC request timeout in seconds                               | 1s                       |
 | `MF_DOWNLINKS_ES_URL`           | Event store URL                                                            | redis://localhost:6379/0 |
-| `MF_DOWNLINKS_EVENT_CONSUMER`   | Event store consumer name                                                  | downlinks                |
+| `MF_DOWNLINKS_ES_STREAM_MAXLEN` | Approximate maximum number of entries kept in the event stream             | 100000                   |
+| `MF_DOWNLINKS_ES_BUFFER_SIZE`   | Capacity of the in-memory buffer for events awaiting publishing            | 10000                    |
 
 ## Deployment
 

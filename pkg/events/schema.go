@@ -149,6 +149,12 @@ func decodeEvent(re redisEvent) (Event, error) {
 		action = decodePlatformInviteCreated(re)
 	case PlatformInviteRevoke:
 		action = decodePlatformInviteRevoked(re)
+	case DownlinkCreate:
+		action = decodeDownlinkCreated(re)
+	case DownlinkUpdate:
+		action = decodeDownlinkUpdated(re)
+	case DownlinkRemove:
+		action = decodeDownlinkRemoved(re)
 	default:
 		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}

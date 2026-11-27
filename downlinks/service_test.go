@@ -370,8 +370,11 @@ func TestRemoveDownlinks(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveDownlinks(context.Background(), tc.token, tc.ids...)
+		removed, err := svc.RemoveDownlinks(context.Background(), tc.token, tc.ids...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, dls, removed, fmt.Sprintf("%s: expected removed downlinks %v got %v", tc.desc, dls, removed))
+		}
 	}
 }
 
