@@ -433,8 +433,11 @@ func TestRemoveClients(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveClients(context.Background(), tc.token, tc.ids...)
+		removed, err := svc.RemoveClients(context.Background(), tc.token, tc.ids...)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, cls, removed, fmt.Sprintf("%s: expected removed clients %v got %v", tc.desc, cls, removed))
+		}
 	}
 }
 

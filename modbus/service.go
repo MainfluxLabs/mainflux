@@ -68,8 +68,8 @@ type Service interface {
 	// UpdateClient updates client identified by the provided ID.
 	UpdateClient(ctx context.Context, token string, client Client) error
 
-	// RemoveClients removes clients identified with the provided IDs.
-	RemoveClients(ctx context.Context, token string, id ...string) error
+	// RemoveClients removes clients identified with the provided IDs and returns the removed clients.
+	RemoveClients(ctx context.Context, token string, id ...string) ([]Client, error)
 
 	// RemoveClientsByThing removes clients related to the specified thing,
 	// identified by the provided thing ID.
@@ -469,13 +469,13 @@ func (cs *clientsService) UpdateClient(ctx context.Context, token string, client
 	return cs.scheduleTasks(ctx, client)
 }
 
-func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids ...string) error {
+func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids ...string) ([]Client, error) {
 	cls := make([]Client, 0, len(ids))
 	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		client, err := cs.clients.RetrieveByID(ctx, id)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		cls = append(cls, client)
@@ -483,18 +483,18 @@ func (cs *clientsService) RemoveClients(ctx context.Context, token string, ids .
 	}
 
 	if err := cs.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := cs.clients.Remove(ctx, ids...); err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, client := range cls {
 		cs.unscheduleTask(client)
 	}
 
-	return nil
+	return cls, nil
 }
 
 func (cs *clientsService) RemoveClientsByThing(ctx context.Context, thingID string) error {

@@ -25,6 +25,7 @@ const (
 	userPrefix            = "user."
 	platformInvitePrefix  = "platform_invite."
 	downlinkPrefix        = "downlink."
+	modbusClientPrefix    = "modbus_client."
 	mainfluxPrefix        = "mainflux."
 
 	// Event operation strings
@@ -85,6 +86,10 @@ const (
 	DownlinkUpdate = downlinkPrefix + "update"
 	DownlinkRemove = downlinkPrefix + "remove"
 
+	ModbusClientCreate = modbusClientPrefix + "create"
+	ModbusClientUpdate = modbusClientPrefix + "update"
+	ModbusClientRemove = modbusClientPrefix + "remove"
+
 	// General redis event map fields
 	jwtIdentityUserID    = "jwt_identity_user_id"
 	jwtIdentityUserEmail = "jwt_identity_user_email"
@@ -102,6 +107,7 @@ const (
 	AuthStream      = mainfluxPrefix + "auth"
 	UsersStream     = mainfluxPrefix + "users"
 	DownlinksStream = mainfluxPrefix + "downlinks"
+	ModbusStream    = mainfluxPrefix + "modbus"
 )
 
 // redisEvent is the raw payload delivered on a Redis stream.

@@ -149,6 +149,7 @@ func main() {
 		mfevents.ThingsStream,
 		mfevents.UsersStream,
 		mfevents.DownlinksStream,
+		mfevents.ModbusStream,
 	}
 	for _, stream := range streams {
 		g.Go(func() error {

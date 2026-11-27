@@ -226,7 +226,7 @@ func removeClientsEndpoint(svc modbus.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveClients(ctx, req.token, req.ClientIDs...); err != nil {
+		if _, err := svc.RemoveClients(ctx, req.token, req.ClientIDs...); err != nil {
 			return nil, err
 		}
 

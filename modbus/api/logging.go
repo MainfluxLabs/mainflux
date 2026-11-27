@@ -138,7 +138,7 @@ func (lm *loggingMiddleware) UpdateClient(ctx context.Context, token string, cli
 	return lm.svc.UpdateClient(ctx, token, client)
 }
 
-func (lm *loggingMiddleware) RemoveClients(ctx context.Context, token string, id ...string) (err error) {
+func (lm *loggingMiddleware) RemoveClients(ctx context.Context, token string, id ...string) (response []modbus.Client, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_clients by user %s took %s to complete", email, time.Since(begin))

@@ -155,6 +155,12 @@ func decodeEvent(re redisEvent) (Event, error) {
 		action = decodeDownlinkUpdated(re)
 	case DownlinkRemove:
 		action = decodeDownlinkRemoved(re)
+	case ModbusClientCreate:
+		action = decodeModbusClientCreated(re)
+	case ModbusClientUpdate:
+		action = decodeModbusClientUpdated(re)
+	case ModbusClientRemove:
+		action = decodeModbusClientRemoved(re)
 	default:
 		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}
