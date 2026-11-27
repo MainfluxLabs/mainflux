@@ -55,8 +55,8 @@ type Service interface {
 	// UpdateWebhook updates the webhook identified by the provided ID.
 	UpdateWebhook(ctx context.Context, token string, webhook Webhook) error
 
-	// RemoveWebhooks removes the webhooks identified with the provided IDs.
-	RemoveWebhooks(ctx context.Context, token string, id ...string) error
+	// RemoveWebhooks removes the webhooks identified with the provided IDs and returns the removed webhooks.
+	RemoveWebhooks(ctx context.Context, token string, id ...string) ([]Webhook, error)
 
 	// RemoveWebhooksByThing removes webhooks related to the given thing ID.
 	RemoveWebhooksByThing(ctx context.Context, thingID string) error
@@ -173,22 +173,24 @@ func (ws *webhooksService) UpdateWebhook(ctx context.Context, token string, webh
 	return ws.webhooks.Update(ctx, webhook)
 }
 
-func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids ...string) error {
+func (ws *webhooksService) RemoveWebhooks(ctx context.Context, token string, ids ...string) ([]Webhook, error) {
+	whs := make([]Webhook, 0, len(ids))
 	for _, id := range ids {
 		webhook, err := ws.webhooks.RetrieveByID(ctx, id)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := ws.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: webhook.GroupID, Action: domain.GroupEditor}); err != nil {
-			return errors.Wrap(errors.ErrAuthorization, err)
+			return nil, errors.Wrap(errors.ErrAuthorization, err)
 		}
+		whs = append(whs, webhook)
 	}
 
 	if err := ws.webhooks.Remove(ctx, ids...); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return whs, nil
 }
 
 func (ws *webhooksService) RemoveWebhooksByThing(ctx context.Context, thingID string) error {

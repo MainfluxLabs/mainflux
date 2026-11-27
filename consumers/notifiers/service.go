@@ -46,8 +46,8 @@ type Service interface {
 	// UpdateNotifier updates the notifier identified by the provided ID.
 	UpdateNotifier(ctx context.Context, token string, notifier Notifier) error
 
-	// RemoveNotifiers removes notifiers identified with the provided IDs.
-	RemoveNotifiers(ctx context.Context, token string, id ...string) error
+	// RemoveNotifiers removes notifiers identified with the provided IDs and returns the removed notifiers.
+	RemoveNotifiers(ctx context.Context, token string, id ...string) ([]Notifier, error)
 
 	// RemoveNotifiersByGroup removes notifiers related to the specified group,
 	// identified by the provided group ID.
@@ -188,22 +188,24 @@ func (ns *notifierService) UpdateNotifier(ctx context.Context, token string, not
 	return ns.notifierRepo.Update(ctx, notifier)
 }
 
-func (ns *notifierService) RemoveNotifiers(ctx context.Context, token string, ids ...string) error {
+func (ns *notifierService) RemoveNotifiers(ctx context.Context, token string, ids ...string) ([]Notifier, error) {
+	nfs := make([]Notifier, 0, len(ids))
 	for _, id := range ids {
 		notifier, err := ns.notifierRepo.RetrieveByID(ctx, id)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := ns.things.CanUserAccessGroup(ctx, domain.UserAccessReq{Token: token, ID: notifier.GroupID, Action: domain.GroupEditor}); err != nil {
-			return errors.Wrap(errors.ErrAuthorization, err)
+			return nil, errors.Wrap(errors.ErrAuthorization, err)
 		}
+		nfs = append(nfs, notifier)
 	}
 
 	if err := ns.notifierRepo.Remove(ctx, ids...); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nfs, nil
 }
 
 func (ns *notifierService) RemoveNotifiersByGroup(ctx context.Context, groupID string) error {

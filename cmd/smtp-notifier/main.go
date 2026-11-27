@@ -69,6 +69,8 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
+	defESStreamMaxLen    = "100000"
+	defESBufferSize      = "10000"
 
 	defEmailHost         = "localhost"
 	defEmailPort         = "25"
@@ -105,6 +107,8 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_SMTP_NOTIFIER_ES_URL"
+	envESStreamMaxLen    = "MF_SMTP_NOTIFIER_ES_STREAM_MAXLEN"
+	envESBufferSize      = "MF_SMTP_NOTIFIER_ES_BUFFER_SIZE"
 
 	envEmailHost         = "MF_EMAIL_HOST"
 	envEmailPort         = "MF_EMAIL_PORT"
@@ -132,6 +136,8 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
+	esStreamMaxLen    int64
+	esBufferSize      int
 	linksConfig       smtp.LinksConfig
 }
 
@@ -177,7 +183,26 @@ func main() {
 	dbTracer, dbCloser := jaeger.Init("smtp_db", cfg.jaegerURL, logger)
 	defer dbCloser.Close()
 
-	svc := newService(cfg, logger, dbTracer, db, tc)
+	eventPub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.SMTPNotifierStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialise event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := eventPub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
+
+	svc := newService(cfg, logger, dbTracer, db, tc, eventPub)
 
 	if err = consumers.Notifications(svcName, pubSub, svc, nats.SubjectSmtp); err != nil {
 		logger.Error(fmt.Sprintf("Failed to create SMTP notifier: %s", err))
@@ -271,6 +296,18 @@ func loadConfig() config {
 		RulePath:  mainflux.Env(envRulePath, defRulePath),
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(
+		mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64,
+	)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		brokerURL:         mainflux.Env(envBrokerURL, defBrokerURL),
@@ -284,6 +321,8 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:    esStreamMaxLen,
+		esBufferSize:      esBufferSize,
 		linksConfig:       linksConfig,
 	}
 
@@ -319,7 +358,7 @@ func subscribeToThingsES(ctx context.Context, svc notifiers.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient) notifiers.Service {
+func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db *sqlx.DB, tc domain.ThingsClient, eventPub mfevents.Publisher) notifiers.Service {
 	idp := uuid.New()
 	database := dbutil.NewDatabase(db)
 
@@ -333,6 +372,7 @@ func newService(c config, logger logger.Logger, dbTracer opentracing.Tracer, db 
 	notifierRepo := postgres.NewNotifierRepository(database)
 	notifierRepo = tracing.NotifierRepositoryMiddleware(dbTracer, notifierRepo)
 	svc := notifiers.New(idp, notifier, notifierRepo, tc)
+	svc = events.NewEventStoreMiddleware(svc, tc, eventPub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

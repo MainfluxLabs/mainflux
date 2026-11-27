@@ -467,8 +467,11 @@ func TestRemoveWebhooks(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		err := svc.RemoveWebhooks(context.Background(), tc.token, tc.id)
+		removed, err := svc.RemoveWebhooks(context.Background(), tc.token, tc.id)
 		assert.True(t, errors.Contains(err, tc.err), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, tc.err, err))
+		if err == nil {
+			assert.Equal(t, []webhooks.Webhook{wh}, removed, fmt.Sprintf("%s: expected removed webhooks %v got %v\n", tc.desc, wh, removed))
+		}
 	}
 }
 

@@ -37,7 +37,8 @@ default values.
 | `MF_SMPP_NOTIFIER_DB_SSL_KEY`       | Path to the PEM encoded key file                                           |                          |
 | `MF_SMPP_NOTIFIER_DB_SSL_ROOT_CERT` | Path to the PEM encoded root certificate file                              |                          |
 | `MF_SMPP_NOTIFIER_ES_URL`           | Event store URL                                                            | redis://localhost:6379/0 |
-| `MF_SMPP_NOTIFIER_EVENT_CONSUMER`   | Event store consumer name                                                  | smpp-notifier            |
+| `MF_SMPP_NOTIFIER_ES_STREAM_MAXLEN` | Approximate maximum number of entries kept in the event stream             | 100000                   |
+| `MF_SMPP_NOTIFIER_ES_BUFFER_SIZE`   | Capacity of the in-memory buffer for events awaiting publishing            | 10000                    |
 | `MF_THINGS_AUTH_GRPC_URL`           | Things auth service gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT`       | Things auth service gRPC request timeout in seconds                        | 1s                       |
 

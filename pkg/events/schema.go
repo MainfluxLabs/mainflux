@@ -157,6 +157,18 @@ func decodeEvent(re redisEvent) (Event, error) {
 		action = decodeCertRevoked(re)
 	case CertRenew:
 		action = decodeCertRenewed(re)
+	case WebhookCreate:
+		action = decodeWebhookCreated(re)
+	case WebhookUpdate:
+		action = decodeWebhookUpdated(re)
+	case WebhookRemove:
+		action = decodeWebhookRemoved(re)
+	case NotifierCreate:
+		action = decodeNotifierCreated(re)
+	case NotifierUpdate:
+		action = decodeNotifierUpdated(re)
+	case NotifierRemove:
+		action = decodeNotifierRemoved(re)
 	default:
 		return Event{}, fmt.Errorf("unknown event operation %s", op)
 	}

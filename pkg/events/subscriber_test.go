@@ -388,6 +388,22 @@ func TestAuditEventsAreDecoded(t *testing.T) {
 		events.CertRotated{Serial: "serial", RevokedSerial: "revoked-serial", ThingID: "thing-id"},
 		events.CertRevoked{Serial: "serial", ThingID: "thing-id"},
 		events.CertRenewed{Serial: "serial", RevokedSerial: "revoked-serial", ThingID: "thing-id"},
+		events.WebhookCreated{ID: "webhook-id", ThingID: "thing-id", Name: "name", Metadata: metadata},
+		events.WebhookUpdated{ID: "webhook-id", Name: "name", Metadata: metadata},
+		events.WebhookRemoved{ID: "webhook-id"},
+		events.NotifierCreated{
+			ID:       "notifier-id",
+			Name:     "name",
+			Contacts: []string{"user@example.com", "admin@example.com"},
+			Metadata: metadata,
+		},
+		events.NotifierUpdated{
+			ID:       "notifier-id",
+			Name:     "name",
+			Contacts: []string{"+381610120120"},
+			Metadata: metadata,
+		},
+		events.NotifierRemoved{ID: "notifier-id"},
 	}
 
 	for _, action := range actions {

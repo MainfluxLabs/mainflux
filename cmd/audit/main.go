@@ -149,6 +149,9 @@ func main() {
 		mfevents.ThingsStream,
 		mfevents.UsersStream,
 		mfevents.CertsStream,
+		mfevents.WebhooksStream,
+		mfevents.SMTPNotifierStream,
+		mfevents.SMPPNotifierStream,
 	}
 	for _, stream := range streams {
 		g.Go(func() error {
