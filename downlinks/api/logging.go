@@ -99,7 +99,7 @@ func (lm *loggingMiddleware) UpdateDownlink(ctx context.Context, token string, d
 	return lm.svc.UpdateDownlink(ctx, token, downlink)
 }
 
-func (lm *loggingMiddleware) RemoveDownlinks(ctx context.Context, token string, id ...string) (err error) {
+func (lm *loggingMiddleware) RemoveDownlinks(ctx context.Context, token string, id ...string) (response []downlinks.Downlink, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
 		message := fmt.Sprintf("Method remove_downlinks by user %s took %s to complete", email, time.Since(begin))

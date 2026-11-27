@@ -102,7 +102,7 @@ func (ms *metricsMiddleware) UpdateClient(ctx context.Context, token string, cli
 	return ms.svc.UpdateClient(ctx, token, client)
 }
 
-func (ms *metricsMiddleware) RemoveClients(ctx context.Context, token string, id ...string) error {
+func (ms *metricsMiddleware) RemoveClients(ctx context.Context, token string, id ...string) ([]modbus.Client, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_clients").Add(1)
 		ms.latency.With("method", "remove_clients").Observe(time.Since(begin).Seconds())

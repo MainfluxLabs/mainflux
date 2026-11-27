@@ -134,7 +134,7 @@ func removeDownlinksEndpoint(svc downlinks.Service) endpoint.Endpoint {
 			return nil, err
 		}
 
-		if err := svc.RemoveDownlinks(ctx, req.token, req.DownlinkIDs...); err != nil {
+		if _, err := svc.RemoveDownlinks(ctx, req.token, req.DownlinkIDs...); err != nil {
 			return nil, err
 		}
 

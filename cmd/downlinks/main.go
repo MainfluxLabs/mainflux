@@ -70,6 +70,8 @@ const (
 	defAuthGRPCURL       = "localhost:8181"
 	defAuthGRPCTimeout   = "1s"
 	defESURL             = "redis://localhost:6379/0"
+	defESStreamMaxLen    = "100000"
+	defESBufferSize      = "10000"
 	defBrokerURL         = "nats://localhost:4222"
 
 	envLogLevel          = "MF_DOWNLINKS_LOG_LEVEL"
@@ -93,6 +95,8 @@ const (
 	envAuthGRPCURL       = "MF_AUTH_GRPC_URL"
 	envAuthGRPCTimeout   = "MF_AUTH_GRPC_TIMEOUT"
 	envESURL             = "MF_DOWNLINKS_ES_URL"
+	envESStreamMaxLen    = "MF_DOWNLINKS_ES_STREAM_MAXLEN"
+	envESBufferSize      = "MF_DOWNLINKS_ES_BUFFER_SIZE"
 	envBrokerURL         = "MF_BROKER_URL"
 )
 
@@ -106,6 +110,8 @@ type config struct {
 	thingsGRPCTimeout time.Duration
 	authGRPCTimeout   time.Duration
 	esURL             string
+	esStreamMaxLen    int64
+	esBufferSize      int
 	brokerURL         string
 }
 
@@ -151,7 +157,26 @@ func main() {
 	}
 	defer pub.Close()
 
-	svc := newService(things, auth, pub, dbTracer, db, logger)
+	eventPub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.DownlinksStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialise event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := eventPub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
+
+	svc := newService(things, auth, pub, dbTracer, db, eventPub, logger)
 
 	g.Go(func() error {
 		return subscribeToThingsES(ctx, svc, cfg, logger)
@@ -228,6 +253,18 @@ func loadConfig() config {
 		ClientName: clients.Auth,
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(
+		mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64,
+	)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
@@ -239,6 +276,8 @@ func loadConfig() config {
 		thingsGRPCTimeout: thingsAuthGRPCTimeout,
 		authGRPCTimeout:   authGRPCTimeout,
 		esURL:             mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen:    esStreamMaxLen,
+		esBufferSize:      esBufferSize,
 	}
 }
 
@@ -272,12 +311,13 @@ func subscribeToThingsES(ctx context.Context, svc downlinks.Service, cfg config,
 	return subscriber.Subscribe(ctx, handler)
 }
 
-func newService(ts domain.ThingsClient, ac domain.AuthClient, pub downlinks.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, logger logger.Logger) downlinks.Service {
+func newService(ts domain.ThingsClient, ac domain.AuthClient, pub downlinks.Publisher, dbTracer opentracing.Tracer, db *sqlx.DB, eventPub mfevents.Publisher, logger logger.Logger) downlinks.Service {
 	database := dbutil.NewDatabase(db)
 	downlinksRepo := postgres.NewDownlinkRepository(database)
 	downlinksRepo = tracing.DownlinkRepositoryMiddleware(dbTracer, downlinksRepo)
 	idProvider := uuid.New()
 	svc := downlinks.New(ts, ac, pub, downlinksRepo, idProvider, logger)
+	svc = events.NewEventStoreMiddleware(svc, ts, eventPub)
 	svc = api.LoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

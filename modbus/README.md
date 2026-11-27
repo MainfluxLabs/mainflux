@@ -96,7 +96,8 @@ default values.
 | `MF_THINGS_AUTH_GRPC_URL`     | Things service Auth gRPC URL                                               | localhost:8183           |
 | `MF_THINGS_AUTH_GRPC_TIMEOUT` | Things service Auth gRPC request timeout in seconds                        | 1s                       |
 | `MF_MODBUS_ES_URL`            | Event store URL                                                            | redis://localhost:6379/0 |
-| `MF_MODBUS_EVENT_CONSUMER`    | Event store consumer name                                                  | modbus                   |
+| `MF_MODBUS_ES_STREAM_MAXLEN`  | Approximate maximum number of entries kept in the event stream             | 100000                   |
+| `MF_MODBUS_ES_BUFFER_SIZE`    | Capacity of the in-memory buffer for events awaiting publishing            | 10000                    |
 
 ## Deployment
 

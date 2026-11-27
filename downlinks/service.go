@@ -55,8 +55,8 @@ type Service interface {
 	// UpdateDownlink updates the downlink identified by the provided ID.
 	UpdateDownlink(ctx context.Context, token string, downlink Downlink) error
 
-	// RemoveDownlinks removes downlinks identified with the provided IDs.
-	RemoveDownlinks(ctx context.Context, token string, id ...string) error
+	// RemoveDownlinks removes downlinks identified with the provided IDs and returns the removed downlinks.
+	RemoveDownlinks(ctx context.Context, token string, id ...string) ([]Downlink, error)
 
 	// RemoveDownlinksByThing removes downlinks related to the specified thing,
 	// identified by the provided thing ID.
@@ -221,13 +221,13 @@ func (ds *downlinksService) UpdateDownlink(ctx context.Context, token string, do
 	return ds.scheduleTasks(ctx, downlink)
 }
 
-func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, ids ...string) error {
+func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, ids ...string) ([]Downlink, error) {
 	dls := make([]Downlink, 0, len(ids))
 	thingIDs := make([]string, 0, len(ids))
 	for _, id := range ids {
 		downlink, err := ds.downlinks.RetrieveByID(ctx, id)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		dls = append(dls, downlink)
@@ -235,18 +235,18 @@ func (ds *downlinksService) RemoveDownlinks(ctx context.Context, token string, i
 	}
 
 	if err := ds.things.CanUserAccessThings(ctx, domain.UserAccessThingsReq{Token: token, IDs: thingIDs, Action: domain.GroupEditor}); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := ds.downlinks.Remove(ctx, ids...); err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, downlink := range dls {
 		ds.unscheduleTask(downlink)
 	}
 
-	return nil
+	return dls, nil
 }
 
 func (ds *downlinksService) RemoveDownlinksByThing(ctx context.Context, thingID string) error {

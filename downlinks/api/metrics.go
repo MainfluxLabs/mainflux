@@ -78,7 +78,7 @@ func (ms *metricsMiddleware) UpdateDownlink(ctx context.Context, token string, d
 	return ms.svc.UpdateDownlink(ctx, token, downlink)
 }
 
-func (ms *metricsMiddleware) RemoveDownlinks(ctx context.Context, token string, id ...string) error {
+func (ms *metricsMiddleware) RemoveDownlinks(ctx context.Context, token string, id ...string) ([]downlinks.Downlink, error) {
 	defer func(begin time.Time) {
 		ms.counter.With("method", "remove_downlinks").Add(1)
 		ms.latency.With("method", "remove_downlinks").Observe(time.Since(begin).Seconds())

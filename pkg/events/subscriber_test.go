@@ -384,6 +384,12 @@ func TestAuditEventsAreDecoded(t *testing.T) {
 			InviteeEmail: "user@example.com",
 		},
 		events.PlatformInviteRevoked{ID: "invite-id"},
+		events.DownlinkCreated{ID: "downlink-id", ThingID: "thing-id", Name: "name", Metadata: metadata},
+		events.DownlinkUpdated{ID: "downlink-id", Name: "name", Metadata: metadata},
+		events.DownlinkRemoved{ID: "downlink-id"},
+		events.ModbusClientCreated{ID: "client-id", ThingID: "thing-id", Name: "name", Metadata: metadata},
+		events.ModbusClientUpdated{ID: "client-id", Name: "name", Metadata: metadata},
+		events.ModbusClientRemoved{ID: "client-id"},
 	}
 
 	for _, action := range actions {
