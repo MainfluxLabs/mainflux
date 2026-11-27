@@ -64,9 +64,11 @@ const (
 	defThingsGRPCURL     = "localhost:8183"
 	defThingsGRPCTimeout = "1s"
 
-	defBrokerURL     = "nats://localhost:4222"
-	defCertCheckTime = "02:00"
-	defESURL         = "redis://localhost:6379/0"
+	defBrokerURL      = "nats://localhost:4222"
+	defCertCheckTime  = "02:00"
+	defESURL          = "redis://localhost:6379/0"
+	defESStreamMaxLen = "100000"
+	defESBufferSize   = "10000"
 
 	defSignCAPath     = "ca.crt"
 	defSignCAKeyPath  = "ca.key"
@@ -98,6 +100,8 @@ const (
 	envBrokerURL         = "MF_BROKER_URL"
 	envCertCheckTime     = "MF_CERTS_CHECK_TIME"
 	envESURL             = "MF_CERTS_ES_URL"
+	envESStreamMaxLen    = "MF_CERTS_ES_STREAM_MAXLEN"
+	envESBufferSize      = "MF_CERTS_ES_BUFFER_SIZE"
 
 	envSignCAPath     = "MF_CERTS_SIGN_CA_PATH"
 	envSignCAKey      = "MF_CERTS_SIGN_CA_KEY_PATH"
@@ -126,6 +130,8 @@ type config struct {
 	brokerURL         string
 	certCheckTime     string
 	esURL             string
+	esStreamMaxLen    int64
+	esBufferSize      int
 	// Sign and issue certificates without 3rd party PKI
 	signCAPath     string
 	signCAKeyPath  string
@@ -179,7 +185,26 @@ func main() {
 
 	tc := thingsapi.NewClient(thingsConn, thingsTracer, cfg.thingsGRPCTimeout)
 
-	svc, certsRepo := newService(auth, tc, db, logger, tlsCert, caCert, cfg, pkiAgent)
+	eventPub, err := mfevents.NewPublisher(mfevents.PublisherConfig{
+		URL:                  cfg.esURL,
+		Stream:               mfevents.CertsStream,
+		MaxLen:               cfg.esStreamMaxLen,
+		BufferSize:           cfg.esBufferSize,
+		DrainInitialInterval: mfevents.DefDrainInitialInterval,
+		DrainMaxBackoff:      mfevents.DefDrainMaxBackoff,
+		ShutdownDrainTimeout: mfevents.DefShutdownDrainTimeout,
+	}, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Failed to initialise event publisher: %s", err))
+		os.Exit(1)
+	}
+	defer func() {
+		if err := eventPub.Close(); err != nil {
+			logger.Error(fmt.Sprintf("Failed to close event publisher: %s", err))
+		}
+	}()
+
+	svc, certsRepo := newService(auth, tc, db, eventPub, logger, tlsCert, caCert, cfg, pkiAgent)
 
 	pub, err := nats.NewPublisher(cfg.brokerURL)
 	if err != nil {
@@ -188,7 +213,7 @@ func main() {
 	}
 	defer pub.Close()
 
-	certScheduler := certs.NewCertScheduler(certsRepo, pkiAgent, tc, pub, cfg.crlPath, logger)
+	certScheduler := certs.NewCertScheduler(certsRepo, pkiAgent, tc, pub, eventPub, cfg.crlPath, logger)
 	schedule := mfcron.Scheduler{
 		TimeZone:  "UTC",
 		Frequency: mfcron.DailyFreq,
@@ -274,6 +299,18 @@ func loadConfig() config {
 		log.Fatalf("Invalid %s value: %s", envSignRSABits, err.Error())
 	}
 
+	esStreamMaxLen, err := strconv.ParseInt(
+		mainflux.Env(envESStreamMaxLen, defESStreamMaxLen), 10, 64,
+	)
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESStreamMaxLen, err.Error())
+	}
+
+	esBufferSize, err := strconv.Atoi(mainflux.Env(envESBufferSize, defESBufferSize))
+	if err != nil {
+		log.Fatalf("Invalid %s value: %s", envESBufferSize, err.Error())
+	}
+
 	return config{
 		logLevel:          mainflux.Env(envLogLevel, defLogLevel),
 		dbConfig:          dbConfig,
@@ -285,9 +322,11 @@ func loadConfig() config {
 		authGRPCTimeout:   authGRPCTimeout,
 		thingsGRPCTimeout: thingsGRPCTimeout,
 
-		brokerURL:     mainflux.Env(envBrokerURL, defBrokerURL),
-		certCheckTime: mainflux.Env(envCertCheckTime, defCertCheckTime),
-		esURL:         mainflux.Env(envESURL, defESURL),
+		brokerURL:      mainflux.Env(envBrokerURL, defBrokerURL),
+		certCheckTime:  mainflux.Env(envCertCheckTime, defCertCheckTime),
+		esURL:          mainflux.Env(envESURL, defESURL),
+		esStreamMaxLen: esStreamMaxLen,
+		esBufferSize:   esBufferSize,
 
 		signCAKeyPath:  mainflux.Env(envSignCAKey, defSignCAKeyPath),
 		signCAPath:     mainflux.Env(envSignCAPath, defSignCAPath),
@@ -328,7 +367,7 @@ func connectToDB(dbConfig postgres.Config, logger logger.Logger) *sqlx.DB {
 	return db
 }
 
-func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) (certs.Service, certs.Repository) {
+func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, eventPub mfevents.Publisher, logger logger.Logger, tlsCert tls.Certificate, x509Cert *x509.Certificate, cfg config, pkiAgent pki.Agent) (certs.Service, certs.Repository) {
 	database := dbutil.NewDatabase(db)
 	certsRepo := postgres.NewRepository(database)
 
@@ -359,6 +398,7 @@ func newService(ac domain.AuthClient, tc domain.ThingsClient, db *sqlx.DB, logge
 	}
 
 	svc := certs.New(ac, tc, certsRepo, certsConfig, pkiAgent)
+	svc = certsevents.NewEventStoreMiddleware(svc, tc, eventPub)
 	svc = api.NewLoggingMiddleware(svc, logger)
 	svc = api.MetricsMiddleware(
 		svc,

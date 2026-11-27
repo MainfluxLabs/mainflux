@@ -148,6 +148,7 @@ func main() {
 		mfevents.AuthStream,
 		mfevents.ThingsStream,
 		mfevents.UsersStream,
+		mfevents.CertsStream,
 		mfevents.WebhooksStream,
 		mfevents.SMTPNotifierStream,
 		mfevents.SMPPNotifierStream,

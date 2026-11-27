@@ -34,6 +34,10 @@ func (req addCertsReq) validate() error {
 		return apiutil.ErrMissingCertData
 	}
 
+	if _, err := pki.ParseTTL(req.TTL); err != nil {
+		return apiutil.ErrMissingCertData
+	}
+
 	if err := validateKeyParams(req.KeyType, req.KeyBits); err != nil {
 		return err
 	}
@@ -64,6 +68,10 @@ func (req rotateCertReq) validate() error {
 	}
 
 	if req.TTL == "" {
+		return apiutil.ErrMissingCertData
+	}
+
+	if _, err := pki.ParseTTL(req.TTL); err != nil {
 		return apiutil.ErrMissingCertData
 	}
 

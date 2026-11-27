@@ -27,5 +27,13 @@ func ValidatePageMetadata(pm rules.PageMetadata, maxLimitSize, maxNameSize int, 
 		}
 	}
 
+	if pm.Status != "" {
+		switch pm.Status {
+		case rules.RuleRunStatusSuccess, rules.RuleRunStatusFail:
+		default:
+			return apiutil.ErrInvalidQueryParams
+		}
+	}
+
 	return nil
 }

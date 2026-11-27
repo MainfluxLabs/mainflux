@@ -26,8 +26,6 @@ paths:
         - $ref: "#/components/parameters/Protocol"
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
-        - $ref: "#/components/parameters/Key"
-        - $ref: "#/components/parameters/Value"
         - $ref: "#/components/parameters/KeyVal"
         - $ref: "#/components/parameters/Comparator"
         - $ref: "#/components/parameters/AggInterval"
@@ -617,27 +615,24 @@ components:
           type: integer
           format: int64
           description: End time in nanoseconds.
-        key:
-          type: string
-          description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
-        value:
-          type: string
-          description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
         key_values:
           type: array
           maxItems: 10
           description: JSON payload key-value pairs that every returned message matches.
           items:
             type: object
-            required:
-              - key
+            anyOf:
+              - required:
+                  - key
+              - required:
+                  - value
             properties:
               key:
                 type: string
                 description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
               value:
                 type: string
-                description: JSON payload value that the key holds.
+                description: JSON payload value that the key holds. Without key, every field of every message in range is checked, which can be slow on large ranges.
         comparator:
           type: string
           enum: [eq, starts_with, contains]
@@ -789,23 +784,13 @@ components:
       schema:
         type: string
       required: false
-    Key:
-      name: key
-      description: Dot-separated JSON payload key; use [n] for one array item or [*] for any item.
-      in: query
-      schema:
-        type: string
-      required: false
-    Value:
-      name: value
-      description: JSON payload value to match. Without key, every field of every message in range is checked, which can be slow on large ranges.
-      in: query
-      schema:
-        type: string
-      required: false
     KeyVal:
       name: key_val
-      description: JSON payload key-value pair in the `key:value` or `key` form that every returned message matches.
+      description: |
+        JSON payload key-value pair in the `key:value`, `key` or `:value` form that every returned message matches.
+        The first colon separates the key from the value, so a value without a key starts with a colon.
+        The key is dot-separated; use [n] for one array item or [*] for any item.
+        A pair without a key checks every field of every message in range, which can be slow on large ranges.
       in: query
       schema:
         type: array

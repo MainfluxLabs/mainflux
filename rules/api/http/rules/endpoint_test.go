@@ -72,22 +72,25 @@ type thingIDsRes struct {
 	ThingIDs []string `json:"thing_ids"`
 }
 
-type scriptRunRes struct {
-	ID       string `json:"id"`
-	ScriptID string `json:"script_id"`
-	RuleID   string `json:"rule_id"`
-	ThingID  string `json:"thing_id"`
-	Status   string `json:"status"`
+type runRes struct {
+	ID      string `json:"id"`
+	RuleID  string `json:"rule_id"`
+	ThingID string `json:"thing_id"`
+	Status  string `json:"status"`
 }
 
-type scriptRunsPageRes struct {
-	Total  uint64         `json:"total"`
-	Offset uint64         `json:"offset"`
-	Limit  uint64         `json:"limit"`
-	Runs   []scriptRunRes `json:"runs"`
+type runsPageRes struct {
+	Total  uint64   `json:"total"`
+	Offset uint64   `json:"offset"`
+	Limit  uint64   `json:"limit"`
+	Runs   []runRes `json:"runs"`
 }
 
 func newService() rules.Service {
+	return newServiceWithRepo(rulesmocks.NewRuleRepository())
+}
+
+func newServiceWithRepo(rulesRepo rules.Repository) rules.Service {
 	ths := pkgmocks.NewThingsServiceClient(
 		nil,
 		map[string]things.Thing{
@@ -99,7 +102,6 @@ func newService() rules.Service {
 			token: {ID: groupID},
 		},
 	)
-	rulesRepo := rulesmocks.NewRuleRepository()
 	pub := rulesmocks.NewPublisher()
 	idp := uuid.NewMock()
 	log := logger.NewMock()
@@ -157,6 +159,22 @@ func saveRules(t *testing.T, svc rules.Service, n int) []rules.Rule {
 		require.Nil(t, err, fmt.Sprintf("unexpected error saving rule %d: %s", i+1, err))
 		saved = append(saved, rs...)
 	}
+	return saved
+}
+
+func saveRuns(t *testing.T, repo rules.Repository, ruleID string, n int) []rules.RuleRun {
+	t.Helper()
+	var runs []rules.RuleRun
+	for i := range n {
+		runs = append(runs, rules.RuleRun{
+			ID:      fmt.Sprintf("%s%012d", prefixID, i+1),
+			RuleID:  ruleID,
+			ThingID: thingID,
+			Status:  rules.RuleRunStatusSuccess,
+		})
+	}
+	saved, err := repo.SaveRuns(context.Background(), runs...)
+	require.Nil(t, err, fmt.Sprintf("unexpected error saving rule runs: %s", err))
 	return saved
 }
 
@@ -1173,13 +1191,16 @@ func TestUnassignThings(t *testing.T) {
 	}
 }
 
-func TestListScriptRunsByRule(t *testing.T) {
-	svc := newService()
+func TestListRunsByRule(t *testing.T) {
+	repo := rulesmocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo)
 	ts := newHTTPServer(svc)
 	defer ts.Close()
 
 	saved := saveRules(t, svc, 1)
 	ruleID := saved[0].ID
+	n := 10
+	saveRuns(t, repo, ruleID, n)
 
 	cases := []struct {
 		desc   string
@@ -1189,34 +1210,47 @@ func TestListScriptRunsByRule(t *testing.T) {
 		size   int
 	}{
 		{
-			desc:   "list script runs by rule",
+			desc:   "list rule runs by rule",
 			auth:   token,
-			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10&offset=0", ts.URL, ruleID),
+			url:    fmt.Sprintf("%s/rules/%s/runs?limit=%d&offset=0", ts.URL, ruleID, n),
 			status: http.StatusOK,
-			size:   0,
+			size:   n,
 		},
 		{
-			desc:   "list script runs with non-existing rule ID",
+			desc:   "list last rule run by rule",
+			auth:   token,
+			url:    fmt.Sprintf("%s/rules/%s/runs?limit=%d&offset=%d", ts.URL, ruleID, n, n-1),
+			status: http.StatusOK,
+			size:   1,
+		},
+		{
+			desc:   "list rule runs with non-existing rule ID",
 			auth:   token,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10", ts.URL, wrongValue),
 			status: http.StatusNotFound,
 		},
 		{
-			desc:   "list script runs with empty token",
+			desc:   "list rule runs with empty token",
 			auth:   emptyValue,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10", ts.URL, ruleID),
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "list script runs with wrong token",
+			desc:   "list rule runs with wrong token",
 			auth:   wrongValue,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=10", ts.URL, ruleID),
 			status: http.StatusUnauthorized,
 		},
 		{
-			desc:   "list script runs with limit exceeding max",
+			desc:   "list rule runs with limit exceeding max",
 			auth:   token,
 			url:    fmt.Sprintf("%s/rules/%s/runs?limit=201", ts.URL, ruleID),
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "list rule runs with invalid status",
+			auth:   token,
+			url:    fmt.Sprintf("%s/rules/%s/runs?status=%s", ts.URL, ruleID, wrongValue),
 			status: http.StatusBadRequest,
 		},
 	}
@@ -1231,11 +1265,180 @@ func TestListScriptRunsByRule(t *testing.T) {
 		res, err := req.make()
 		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
 
-		var page scriptRunsPageRes
+		var page runsPageRes
 		json.NewDecoder(res.Body).Decode(&page)
 		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
 		if tc.status == http.StatusOK {
 			assert.Equal(t, tc.size, len(page.Runs), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(page.Runs)))
 		}
+	}
+}
+
+func TestListRunsByThing(t *testing.T) {
+	repo := rulesmocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo)
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	saved := saveRules(t, svc, 1)
+	n := 10
+	saveRuns(t, repo, saved[0].ID, n)
+
+	cases := []struct {
+		desc   string
+		auth   string
+		url    string
+		status int
+		size   int
+	}{
+		{
+			desc:   "list rule runs by thing",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=%d&offset=0", ts.URL, thingID, n),
+			status: http.StatusOK,
+			size:   n,
+		},
+		{
+			desc:   "list last rule run by thing",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=%d&offset=%d", ts.URL, thingID, n, n-1),
+			status: http.StatusOK,
+			size:   1,
+		},
+		{
+			desc:   "list rule runs with wrong thing ID",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, wrongValue),
+			status: http.StatusForbidden,
+		},
+		{
+			desc:   "list rule runs with empty token",
+			auth:   emptyValue,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, thingID),
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "list rule runs with wrong token",
+			auth:   wrongValue,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=10", ts.URL, thingID),
+			status: http.StatusUnauthorized,
+		},
+		{
+			desc:   "list rule runs with limit exceeding max",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?limit=201", ts.URL, thingID),
+			status: http.StatusBadRequest,
+		},
+		{
+			desc:   "list rule runs with invalid status",
+			auth:   token,
+			url:    fmt.Sprintf("%s/things/%s/runs?status=%s", ts.URL, thingID, wrongValue),
+			status: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range cases {
+		req := testRequest{
+			client: ts.Client(),
+			method: http.MethodGet,
+			url:    tc.url,
+			token:  tc.auth,
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+
+		var page runsPageRes
+		json.NewDecoder(res.Body).Decode(&page)
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
+		if tc.status == http.StatusOK {
+			assert.Equal(t, tc.size, len(page.Runs), fmt.Sprintf("%s: expected size %d got %d\n", tc.desc, tc.size, len(page.Runs)))
+		}
+	}
+}
+
+func TestRemoveRuns(t *testing.T) {
+	repo := rulesmocks.NewRuleRepository()
+	svc := newServiceWithRepo(repo)
+	ts := newHTTPServer(svc)
+	defer ts.Close()
+
+	saved := saveRules(t, svc, 1)
+	runs := saveRuns(t, repo, saved[0].ID, 1)
+	runID := runs[0].ID
+
+	cases := []struct {
+		desc        string
+		auth        string
+		contentType string
+		ids         []string
+		status      int
+	}{
+		{
+			desc:        "remove rule runs with empty token",
+			auth:        emptyValue,
+			contentType: contentType,
+			ids:         []string{wrongValue},
+			status:      http.StatusUnauthorized,
+		},
+		{
+			desc:        "remove existing rule run",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{runID},
+			status:      http.StatusNoContent,
+		},
+		{
+			desc:        "remove removed rule run",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{runID},
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove non-existing rule runs",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{wrongValue},
+			status:      http.StatusNotFound,
+		},
+		{
+			desc:        "remove rule runs with empty list",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove rule runs with empty ID",
+			auth:        token,
+			contentType: contentType,
+			ids:         []string{emptyValue},
+			status:      http.StatusBadRequest,
+		},
+		{
+			desc:        "remove rule runs without content type",
+			auth:        token,
+			contentType: emptyValue,
+			ids:         []string{wrongValue},
+			status:      http.StatusUnsupportedMediaType,
+		},
+	}
+
+	for _, tc := range cases {
+		body := toJSON(struct {
+			RunIDs []string `json:"run_ids"`
+		}{tc.ids})
+
+		req := testRequest{
+			client:      ts.Client(),
+			method:      http.MethodPatch,
+			url:         fmt.Sprintf("%s/runs", ts.URL),
+			token:       tc.auth,
+			contentType: tc.contentType,
+			body:        strings.NewReader(body),
+		}
+		res, err := req.make()
+		assert.Nil(t, err, fmt.Sprintf("%s: unexpected error %s\n", tc.desc, err))
+		assert.Equal(t, tc.status, res.StatusCode, fmt.Sprintf("%s: expected status %d got %d\n", tc.desc, tc.status, res.StatusCode))
 	}
 }

@@ -285,10 +285,10 @@ func (lm loggingMiddleware) RemoveScriptsByGroup(ctx context.Context, groupID st
 	return lm.svc.RemoveScriptsByGroup(ctx, groupID)
 }
 
-func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.ScriptRunsPage, err error) {
+func (lm loggingMiddleware) ListRunsByThing(ctx context.Context, token, thingID string, pm rules.PageMetadata) (_ rules.RuleRunsPage, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method list_script_runs_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
+		message := fmt.Sprintf("Method list_runs_by_thing by user %s, thing id %s took %s to complete", email, thingID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -297,13 +297,13 @@ func (lm loggingMiddleware) ListScriptRunsByThing(ctx context.Context, token, th
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListScriptRunsByThing(ctx, token, thingID, pm)
+	return lm.svc.ListRunsByThing(ctx, token, thingID, pm)
 }
 
-func (lm loggingMiddleware) ListScriptRunsByRule(ctx context.Context, token, ruleID string, pm rules.PageMetadata) (_ rules.ScriptRunsPage, err error) {
+func (lm loggingMiddleware) ListRunsByRule(ctx context.Context, token, ruleID string, pm rules.PageMetadata) (_ rules.RuleRunsPage, err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method list_script_runs_by_rule by user %s, rule id %s took %s to complete", email, ruleID, time.Since(begin))
+		message := fmt.Sprintf("Method list_runs_by_rule by user %s, rule id %s took %s to complete", email, ruleID, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -312,13 +312,13 @@ func (lm loggingMiddleware) ListScriptRunsByRule(ctx context.Context, token, rul
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.ListScriptRunsByRule(ctx, token, ruleID, pm)
+	return lm.svc.ListRunsByRule(ctx, token, ruleID, pm)
 }
 
-func (lm loggingMiddleware) RemoveScriptRuns(ctx context.Context, token string, ids ...string) (err error) {
+func (lm loggingMiddleware) RemoveRuns(ctx context.Context, token string, ids ...string) (err error) {
 	defer func(begin time.Time) {
 		email := authn.EmailFromToken(token)
-		message := fmt.Sprintf("Method remove_script_runs by user %s, run ids %v took %s to complete", email, ids, time.Since(begin))
+		message := fmt.Sprintf("Method remove_runs by user %s, run ids %v took %s to complete", email, ids, time.Since(begin))
 		if err != nil {
 			lm.logger.Warn(fmt.Sprintf("%s with error: %s.", message, err))
 			return
@@ -327,5 +327,5 @@ func (lm loggingMiddleware) RemoveScriptRuns(ctx context.Context, token string, 
 		lm.logger.Info(fmt.Sprintf("%s without errors.", message))
 	}(time.Now())
 
-	return lm.svc.RemoveScriptRuns(ctx, token, ids...)
+	return lm.svc.RemoveRuns(ctx, token, ids...)
 }

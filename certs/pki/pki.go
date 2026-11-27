@@ -176,7 +176,7 @@ func (a *agent) IssueCert(cn, ttl, keyType string, keyBits int) (Cert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	duration, err := parseTTL(ttl)
+	duration, err := ParseTTL(ttl)
 	if err != nil {
 		return Cert{}, errors.Wrap(ErrFailedCertCreation, err)
 	}
@@ -379,7 +379,8 @@ func generateSerialNumber() (*big.Int, error) {
 	return serialNumber, nil
 }
 
-func parseTTL(ttl string) (time.Duration, error) {
+// ParseTTL parses a TTL given as a Go duration or whole hours; empty means one year.
+func ParseTTL(ttl string) (time.Duration, error) {
 	if ttl == "" {
 		return 8760 * time.Hour, nil
 	}

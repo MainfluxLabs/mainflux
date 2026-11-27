@@ -116,10 +116,28 @@ func MakeHandler(svc rules.Service, ac domain.AuthClient, mux *bone.Mux, tracer 
 	))
 	mux.Get("/rules/:id/runs", kithttp.NewServer(
 		endpoint.Chain(
-			kitot.TraceServer(tracer, "list_script_runs_by_rule"),
+			kitot.TraceServer(tracer, "list_runs_by_rule"),
 			withIdentity,
-		)(listScriptRunsByRuleEndpoint(svc)),
-		decodeListScriptRunsByRule,
+		)(listRunsByRuleEndpoint(svc)),
+		decodeListRunsByRule,
+		encodeResponse,
+		opts...,
+	))
+	mux.Get("/things/:id/runs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "list_runs_by_thing"),
+			withIdentity,
+		)(listRunsByThingEndpoint(svc)),
+		decodeListRunsByThing,
+		encodeResponse,
+		opts...,
+	))
+	mux.Patch("/runs", kithttp.NewServer(
+		endpoint.Chain(
+			kitot.TraceServer(tracer, "remove_runs"),
+			withIdentity,
+		)(removeRunsEndpoint(svc)),
+		decodeRemoveRuns,
 		encodeResponse,
 		opts...,
 	))
@@ -245,17 +263,47 @@ func decodeRemoveRules(_ context.Context, r *http.Request) (any, error) {
 	return req, nil
 }
 
-func decodeListScriptRunsByRule(_ context.Context, r *http.Request) (any, error) {
-	pm, err := api.BuildScriptRunsPageMetadata(r)
+func decodeListRunsByRule(_ context.Context, r *http.Request) (any, error) {
+	pm, err := api.BuildRunsPageMetadata(r)
 	if err != nil {
 		return nil, err
 	}
 
-	req := listScriptRunsByRuleReq{
+	req := listRunsByRuleReq{
 		token:        apiutil.ExtractBearerToken(r),
 		ruleID:       bone.GetValue(r, apiutil.IDKey),
 		pageMetadata: pm,
 	}
+	return req, nil
+}
+
+func decodeListRunsByThing(_ context.Context, r *http.Request) (any, error) {
+	pm, err := api.BuildRunsPageMetadata(r)
+	if err != nil {
+		return nil, err
+	}
+
+	req := listRunsByThingReq{
+		token:        apiutil.ExtractBearerToken(r),
+		thingID:      bone.GetValue(r, apiutil.IDKey),
+		pageMetadata: pm,
+	}
+	return req, nil
+}
+
+func decodeRemoveRuns(_ context.Context, r *http.Request) (any, error) {
+	if !strings.Contains(r.Header.Get("Content-Type"), apiutil.ContentTypeJSON) {
+		return nil, apiutil.ErrUnsupportedContentType
+	}
+
+	req := removeRunsReq{
+		token: apiutil.ExtractBearerToken(r),
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, errors.Wrap(errors.ErrMalformedEntity, err)
+	}
+
 	return req, nil
 }
 

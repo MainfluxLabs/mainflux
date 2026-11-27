@@ -33,8 +33,6 @@ const (
 	vbKey                  = "vb"
 	comparatorKey          = "comparator"
 	convertKey             = "convert"
-	keyKey                 = "key"
-	valueKey               = "value"
 	keyValKey              = "key_val"
 	aggIntervalKey         = "agg_interval"
 	aggValueKey            = "agg_value"
@@ -170,16 +168,6 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 		return nil, err
 	}
 
-	key, err := apiutil.ReadStringQuery(r, keyKey, "")
-	if err != nil {
-		return nil, err
-	}
-
-	value, err := apiutil.ReadStringQuery(r, valueKey, "")
-	if err != nil {
-		return nil, err
-	}
-
 	comparator, err := apiutil.ReadStringQuery(r, comparatorKey, "")
 	if err != nil {
 		return nil, err
@@ -198,8 +186,6 @@ func decodeListJSONMessages(_ context.Context, r *http.Request) (any, error) {
 	pageMeta.Offset = offset
 	pageMeta.Limit = limit
 	pageMeta.ThingID = thingID
-	pageMeta.Key = key
-	pageMeta.Value = value
 	pageMeta.KeyValues = readKeyValuesQuery(r)
 	pageMeta.Comparator = comparator
 

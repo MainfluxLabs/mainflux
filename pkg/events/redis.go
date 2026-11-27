@@ -24,6 +24,7 @@ const (
 	sessionPrefix         = "session."
 	userPrefix            = "user."
 	platformInvitePrefix  = "platform_invite."
+	certPrefix            = "cert."
 	webhookPrefix         = "webhook."
 	notifierPrefix        = "notifier."
 	mainfluxPrefix        = "mainflux."
@@ -82,6 +83,11 @@ const (
 	PlatformInviteCreate = platformInvitePrefix + "create"
 	PlatformInviteRevoke = platformInvitePrefix + "revoke"
 
+	CertIssue  = certPrefix + "issue"
+	CertRotate = certPrefix + "rotate"
+	CertRevoke = certPrefix + "revoke"
+	CertRenew  = certPrefix + "renew"
+
 	WebhookCreate = webhookPrefix + "create"
 	WebhookUpdate = webhookPrefix + "update"
 	WebhookRemove = webhookPrefix + "remove"
@@ -106,6 +112,7 @@ const (
 	ThingsStream       = mainfluxPrefix + "things"
 	AuthStream         = mainfluxPrefix + "auth"
 	UsersStream        = mainfluxPrefix + "users"
+	CertsStream        = mainfluxPrefix + "certs"
 	WebhooksStream     = mainfluxPrefix + "webhooks"
 	SMTPNotifierStream = mainfluxPrefix + "smtp-notifier"
 	SMPPNotifierStream = mainfluxPrefix + "smpp-notifier"

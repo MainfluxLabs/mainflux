@@ -97,6 +97,18 @@ func TestParse(t *testing.T) {
 			token: apiToken,
 			err:   auth.ErrAPIKeyExpired,
 		},
+		{
+			desc:  "parse expired key as authentication failure",
+			key:   auth.Key{},
+			token: expToken,
+			err:   errors.ErrAuthentication,
+		},
+		{
+			desc:  "parse expired API key as authentication failure",
+			key:   apiKey,
+			token: apiToken,
+			err:   errors.ErrAuthentication,
+		},
 	}
 
 	for _, tc := range cases {

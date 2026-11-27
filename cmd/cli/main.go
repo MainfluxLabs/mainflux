@@ -271,25 +271,11 @@ func main() {
 		"Sort direction (asc/desc)",
 	)
 
-	rootCmd.PersistentFlags().StringVar(
-		&cli.Key,
-		"key",
-		"",
-		"JSON payload key",
-	)
-
-	rootCmd.PersistentFlags().StringVar(
-		&cli.Value,
-		"value",
-		"",
-		"JSON payload value",
-	)
-
 	rootCmd.PersistentFlags().StringArrayVar(
 		&cli.KeyVal,
 		"key-val",
 		nil,
-		"JSON payload key-value pair in the key:value or key form (repeatable)",
+		"JSON payload key-value pair in the key:value, key or :value form, where the first colon separates the key from the value (repeatable)",
 	)
 
 	rootCmd.PersistentFlags().StringVar(
