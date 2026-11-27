@@ -384,6 +384,10 @@ func TestAuditEventsAreDecoded(t *testing.T) {
 			InviteeEmail: "user@example.com",
 		},
 		events.PlatformInviteRevoked{ID: "invite-id"},
+		events.CertIssued{Serial: "serial", ThingID: "thing-id"},
+		events.CertRotated{Serial: "serial", RevokedSerial: "revoked-serial", ThingID: "thing-id"},
+		events.CertRevoked{Serial: "serial", ThingID: "thing-id"},
+		events.CertRenewed{Serial: "serial", RevokedSerial: "revoked-serial", ThingID: "thing-id"},
 	}
 
 	for _, action := range actions {

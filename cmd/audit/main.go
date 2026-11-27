@@ -144,17 +144,17 @@ func main() {
 		return servershttp.Start(ctx, httpapi.MakeHandler(svc, ac, httpTracer, logger), cfg.httpConfig, logger)
 	})
 
-	g.Go(func() error {
-		return subscribeToES(ctx, svc, cfg, mfevents.AuthStream, logger)
-	})
-
-	g.Go(func() error {
-		return subscribeToES(ctx, svc, cfg, mfevents.ThingsStream, logger)
-	})
-
-	g.Go(func() error {
-		return subscribeToES(ctx, svc, cfg, mfevents.UsersStream, logger)
-	})
+	streams := []string{
+		mfevents.AuthStream,
+		mfevents.ThingsStream,
+		mfevents.UsersStream,
+		mfevents.CertsStream,
+	}
+	for _, stream := range streams {
+		g.Go(func() error {
+			return subscribeToES(ctx, svc, cfg, stream, logger)
+		})
+	}
 
 	g.Go(func() error {
 		if sig := errors.SignalHandler(ctx); sig != nil {

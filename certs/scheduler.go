@@ -14,6 +14,7 @@ import (
 	mfcron "github.com/MainfluxLabs/mainflux/pkg/cron"
 	"github.com/MainfluxLabs/mainflux/pkg/domain"
 	"github.com/MainfluxLabs/mainflux/pkg/errors"
+	"github.com/MainfluxLabs/mainflux/pkg/events"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging"
 	"github.com/MainfluxLabs/mainflux/pkg/messaging/nats"
 	protomfx "github.com/MainfluxLabs/mainflux/pkg/proto"
@@ -39,25 +40,27 @@ type CertEvent struct {
 // CertScheduler periodically renews certificates approaching expiration
 // and notifies Things of their new credentials via the message bus.
 type CertScheduler struct {
-	repo      Repository
-	pki       pki.Agent
-	things    domain.ThingsClient
-	publisher messaging.CommandPublisher
-	logger    logger.Logger
-	crlPath   string
-	sm        *mfcron.ScheduleManager
+	repo           Repository
+	pki            pki.Agent
+	things         domain.ThingsClient
+	publisher      messaging.CommandPublisher
+	eventPublisher events.Publisher
+	logger         logger.Logger
+	crlPath        string
+	sm             *mfcron.ScheduleManager
 }
 
 // NewCertScheduler creates a new certificate rotation scheduler.
-func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.CommandPublisher, crlPath string, logger logger.Logger) *CertScheduler {
+func NewCertScheduler(repo Repository, pkiAgent pki.Agent, things domain.ThingsClient, pub messaging.CommandPublisher, eventPub events.Publisher, crlPath string, logger logger.Logger) *CertScheduler {
 	return &CertScheduler{
-		repo:      repo,
-		pki:       pkiAgent,
-		things:    things,
-		publisher: pub,
-		logger:    logger,
-		crlPath:   crlPath,
-		sm:        mfcron.NewScheduleManager(),
+		repo:           repo,
+		pki:            pkiAgent,
+		things:         things,
+		publisher:      pub,
+		eventPublisher: eventPub,
+		logger:         logger,
+		crlPath:        crlPath,
+		sm:             mfcron.NewScheduleManager(),
 	}
 }
 
@@ -169,6 +172,18 @@ func (cs *CertScheduler) renewAndNotify(ctx context.Context, oldCert Cert) error
 	}
 
 	cs.logger.Info(fmt.Sprintf("Certificate rotated for thing %s: old serial %s -> new serial %s", oldCert.ThingID, oldCert.Serial, newCert.Serial))
+
+	// Published without an actor, as no user started the renewal.
+	groupID, orgID := GetGroupAndOrgIDsByThing(ctx, cs.things, oldCert.ThingID)
+	cs.eventPublisher.Publish(ctx, events.Event{
+		Action: events.CertRenewed{
+			Serial:        newCert.Serial,
+			RevokedSerial: oldCert.Serial,
+			ThingID:       oldCert.ThingID,
+		},
+		GroupID: groupID,
+		OrgID:   orgID,
+	})
 
 	return cs.publishCertEvent(newCert)
 }

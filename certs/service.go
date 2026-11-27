@@ -30,7 +30,8 @@ var (
 	// ErrCertAlreadyDownloaded indicates the certificate has already been downloaded.
 	ErrCertAlreadyDownloaded = errors.New("certificate already downloaded")
 
-	errFailedCRLGeneration = errors.New("failed to generate CRL")
+	// ErrFailedCRLGeneration indicates the certificate was revoked but the CRL wasn't regenerated.
+	ErrFailedCRLGeneration = errors.New("failed to generate CRL")
 )
 
 const (
@@ -184,11 +185,7 @@ func (cs *certsService) RotateCert(ctx context.Context, token, serial, thingID, 
 		return Cert{}, errors.ErrAuthorization
 	}
 
-	if _, err := cs.revokeCert(ctx, serial); err != nil {
-		return Cert{}, err
-	}
-
-	return cs.issueCert(ctx, thingID, ttl, keyBits, keyType)
+	return cs.replaceCert(ctx, serial, thingID, ttl, keyBits, keyType)
 }
 
 func (cs *certsService) RevokeCert(ctx context.Context, token, serial string) (Revoke, error) {
@@ -210,7 +207,7 @@ func (cs *certsService) revokeCert(ctx context.Context, serial string) (Revoke, 
 	}
 
 	if err := cs.regenerateCRL(ctx); err != nil {
-		return Revoke{}, errors.Wrap(errFailedCRLGeneration, err)
+		return Revoke{}, errors.Wrap(ErrFailedCRLGeneration, err)
 	}
 
 	return Revoke{RevocationTime: time.Now()}, nil
@@ -225,7 +222,7 @@ func (cs *certsService) RemoveCertsByThing(ctx context.Context, thingID string) 
 	// removal is idempotent, so a retry after a failed regeneration still
 	// reaches this point and republishes the CRL.
 	if err := cs.regenerateCRL(ctx); err != nil {
-		return errors.Wrap(errFailedCRLGeneration, err)
+		return errors.Wrap(ErrFailedCRLGeneration, err)
 	}
 
 	return nil
@@ -329,11 +326,30 @@ func (cs *certsService) RenewCert(ctx context.Context, token, serial string) (Ce
 		keyBits = defaultRenewalKeyBits
 	}
 
-	if _, err := cs.revokeCert(ctx, serial); err != nil {
+	return cs.replaceCert(ctx, serial, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
+}
+
+// replaceCert issues a new certificate before revoking the old one, so a failure never leaves the thing without one.
+func (cs *certsService) replaceCert(ctx context.Context, oldSerial, thingID, ttl string, keyBits int, keyType string) (Cert, error) {
+	newCert, err := cs.issueCert(ctx, thingID, ttl, keyBits, keyType)
+	if err != nil {
 		return Cert{}, err
 	}
 
-	return cs.issueCert(ctx, oldCert.ThingID, defaultRenewalTTL, keyBits, keyType)
+	if _, err := cs.revokeCert(ctx, oldSerial); err != nil {
+		// The old certificate is revoked and only the CRL is stale, so the new one stays.
+		if errors.Contains(err, ErrFailedCRLGeneration) {
+			return newCert, err
+		}
+
+		if rbErr := cs.certsRepo.Remove(ctx, newCert.Serial); rbErr != nil {
+			return Cert{}, errors.Wrap(err, rbErr)
+		}
+
+		return Cert{}, err
+	}
+
+	return newCert, nil
 }
 
 func (cs *certsService) DownloadCert(ctx context.Context, thingKey domain.ThingKey, serial string) (Cert, error) {
@@ -356,4 +372,19 @@ func (cs *certsService) DownloadCert(ctx context.Context, thingKey domain.ThingK
 	cert.Downloaded = true
 
 	return cert, nil
+}
+
+// GetGroupAndOrgIDsByThing returns the IDs of the thing's group and org, leaving out what can't be looked up.
+func GetGroupAndOrgIDsByThing(ctx context.Context, things domain.ThingsClient, thingID string) (groupID, orgID string) {
+	groupID, err := things.GetGroupIDByThing(ctx, thingID)
+	if err != nil {
+		return "", ""
+	}
+
+	group, err := things.GetGroup(ctx, groupID)
+	if err != nil {
+		return groupID, ""
+	}
+
+	return groupID, group.OrgID
 }

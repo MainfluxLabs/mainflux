@@ -302,6 +302,42 @@ func TestRotateCert(t *testing.T) {
 	}
 }
 
+func TestRotateCertFailure(t *testing.T) {
+	svc, _, err := newService()
+	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))
+
+	issuedCert, err := svc.IssueCert(context.Background(), token, thingID, ttl, keyBits, keyType)
+	require.Nil(t, err, fmt.Sprintf("unexpected cert creation error: %s\n", err))
+
+	cases := []struct {
+		desc    string
+		ttl     string
+		keyBits int
+		keyType string
+	}{
+		{
+			desc:    "rotate cert with invalid key bits",
+			ttl:     ttl,
+			keyBits: 1,
+			keyType: ecdsaKeyType,
+		},
+		{
+			desc:    "rotate cert with invalid ttl",
+			ttl:     "invalid",
+			keyBits: keyBits,
+			keyType: keyType,
+		},
+	}
+
+	for _, tc := range cases {
+		_, err := svc.RotateCert(context.Background(), token, issuedCert.Serial, thingID, tc.ttl, tc.keyBits, tc.keyType)
+		assert.True(t, errors.Contains(err, certs.ErrFailedCertCreation), fmt.Sprintf("%s: expected %s got %s\n", tc.desc, certs.ErrFailedCertCreation, err))
+
+		_, err = svc.ViewCert(context.Background(), token, issuedCert.Serial)
+		assert.Nil(t, err, fmt.Sprintf("%s: old cert should remain valid when issuing the new one fails: %s\n", tc.desc, err))
+	}
+}
+
 func TestDownloadCert(t *testing.T) {
 	svc, _, err := newService()
 	require.Nil(t, err, fmt.Sprintf("unexpected service creation error: %s\n", err))

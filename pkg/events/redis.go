@@ -24,6 +24,7 @@ const (
 	sessionPrefix         = "session."
 	userPrefix            = "user."
 	platformInvitePrefix  = "platform_invite."
+	certPrefix            = "cert."
 	mainfluxPrefix        = "mainflux."
 
 	// Event operation strings
@@ -80,6 +81,11 @@ const (
 	PlatformInviteCreate = platformInvitePrefix + "create"
 	PlatformInviteRevoke = platformInvitePrefix + "revoke"
 
+	CertIssue  = certPrefix + "issue"
+	CertRotate = certPrefix + "rotate"
+	CertRevoke = certPrefix + "revoke"
+	CertRenew  = certPrefix + "renew"
+
 	// General redis event map fields
 	jwtIdentityUserID    = "jwt_identity_user_id"
 	jwtIdentityUserEmail = "jwt_identity_user_email"
@@ -96,6 +102,7 @@ const (
 	ThingsStream = mainfluxPrefix + "things"
 	AuthStream   = mainfluxPrefix + "auth"
 	UsersStream  = mainfluxPrefix + "users"
+	CertsStream  = mainfluxPrefix + "certs"
 )
 
 // redisEvent is the raw payload delivered on a Redis stream.
